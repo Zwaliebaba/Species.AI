@@ -30,10 +30,11 @@ public:
     // The record's 12 px default: as it is at 720 and 1080, raised to 19 px at 2160, and 18 px at a DPI scale of 1.5.
     const Species::TuningPresentation& presentation = CommittedPresentation();
     const double size = presentation.ui.text.defaultSize;
-    Assert::AreEqual(12.0f, Species::UiTextPixels(presentation, size, 720, 1.0f));
-    Assert::AreEqual(12.0f, Species::UiTextPixels(presentation, size, 1080, 1.0f));
-    Assert::AreEqual(19.0f, Species::UiTextPixels(presentation, size, 2160, 1.0f), L"the minimum at 2160");
-    Assert::AreEqual(18.0f, Species::UiTextPixels(presentation, size, 1080, 1.5f), L"times the DPI scale");
+    Assert::AreEqual(12.0f, Species::UiTextPixels(presentation, size, 720, 1.0f, 1.0));
+    Assert::AreEqual(12.0f, Species::UiTextPixels(presentation, size, 1080, 1.0f, 1.0));
+    Assert::AreEqual(19.0f, Species::UiTextPixels(presentation, size, 2160, 1.0f, 1.0), L"the minimum at 2160");
+    Assert::AreEqual(18.0f, Species::UiTextPixels(presentation, size, 1080, 1.5f, 1.0), L"times the DPI scale");
+    Assert::AreEqual(18.0f, Species::UiTextPixels(presentation, size, 1080, 1.0f, 1.5), L"and the text scale (ADR-150)");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl366TheBadgeCountIsAdditiveTextBesideTheBadge)
@@ -45,7 +46,7 @@ public:
     // ADR-145, ADR-147: the count's line starts at the label's left edge, its middle at the label's middle.
     Neuron::TextSystem text(Species::TextSystemDesc(CommittedPresentation()));
     std::vector<Neuron::UiBatch> batches;
-    Species::AppendBadgeCount({"18", 100.4f, 50.0f}, text, CommittedPresentation(), 1080, 1.0f, batches);
+    Species::AppendBadgeCount({"18", 100.4f, 50.0f}, text, CommittedPresentation(), 1080, 1.0f, 1.0, batches);
     Assert::AreEqual(std::size_t{1}, batches.size(), L"one batch, no outline");
     Assert::IsTrue(batches[0].source == Neuron::UiSource::Glyphs && batches[0].blend == Neuron::UiBlend::Additive, L"additive glyphs");
     Assert::AreEqual(std::size_t{2}, batches[0].quads.size(), L"two digits");
@@ -57,7 +58,7 @@ public:
                      L"inside its line, centered on the label's middle");
     }
     std::vector<Neuron::UiBatch> large;
-    Species::AppendBadgeCount({"18", 100.0f, 50.0f}, text, CommittedPresentation(), 2160, 1.0f, large);
+    Species::AppendBadgeCount({"18", 100.0f, 50.0f}, text, CommittedPresentation(), 2160, 1.0f, 1.0, large);
     const float smallHeight = batches[0].quads[0].rectangle[3] - batches[0].quads[0].rectangle[1];
     const float largeHeight = large[0].quads[0].rectangle[3] - large[0].quads[0].rectangle[1];
     Assert::IsTrue(largeHeight > smallHeight * 1.3f, L"at 2160 the digits are drawn at 19 px");

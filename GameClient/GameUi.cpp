@@ -258,6 +258,12 @@ void GameUi::OpenTestScreen()
 }
 #endif
 
+void GameUi::SetScales(std::optional<double> _uiScale, std::optional<double> _textScale)
+{
+  m_uiScale = _uiScale;
+  m_textScale = _textScale;
+}
+
 void GameUi::Update(Neuron::InputRouter& _router, Neuron::SizePx _client, float _dpiScale, bool _windowFocused)
 {
   // INP-133: the menu directions repeat on the record's timing.
@@ -280,7 +286,7 @@ void GameUi::Update(Neuron::InputRouter& _router, Neuron::SizePx _client, float 
   input.pointerUp = (m_pointerHeld || input.pointerDown) && !input.pointerHeld;
   m_pointerHeld = input.pointerHeld;
   input.windowFocused = _windowFocused;
-  m_metrics = UiMetricsOf(m_presentation, _client, _dpiScale);
+  m_metrics = UiMetricsOf(m_presentation, _client, _dpiScale, m_uiScale, m_textScale);
   m_core.Update(input, m_metrics);
   // UI-006: what a focused window takes reaches no world action.
   if (m_core.Focused() != nullptr)

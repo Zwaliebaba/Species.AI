@@ -405,12 +405,13 @@ public:
     place(3, 13, 0, Species::FigureKind::Leader, false, {6.0, 0.0, 0.0});
     place(4, 14, 0, Species::FigureKind::Leader, false, {0.0, 0.0, 0.0});
     const Neuron::Ray ray = Neuron::PickRayAt(pointer.x, pointer.y, frame, VIEW, 1.0);
-    const auto hovered = Species::LeaderUnderRay(figures, 0, ray, frame, VIEW, CommittedPresentation());
+    const auto hovered = Species::LeaderUnderRay(figures, 0, ray, frame, VIEW, CommittedPresentation(), 2.0);
     Assert::IsTrue(hovered == Species::StableId{14}, L"the own living Leader centred under the pointer");
-    Assert::IsFalse(Species::LeaderUnderRay(figures, 2, ray, frame, VIEW, CommittedPresentation()).has_value(), L"no Leader of team 2");
+    Assert::IsFalse(Species::LeaderUnderRay(figures, 2, ray, frame, VIEW, CommittedPresentation(), 2.0).has_value(),
+                    L"no Leader of team 2");
     // Far off the pointer, no sphere is met.
     const Neuron::Ray elsewhere = Neuron::PickRayAt(10.0, 10.0, frame, VIEW, 1.0);
-    Assert::IsFalse(Species::LeaderUnderRay(figures, 0, elsewhere, frame, VIEW, CommittedPresentation()).has_value());
+    Assert::IsFalse(Species::LeaderUnderRay(figures, 0, elsewhere, frame, VIEW, CommittedPresentation(), 2.0).has_value());
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl352ACursorSitsOnItsHotspot)

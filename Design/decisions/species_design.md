@@ -12,6 +12,7 @@ This file records the decisions of the Species design and of the MVP built from 
 | [DEC-1001](#dec-1001-the-provisional-looks-of-the-settlement) | The provisional looks of the settlement | Open | MVP |
 | [DEC-1002](#dec-1002-the-provisional-looks-of-the-territories) | The provisional looks of the territories | Open | MVP |
 | [DEC-1003](#dec-1003-the-weight-and-width-of-the-text-in-bahnschrift) | The weight and width of the text in Bahnschrift | Open | UI, MVP |
+| [DEC-1004](#dec-1004-the-publishers-folder-of-the-user-data-root) | The publisher's folder of the user-data root | Open | PLT, MVP |
 
 ## 1 World and sites
 
@@ -77,3 +78,19 @@ This file records the decisions of the Species design and of the MVP built from 
   - C — Bahnschrift's own narrower widths (SemiCondensed or Condensed) for some roles, in place of a horizontal scale.
 - Recommendation: A. Bahnschrift is drawn narrow already, and condensing it again to 0.6 would make small text hard to read. A width or weight per role is one family name or one key, so a later choice changes no code.
 - Decide by: the owner's run of M2 task T14's DirectWrite step; the HUD of T16 uses the answer.
+
+## 3 Platform
+
+### DEC-1004 The publisher's folder of the user-data root
+- Status: Open
+- Affects: architecture/components/platform_layer.md (PLT-016, PLT-017); ADR-071, ADR-150
+- Specified behaviour: PLT-016 places the user-data root at `%LOCALAPPDATA%\<Studio>\Species\`, where `<Studio>` is the publisher's name compiled into the build. O49 deferred the publisher to before the first external build, so no name exists. Until the owner decides, the client builds the following.
+  - The root is `%LOCALAPPDATA%\Species\`: the Local AppData known folder, then the product's folder, with no publisher's folder between them.
+  - `--user-data <directory>` replaces it in every build, as PLT-025 states.
+  - When a publisher is named, the root moves under its folder. The settings file is never migrated (R-META-409), so a player's settings and saved worlds stay in the old folder unless a one-time move is built with the change.
+- Options:
+  - A — as stated, with a one-time move of the old folder when the publisher is named;
+  - B — a placeholder publisher's folder now, such as the owner's name, which the publisher's name replaces later, with the same move;
+  - C — the publisher's folder named `Species` until O49 is decided, giving `%LOCALAPPDATA%\Species\Species\`.
+- Recommendation: A. Only the owner's machines hold user data before an external build, and a folder named for nobody would need the same move as no folder.
+- Decide by: O49's publisher decision, before the first external build.

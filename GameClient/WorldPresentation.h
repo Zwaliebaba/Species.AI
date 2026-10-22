@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ClientSettings.h"
 #include "ClientSession.h"
 #include "DevelopmentOverlay.h"
 #include "EffectsLook.h"
@@ -43,7 +44,8 @@ public:
     const TuningPresentation* presentation = nullptr;
     const Neuron::LooseContent* content = nullptr;
     const Neuron::PlatformClock* clock = nullptr;
-    bool uiTest = false; // a Debug build's `--ui-test`: the UI's test screen (ADR-145, ADR-149)
+    bool uiTest = false;    // a Debug build's `--ui-test`: the UI's test screen (ADR-145, ADR-149)
+    DisplayOptions display; // the display options of the settings store (ADR-150)
   };
 
   explicit WorldPresentation(Desc _desc);
@@ -59,6 +61,13 @@ public:
   [[nodiscard]] const GameUi& Ui() const noexcept
   {
     return *m_ui;
+  }
+  // ADR-150: the display options from the store, taken at once; the sea detail takes effect when the next world's
+  // surfaces are built.
+  void SetDisplay(const DisplayOptions& _display);
+  [[nodiscard]] const DisplayOptions& Display() const noexcept
+  {
+    return m_desc.display;
   }
   // The inputs of the frame drawn now, seen through _view; _framesPerSecond is the renderer's counter (R-SIM-576), which a
   // Debug build's development overlay shows (DBG-095, ADR-118), and _dpiScale the window's, which text sizes take
@@ -119,13 +128,15 @@ private:
 
 // The world's surfaces from a region's terrain, the records and the textures of the content: none when a texture is
 // missing or damaged, which is logged.
+// _seaDetail is render.sea_detail, 0 to 3 (RND-144).
 [[nodiscard]] std::shared_ptr<const Neuron::WorldScene> BuildWorldScene(const RegionTerrain& _terrain, const TuningMvp& _tuning,
                                                                         const TuningPresentation& _presentation,
-                                                                        const Neuron::LooseContent& _content);
+                                                                        const Neuron::LooseContent& _content, std::int64_t _seaDetail);
 
 // The looks of the records (ADR-116): what the CPU builds and the passes read.
 [[nodiscard]] Neuron::TerrainLook TerrainLookOf(const TuningMvp& _tuning, const TuningPresentation& _presentation) noexcept;
-[[nodiscard]] Neuron::SeaLook SeaLookOf(const TuningMvp& _tuning, const TuningPresentation& _presentation) noexcept;
+[[nodiscard]] Neuron::SeaLook SeaLookOf(const TuningMvp& _tuning, const TuningPresentation& _presentation,
+                                        std::int64_t _seaDetail) noexcept;
 [[nodiscard]] Neuron::WorldLook WorldLookOf(const TuningMvp& _tuning, const TuningPresentation& _presentation,
                                             const Neuron::Vec3& _regionOrigin) noexcept;
 

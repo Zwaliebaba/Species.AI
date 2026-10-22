@@ -149,6 +149,7 @@
     <ClInclude Include="CrowdLook.h" />
     <ClInclude Include="DevelopmentOverlay.h" />
     <ClInclude Include="EffectsLook.h" />
+    <ClInclude Include="ClientSettings.h" />
     <ClInclude Include="GameUi.h" />
     <ClInclude Include="InputBindings.h" />
     <ClInclude Include="LeaderLook.h" />
@@ -170,6 +171,7 @@
     <ClCompile Include="CrowdLook.cpp" />
     <ClCompile Include="DevelopmentOverlay.cpp" />
     <ClCompile Include="EffectsLook.cpp" />
+    <ClCompile Include="ClientSettings.cpp" />
     <ClCompile Include="GameUi.cpp" />
     <ClCompile Include="InputBindings.cpp" />
     <ClCompile Include="LeaderLook.cpp" />

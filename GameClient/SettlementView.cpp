@@ -52,7 +52,8 @@ std::shared_ptr<const Neuron::CursorImages> LoadCursorImages(const Neuron::Loose
 }
 
 std::optional<StableId> LeaderUnderRay(std::span<const InterpolatedFigure> _figures, std::uint8_t _ownTeam, const Neuron::Ray& _ray,
-                                       const Neuron::FrameView& _frame, Neuron::SizePx _view, const TuningPresentation& _presentation)
+                                       const Neuron::FrameView& _frame, Neuron::SizePx _view, const TuningPresentation& _presentation,
+                                       double _scaleFactor)
 {
   const TuningPresentation::Ref::Unit& unit = _presentation.ref.unit;
   std::optional<StableId> best;
@@ -66,8 +67,7 @@ std::optional<StableId> LeaderUnderRay(std::span<const InterpolatedFigure> _figu
     // R-UNIT-192: the sphere above the Leader, scaled with the camera's distance as its figure is (R-UNIT-142).
     const Neuron::Vec3 center = figure.position + Neuron::Vec3{0.0, unit.leader.pickCenterLift, 0.0};
     const double distance = Neuron::Length(center - _frame.camera);
-    const double scale =
-      1.0 + WORKER_DISTANCE_SCALE_FACTOR * std::max(0.0, distance - unit.worker.cardScaleStart) / unit.worker.cardScaleDivisor;
+    const double scale = 1.0 + _scaleFactor * std::max(0.0, distance - unit.worker.cardScaleStart) / unit.worker.cardScaleDivisor;
     const std::optional<double> along = Neuron::RaySphere(_ray, center, unit.leader.pickRadius * scale);
     if (!along)
     {
@@ -259,7 +259,7 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
     const Neuron::Ray ray = Neuron::PickRayAt(static_cast<double>(m_pointer.x), static_cast<double>(m_pointer.y), frame, _view,
                                               m_desc.presentation->cam.pick.rowOffset);
     figures = InterpolateFigures(_session.Replica(), _session.InterpolationFraction());
-    m_hovered = LeaderUnderRay(figures, *ownTeam, ray, frame, _view, *m_desc.presentation);
+    m_hovered = LeaderUnderRay(figures, *ownTeam, ray, frame, _view, *m_desc.presentation, m_desc.workerScaleFactor);
   }
   // ADR-119 (O76): unavailable while the pointer's ray misses the terrain or its ground point lies outside the region.
   const auto& ground = m_camera.PointerGround();

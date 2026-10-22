@@ -93,8 +93,6 @@ constexpr DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM; // sRGB v
 constexpr std::uint32_t PERSISTENT_DESCRIPTORS = 16'384;
 constexpr std::uint32_t TRANSIENT_DESCRIPTORS = 2'048;
 constexpr std::uint64_t UPLOAD_SEGMENT_BYTES = 8ull * 1024 * 1024;
-// rnd.option.anti_aliasing.default (RND-442, ADR-015): 4x, then 2x, then off; the settings store holds it once it exists.
-constexpr std::uint32_t PREFERRED_SCENE_SAMPLES = 4;
 // The bounds of the renderer's waits (ADR-092): a fence or the frame-latency object that has not signalled within
 // GPU_CHECK_MILLISECONDS is checked for a removed device, and teardown waits at most TEARDOWN_WAIT_MILLISECONDS.
 constexpr DWORD GPU_CHECK_MILLISECONDS = 1000;
@@ -589,7 +587,7 @@ std::expected<void, StartupFailure> CreateFrameObjects(RendererState& _state)
   {
     return std::unexpected(StartupFailure{StartupError::PipelineCreationFailed, adapter, "the root signature"});
   }
-  _state.sceneSamples = SupportedSceneSamples(d3d, PREFERRED_SCENE_SAMPLES);
+  _state.sceneSamples = SupportedSceneSamples(d3d, _state.config.sceneSamplesPreferred);
   const PipelineCatalog::Formats formats{SCENE_COLOR_FORMAT, SCENE_DEPTH_FORMAT, BACK_BUFFER_FORMAT, _state.sceneSamples};
   std::expected<PipelineCatalog, std::string> catalog = PipelineCatalog::Create(d3d, _state.rootSignature.Get(), WORLD_PIPELINES, formats);
   if (!catalog)

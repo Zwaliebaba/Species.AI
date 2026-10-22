@@ -17,7 +17,8 @@ inline constexpr std::wstring_view CONTENT_FOLDER = L"content";
 // The most world frames a render check draws (ADR-113).
 inline constexpr std::uint32_t RENDER_CHECK_FRAMES_MAX = 10'000;
 
-/// The start-up options of PLT table 3.3-A that exist so far. `--loose-content <directory>` names the loose-content
+/// The start-up options of PLT table 3.3-A that exist so far. `--user-data <directory>` replaces the user-data root in
+/// every build (PLT-025, ADR-150). `--loose-content <directory>` names the loose-content
 /// folder to mount (PLT-026, AST-105), `--seed <number>` a new world's seed (MVP-005, ADR-109), `--render-check
 /// <frames>` the number of world frames a render check draws (ADR-113), `--watch` a session that watches and
 /// commands nothing (O77), `--world` a new world in place of the development sandbox (ADR-139), and `--ui-test` the UI's
@@ -26,6 +27,7 @@ inline constexpr std::uint32_t RENDER_CHECK_FRAMES_MAX = 10'000;
 /// they configure.
 struct StartupOptions
 {
+  std::optional<std::filesystem::path> userDataDirectory;
   std::optional<std::filesystem::path> looseContentDirectory;
   std::optional<std::uint64_t> worldSeed;         // a decimal number of at most 64 bits
   std::optional<std::uint32_t> renderCheckFrames; // a decimal number from 1 to RENDER_CHECK_FRAMES_MAX

@@ -33,19 +33,17 @@ enum class CursorKind : std::uint8_t
   Unavailable
 };
 
-// rnd.option.worker_scale_factor.default: the Worker distance scale factor, which also scales a Leader's picking sphere
-// with the camera's distance (R-UNIT-142, R-UNIT-192). A named constant until the settings store exists (ADR-116).
-inline constexpr double WORKER_DISTANCE_SCALE_FACTOR = 2.0;
-
 // The cursors' art from the content (AST-014 keys `textures/cursor/<name>` and `<name>shadow`): none when a file is
 // missing or damaged, which is logged.
 [[nodiscard]] std::shared_ptr<const Neuron::CursorImages> LoadCursorImages(const Neuron::LooseContent& _content);
 
 // R-CTRL-055 for the hover of M1 (ADR-119): the living Leader of _ownTeam whose picking sphere the ray meets with the
 // smallest screen distance between the sphere's projected centre and the projected hit point; the earlier on a tie.
+// The sphere grows with the camera's distance by the Worker distance scale factor _scaleFactor, as the Leader's figure
+// does (R-UNIT-142, R-UNIT-192).
 [[nodiscard]] std::optional<StableId> LeaderUnderRay(std::span<const InterpolatedFigure> _figures, std::uint8_t _ownTeam,
                                                      const Neuron::Ray& _ray, const Neuron::FrameView& _frame, Neuron::SizePx _view,
-                                                     const TuningPresentation& _presentation);
+                                                     const TuningPresentation& _presentation, double _scaleFactor);
 
 // The cursor of a kind at the pointer: its image, its side and hotspot (mvp.cursor.*, ref.ctrl.cursor.set.*) and colour.
 [[nodiscard]] Neuron::CursorQuad CursorAt(CursorKind _kind, Neuron::PointPx _pointer, const TuningPresentation& _presentation) noexcept;
@@ -65,7 +63,8 @@ public:
     const TuningMvp* tuning = nullptr; // the client's records, outliving the view
     const TuningPresentation* presentation = nullptr;
     Neuron::ProjectionPlanes planes;
-    bool scriptedVerbs = false; // ADR-125: a Debug render check's scripted verbs in place of the router's
+    bool scriptedVerbs = false;     // ADR-125: a Debug render check's scripted verbs in place of the router's
+    double workerScaleFactor = 2.0; // render.worker_scale_factor (RND-442, ADR-150), which scales the picking sphere
   };
 
   explicit SettlementView(const Desc& _desc);

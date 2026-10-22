@@ -467,6 +467,7 @@ public:
 **PLT-015** (MUST) The install directory is the directory of the running executable, resolved from the executable's own module path, never from the working directory. It holds `Species.exe`, the first-party libraries, `D3D12\`, `packs\` and the licence notices (ADR-071). Content opens relative to it, so the working directory has no effect on the client. Nothing is written to the install directory or to the registry at run time, and the client runs as a standard user (ADR-071).
 
 **PLT-016** (MUST) The user-data root is `%LOCALAPPDATA%\<Studio>\Species\`: the Local AppData known folder, from `SHGetKnownFolderPath` with `FOLDERID_LocalAppData`, then the folder `<Studio>`, the publisher name compiled into the build, then the folder `Species`, the product name `PRODUCT_NAME` (ADR-071). Each level is created when it is missing. Debug and Release builds use the same root; only the start-up option `--user-data` replaces it (PLT-025). No configuration and no option writes user files to the working directory or beside the executable.
+> *Amendment 2026-10-22 (M2 task T15, ADR-150): no `<Studio>` folder until O49 names a publisher (DEC-1004). At M2 a save runs on the main thread, and the logs stay beside the executable (ADR-092).*
 
 **PLT-017** (MUST) The user-data root holds the folders of table 3.1-A, each created on first use, except `crashes\`, which is created at start-up (PLT-122). Screenshots go to the Pictures known folder (`FOLDERID_Pictures`) under `Species\` (ADR-071, ADR-076).
 
@@ -545,11 +546,7 @@ Table 3.3-A: start-up options.
 | `--render-check <frames>` | draws that many world frames of the battle sandbox on the WARP adapter with the debug layer and GPU-based validation, shows no dialog, and ends with `plt.lifecycle.exit_code.normal` only when every frame was drawn and the debug layer raised no warning or error, else with `plt.lifecycle.exit_code.fatal`; 1 to 10,000 frames ([ADR-117](../../ADR/ADR-117-render-check-on-warp.md)) | Debug | renderer |
 | `--watch` | the battle sandbox's AI commands both sides and the session commands neither, so a run watches two AI sides fight (O77, [ADR-121](../../ADR/ADR-121-workers-and-orbs-drawn-at-m1.md)); takes no value | Debug | the game |
 
-*Amendment 2026-10-20 (M1 task T9, [ADR-109](../../ADR/ADR-109-battle-sandbox-command-journal-and-seed-switch.md)): `--seed` is added. `ParseArguments` reads it with `--loose-content` ([ADR-108](../../ADR/ADR-108-content-build-loose-content-and-cooked-formats.md)), in Debug builds only (PLT-107).*
-
-*Amendment 2026-10-20 (M1 task T13, [ADR-117](../../ADR/ADR-117-render-check-on-warp.md)): `--render-check` is added, in Debug builds only (PLT-107), for CI's render check.*
-
-*Amendment 2026-10-21 (M1 task T16, owner decision O77, [ADR-121](../../ADR/ADR-121-workers-and-orbs-drawn-at-m1.md)): `--watch` is added, in Debug builds only (PLT-107).*
+*Amendments 2026-10-20 and 2026-10-21 (M1 tasks T9, T13 and T16; ADR-108, ADR-109, ADR-117, ADR-121, O77): `--seed`, `--render-check` and `--watch` are added, read by `ParseArguments` with `--loose-content`, in Debug builds only (PLT-107).*
 
 **PLT-023** (MUST) `--write-build-identity` is handled before the clock, the user-data root, the logger or any other service is created: the process writes the file in the form of [build tooling](build_tooling_and_distribution/README.md) BLD-063, ends with `plt.lifecycle.exit_code.normal` (0) and leaves no log file, window or user-data folder behind. A failed write ends the process with `plt.lifecycle.exit_code.fatal`.
 

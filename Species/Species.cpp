@@ -3,6 +3,7 @@
 #include "AppWindow.h"
 #include "AssetError.h"
 #include "ClientSession.h"
+#include "ClientSettings.h"
 #include "Development.h"
 #include "DisplayAttempt.h"
 #include "FatalPath.h"
@@ -19,11 +20,13 @@
 #include "PlatformMessage.h"
 #include "PlatformThread.h"
 #include "RunId.h"
+#include "SettingsStore.h"
 #include "SettlementView.h"
 #include "Sha256.h"
 #include "StartupOptions.h"
 #include "TextEncoding.h"
 #include "Tuning.h"
+#include "UserData.h"
 #include "WorldPresentation.h"
 
 #include <algorithm>
@@ -52,6 +55,8 @@ namespace
 {
 
 constexpr std::string_view PRODUCT_NAME = "Species";
+// PLT-016's product folder under Local AppData, without the publisher's folder until O49 names one (DEC-1004).
+constexpr std::wstring_view PRODUCT_FOLDER = L"Species";
 
 // RND-032's low rate while the window is minimised or occluded (ADR-092).
 constexpr Neuron::Nanoseconds SUSPENDED_POLL_PERIOD{100'000'000};
@@ -66,6 +71,11 @@ constexpr std::array COMPILED_TEXTS{
   Neuron::CompiledText{"ui.error.resolution_rejected", "The preferred screen size was rejected, so Species started with another one."},
   Neuron::CompiledText{"ui.error.content_missing", "Species cannot start: its game data is missing."},
   Neuron::CompiledText{"ui.error.content_damaged", "Species cannot start: its game data is damaged."},
+  Neuron::CompiledText{
+    "ui.error.user_data_unavailable",
+    "Species cannot write to its folder for your settings, so they will not be kept after this run.\n\nFolder: {folder}"},
+  Neuron::CompiledText{"ui.error.user_data_inside_install",
+                       "Species cannot start: the folder given for your data lies inside the game's own folder.\n\nFolder: {folder}"},
 };
 
 // The logs folder beside the executable, until the locations of PLT-015 and PLT-016 exist (ADR-092). An empty path, when
@@ -91,9 +101,11 @@ struct Presentation
 {
   std::unique_ptr<Neuron::AppWindow> window;
   std::unique_ptr<Neuron::FrameRenderer> renderer;
+  Neuron::DisplayAttempt used; // the display settings it started with, which the store takes back (PLT-080)
 };
 
-Presentation CreatePresentation(const Neuron::PlatformClock& _clock, const Neuron::RenderConfig& _config)
+Presentation CreatePresentation(const Neuron::PlatformClock& _clock, const Neuron::RenderConfig& _config, Neuron::WindowMode _storedMode,
+                                Neuron::SizePx _storedRenderSize)
 {
   const std::vector<Neuron::MonitorInfo> monitors = Neuron::EnumerateMonitors();
   Neuron::SizePx desktop = Neuron::FALLBACK_WINDOW_SIZE;
@@ -104,8 +116,8 @@ Presentation CreatePresentation(const Neuron::PlatformClock& _clock, const Neuro
       desktop = {monitor.desktop.width, monitor.desktop.height};
     }
   }
-  // No settings store in M0: the stored mode is the default and no render size is stored (RND-021).
-  const std::array attempts = Neuron::StartupDisplayAttempts(Neuron::WindowMode::BorderlessFullScreen, {}, desktop);
+  // RND-021, PLT-112: the stored mode and render size, the desktop size while none is stored (ADR-150).
+  const std::array attempts = Neuron::StartupDisplayAttempts(_storedMode, _storedRenderSize, desktop);
   Presentation presentation;
   const Neuron::DisplayOutcome outcome =
     Neuron::RunDisplayAttempts(attempts,
@@ -135,6 +147,7 @@ Presentation CreatePresentation(const Neuron::PlatformClock& _clock, const Neuro
                                    return false;
                                  }
                                  presentation.renderer = std::move(*renderer);
+                                 presentation.used = _attempt;
                                  return true;
                                });
   if (!outcome.succeeded.has_value())
@@ -305,9 +318,48 @@ int Run()
   }
 #endif
 
+  // PLT-016, PLT-018, PLT-025: the user-data root, which `--user-data` replaces; inside the install directory it ends the
+  // start-up, and when it cannot be made the settings live in memory for this run (ADR-150).
+  std::optional<std::filesystem::path> settingsFile;
+  if (const auto root = Neuron::ResolveUserDataRoot(options.userDataDirectory, PRODUCT_FOLDER); root.has_value())
+  {
+    if (const std::optional<std::filesystem::path> folder = Neuron::UserDataFolder(*root, Neuron::SETTINGS_FOLDER))
+    {
+      settingsFile = *folder / Neuron::SETTINGS_FILE;
+    }
+    Neuron::Log(Neuron::LogCategory::Platform, Neuron::LogLevel::Info, "user data in {}", Neuron::ToUtf8(root->wstring()));
+  }
+  else
+  {
+    const std::string folder =
+      Neuron::ToUtf8(options.userDataDirectory.value_or(std::filesystem::path(L"%LOCALAPPDATA%") / PRODUCT_FOLDER).wstring());
+    const std::array arguments{Neuron::MessageArgument{"folder", folder}};
+    if (root.error() == Neuron::UserDataFault::InsideInstall)
+    {
+      Neuron::EndWithMessage("ui.error.user_data_inside_install", arguments);
+    }
+    Neuron::ShowPlatformMessage("ui.error.user_data_unavailable", arguments, Neuron::MessageSeverity::Notice);
+  }
+  // PLT-030: the one settings store, before the window, the renderer and every reader, and destroyed after them.
+  Neuron::SettingsStore settings(ClientSettingSpecs(), settingsFile);
+  ApplyRenderSettings(settings, renderConfig);
+
   bool checkPassed = true;
   {
-    Presentation presentation = CreatePresentation(clock, renderConfig);
+    Presentation presentation = CreatePresentation(clock, renderConfig, WindowModeOf(settings), RenderSizeOf(settings));
+    // PLT-080, R-META-424: the renderer's start-up writes the display settings it started with back, and saves them on a
+    // first run or when they changed.
+    const bool displayChanged = WindowModeOf(settings) != presentation.used.mode || RenderSizeOf(settings) != presentation.used.renderSize;
+    WriteBackDisplay(settings, presentation.used.mode, presentation.used.renderSize);
+    if (!settings.LoadedFromFile() || displayChanged)
+    {
+      // A failed save keeps the previous file and is logged by the store (PLT-081); R-META-407's dialog waits for the UI's
+      // dialogs, so the run carries on with the settings in memory.
+      if (const std::expected<void, Neuron::FileError> saved = settings.Save(); !saved.has_value())
+      {
+        Neuron::Log(Neuron::LogCategory::Platform, Neuron::LogLevel::Warning, "ui.dialog.settings_save_failed: the display settings");
+      }
+    }
 
     // Logs why the content cannot be loaded and ends with its message (AST-102); EndWithMessage does not return.
     const auto endWithError = [](const Neuron::AssetError& _error)
@@ -379,6 +431,7 @@ int Run()
     worldDesc.presentation = &*presentationTuning;
     worldDesc.content = &*content;
     worldDesc.clock = &clock;
+    worldDesc.display = DisplayOptionsOf(settings); // ADR-150
 #if ENGINE_DEVELOPMENT
     worldDesc.uiTest = options.uiTest; // ADR-145: the UI's test page
 #endif
@@ -387,6 +440,7 @@ int Run()
     viewDesc.tuning = &*clientTuning;
     viewDesc.presentation = &*presentationTuning;
     viewDesc.planes = WorldLookOf(*clientTuning, *presentationTuning, {}).planes;
+    viewDesc.workerScaleFactor = worldDesc.display.workerScaleFactor;
 #if ENGINE_DEVELOPMENT
     viewDesc.scriptedVerbs = checkFrames.has_value(); // ADR-125: the render check draws the verbs' marks
 #endif

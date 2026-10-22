@@ -158,30 +158,32 @@ Neuron::PageGridKeys PageGridKeysOf(const TuningPresentation& _presentation) noe
   return keys;
 }
 
-Neuron::UiMetrics UiMetricsOf(const TuningPresentation& _presentation, Neuron::SizePx _client, float _dpiScale) noexcept
+Neuron::UiMetrics UiMetricsOf(const TuningPresentation& _presentation, Neuron::SizePx _client, float _dpiScale,
+                              std::optional<double> _uiScale, std::optional<double> _textScale) noexcept
 {
   const TuningPresentation::Ui::Access& access = _presentation.ui.access;
   Neuron::UiMetrics metrics;
   metrics.client = _client;
   metrics.dpiScale = _dpiScale;
-  metrics.uiScale = static_cast<float>(_presentation.ui.scale.uiDefault);
-  metrics.textScale = static_cast<float>(_presentation.ui.scale.textDefault);
+  metrics.uiScale = static_cast<float>(_uiScale.value_or(_presentation.ui.scale.uiDefault));
+  metrics.textScale = static_cast<float>(_textScale.value_or(_presentation.ui.scale.textDefault));
   metrics.minimumTextPixels = Neuron::MinimumTextPixels(_client.height, access.minText1080p, access.minText2160p);
   metrics.hudCanvasHeight = _presentation.ref.ctrl.panel.canvasHeight;
   return metrics;
 }
 
-float UiTextPixels(const TuningPresentation& _presentation, double _sizePixels, std::uint32_t _clientHeight, float _dpiScale) noexcept
+float UiTextPixels(const TuningPresentation& _presentation, double _sizePixels, std::uint32_t _clientHeight, float _dpiScale,
+                   double _textScale) noexcept
 {
   const TuningPresentation::Ui::Access& access = _presentation.ui.access;
-  return Neuron::FinalTextPixels(_sizePixels, 1.0, _dpiScale,
+  return Neuron::FinalTextPixels(_sizePixels, _textScale, _dpiScale,
                                  Neuron::MinimumTextPixels(_clientHeight, access.minText1080p, access.minText2160p));
 }
 
 void AppendBadgeCount(const BadgeLabel& _label, Neuron::TextSystem& _text, const TuningPresentation& _presentation,
-                      std::uint32_t _clientHeight, float _dpiScale, std::vector<Neuron::UiBatch>& _out)
+                      std::uint32_t _clientHeight, float _dpiScale, double _textScale, std::vector<Neuron::UiBatch>& _out)
 {
-  const float size = UiTextPixels(_presentation, _presentation.ui.text.defaultSize, _clientHeight, _dpiScale);
+  const float size = UiTextPixels(_presentation, _presentation.ui.text.defaultSize, _clientHeight, _dpiScale, _textScale);
   const Neuron::TextLine line = _text.Layout(_label.text, Neuron::FontRole::Body, size);
   Neuron::AppendText(_out, line, _label.left, _label.middle - line.heightPixels * 0.5f, Neuron::TextStyle{});
 }

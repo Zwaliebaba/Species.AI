@@ -44,6 +44,9 @@ public:
   // window has the focus, the world's camera and verb actions are suppressed for the rest of the frame.
   void Update(Neuron::InputRouter& _router, Neuron::SizePx _client, float _dpiScale, bool _windowFocused);
   void Draw(Neuron::TextSystem& _text, double _seconds, std::vector<Neuron::UiBatch>& _out) const;
+  // UI-168: interface.ui_scale and interface.text_scale from the settings store; none takes the record's default. The
+  // next update lays the windows out again (UI-172).
+  void SetScales(std::optional<double> _uiScale, std::optional<double> _textScale);
 
   [[nodiscard]] const Neuron::UiCore& Core() const noexcept
   {
@@ -57,6 +60,8 @@ private:
   Neuron::UiStyle m_style;
   Neuron::UiCore m_core;
   Neuron::UiMetrics m_metrics;
+  std::optional<double> m_uiScale;
+  std::optional<double> m_textScale;
   bool m_pointerHeld = false;
 };
 

@@ -414,6 +414,35 @@ public:
     Assert::IsTrue(look.Shake() == 0.0 && draws.shakeYawRadians == 0.0 && draws.shakeRollRadians == 0.0, L"decayed at 1 a second");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Dec964TheReducedSettingsScaleTheFlashAndTheShakesOffset)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"VFX-232")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"VFX-235")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-META-511")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Dec964TheReducedSettingsScaleTheFlashAndTheShakesOffset)
+  {
+    // The same near ring drawn twice, once with interface.reduced_flash and interface.reduced_motion on (ADR-150).
+    Species::EffectsLook full(CommittedPresentation(), CommittedTuning());
+    Species::EffectsLook reduced(CommittedPresentation(), CommittedTuning());
+    const std::vector<Species::InterpolatedEffect> ring{EffectAt(1, Species::EffectKind::ShockwaveRing, Ground(), 0, 160)};
+    Species::EffectsView view = ViewAt(Ground(), 9.0);
+    Species::EffectDraws fullDraws;
+    full.Draw(ring, SeedOneTerrain().field, view, fullDraws);
+    view.reducedFlash = true;
+    view.reducedMotion = true;
+    Species::EffectDraws reducedDraws;
+    reduced.Draw(ring, SeedOneTerrain().field, view, reducedDraws);
+    const Neuron::TriangleBatch* fullFlash = ScreenFlashOf(fullDraws);
+    const Neuron::TriangleBatch* reducedFlash = ScreenFlashOf(reducedDraws);
+    Assert::IsTrue(fullFlash != nullptr && reducedFlash != nullptr, L"both draw the full-screen flash");
+    Assert::IsTrue(std::abs(reducedFlash->vertices[0].color[3] - 0.25f * fullFlash->vertices[0].color[3]) < 1e-6f,
+                   L"VFX-235: × vfx.screen.reduced_flash_scale");
+    Assert::IsTrue(full.Shake() == reduced.Shake(), L"the shake itself is the same");
+    Assert::IsTrue(fullDraws.shakeYawRadians != 0.0 && std::abs(reducedDraws.shakeYawRadians - 0.25 * fullDraws.shakeYawRadians) < 1e-12 &&
+                     std::abs(reducedDraws.shakeRollRadians - 0.25 * fullDraws.shakeRollRadians) < 1e-12,
+                   L"VFX-232: its offset × vfx.screen.reduced_motion_scale");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(RCrate414AGrenadeTumblesAndBlinksInTheLastFifthOfEachSecond)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CRATE-410")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CRATE-414")

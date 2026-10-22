@@ -1979,6 +1979,12 @@ struct TuningPresentation
 
       // vfx.screen.flash_window, in s of real time
       double flashWindow = 0.0;
+
+      // vfx.screen.reduced_motion_scale, in factor
+      double reducedMotionScale = 0.0;
+
+      // vfx.screen.reduced_flash_scale, in factor
+      double reducedFlashScale = 0.0;
     };
 
     struct Particle
@@ -4169,6 +4175,8 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.flashCountThreshold = _reader.Decimal(_object, "flash_count_threshold", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.flashOnsets = _reader.Integer(_object, "flash_onsets", 0);
   _out.flashWindow = _reader.Decimal(_object, "flash_window", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.reducedMotionScale = _reader.Decimal(_object, "reduced_motion_scale", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.reducedFlashScale = _reader.Decimal(_object, "reduced_flash_scale", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -7128,6 +7136,8 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::
   _writer.F64(_in.flashCountThreshold);
   _writer.I64(_in.flashOnsets);
   _writer.F64(_in.flashWindow);
+  _writer.F64(_in.reducedMotionScale);
+  _writer.F64(_in.reducedFlashScale);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Vfx::Screen& _out)
@@ -7135,6 +7145,8 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.flashCountThreshold = _reader.F64();
   _out.flashOnsets = _reader.I64();
   _out.flashWindow = _reader.F64();
+  _out.reducedMotionScale = _reader.F64();
+  _out.reducedFlashScale = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Vfx::Particle::Debris& _in)

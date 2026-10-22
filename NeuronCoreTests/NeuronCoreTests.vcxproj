@@ -183,6 +183,7 @@
     <ClCompile Include="MeshAssetTests.cpp" />
     <ClCompile Include="MessageCodecTests.cpp" />
     <ClCompile Include="MessagePatternTests.cpp" />
+    <ClCompile Include="SettingsStoreTests.cpp" />
     <ClCompile Include="PlatformClockTests.cpp" />
     <ClCompile Include="PlatformLogSinkTests.cpp" />
     <ClCompile Include="PlatformMessageTests.cpp" />

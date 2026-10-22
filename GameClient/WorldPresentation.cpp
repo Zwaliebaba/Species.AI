@@ -103,7 +103,7 @@ Neuron::TerrainLook TerrainLookOf(const TuningMvp& _tuning, const TuningPresenta
   return look;
 }
 
-Neuron::SeaLook SeaLookOf(const TuningMvp& _tuning, const TuningPresentation& _presentation) noexcept
+Neuron::SeaLook SeaLookOf(const TuningMvp& _tuning, const TuningPresentation& _presentation, std::int64_t _seaDetail) noexcept
 {
   const TuningPresentation::Ter::Sea& sea = _presentation.ter.sea;
   Neuron::SeaLook look;
@@ -133,7 +133,7 @@ Neuron::SeaLook SeaLookOf(const TuningMvp& _tuning, const TuningPresentation& _p
   look.brightnessScale = sea.wave.brightnessScale;
   look.mixOther = sea.wave.colorMix.other;
   look.mixOwn = sea.wave.colorMix.own;
-  look.detail = 1; // rnd.option.sea_detail.default (RND-442): the settings store holds it once it exists
+  look.detail = static_cast<std::uint32_t>(std::clamp<std::int64_t>(_seaDetail, 0, 3)); // render.sea_detail (RND-442, ADR-150)
   return look;
 }
 
@@ -188,7 +188,8 @@ Neuron::WorldLook WorldLookOf(const TuningMvp& _tuning, const TuningPresentation
 }
 
 std::shared_ptr<const Neuron::WorldScene> BuildWorldScene(const RegionTerrain& _terrain, const TuningMvp& _tuning,
-                                                          const TuningPresentation& _presentation, const Neuron::LooseContent& _content)
+                                                          const TuningPresentation& _presentation, const Neuron::LooseContent& _content,
+                                                          std::int64_t _seaDetail)
 {
   auto ramp = ReadTexture(_content, RAMP_KEY);
   auto gradient = ReadTexture(_content, SHORE_WAVE_GRADIENT_KEY);
@@ -210,7 +211,7 @@ std::shared_ptr<const Neuron::WorldScene> BuildWorldScene(const RegionTerrain& _
   const Neuron::Vec3 origin{heights.OriginX(), 0.0, heights.OriginZ()};
   auto scene = std::make_shared<Neuron::WorldScene>();
   scene->terrain = Neuron::BuildTerrainSurface(_terrain.field, *rampImage, TerrainLookOf(_tuning, _presentation));
-  scene->seaLook = SeaLookOf(_tuning, _presentation);
+  scene->seaLook = SeaLookOf(_tuning, _presentation, _seaDetail);
   scene->sea = Neuron::BuildSeaSurface(_terrain.field, scene->seaLook, scene->terrain.colorChainEnd, *gradientImage,
                                        static_cast<std::uint32_t>(_presentation.rnd.sea.waveTableRow));
   scene->look = WorldLookOf(_tuning, _presentation, origin);
@@ -232,6 +233,7 @@ WorldPresentation::WorldPresentation(Desc _desc)
     m_text(std::make_unique<Neuron::TextSystem>(TextSystemDesc(*_desc.presentation))),
     m_ui(std::make_unique<GameUi>(*_desc.presentation))
 {
+  m_ui->SetScales(m_desc.display.uiScale, m_desc.display.textScale);
   m_cursorImages = LoadCursorImages(*m_desc.content);
   m_sceneTextures = LoadSceneTextures(*m_desc.content);
   m_sceneMeshes = LoadSceneMeshes(*m_desc.content);
@@ -247,6 +249,12 @@ WorldPresentation::WorldPresentation(Desc _desc)
     m_ui->OpenTestScreen();
   }
 #endif
+}
+
+void WorldPresentation::SetDisplay(const DisplayOptions& _display)
+{
+  m_desc.display = _display;
+  m_ui->SetScales(_display.uiScale, _display.textScale);
 }
 
 void WorldPresentation::Update(const ClientSession& _session)
@@ -269,7 +277,7 @@ void WorldPresentation::Update(const ClientSession& _session)
     return;
   }
   const Neuron::Nanoseconds before = m_desc.clock->Now();
-  m_world = BuildWorldScene(*terrain, *m_desc.tuning, *m_desc.presentation, *m_desc.content);
+  m_world = BuildWorldScene(*terrain, *m_desc.tuning, *m_desc.presentation, *m_desc.content, m_desc.display.seaDetail);
   const auto milliseconds = std::chrono::duration<double, std::milli>(m_desc.clock->Now() - before).count();
   if (m_world != nullptr)
   {
@@ -287,6 +295,7 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
   inputs.world = m_world;
   inputs.background = Rgb(background.r, background.g, background.b);
   inputs.presentationSeconds = std::chrono::duration<double>(m_desc.clock->Now() - m_start).count();
+  inputs.brightness = static_cast<float>(m_desc.display.brightness); // render.brightness (RND-275, ADR-150)
   // The player camera's pose (ADR-119), and the game cursor in every frame, since the system pointer is hidden (O65).
   inputs.camera = _view.Pose();
   if (m_cursorImages != nullptr)
@@ -317,6 +326,8 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     crowd.scaledSeconds = m_presentationClock.ScaledSeconds();
     crowd.unscaledSeconds = m_presentationClock.UnscaledSeconds();
     crowd.localTeam = _session.CommandedTeam();
+    crowd.entityDetail = m_desc.display.entityDetail;
+    crowd.workerScaleFactor = m_desc.display.workerScaleFactor;
     const double fraction = _session.InterpolationFraction();
     std::vector<InterpolatedFigure> figures = InterpolateFigures(_session.Replica(), fraction);
     // M1 task T16c (ADR-123): the events and per-tick emitters first, then the shooters' recoil on the figures drawn.
@@ -328,6 +339,8 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     effectsView.fraction = fraction;
     effectsView.scaledSeconds = m_presentationClock.ScaledSeconds();
     effectsView.unscaledSeconds = m_presentationClock.UnscaledSeconds();
+    effectsView.reducedFlash = m_desc.display.reducedFlash;
+    effectsView.reducedMotion = m_desc.display.reducedMotion;
     effectsView.unscaledStep = m_presentationClock.UnscaledStepSeconds();
     effectsView.realSeconds = m_presentationClock.RealSeconds();
     if (displayTick.has_value())
@@ -394,7 +407,8 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     inputs.cursorBadge = _view.Badge();
     if (const std::optional<BadgeLabel>& count = _view.BadgeCountLabel(); count.has_value())
     {
-      AppendBadgeCount(*count, *m_text, *m_desc.presentation, _view.ViewSize().height, _dpiScale, inputs.uiCursor);
+      AppendBadgeCount(*count, *m_text, *m_desc.presentation, _view.ViewSize().height, _dpiScale,
+                       m_desc.display.textScale.value_or(m_desc.presentation->ui.scale.textDefault), inputs.uiCursor);
     }
     if (displayTick.has_value())
     {

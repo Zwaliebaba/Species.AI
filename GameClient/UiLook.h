@@ -12,6 +12,7 @@
 #include "WorldScene.h"
 
 #include <cstdint>
+#include <optional>
 #include <memory>
 #include <vector>
 
@@ -42,20 +43,21 @@ enum class UiImage : std::uint16_t
 [[nodiscard]] Neuron::UiStyle UiStyleOf(const TuningPresentation& _presentation);
 // UI-163: the page grid's keys, `ref.meta.layout.*`.
 [[nodiscard]] Neuron::PageGridKeys PageGridKeysOf(const TuningPresentation& _presentation) noexcept;
-// ADR-033, UI-168 to UI-171: the metrics of a client area of _client at the DPI scale _dpiScale, at the UI and text scales'
-// defaults until the settings store holds them (M2 task T15), with UI-171's minimum and RND-377's HUD space.
-[[nodiscard]] Neuron::UiMetrics UiMetricsOf(const TuningPresentation& _presentation, Neuron::SizePx _client, float _dpiScale) noexcept;
+// ADR-033, UI-168 to UI-171: the metrics of a client area of _client at the DPI scale _dpiScale, at the UI and text scales
+// of the settings store, or `ui.scale.*_default` where none is set (ADR-150), with UI-171's minimum and RND-377's HUD
+// space.
+[[nodiscard]] Neuron::UiMetrics UiMetricsOf(const TuningPresentation& _presentation, Neuron::SizePx _client, float _dpiScale,
+                                            std::optional<double> _uiScale, std::optional<double> _textScale) noexcept;
 
 // UI-171 and UI-170 as O92 amends them: the final size of text of layout size _sizePixels for a client area
-// _clientHeight pixels tall at the DPI scale _dpiScale, at a text scale of 1 until the settings store holds it (M2 task
-// T15).
-[[nodiscard]] float UiTextPixels(const TuningPresentation& _presentation, double _sizePixels, std::uint32_t _clientHeight,
-                                 float _dpiScale) noexcept;
+// _clientHeight pixels tall at the DPI scale _dpiScale and the text scale _textScale.
+[[nodiscard]] float UiTextPixels(const TuningPresentation& _presentation, double _sizePixels, std::uint32_t _clientHeight, float _dpiScale,
+                                 double _textScale) noexcept;
 
 // R-CTRL-366's count (ADR-127, ADR-145): _label in white in the body role at `ui.text.default_size`, additive (UI-190),
 // its line's left edge at the label's left and its line's middle at the label's middle, on whole pixels.
 void AppendBadgeCount(const BadgeLabel& _label, Neuron::TextSystem& _text, const TuningPresentation& _presentation,
-                      std::uint32_t _clientHeight, float _dpiScale, std::vector<Neuron::UiBatch>& _out);
+                      std::uint32_t _clientHeight, float _dpiScale, double _textScale, std::vector<Neuron::UiBatch>& _out);
 
 // A Debug build's UI test samples (`--ui-test`, ADR-145, ADR-147, ADR-149), in _area, the test page's right box: the
 // accent panel strip as a window body (UI-054) with the neutral strip beside it; the body role at four sizes and the

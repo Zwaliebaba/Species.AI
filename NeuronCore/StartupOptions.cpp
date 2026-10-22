@@ -17,6 +17,7 @@ namespace Neuron
 namespace
 {
 
+constexpr std::wstring_view USER_DATA_OPTION = L"--user-data";
 #if ENGINE_DEVELOPMENT
 constexpr std::wstring_view LOOSE_CONTENT_OPTION = L"--loose-content";
 constexpr std::wstring_view SEED_OPTION = L"--seed";
@@ -75,6 +76,12 @@ StartupOptions ParseArguments(std::span<const std::wstring> _arguments)
   StartupOptions options;
   for (std::size_t i = 0; i < _arguments.size(); ++i)
   {
+    if (_arguments[i] == USER_DATA_OPTION && i + 1 < _arguments.size())
+    {
+      options.userDataDirectory = std::filesystem::path(_arguments[i + 1]);
+      ++i;
+      continue;
+    }
 #if ENGINE_DEVELOPMENT
     if (_arguments[i] == LOOSE_CONTENT_OPTION && i + 1 < _arguments.size())
     {

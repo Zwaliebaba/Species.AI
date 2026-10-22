@@ -740,7 +740,9 @@
     "screen": {
       "flash_count_threshold": 0.1,
       "flash_onsets": 3,
-      "flash_window": 1
+      "flash_window": 1,
+      "reduced_motion_scale": 0.25,
+      "reduced_flash_scale": 0.25
     },
     "particle": {
       "size_divisor": 16,

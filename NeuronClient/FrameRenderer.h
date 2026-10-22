@@ -41,7 +41,10 @@ struct RenderConfig // a change triggers Reconfigure (RND-030)
   std::uint32_t renderHeight = 0;
   bool lowLatency = false; // ADR-012
   PresentMode presentMode = PresentMode::VerticalSync;
-  std::optional<float> frameRateCap;   // frames per second
+  std::optional<float> frameRateCap; // frames per second
+  // render.anti_aliasing (RND-442, ADR-015): 4, 2 or 1 scene samples, falling back to 2, then 1, where a count is not
+  // supported. Read when the device objects are created, so a change applies at the next start (ADR-150).
+  std::uint32_t sceneSamplesPreferred = 4;
   double frameRateWindowSeconds = 1.0; // ref.sim.frame.fps_window: the frame-rate counter's window (R-SIM-576)
   double frameRateInitial = 60.0;      // ref.sim.frame.fps_initial: what it reads until its first window completes
 #if ENGINE_DEVELOPMENT

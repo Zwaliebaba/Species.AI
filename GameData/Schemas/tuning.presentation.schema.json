@@ -6056,12 +6056,32 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "s of real time",
               "x-species-presence": "required"
+            },
+            "reduced_motion_scale": {
+              "type": "number",
+              "description": "vfx.screen.reduced_motion_scale (VFX-232, DEC-964)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "factor",
+              "x-species-presence": "required"
+            },
+            "reduced_flash_scale": {
+              "type": "number",
+              "description": "vfx.screen.reduced_flash_scale (VFX-235, DEC-964)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "factor",
+              "x-species-presence": "required"
             }
           },
           "required": [
             "flash_count_threshold",
             "flash_onsets",
-            "flash_window"
+            "flash_window",
+            "reduced_motion_scale",
+            "reduced_flash_scale"
           ],
           "additionalProperties": false,
           "x-species-type": "object",

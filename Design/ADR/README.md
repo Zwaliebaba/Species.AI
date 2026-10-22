@@ -150,6 +150,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-147](ADR-147-the-directwrite-text-system-at-m2.md) | The DirectWrite text system at M2 | Proposed | 2026-10-22 |
 | [ADR-148](ADR-148-the-frame-starts-at-the-latency-wait.md) | The frame starts at the latency wait | Proposed | 2026-10-22 |
 | [ADR-149](ADR-149-the-ui-core-pages-focus-and-layout-at-m2.md) | The UI core: pages, focus and layout at M2 | Proposed | 2026-10-22 |
+| [ADR-150](ADR-150-the-settings-store-and-user-data-root-at-m2.md) | The settings store and the user-data root at M2 | Proposed | 2026-10-22 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

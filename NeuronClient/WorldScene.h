@@ -369,7 +369,7 @@ struct FrameInputs
   CameraPose camera;
   double presentationSeconds = 0.0; // the smooth presentation time (R-SIM-570)
   double skyTicks = 0.0;            // the ticks displayed since the world's first (RND-152)
-  float brightness = 1.0f;          // rnd.option.brightness.default (RND-275)
+  float brightness = 1.0f;          // render.brightness (RND-275), rnd.option.brightness.default 1
   // The development overlay (DBG-004, Debug builds): its rectangles and its text, in the UI's batches over them (ADR-147),
   // and the dots drawn in the world.
   std::vector<OverlayRect> overlayRects;
