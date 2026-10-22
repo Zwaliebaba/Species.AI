@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "CommandJournal.h"
 #include "Construction.h"
 #include "RegionSimulation.h"
 #include "ScriptedSteward.h"
@@ -213,6 +214,28 @@ public:
       copy->Step(tick, pool);
       Assert::IsTrue(Species::HashWorld(*world).world == Species::HashWorld(*copy).world, L"the same hash");
     }
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp094AStewardWhoConnectsTakesTheSettlementFromItsScriptedSteward)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-094")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-095")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp094AStewardWhoConnectsTakesTheSettlementFromItsScriptedSteward)
+  {
+    // ADR-156: the steward commands the settlement and its scripted steward stops, so the world's snapshot still holds
+    // only stewards that may command, and restores; a watched world's steward leaves it running.
+    const std::unique_ptr<Species::WorldSimulation> world = SettledWorld();
+    static_cast<void>(world->Region(0).AddScriptedSteward(SETTLED_TEAM));
+    const Species::StableId steward = Species::ConnectSteward(*world, false);
+    const Species::RegionSimulation& region = world->Region(0);
+    Assert::IsTrue(region.ScriptedStewards().empty(), L"the scripted steward stops");
+    Assert::IsTrue(region.CommanderOf(SETTLED_TEAM).sender == steward && !region.CommanderOf(SETTLED_TEAM).ai, L"the steward commands");
+    Assert::IsTrue(Species::RestoreWorld(Species::SnapshotOf(*world), CommittedTuning(), &TestRecords()).has_value(), L"and it restores");
+
+    const std::unique_ptr<Species::WorldSimulation> watched = SettledWorld();
+    static_cast<void>(watched->Region(0).AddScriptedSteward(SETTLED_TEAM));
+    static_cast<void>(Species::ConnectSteward(*watched, false, true));
+    ExpectEqual(1, static_cast<std::int64_t>(watched->Region(0).ScriptedStewards().size()), L"a watched world keeps its scripted steward");
   }
 };
 

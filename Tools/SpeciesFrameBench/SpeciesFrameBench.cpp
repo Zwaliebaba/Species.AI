@@ -3,6 +3,8 @@
 #include "AppWindow.h"
 #include "AssetError.h"
 #include "ClientSession.h"
+#include "CommandJournal.h"
+#include "Construction.h"
 #include "Development.h"
 #include "DisplayAttempt.h"
 #include "FatalPath.h"
@@ -21,10 +23,17 @@
 #include "PlatformLogSink.h"
 #include "PlatformMessage.h"
 #include "PlatformThread.h"
+#include "RegionSimulation.h"
+#include "RegionTerrain.h"
 #include "RunId.h"
 #include "SettlementView.h"
+#include "Snapshot.h"
+#include "StructureRecords.h"
 #include "Tuning.h"
+#include "WorkerPool.h"
 #include "WorldPresentation.h"
+#include "WorldSimulation.h"
+#include "WorldSnapshot.h"
 
 #include <algorithm>
 #include <array>
@@ -51,14 +60,16 @@
 
 // The frame bench (M1 task T18, ADR-126, O79): a development tool that never ships. It composes the client and the
 // integrated server as Species.exe does, in a window of 1,920 x 1,080, and draws the rendered measurement scenes, each from
-// seed 1 with both sides under the AI and the camera fixed on the fight. After a warm-up it records each frame's
+// seed 1: the battles with both sides under the AI and the camera fixed on the fight, and from M2 task T19 the steward's
+// settlement at its plateau with the HUD, seen from over its Wellspring (ADR-156). After a warm-up it records each frame's
 // interval, from its start to the next frame's start (ADR-148), its work, its waits apart, its time on the GPU and the
 // refreshes the display took to show the frames, for a number of ticks, and writes them as JSON for
 // Build/RunPerformance.py.
 //
 //   SpeciesFrameBench.exe [--quick] [--scenes <name,...>] [--out <file.json>] [--warp]
 //
-// --quick warms up for 1 s and measures 20 ticks, to show that the scenes run; its figures measure nothing. --warp, in a
+// --quick warms up for 1 s and measures 20 ticks, and grows the settlement for a minute of play, to show that the scenes
+// run; its figures measure nothing. --warp, in a
 // Debug build, draws on the WARP adapter, since CI's runner has no GPU.
 
 namespace FrameBench
@@ -98,6 +109,12 @@ constexpr Neuron::Nanoseconds SUSPENDED_POLL_PERIOD{100'000'000};
 constexpr double NANOSECONDS_PER_MILLISECOND = 1.0e6;
 // ADR-148: the longest frames written with where their time went.
 constexpr std::size_t LONGEST_FRAMES = 10;
+// ADR-156: the settlement scene's world, grown on one thread before the window opens, and the folder its snapshot is
+// continued from; a quick run grows it for a minute of play.
+constexpr Neuron::SipHashKey GROWN_KEY{0x62656e6368000001, 0x0123456789abcdef};
+constexpr std::uint64_t GROWN_TICKS_QUICK = 600;
+constexpr std::wstring_view GROWN_FOLDER = L"SpeciesFrameBench-settlement";
+constexpr double SECONDS_PER_HOUR = 3600.0;
 
 // The pre-UI messages a failed start can show, as Species.exe has them (PLT-039); the bench runs unattended, so they are
 // logged rather than shown.
@@ -113,11 +130,13 @@ constexpr std::array COMPILED_TEXTS{
 };
 
 // The rendered scenes of the M1 plan's T18 row (O79): the sandbox's battle of 400, judged against mvp.client.fps_target,
-// and a synthetic battle of mvp.client.figures_max figures, reported.
+// and a synthetic battle of mvp.client.figures_max figures, reported; and of the M2 plan's T19 row, the settlement at its
+// plateau, judged against the same target (ADR-156).
 enum class SceneKind : std::uint8_t
 {
   Sandbox,
-  FiguresMax
+  FiguresMax,
+  Settlement
 };
 
 struct Scene
@@ -126,7 +145,8 @@ struct Scene
   SceneKind kind = SceneKind::Sandbox;
 };
 
-constexpr std::array<Scene, 2> SCENES{{{"sandbox-drawn", SceneKind::Sandbox}, {"figures-max-drawn", SceneKind::FiguresMax}}};
+constexpr std::array<Scene, 3> SCENES{
+  {{"sandbox-drawn", SceneKind::Sandbox}, {"figures-max-drawn", SceneKind::FiguresMax}, {"settlement-drawn", SceneKind::Settlement}}};
 
 struct Options
 {
@@ -158,6 +178,16 @@ struct FrameRecord
   std::optional<double> gpu; // its command list's time on the GPU, read back two frames later
 };
 
+/// The settlement scene's world (ADR-156): the folder that holds its snapshot, the ticks it grew for, and its Workers and
+/// structures when it was saved.
+struct GrownSettlement
+{
+  std::filesystem::path folder;
+  std::uint64_t ticks = 0;
+  std::uint32_t workers = 0;
+  std::uint32_t structures = 0;
+};
+
 /// What one rendered scene drew: every measured frame, the display's refreshes over them, and its figures.
 struct SceneResult
 {
@@ -173,6 +203,7 @@ struct SceneResult
   double onScreenSum = 0.0;
   std::uint32_t onScreenMax = 0;
   Neuron::SizePx window;
+  std::optional<GrownSettlement> grown; // the settlement scene's world
 };
 
 void Print(std::FILE* _stream, std::string_view _text)
@@ -249,17 +280,22 @@ void AttachGpuTime(std::vector<FrameRecord>& _frames, const Neuron::FrameTiming&
 }
 
 // The scene's fight (O79): the sandbox's sides meet between their sites, the synthetic battle stands about the
-// valley's centre; either on the terrain.
+// valley's centre; the settlement is seen from over its Wellspring, as the settlement view enters it (ADR-156); each on
+// the terrain.
 Neuron::Vec3 FightOf(SceneKind _kind, const Species::RegionTerrain& _terrain, const Species::TuningMvp& _tuning)
 {
   const Species::RegionLayout& layout = _terrain.layout;
   Neuron::Vec3 fight = layout.valleyCenter;
+  const auto& sandbox = _tuning.mvp.sandbox;
+  const Neuron::Vec3& steward = layout.sites[static_cast<std::size_t>(sandbox.stewardSite) % layout.sites.size()];
   if (_kind == SceneKind::Sandbox)
   {
-    const auto& sandbox = _tuning.mvp.sandbox;
-    const Neuron::Vec3& steward = layout.sites[static_cast<std::size_t>(sandbox.stewardSite) % layout.sites.size()];
     const Neuron::Vec3& ai = layout.sites[static_cast<std::size_t>(sandbox.aiSite) % layout.sites.size()];
     fight = (steward + ai) * 0.5;
+  }
+  else if (_kind == SceneKind::Settlement)
+  {
+    fight = steward;
   }
   fight.y = _terrain.field.Height(fight.x, fight.z);
   return fight;
@@ -289,8 +325,63 @@ std::pair<std::uint32_t, std::uint32_t> FiguresOf(const Species::StateReplica& _
   return {alive, onScreen};
 }
 
-/// The client's parts that every scene shares: the clock, the window, the renderer, the content and the records, and the
-/// input router that reads the window's close request.
+// The settlement scene's world (ADR-156): seed 1's valley with the steward's settlement at mvp.sandbox.steward_site, run
+// by its scripted steward on one thread until its population reaches mvp.settlement.population_max, where the growth
+// scene's plateau lies (O84), or the run's length passes; then saved as a snapshot into a folder of the bench's own, from
+// which the scene continues it. None when the records, the terrain or the save fail.
+std::optional<GrownSettlement> GrowSettlement(const Neuron::LooseContent& _content, const Species::TuningMvp& _tuning, bool _quick)
+{
+  const std::expected<Species::StructureRecords, Neuron::AssetError> records = Species::LoadStructureRecords(_content);
+  if (!records)
+  {
+    Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "{}", Neuron::FormatAssetError(records.error()));
+    return std::nullopt;
+  }
+  auto generated = Species::GenerateRegionTerrain(SCENE_SEED, _tuning);
+  if (!generated)
+  {
+    return std::nullopt;
+  }
+  const auto terrain = std::make_shared<const Species::RegionTerrain>(std::move(*generated));
+  Species::WorldStart start;
+  start.key = GROWN_KEY;
+  start.seed = terrain->seed;
+  start.watched = true; // ADR-140: a scripted steward runs the steward's settlement until the scene's steward connects
+  start.stewardSite = static_cast<std::uint8_t>(std::clamp<std::int64_t>(_tuning.mvp.sandbox.stewardSite, 0, 3));
+  const std::unique_ptr<Species::WorldSimulation> world = Species::StartWorld(start, terrain, _tuning, &*records);
+  const Species::RegionSimulation& region = world->Region(0);
+  const auto runTicks = static_cast<std::uint64_t>(
+    std::max<long long>(1, std::llround(_tuning.mvp.run.lengthHours * SECONDS_PER_HOUR / _tuning.ref.sim.tickPeriod)));
+  const std::uint64_t limit = _quick ? GROWN_TICKS_QUICK : runTicks;
+  const auto cap = static_cast<std::uint32_t>(std::max<std::int64_t>(_tuning.mvp.settlement.populationMax, 1));
+  Neuron::WorkerPool serial(0);
+  GrownSettlement grown;
+  while (grown.ticks < limit && Species::Population(region, region.Settlements().front()) < cap)
+  {
+    world->Step(grown.ticks++, serial);
+  }
+  grown.workers = Species::Population(region, region.Settlements().front());
+  const Species::SlicedPool<Species::Structure>& structures = region.Structures();
+  for (std::uint32_t slot = 0; slot < structures.Capacity(); ++slot)
+  {
+    grown.structures += structures.Used(slot) && structures.At(slot).owner == start.stewardSite ? 1U : 0U;
+  }
+  grown.folder = std::filesystem::temp_directory_path() / GROWN_FOLDER;
+  std::error_code error;
+  std::filesystem::remove_all(grown.folder, error);
+  std::filesystem::create_directories(grown.folder, error);
+  Neuron::SnapshotStore store(grown.folder, 1);
+  if (error || !store.Save(Species::SnapshotOf(*world)))
+  {
+    Neuron::Log(Neuron::LogCategory::Diagnostics, Neuron::LogLevel::Error, "frame bench: the settlement's snapshot cannot be saved in {}",
+                grown.folder.string());
+    return std::nullopt;
+  }
+  return grown;
+}
+
+/// The client's parts that every scene shares: the clock, the window, the renderer, the content and the records, the
+/// input router that reads the window's close request, and the settlement scene's world when it was grown.
 struct Bench
 {
   Neuron::PlatformClock* clock = nullptr;
@@ -301,6 +392,7 @@ struct Bench
   const Neuron::LooseContent* content = nullptr;
   const Species::TuningMvp* tuning = nullptr;
   const Species::TuningPresentation* presentation = nullptr;
+  const GrownSettlement* grown = nullptr;
 };
 
 enum class SceneEnd : std::uint8_t
@@ -329,13 +421,31 @@ SceneEnd RunScene(const Scene& _scene, const Options& _options, const Bench& _be
     serverDesc.syntheticFigures = static_cast<std::uint32_t>(tuning.mvp.client.figuresMax);
     _result.figures = serverDesc.syntheticFigures;
   }
+  else if (_scene.kind == SceneKind::Settlement)
+  {
+    // ADR-156: the grown world continued as the front end continues a saved one, its steward the scene's client.
+    if (_bench.grown == nullptr)
+    {
+      return SceneEnd::ServerFailed;
+    }
+    serverDesc.sandbox = false;
+    serverDesc.watched = false;
+    serverDesc.snapshotFolder = _bench.grown->folder;
+    serverDesc.restoreOnly = true;
+    _result.figures = _bench.grown->workers;
+    _result.grown = *_bench.grown;
+  }
   Species::IntegratedServer server(serverDesc);
   if (const auto started = server.Start(); !started)
   {
-    // The bench continues no world, so its only fault is a record's (ADR-155).
+    // A record's fault, or the grown world's that cannot be continued (ADR-155).
     if (const auto* fault = std::get_if<Neuron::AssetError>(&started.error()); fault != nullptr)
     {
       Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "{}", Neuron::FormatAssetError(*fault));
+    }
+    else
+    {
+      Neuron::Log(Neuron::LogCategory::Diagnostics, Neuron::LogLevel::Error, "frame bench: the grown settlement cannot be continued");
     }
     return SceneEnd::ServerFailed;
   }
@@ -491,6 +601,14 @@ std::string LongestJsonOf(std::span<const FrameRecord> _frames)
   return "[" + json + "]";
 }
 
+// ADR-156: how the settlement scene's world grew; null for the battles.
+std::string GrownJsonOf(const std::optional<GrownSettlement>& _grown)
+{
+  return _grown.has_value()
+           ? std::format(R"({{"ticks": {}, "workers": {}, "structures": {}}})", _grown->ticks, _grown->workers, _grown->structures)
+           : std::string("null");
+}
+
 std::string JsonOf(const std::vector<SceneResult>& _results, const Options& _options, const Species::TuningMvp& _tuning,
                    const Neuron::DesktopMode& _display)
 {
@@ -503,21 +621,22 @@ std::string JsonOf(const std::vector<SceneResult>& _results, const Options& _opt
     const double frames = static_cast<double>(std::max<std::size_t>(records.size(), 1));
     const std::vector<double> gpu = ValuesOf(records, [](const FrameRecord& _frame) { return _frame.gpu; });
     const std::uint64_t held = result.refreshesShown > result.presentsShown ? result.refreshesShown - result.presentsShown : 0;
-    scenes += std::format(R"({}    {{"name": "{}", "seed": {}, "figures": {}, "ticks": {}, "frames": {}, "suspended_frames": {}, )"
-                          R"("window": {{"width": {}, "height": {}}}, "interval_ms": {}, "work_ms": {}, "missed_frames": {}, )"
-                          R"("gpu_frames": {}, "gpu_ms": {}, "latency_wait_ms": {}, "fence_wait_ms": {}, "present_ms": {}, )"
-                          R"("display": {{"presents_shown": {}, "refreshes": {}, "held_refreshes": {}}}, "longest": {}, )"
-                          R"("figures_alive": {{"min": {}, "max": {}}}, "figures_on_screen": {{"mean": {:.1f}, "max": {}}}}})",
-                          scenes.empty() ? "" : ",\n", result.name, SCENE_SEED, result.figures, result.ticks, records.size(),
-                          result.suspendedFrames, result.window.width, result.window.height,
-                          JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.interval); }))),
-                          JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.work); }))),
-                          MissedFrames(records, periodMs), gpu.size(), JsonOf(SummaryOf(gpu)),
-                          JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.latencyWait); }))),
-                          JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.fenceWait); }))),
-                          JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.present); }))),
-                          result.presentsShown, result.refreshesShown, held, LongestJsonOf(records),
-                          result.aliveMax == 0 ? 0U : result.aliveMin, result.aliveMax, result.onScreenSum / frames, result.onScreenMax);
+    scenes +=
+      std::format(R"({}    {{"name": "{}", "seed": {}, "figures": {}, "ticks": {}, "frames": {}, "suspended_frames": {}, )"
+                  R"("window": {{"width": {}, "height": {}}}, "interval_ms": {}, "work_ms": {}, "missed_frames": {}, )"
+                  R"("gpu_frames": {}, "gpu_ms": {}, "latency_wait_ms": {}, "fence_wait_ms": {}, "present_ms": {}, )"
+                  R"("display": {{"presents_shown": {}, "refreshes": {}, "held_refreshes": {}}}, "longest": {}, )"
+                  R"("figures_alive": {{"min": {}, "max": {}}}, "figures_on_screen": {{"mean": {:.1f}, "max": {}}}, "grown": {}}})",
+                  scenes.empty() ? "" : ",\n", result.name, SCENE_SEED, result.figures, result.ticks, records.size(),
+                  result.suspendedFrames, result.window.width, result.window.height,
+                  JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.interval); }))),
+                  JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.work); }))),
+                  MissedFrames(records, periodMs), gpu.size(), JsonOf(SummaryOf(gpu)),
+                  JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.latencyWait); }))),
+                  JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.fenceWait); }))),
+                  JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.present); }))),
+                  result.presentsShown, result.refreshesShown, held, LongestJsonOf(records), result.aliveMax == 0 ? 0U : result.aliveMin,
+                  result.aliveMax, result.onScreenSum / frames, result.onScreenMax, GrownJsonOf(result.grown));
   }
   return std::format("{{\n  \"tool\": \"{}\", \"configuration\": \"{}\", \"platform\": \"{}\", \"quick\": {}, \"fps_target\": {}, "
                      "\"figures_max\": {},\n  \"display\": {{\"width\": {}, \"height\": {}, \"refresh_hz\": {}}},\n"
@@ -615,6 +734,22 @@ int Run(const Options& _options)
     return 1;
   }
 
+  // ADR-156: the settlement scene's world grows before the window opens, so that no window waits unpumped meanwhile.
+  const auto wanted = [&_options](std::string_view _name)
+  { return _options.scenes.empty() || std::ranges::find(_options.scenes, _name) != _options.scenes.end(); };
+  std::optional<GrownSettlement> grown;
+  if (wanted("settlement-drawn"))
+  {
+    grown = GrowSettlement(*content, *tuning, _options.quick);
+    if (!grown)
+    {
+      Print(stderr, "the settlement scene's world cannot be grown");
+      return 1;
+    }
+    Print(stdout, std::format("settlement-drawn: grown for {} ticks to {} Workers and {} structures", grown->ticks, grown->workers,
+                              grown->structures));
+  }
+
   // MVP-085: the scenes are drawn at SCENE_SIZE on the primary display. On a display of that size the borderless window
   // covers it at its native mode (O75); on a larger one, a window of that client size is centred on it (O85).
   Neuron::SizePx desktop = Neuron::FALLBACK_WINDOW_SIZE;
@@ -670,12 +805,13 @@ int Run(const Options& _options)
         keyboardMouse.RequestClose();
       }
     });
-  const Bench bench{&clock, &*window, renderer->get(), &router, &keyboardMouse, &*content, &*tuning, &*presentation};
+  const Bench bench{&clock,   &*window,       renderer->get(),          &router, &keyboardMouse, &*content,
+                    &*tuning, &*presentation, grown ? &*grown : nullptr};
   std::vector<SceneResult> results;
   int code = 0;
   for (const Scene& scene : SCENES)
   {
-    if (!_options.scenes.empty() && std::ranges::find(_options.scenes, scene.name) == _options.scenes.end())
+    if (!wanted(scene.name))
     {
       continue;
     }
@@ -692,6 +828,11 @@ int Run(const Options& _options)
     }
     Print(stdout, std::format("{}: {} frames over {} ticks", scene.name, result.frames.size(), result.ticks));
     results.push_back(std::move(result));
+  }
+  if (grown)
+  {
+    std::error_code ignored;
+    std::filesystem::remove_all(grown->folder, ignored);
   }
   router.ConfinePointer(false);
   window->RemoveListener(listener);

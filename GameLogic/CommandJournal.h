@@ -94,8 +94,9 @@ struct CommandJournal
                                                                  const std::function<void(const WorldSimulation&)>& _afterTick = {});
 
 // A steward's connection to _world (ADR-095, ADR-109): the next id of the world owner and, in the sandbox, the
-// steward's side to command; in a world that is no sandbox, the team of each settlement that a steward runs (ADR-130).
-// A watched world's steward commands nothing (O77, ADR-140). Returns the steward's id.
+// steward's side to command; in a world that is no sandbox, the team of each settlement that a steward runs (ADR-130),
+// whose scripted steward stops (ADR-156). A watched world's steward commands nothing (O77, ADR-140). Returns the
+// steward's id.
 StableId ConnectSteward(WorldSimulation& _world, bool _sandbox, bool _watched = false);
 
 } // namespace Species

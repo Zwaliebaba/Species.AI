@@ -90,7 +90,7 @@
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <SupportJustMyCode>false</SupportJustMyCode>
       <AdditionalOptions>/Zc:__cplusplus /Zc:preprocessor /utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>$(SolutionDir)GameClient;$(SolutionDir)GameLogic;$(SolutionDir)GameShared;$(SolutionDir)NeuronClient;$(SolutionDir)NeuronCore;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)GameClient;$(SolutionDir)GameLogic;$(SolutionDir)GameShared;$(SolutionDir)NeuronClient;$(SolutionDir)NeuronServer;$(SolutionDir)NeuronCore;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

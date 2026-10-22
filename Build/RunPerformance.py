@@ -3,6 +3,7 @@ reference test machine.
 
   python Build/RunPerformance.py [--skip-build] [--tool <SpeciesPerformance.exe>] [--bench <SpeciesFrameBench.exe>]
                                  [--headless-only] [--record <file>] [--quick]
+  python Build/RunPerformance.py --saved-world <world folder> [--skip-build] [--tool <SpeciesPerformance.exe>] [--record <file>]
   python Build/RunPerformance.py --self-test --tool <SpeciesPerformance.exe> [--bench <SpeciesFrameBench.exe> --warp]
 
 --tuning-source <GameData> makes the tool read the authored tuning record instead of the cooked one beside it, for a
@@ -20,15 +21,19 @@ a display of that size or in a window of that size on a larger one (O85), and a 
 stops and records nothing. A later run whose processor, memory or graphics adapter differs from the pinned ones, or whose
 display differs for the rendered scenes, stops and records nothing, because a change of the hardware re-baselines every
 result (DBG-209); the driver and the OS build are recorded with each run and stop nothing. Once pinned, a figure above
-its budget fails the run (exit code 1); the run that pins only reports. The sandbox's battle drawn passes when the 99th
-percentile of its frame interval, from one frame's start to the next (ADR-148), is at most 1000 ÷ mvp.client.fps_target
-+ 1 ms (O75); its missed frames, its GPU time, its waits, the refreshes that showed no new frame and its longest
-frames, the server's tick rate while drawn and the scene of mvp.client.figures_max figures are reported, as are a
+its budget fails the run (exit code 1); the run that pins only reports. The sandbox's battle drawn, and from M2 task T19
+the steward's settlement drawn at its plateau (ADR-156), pass when the 99th percentile of the frame interval, from one
+frame's start to the next (ADR-148), is at most 1000 ÷ mvp.client.fps_target + 1 ms (O75); their missed frames, GPU
+time, waits, the refreshes that showed no new frame and longest frames, the server's tick rate while drawn, how the
+settlement grew and the scene of mvp.client.figures_max figures are reported, as are a
 valley's generation and its land route graph, the route sweep and the log flood's detail (ADR-091, ADR-102, ADR-104).
 From M2 task T10 the growth scene of each seed is reported against M2's exit, with the snapshot of its settlement, and
 the settlement at work and the region with four scripted settlements are judged against the Worker's and the region's
 budgets (ADR-138); M2's run is recorded with --record playtests/M2.md. --quick runs every scene briefly to show that it
-runs, and records nothing. --self-test is CI's: it runs the given tool with --quick, and the bench too when one is
+runs, and records nothing. --saved-world runs no scene: from M2 task T19 it reads the growth of the steward's own world
+from the server's statistics in the newest snapshot of the folder it names (the owner's growth run of the M2 plan §5,
+ADR-156), judges it as the growth scene is, and records it in playtests/M2.md unless --record names another file; the
+machine is neither read nor pinned for it. --self-test is CI's: it runs the given tool with --quick, and the bench too when one is
 given (--warp draws it on the WARP adapter), then proves the record's rules on fixtures in a temporary folder, and
 writes nothing into the checkout.
 """
@@ -45,6 +50,8 @@ import tempfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SOLUTION = os.path.join(ROOT, 'Species.slnx')
 RECORD = os.path.join(ROOT, 'playtests', 'M1.md')
+SAVED_WORLD_RECORD = os.path.join(ROOT, 'playtests', 'M2.md')  # ADR-156: the owner's growth run is M2's evidence
+SAVED_WORLD_SECTION = "## The owner's growth run"
 CONFIGURATION = 'Release'
 PLATFORM = 'ARM64'  # O69, ADR-094: the reference test machine measures the ARM64 development build natively
 
@@ -63,6 +70,9 @@ DISPLAY_MARK = re.compile(r'<!-- reference-display (\{.*?\}) -->')  # O75: the r
 FRAME_TOLERANCE_MS = 1.0  # O75: 60 frames per second is a 99th-percentile frame interval of 16.7 ms and 1 ms of tolerance
 RENDERED_SIZE = (1920, 1080)  # MVP-085
 RENDERED_REFRESH_HZ = 60  # O75: the rendered scenes run on a 60 Hz display, at 1,920 x 1,080 (O85)
+# The rendered scenes judged against the frame budget: the sandbox's battle (O75) and, from M2 task T19, the steward's
+# settlement at its plateau (ADR-156); the rest are reported.
+JUDGED_SCENES = ('sandbox-drawn', 'settlement-drawn')
 SECTION = '## Performance'
 
 # ADR-080 item 2's cost budgets, item 3's region step budget and item 7's integrated server budget, and the travel
@@ -282,8 +292,9 @@ def frame_budget_ms(frames):
 
 def rendered_rows(frames, tick_period_s=None):
   """The rendered scenes' rows (scene, figure, measured, budget, result), and whether a judged figure is above its budget.
-  Only the sandbox's battle at 1,920 x 1,080 is judged; the rest is reported (O75). The server's tick rate while drawn
-  is the ticks measured over the frames' intervals, against the tick period of the headless result when it is given."""
+  Only the judged scenes drawn at 1,920 x 1,080 are judged; the rest is reported (O75). The server's tick rate while drawn
+  is the ticks measured over the frames' intervals, against the tick period of the headless result when it is given,
+  which also gives the hours the settlement grew for (ADR-156)."""
   budget = frame_budget_ms(frames)
   rows = []
   above = False
@@ -291,10 +302,10 @@ def rendered_rows(frames, tick_period_s=None):
     name = scene['name']
     size = (scene['window']['width'], scene['window']['height'])
     p99 = scene['interval_ms']['p99']
-    if name == 'sandbox-drawn' and size == RENDERED_SIZE:
+    if name in JUDGED_SCENES and size == RENDERED_SIZE:
       status = 'within budget' if p99 <= budget else 'above budget'
       above = above or p99 > budget
-    elif name == 'sandbox-drawn':
+    elif name in JUDGED_SCENES:
       status = f'not judged: drawn at {size[0]} x {size[1]}, not 1,920 x 1,080 (MVP-085)'
     else:
       status = 'reported (O75)'
@@ -311,6 +322,11 @@ def rendered_rows(frames, tick_period_s=None):
       (name, 'figures alive and on screen', f'{scene["figures_alive"]["max"]} alive at most; {scene["figures_on_screen"]["mean"]:.0f} '
        f'on screen on average, {scene["figures_on_screen"]["max"]} at most', '—', 'reported'),
     ]
+    grown = scene.get('grown')
+    if grown:
+      played = f'{grown["ticks"] * tick_period_s / 3600.0:.2f} hours of play' if tick_period_s else f'{grown["ticks"]} ticks'
+      rows.append((name, 'the settlement drawn (ADR-156)', f'{grown["workers"]} Workers and {grown["structures"]} structures after '
+                   f'{played}', '—', 'reported'))
     seconds = scene['interval_ms']['mean'] * scene['frames'] / 1000.0
     if seconds > 0:
       rows.append((name, 'server ticks per second while drawn (MVP-085)', f'{scene["ticks"] / seconds:.2f}',
@@ -358,10 +374,10 @@ def rendered_display(frames, config):
 
 
 def drawn_at_target(frames, drawn_on):
-  """Whether the rendered scenes may pin the display they drew on: a 60 Hz display on which the sandbox's battle was
+  """Whether the rendered scenes may pin the display they drew on: a 60 Hz display on which every judged scene was
   drawn at 1,920 x 1,080, borderless on a display of that size (O75) or in a window of that size on a larger one (O85)."""
-  sizes = [(s['window']['width'], s['window']['height']) for s in frames['scenes'] if s['name'] == 'sandbox-drawn']
-  return (drawn_on or '').endswith(f' at {RENDERED_REFRESH_HZ} Hz') and sizes == [RENDERED_SIZE]
+  sizes = [(s['window']['width'], s['window']['height']) for s in frames['scenes'] if s['name'] in JUDGED_SCENES]
+  return (drawn_on or '').endswith(f' at {RENDERED_REFRESH_HZ} Hz') and bool(sizes) and all(size == RENDERED_SIZE for size in sizes)
 
 
 def run_section(when, build_id, config, result, frames):
@@ -447,6 +463,67 @@ def record(path, config, result, frames, build_id, when):
   return 1 if (pinned is not None and above) or (display is not None and rendered_above) else 0
 
 
+def run_saved_world(tool, folder, out, tuning_source=None):
+  """ADR-156: the tool's reading of a saved world's growth."""
+  args = [tool, '--saved-world', folder, '--out', out] + (['--tuning-source', tuning_source] if tuning_source else [])
+  completed = subprocess.run(args, capture_output=True, text=True)
+  if completed.returncode != 0:
+    raise SystemExit(f'RunPerformance: {os.path.basename(tool)} failed:\n{completed.stdout}{completed.stderr}')
+  with open(out, encoding='utf-8') as f:
+    return json.load(f)
+
+
+def saved_world_rows(saved):
+  """The owner's growth run (figure, measured, target, result), judged as the growth scene's runs are (the M2 plan §5)."""
+  world = saved['saved_world']
+  kinds = [step[1] for step in world['steps']]
+  plateau = 'not reached' if world['plateau_h'] is None else f'{world["plateau_h"]:.2f} h, {world["largest_workers"]} Workers at most'
+  if world['plateau_h'] is None:
+    plateau_result = 'open: not reached yet'
+  elif world['plateau_met']:
+    plateau_result = 'met: in hours 4 to 6'
+  else:
+    plateau_result = 'outside hours 4 to 6 (O84: it yields first)'
+  # A gap still open after a last step within 95 % of the largest Worker count may be the plateau's hour forming, so it
+  # is judged once the world has run on.
+  last = world['steps'][-1] if world['steps'] else None
+  forming = (world['plateau_h'] is None and last is not None and last[3] >= 0.95 * world['largest_workers'] and
+             abs(last[0] * saved['tick_period_s'] / 3600.0 - world['gap_from_h']) < 1e-3)
+  gap_result = 'met' if world['gap_met'] else 'open: the plateau may be forming' if forming else 'above 20 min'
+  return [
+    ('played', f'{world["hours"]:.2f} hours of world time ({world["ticks"]} ticks)', '—', 'reported'),
+    ('the largest gap between growth steps up to the plateau or hour 5', f'{world["gap_minutes"]:.1f} min from {world["gap_from_h"]:.2f} h',
+     '20 min (pil.settlement.growth_step_minutes)', gap_result),
+    ('the plateau, an hour with no growth step within 95 % of the largest Worker count', plateau, '4 to 6 h', plateau_result),
+    ('growth steps', f'{len(kinds)}: {kinds.count(1)} structures built, {kinds.count(2)} population steps, {kinds.count(3)} resource '
+     'sites taken in', '—', 'reported'),
+  ]
+
+
+def record_saved_world(path, saved, build_id, when):
+  """Writes the owner's growth run into the record's section of its own; returns 0."""
+  text = open(path, encoding='utf-8').read() if os.path.exists(path) else f'# {os.path.splitext(os.path.basename(path))[0]}\n'
+  if SAVED_WORLD_SECTION not in text:
+    text = text.rstrip('\n') + (f'\n\n{SAVED_WORLD_SECTION}\n\nWritten by `Build/RunPerformance.py --saved-world` (ADR-156): the growth '
+                                'of the steward\'s own world, read from the server\'s statistics in its newest snapshot (MVP-064) '
+                                'and judged as the growth scene is (the M2 plan §5).\n')
+  world = saved['saved_world']
+  rows = '\n'.join(f'| {figure} | {measured} | {target} | {result} |' for figure, measured, target, result in saved_world_rows(saved))
+  section = (f'### The world of seed {world["seed"]}, read {when}, build {build_id}, from {world["snapshot"]}\n\n'
+             f'| Figure | Measured | Target | Result |\n|---|---|---|---|\n{rows}\n')
+  # The section's runs come before any later section of the record.
+  head, marker, rest = text.partition(SAVED_WORLD_SECTION)
+  following = rest.find('\n## ')
+  if following < 0:
+    text = text.rstrip('\n') + '\n\n' + section
+  else:
+    text = head + marker + rest[:following].rstrip('\n') + '\n\n' + section + rest[following:]
+  with open(path, 'w', encoding='utf-8', newline='\n') as f:
+    f.write(text)
+  print(f'RunPerformance: the owner\'s growth run recorded in {shown(path)}')
+  return 0
+
+
 def run_bench(bench, quick, out, warp=False):
   args = [bench, '--out', out] + (['--quick'] if quick else []) + (['--warp'] if warp else [])
   completed = subprocess.run(args, capture_output=True, text=True)
@@ -465,6 +542,16 @@ def frames_like(frames, p99, size=RENDERED_SIZE, display=(*RENDERED_SIZE, RENDER
                       for scene in frames['scenes']])
 
 
+# ADR-156: the tool's reading of a saved world, its figures made up.
+SAVED_WORLD_FIXTURE = {
+  'tool': 'SpeciesPerformance', 'configuration': 'Release', 'platform': 'ARM64', 'tick_period_s': 0.1,
+  'saved_world': {'snapshot': 'world-00000000000000169000.snapshot', 'seed': 7, 'ticks': 169000, 'hours': 4.694, 'largest_workers': 300,
+                  'plateau_h': 4.3, 'gap_minutes': 15.3, 'gap_from_h': 0.0, 'gap_met': True, 'plateau_met': True,
+                  'steps': [[9169, 2, 30, 30], [16287, 2, 40, 40], [23837, 1, 3, 40], [30000, 3, 4, 44]],
+                  'samples': [[0, 20, 400.0], [3000, 22, 461.088]]},
+}
+
+
 # The bench's result when the self-test runs none: the shape SpeciesFrameBench writes, its figures made up.
 FRAMES_FIXTURE = {
   'tool': 'SpeciesFrameBench', 'configuration': 'Debug', 'platform': 'x64', 'quick': True, 'fps_target': 60, 'figures_max': 1500,
@@ -480,8 +567,9 @@ FRAMES_FIXTURE = {
               'display': {'presents_shown': 118, 'refreshes': 119, 'held_refreshes': 1},
               'longest': [{'interval': 33.4, 'work': 6.5, 'latency_wait': 26.0, 'fence_wait': 0.5, 'present': 0.4, 'gpu': 14.0},
                           {'interval': 16.9, 'work': 7.0, 'latency_wait': 9.5, 'fence_wait': 0.1, 'present': 0.3, 'gpu': None}],
-              'figures_alive': {'min': figures, 'max': figures}, 'figures_on_screen': {'mean': figures * 0.8, 'max': figures}}
-             for name, figures in (('sandbox-drawn', 400), ('figures-max-drawn', 1500))],
+              'figures_alive': {'min': figures, 'max': figures}, 'figures_on_screen': {'mean': figures * 0.8, 'max': figures},
+              'grown': {'ticks': 154000, 'workers': 300, 'structures': 40} if name == 'settlement-drawn' else None}
+             for name, figures in (('sandbox-drawn', 400), ('figures-max-drawn', 1500), ('settlement-drawn', 300))],
 }
 
 
@@ -497,7 +585,7 @@ def self_test(tool, tuning_source, bench=None, warp=False):
     if bench:
       frames = run_bench(bench, True, os.path.join(folder, 'frames.json'), warp)
       drawn = {scene['name']: scene['frames'] for scene in frames['scenes']}
-      if sorted(drawn) != ['figures-max-drawn', 'sandbox-drawn'] or min(drawn.values()) == 0:
+      if sorted(drawn) != ['figures-max-drawn', 'sandbox-drawn', 'settlement-drawn'] or min(drawn.values()) == 0:
         sys.exit(f'RunPerformance: the bench\'s quick run drew {drawn}')
       print(f'RunPerformance: the bench\'s quick run drew {drawn}')
     path = os.path.join(folder, 'M1.md')
@@ -513,6 +601,9 @@ def self_test(tool, tuning_source, bench=None, warp=False):
     above = dict(within, draw_ns=1000.0)
     smooth = frames_like(frames, 16.0)
     slow = frames_like(frames, 25.0)
+    # ADR-156: the settlement drawn above the budget while the battle is within it.
+    slow_settlement = dict(smooth, scenes=[dict(s, interval_ms=dict(s['interval_ms'], p99=25.0)) if s['name'] == 'settlement-drawn' else s
+                                           for s in smooth['scenes']])
 
     def recorded(*phrases):
       text = open(path, encoding='utf-8').read()
@@ -520,6 +611,31 @@ def self_test(tool, tuning_source, bench=None, warp=False):
 
     # O85: a record of its own, whose first rendered run draws a 1,920 x 1,080 window on a larger 60 Hz panel.
     panel = os.path.join(folder, 'M1-panel.md')
+    # ADR-156: the owner's growth run is a section of its own at the record's end, and a later run stays in it when
+    # another section follows it.
+    grown = os.path.join(folder, 'M2.md')
+    with open(grown, 'w', encoding='utf-8', newline='\n') as f:
+      f.write('# M2\n\n## Session log\n\nA session.\n')
+
+    def grown_recorded():
+      record_saved_world(grown, SAVED_WORLD_FIXTURE, 'fixture', 'first')
+      with open(grown, 'a', encoding='utf-8', newline='\n') as f:
+        f.write('\n## Performance\n\nA run.\n')
+      record_saved_world(grown, dict(SAVED_WORLD_FIXTURE, saved_world=dict(SAVED_WORLD_FIXTURE['saved_world'], plateau_h=None,
+                                                                         plateau_met=False)), 'fixture', 'second')
+      text = open(grown, encoding='utf-8').read()
+      return (text.count(SAVED_WORLD_SECTION) == 1 and
+              text.index('## Session log') < text.index('read first') < text.index('read second') < text.index('## Performance') and
+              '15.3 min from 0.00 h' in text and 'met: in hours 4 to 6' in text and 'open: not reached yet' in text and
+              '1 structures built, 2 population steps, 1 resource sites taken in' in text)
+
+    def forming_judged():
+      # A gap open since a last step at the largest Worker count is the plateau forming; one below it is a gap.
+      world = dict(SAVED_WORLD_FIXTURE['saved_world'], plateau_h=None, plateau_met=False, gap_met=False, gap_minutes=42.7,
+                   gap_from_h=30000 * 0.1 / 3600.0, largest_workers=44)
+      below = dict(world, steps=world['steps'][:-1] + [[30000, 3, 4, 30]])
+      result = lambda w: saved_world_rows(dict(SAVED_WORLD_FIXTURE, saved_world=w))[1][3]
+      return result(world) == 'open: the plateau may be forming' and result(below) == 'above 20 min'
 
     checks = [
       ('the first run pins the machine and only reports', lambda: record(path, reference, result, None, 'fixture', 'pin') == 0 and
@@ -556,6 +672,11 @@ def self_test(tool, tuning_source, bench=None, warp=False):
        lambda: record(path, dict(reference, display='other'), within, None, 'fixture', 'headless') == 0),
       ('a rendered run within its frame budget passes', lambda: record(path, reference, within, smooth, 'fixture', 'smooth') == 0),
       ('a rendered run above its frame budget fails', lambda: record(path, reference, within, slow, 'fixture', 'slow') == 1),
+      ('a settlement drawn above its frame budget fails (ADR-156)',
+       lambda: record(path, reference, within, slow_settlement, 'fixture', 'slow settlement') == 1),
+      ('a rendered run reports how the settlement grew', lambda: recorded('the settlement drawn (ADR-156)')),
+      ('the owner\'s growth run is recorded and judged in its own section (ADR-156)', grown_recorded),
+      ('a gap open while the plateau may be forming is not judged yet (ADR-156)', forming_judged),
       ('a rendered run at another size is not judged',
        lambda: record(path, reference, within, frames_like(frames, 25.0, (1280, 720)), 'fixture', 'small') == 0),
     ]
@@ -575,7 +696,8 @@ def main():
   parser.add_argument('--bench', help='the SpeciesFrameBench.exe to run (default: the Release|ARM64 build)')
   parser.add_argument('--headless-only', action='store_true', help='run the headless scenes alone')
   parser.add_argument('--warp', action='store_true', help='with --self-test: draw the bench on the WARP adapter (a Debug build)')
-  parser.add_argument('--record', default=RECORD)
+  parser.add_argument('--record', help='the record to write (default: playtests/M1.md, or playtests/M2.md with --saved-world)')
+  parser.add_argument('--saved-world', help='a saved world\'s folder: read its growth rather than run the scenes (ADR-156)')
   parser.add_argument('--quick', action='store_true')
   parser.add_argument('--self-test', action='store_true')
   parser.add_argument('--tuning-source')
@@ -588,6 +710,14 @@ def main():
   if not args.skip_build:
     build()
   tool = args.tool or os.path.join(ROOT, PLATFORM, CONFIGURATION, 'SpeciesPerformance.exe')
+  if args.saved_world:
+    with tempfile.TemporaryDirectory() as folder:
+      saved = run_saved_world(tool, args.saved_world, os.path.join(folder, 'saved.json'), args.tuning_source)
+    for figure, measured, target, result in saved_world_rows(saved):
+      print(f'RunPerformance: the owner\'s growth run: {figure}: {measured} against {target}: {result}')
+    if args.quick:
+      return 0
+    return record_saved_world(args.record or SAVED_WORLD_RECORD, saved, identity(), datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))
   with tempfile.TemporaryDirectory() as folder:
     result = run_tool(tool, args.quick, os.path.join(folder, 'result.json'), args.tuning_source)
     frames = None
@@ -615,7 +745,7 @@ def main():
             'is recorded (O69)')
       return 0
   when = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
-  return record(args.record, machine(), result, frames, identity(), when)
+  return record(args.record or RECORD, machine(), result, frames, identity(), when)
 
 
 if __name__ == '__main__':

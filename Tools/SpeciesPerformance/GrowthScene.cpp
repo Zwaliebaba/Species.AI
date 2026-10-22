@@ -197,4 +197,41 @@ std::optional<SnapshotCost> MeasureSnapshot(const Species::WorldSimulation& _wor
   return cost;
 }
 
+std::optional<SavedWorldRun> ReadSavedWorld(const std::filesystem::path& _folder, const Species::TuningMvp& _tuning,
+                                            const Species::StructureRecords& _records)
+{
+  const Neuron::SnapshotStore store(_folder, 1);
+  for (const std::filesystem::path& path : store.Snapshots())
+  {
+    auto restored = Neuron::SnapshotStore::Load(path).and_then([&](const Neuron::SnapshotContents& _contents)
+                                                               { return Species::RestoreWorld(_contents, _tuning, &_records); });
+    if (!restored)
+    {
+      continue;
+    }
+    const Species::WorldSimulation& world = **restored;
+    const Species::RegionSimulation& region = world.Region(0);
+    const auto steward = std::ranges::find_if(region.Settlements(), &Species::Settlement::stewarded);
+    if (steward == region.Settlements().end())
+    {
+      return std::nullopt;
+    }
+    SavedWorldRun saved;
+    saved.snapshot = path;
+    saved.run.seed = world.WorldSeed();
+    saved.run.ticks = world.NextTick();
+    for (const Species::StatisticEntry& entry : region.Statistics())
+    {
+      if (entry.site != steward->team)
+      {
+        continue;
+      }
+      saved.run.largestWorkers = std::max(saved.run.largestWorkers, entry.workers);
+      (Species::IsGrowthStep(entry.kind) ? saved.run.steps : saved.samples).push_back(entry);
+    }
+    return saved;
+  }
+  return std::nullopt;
+}
+
 } // namespace Performance
