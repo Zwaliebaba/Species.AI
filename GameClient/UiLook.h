@@ -2,6 +2,8 @@
 
 #include "FontAsset.h"
 #include "LooseContent.h"
+#include "MessageLocale.h"
+#include "StringTable.h"
 #include "TuningPresentation.h"
 #include "WindowGeometry.h"
 #include "WorldMarkers.h"
@@ -38,9 +40,10 @@ void AppendBadgeCount(const BadgeLabel& _label, const Neuron::FontAsset& _face, 
 
 // A Debug build's UI test page (`--ui-test`, ADR-145), at the top-left of a client area of _size: the accent panel strip
 // as a window body (UI-054) with the neutral strip beside it; GameFont at the scales 1 to 4; a line each filled additive,
-// outlined (UI-192), inked and laid over; the missing glyph; and a solid and an image swatch in each blend that the UI
-// draws them in, so that every pipeline of the UI pass draws.
-void AppendUiTestPage(const Neuron::FontAsset& _face, const TuningPresentation& _presentation, Neuron::SizePx _size,
-                      std::vector<Neuron::UiBatch>& _out);
+// outlined (UI-192), inked and laid over; the missing glyph; a string _strings holds, one it does not and a plural
+// formatted in _locale's forms (ADR-146); and a solid and an image swatch in each blend that the UI draws them in, so
+// that every pipeline of the UI pass draws.
+void AppendUiTestPage(const Neuron::FontAsset& _face, const TuningPresentation& _presentation, const Neuron::StringTable& _strings,
+                      const Neuron::MessageLocale& _locale, Neuron::SizePx _size, std::vector<Neuron::UiBatch>& _out);
 
 } // namespace Species

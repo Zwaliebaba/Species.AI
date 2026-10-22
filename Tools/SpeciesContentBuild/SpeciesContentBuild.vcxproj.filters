@@ -16,6 +16,9 @@
     <Filter Include="Records">
       <UniqueIdentifier>{E6F81244-D748-59AF-84FB-31965F2D4530}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Strings">
+      <UniqueIdentifier>{1D6862E1-17FF-5F9E-A809-5296080F6FFE}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Textures">
       <UniqueIdentifier>{E2C1214A-927D-56F6-9721-FD2FAF5AED3B}</UniqueIdentifier>
     </Filter>
@@ -53,6 +56,9 @@
     </ClInclude>
     <ClInclude Include="SimulationRecordCooker.h">
       <Filter>Meshes</Filter>
+    </ClInclude>
+    <ClInclude Include="StringTableCooker.h">
+      <Filter>Strings</Filter>
     </ClInclude>
     <ClInclude Include="TextGlyphTable.h">
       <Filter>Fonts</Filter>
@@ -103,6 +109,9 @@
     </ClCompile>
     <ClCompile Include="SpeciesContentBuild.cpp">
       <Filter>Build</Filter>
+    </ClCompile>
+    <ClCompile Include="StringTableCooker.cpp">
+      <Filter>Strings</Filter>
     </ClCompile>
     <ClCompile Include="TextureCheck.cpp">
       <Filter>Textures</Filter>

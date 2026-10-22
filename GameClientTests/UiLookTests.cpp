@@ -1,6 +1,8 @@
 #include "pch.h"
 
 #include "FontAsset.h"
+#include "MessageLocale.h"
+#include "StringTable.h"
 #include "TestSupport.h"
 #include "UiLook.h"
 #include "WorldMarkers.h"
@@ -96,7 +98,9 @@ public:
   {
     const Neuron::FontAsset face = GameLikeFace();
     std::vector<Neuron::UiBatch> batches;
-    Species::AppendUiTestPage(face, CommittedPresentation(), {1280, 720}, batches);
+    const Neuron::StringTable strings;
+    const Neuron::MessageLocale locale("en-GB");
+    Species::AppendUiTestPage(face, CommittedPresentation(), strings, locale, {1280, 720}, batches);
     Assert::IsFalse(batches.empty(), L"a page");
     // The window body first: the accent strip, u to the repeat across and v once down, tinted and laid over.
     const Neuron::UiBatch& body = batches.front();

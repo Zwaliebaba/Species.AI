@@ -1,0 +1,8 @@
+{
+  "schema": "text.string_table",
+  "version": "1.0",
+  "language": "en-GB",
+  "strings": {
+    "ui.title.game_name": "Species"
+  }
+}

@@ -176,6 +176,8 @@
     <ClInclude Include="InputRouter.h" />
     <ClInclude Include="KeyboardMouseBackEnd.h" />
     <ClInclude Include="MeshRenderer.h" />
+    <ClInclude Include="MessageFormat.h" />
+    <ClInclude Include="MessageLocale.h" />
     <ClInclude Include="OverlayRenderer.h" />
     <ClInclude Include="ParticlePool.h" />
     <ClInclude Include="PassTable.h" />
@@ -190,6 +192,7 @@
     <ClInclude Include="SceneTargets.h" />
     <ClInclude Include="ShaderLayouts.h" />
     <ClInclude Include="SkyLayers.h" />
+    <ClInclude Include="StringTable.h" />
     <ClInclude Include="TextLayout.h" />
     <ClInclude Include="UiRenderer.h" />
     <ClInclude Include="UiText.h" />
@@ -217,6 +220,8 @@
     <ClCompile Include="InputRouter.cpp" />
     <ClCompile Include="KeyboardMouseBackEnd.cpp" />
     <ClCompile Include="MeshRenderer.cpp" />
+    <ClCompile Include="MessageFormat.cpp" />
+    <ClCompile Include="MessageLocale.cpp" />
     <ClCompile Include="OverlayRenderer.cpp" />
     <ClCompile Include="ParticlePool.cpp" />
     <ClCompile Include="PassTable.cpp" />
@@ -230,6 +235,7 @@
     <ClCompile Include="SceneQuads.cpp" />
     <ClCompile Include="SceneTargets.cpp" />
     <ClCompile Include="SkyLayers.cpp" />
+    <ClCompile Include="StringTable.cpp" />
     <ClCompile Include="TextLayout.cpp" />
     <ClCompile Include="UiRenderer.cpp" />
     <ClCompile Include="UiText.cpp" />

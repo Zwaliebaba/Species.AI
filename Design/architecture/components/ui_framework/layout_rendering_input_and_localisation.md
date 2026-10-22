@@ -448,6 +448,8 @@ There are no bitmap font atlases ([reference/09](../../../reference/09_front_end
 
 **UI-219** (MUST) A string id that the current language's table lacks returns, per id, the text of the base language `ref.meta.lang.base` (DEC-099; R-META-464). No widget ever shows a string id as text. An id that the base language also lacks cannot pass the content build (ADR-059, DEC-015); if one reaches a Debug build through loose content, the look-up returns an empty text and the miss is logged once per id.
 
+> **Amendment 2026-10-22 (M2 task T14, [ADR-146](../../../ADR/ADR-146-the-string-table-and-its-formatting-at-m2.md)).** A miss is logged once per id in every build. A Debug build's look-up returns the id itself, so a string the owner has not yet written shows where it belongs, as the M2 plan's T14 checks; a Release build's returns the empty text, so no player sees an id. Until a second language exists, the base language is the one table, and a miss has nothing to fall back to.
+
 **UI-220** (MUST) `Exists(id)` is true when the current language or the base language has the id. Counts that come from data use it, such as the number of help pages of a mode and the lines of the credits page (R-META-471).
 
 **UI-221** (MUST) A look-up returns a text view that stays valid while it is held (UI-239); there is no shared miss buffer that a later look-up overwrites, and look-ups never change the table, so concurrent readers are safe (DEC-102).

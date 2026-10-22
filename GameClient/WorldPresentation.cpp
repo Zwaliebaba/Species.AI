@@ -34,6 +34,9 @@ constexpr std::string_view SKY_CLOUD_KEY = "textures/fx/skycloud";
 constexpr std::string_view BEAM_SHORT_KEY = "textures/fx/beamshort";
 // ADR-145: GameFont, the player-facing face (MVP-100, O62) and the UI's face.
 constexpr std::string_view GAME_FACE_KEY = "fonts/gamefont";
+// ref.meta.lang.base: the base language and the MVP's one language (MVP scope §5.1), until the settings store chooses one
+// (M2 task T15, ADR-063, ADR-146).
+constexpr std::string_view UI_LANGUAGE = "en-GB";
 
 // GameFont from the content: none when it is missing or damaged, which is logged.
 std::shared_ptr<const Neuron::FontAsset> LoadGameFace(const Neuron::LooseContent& _content)
@@ -253,6 +256,8 @@ WorldPresentation::WorldPresentation(Desc _desc)
   m_effects.UseMeshes(m_sceneMeshes); // ADR-141: the turret barrel set places each shot's casing
   m_gameFace = LoadGameFace(*m_desc.content);
   m_uiImages = LoadUiImages(*m_desc.content);
+  m_strings = Neuron::LoadStringTable(*m_desc.content, UI_LANGUAGE);
+  m_locale = std::make_unique<Neuron::MessageLocale>(UI_LANGUAGE);
 #if ENGINE_DEVELOPMENT
   m_developmentFace = LoadDevelopmentFace(*m_desc.content);
 #endif
@@ -428,7 +433,7 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
 #if ENGINE_DEVELOPMENT
   if (m_desc.uiTest && m_gameFace != nullptr)
   {
-    AppendUiTestPage(*m_gameFace, *m_desc.presentation, _view.ViewSize(), inputs.ui);
+    AppendUiTestPage(*m_gameFace, *m_desc.presentation, *m_strings, *m_locale, _view.ViewSize(), inputs.ui);
   }
   // DBG-095, DBG-096, ADR-120: while the overlay is shown, the frame-rate line, whose objects are counted while a world
   // exists, and the frame page.

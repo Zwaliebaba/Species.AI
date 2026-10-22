@@ -172,10 +172,12 @@
     <ClCompile Include="FrameGraphTests.cpp" />
     <ClCompile Include="GpuResourceFactoryTests.cpp" />
     <ClCompile Include="InputRouterTests.cpp" />
+    <ClCompile Include="MessageFormatTests.cpp" />
     <ClCompile Include="ParticlePoolTests.cpp" />
     <ClCompile Include="PickingTests.cpp" />
     <ClCompile Include="PresentationTests.cpp" />
     <ClCompile Include="SceneQuadsTests.cpp" />
+    <ClCompile Include="StringTableTests.cpp" />
     <ClCompile Include="TextLayoutTests.cpp" />
     <ClCompile Include="UiTextTests.cpp" />
     <ClCompile Include="WindowGeometryTests.cpp" />

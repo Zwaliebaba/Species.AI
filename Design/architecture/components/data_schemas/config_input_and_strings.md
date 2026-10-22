@@ -200,6 +200,8 @@ Table 3.3-A Fields of a binding set.
 
 **DAT-206** (MUST) A string table (`text.string_table`) is the text of one language: its authoring file holds the field `language`, the language's BCP 47 tag, which must match the file name of [GameAssets §2.2](../../../assets/GameAssets.md#22-file-names) (`en_gb.json` for `en-GB`), and the field `strings`, an object keyed by string id. The content build merges every string source of one language into one cooked table, one per asset `strings.en_gb`, `strings.fr_fr`, `strings.de_de`, `strings.it_it`, `strings.es_es`, `strings.pt_br`, `strings.ru_ru`, `strings.ja_jp` and `strings.ko_kr` (UI-222).
 
+> **Amendment 2026-10-22 (M2 task T14, [ADR-146](../../../ADR/ADR-146-the-string-table-and-its-formatting-at-m2.md)).** The table has no JSON Schema document, because the schema generator reads fixed fields only (DAT-026) and a table is an object keyed by id. The content build's string-table cooker is its validator: the fields `schema` (`text.string_table`), `version` (`1.0`), `language` and `strings`, and nothing else. At the MVP the one table is `strings.en_gb`.
+
 **DAT-207** (MUST) A string id is a Species string id (CONVENTIONS §8): lower-case, dotted, at most `ui.lang.max_id_length` (96) characters, compared exactly. Two entries with one id in one language, in one source or in two sources of the language, are a build error (DEC-801 item 2, UI-222); no source overrides another by load order.
 
 **DAT-208** (MUST) An entry is either a JSON string, its plain text, or an object with the fields of table 3.5-A. Text is UTF-8 in ICU MessageFormat syntax (ADR-063), so a value inserted at run time is a named argument such as `{seconds}`, never a placeholder letter, and no character of a text or of an inserted value is a formatting directive (R-META-469, UI-227). A line break is the JSON escape `\n`; no other escape exists beyond JSON's, and the characters `#`, `:`, `,`, leading blanks and single square brackets are ordinary text.
@@ -245,6 +247,8 @@ Table 3.6-A Caption markers.
 **DAT-212** (MUST) A marker that is not one of table 3.6-A, an unterminated marker, a marker longer than `ui.lang.max_marker_length` (64) characters, a mode passage without `[[end]]` and an `[[end]]` without a passage are build errors with the file, the id and the character position; expansion never loops, never re-reads a marker and never truncates silently (DEC-015). An expanded text longer than `ui.lang.max_expanded_length` (1,024) characters is a build error (UI-225, DEC-801 item 5).
 
 **DAT-213** (MUST) Markers are expanded when the table is built, once per input mode, and again whenever the bindings change (UI-224); an expanded binding argument or embedded string is quoted for ICU MessageFormat, so that no character of it is read as message syntax (DEC-800 item 4). ICU formatting of named arguments happens after expansion, at display time (ADR-063).
+
+> **Amendment 2026-10-22 (M2 task T14, [ADR-146](../../../ADR/ADR-146-the-string-table-and-its-formatting-at-m2.md)).** Until M2 task T15's settings store rebinds and names keys (INP-178), a binding argument is a build error. An embedded string is quoted by doubling its apostrophes and quoting its braces. One whose text holds `#` is a build error, since no quoting serves both a plural's case and plain text.
 
 ### 3.7 Ids that code builds
 
@@ -321,6 +325,8 @@ Caption: Figure 4.1-A, loading the settings file (DAT-193 to DAT-201; R-META-402
 ### 4.3 Building a string table
 
 **DAT-217** (MUST) The content build builds each language's table in these steps, and fails the language on any error: merge the sources of the language and reject duplicate ids (DAT-207); validate every entry (DAT-208, DAT-209); resolve and expand the markers per input mode (DAT-211 to DAT-213); check the lengths (DAT-212); compare the ids with the base language and write the coverage report (DAT-210); check the glyph coverage of the bundled fonts for the language (AST-088). The cooked table holds, for each id, its expanded text in each input mode, and a flag for embed-only entries, which `Lookup` never returns.
+
+> **Amendment 2026-10-22 (M2 task T14, [ADR-146](../../../ADR/ADR-146-the-string-table-and-its-formatting-at-m2.md)).** The cooked table is the `StringTableAsset` of ADR-146: the language tag, then each string sorted by id, with its embed-only flag and its text in each input mode, read back after cooking (AST-091). The comparison with the base language waits for a second language. Each text is checked as a message of ADR-146's subset of ICU MessageFormat, which the client parses once when the table loads.
 
 ```mermaid
 flowchart LR

@@ -170,6 +170,7 @@
     <ClInclude Include="MarkerTimings.h" />
     <ClInclude Include="MeshAsset.h" />
     <ClInclude Include="MessageCodec.h" />
+    <ClInclude Include="MessagePattern.h" />
     <ClInclude Include="NativeWindowHandle.h" />
     <ClInclude Include="PlatformClock.h" />
     <ClInclude Include="PlatformError.h" />
@@ -187,6 +188,7 @@
     <ClInclude Include="SipHash.h" />
     <ClInclude Include="StartupOptions.h" />
     <ClInclude Include="StreamFraming.h" />
+    <ClInclude Include="StringTableAsset.h" />
     <ClInclude Include="TerrainField.h" />
     <ClInclude Include="TerrainSurface.h" />
     <ClInclude Include="TextEncoding.h" />
@@ -222,6 +224,7 @@
     <ClCompile Include="MarkerTimings.cpp" />
     <ClCompile Include="MeshAsset.cpp" />
     <ClCompile Include="MessageCodec.cpp" />
+    <ClCompile Include="MessagePattern.cpp" />
     <ClCompile Include="PlatformClock.cpp" />
     <ClCompile Include="PlatformLogSink.cpp" />
     <ClCompile Include="PlatformMessage.cpp" />
@@ -237,6 +240,7 @@
     <ClCompile Include="SipHash.cpp" />
     <ClCompile Include="StartupOptions.cpp" />
     <ClCompile Include="StreamFraming.cpp" />
+    <ClCompile Include="StringTableAsset.cpp" />
     <ClCompile Include="TerrainField.cpp" />
     <ClCompile Include="TerrainSurface.cpp" />
     <ClCompile Include="TextEncoding.cpp" />

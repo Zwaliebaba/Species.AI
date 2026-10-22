@@ -83,6 +83,9 @@
     <ClCompile Include="MessageCodecTests.cpp">
       <Filter>Network</Filter>
     </ClCompile>
+    <ClCompile Include="MessagePatternTests.cpp">
+      <Filter>Content</Filter>
+    </ClCompile>
     <ClCompile Include="PlatformClockTests.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
@@ -112,6 +115,9 @@
     </ClCompile>
     <ClCompile Include="StartupOptionsTests.cpp">
       <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="StringTableAssetTests.cpp">
+      <Filter>Content</Filter>
     </ClCompile>
     <ClCompile Include="TerrainFieldTests.cpp">
       <Filter>Tests</Filter>

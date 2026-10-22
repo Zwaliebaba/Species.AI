@@ -183,6 +183,7 @@
     <ClInclude Include="RecordCooker.h" />
     <ClInclude Include="RowSpec.h" />
     <ClInclude Include="SimulationRecordCooker.h" />
+    <ClInclude Include="StringTableCooker.h" />
     <ClInclude Include="TextGlyphTable.h" />
     <ClInclude Include="TextureCheck.h" />
     <ClInclude Include="pch.h" />
@@ -203,6 +204,7 @@
     <ClCompile Include="RowSpec.cpp" />
     <ClCompile Include="SimulationRecordCooker.cpp" />
     <ClCompile Include="SpeciesContentBuild.cpp" />
+    <ClCompile Include="StringTableCooker.cpp" />
     <ClCompile Include="TextureCheck.cpp" />
   </ItemGroup>
   <ItemGroup>

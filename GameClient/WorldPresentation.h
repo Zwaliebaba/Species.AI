@@ -6,9 +6,11 @@
 #include "FrameProfile.h"
 #include "LeaderLook.h"
 #include "LooseContent.h"
+#include "MessageLocale.h"
 #include "PlatformClock.h"
 #include "PresentationClock.h"
 #include "SettlementView.h"
+#include "StringTable.h"
 #include "StructureLook.h"
 #include "TerritoryLook.h"
 #include "TuningMvp.h"
@@ -85,6 +87,8 @@ private:
   std::shared_ptr<const Neuron::FontAsset> m_developmentFace;   // a Debug build's overlay face; none in Release
   std::shared_ptr<const Neuron::FontAsset> m_gameFace;          // ADR-145: GameFont, the UI's face; none when missing
   std::shared_ptr<const Neuron::UiImages> m_uiImages;           // ADR-145: the UI's images, each empty when missing
+  std::shared_ptr<const Neuron::StringTable> m_strings;         // ADR-146: the en-GB strings; empty when missing
+  std::unique_ptr<Neuron::MessageLocale> m_locale;              // ADR-146: en-GB's number forms and plural rules
   std::shared_ptr<const Neuron::CursorImages> m_cursorImages;   // ADR-119; none when the content lacks one
   std::shared_ptr<const Neuron::SceneTextures> m_sceneTextures; // ADR-121; none when the content lacks one
   std::shared_ptr<const Neuron::SceneMeshes> m_sceneMeshes;     // ADR-122; none when the content lacks one

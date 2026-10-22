@@ -111,6 +111,9 @@
     <ClInclude Include="MessageCodec.h">
       <Filter>Network</Filter>
     </ClInclude>
+    <ClInclude Include="MessagePattern.h">
+      <Filter>Content</Filter>
+    </ClInclude>
     <ClInclude Include="NativeWindowHandle.h">
       <Filter>Platform</Filter>
     </ClInclude>
@@ -161,6 +164,9 @@
     </ClInclude>
     <ClInclude Include="StreamFraming.h">
       <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="StringTableAsset.h">
+      <Filter>Content</Filter>
     </ClInclude>
     <ClInclude Include="TerrainField.h">
       <Filter>Terrain</Filter>
@@ -263,6 +269,9 @@
     <ClCompile Include="MessageCodec.cpp">
       <Filter>Network</Filter>
     </ClCompile>
+    <ClCompile Include="MessagePattern.cpp">
+      <Filter>Content</Filter>
+    </ClCompile>
     <ClCompile Include="PlatformClock.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
@@ -307,6 +316,9 @@
     </ClCompile>
     <ClCompile Include="StreamFraming.cpp">
       <Filter>Network</Filter>
+    </ClCompile>
+    <ClCompile Include="StringTableAsset.cpp">
+      <Filter>Content</Filter>
     </ClCompile>
     <ClCompile Include="TerrainField.cpp">
       <Filter>Terrain</Filter>

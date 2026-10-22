@@ -9,7 +9,9 @@ asset manifest with one fault in it, and each must fail with a message that name
 (AST-093, ADR-019's confirmation): a texture off its row, a damaged mesh (one fixture per check of the CMO importer,
 built here from the owner's meshes by a small CMO reader and writer, so no binary fixture is committed), a misnumbered
 port, a collidable mesh without its collision asset and the reverse, a collision node of no render node (ADR-129), a
-damaged glyph table and glyph sheet, a glyph table naming another face, a stray file and a damaged record. The tool is the Debug|x64 build's unless --tool names
+damaged glyph table and glyph sheet, a glyph table naming another face, a stray file, a damaged record, and a string table
+with a character GameFont does not draw, a text that is no message, a numbered argument, an unknown marker, a cycle of
+embedded strings, a malformed id and a language its file name does not give (ADR-146). The tool is the Debug|x64 build's unless --tool names
 another; the check writes nothing into the checkout.
 """
 import argparse
@@ -29,6 +31,7 @@ WEAPON = 'GameData/Meshes/ThrownWeapon.cmo'
 DWELLING = 'GameData/Meshes/Dwelling.cmo'
 STOREHOUSE_COLLISION = 'GameData/Meshes/StorehouseCollision.cmo'
 WELLSPRING_COLLISION = 'GameData/Meshes/WellspringCollision.cmo'
+STRINGS = 'GameData/Strings/en_gb.json'
 
 
 # ── A CMO file of the Visual Studio mesh content pipeline, read and written whole ──────────────────────────────────
@@ -274,6 +277,20 @@ FIXTURES = [
   ('a stray file (AST-013)', lambda r: write(r, 'GameData/Textures/Fx/Notes.txt', b'x'), 'GameData/Textures/Fx/Notes.txt', 'stray'),
   ('a record value of the wrong type (DAT-024)', replace_text('GameData/Records/tuning/mvp.json', '"ai_count": 3', '"ai_count": "3"'),
    'GameData/Records/tuning/mvp.json', 'wrong_type'),
+  ('a string with a character GameFont does not draw (UI-199)', replace_text(STRINGS, '"Species"', '"Species \u00a3"'), STRINGS,
+   'U+00A3'),
+  ('a string whose upper-cased form GameFont does not draw (UI-233)', replace_text(STRINGS, '"Species"', '"Species \u00ff"'), STRINGS,
+   'U+0178'),
+  ('a string that is no message (ADR-063)', replace_text(STRINGS, '"Species"', '"Species {count"'), STRINGS, 'not a message'),
+  ('a numbered argument (UI-227)', replace_text(STRINGS, '"Species"', '"Species {0}"'), STRINGS, 'numbered argument'),
+  ('an unknown caption marker (DAT-212)', replace_text(STRINGS, '"Species"', '"[[bold]]Species"'), STRINGS, 'unknown marker'),
+  ('a cycle of embedded strings (DAT-211)',
+   replace_text(STRINGS, '"ui.title.game_name": "Species"',
+                '"ui.title.game_name": "[[string:ui.title.other]]", "ui.title.other": "[[string:ui.title.game_name]]"'), STRINGS, 'cycle'),
+  ('a string id that is not lower-case and dotted (DAT-207)', replace_text(STRINGS, '"ui.title.game_name"', '"UI.Title"'), STRINGS,
+   'not a string id'),
+  ('a string table whose language is not its file name\'s (DAT-206)', replace_text(STRINGS, '"en-GB"', '"en-US"'), STRINGS,
+   'language field'),
 ]
 
 

@@ -2,6 +2,8 @@
 
 #include "AssetError.h"
 #include "Log.h"
+#include "MessageFormat.h"
+#include "MessagePattern.h"
 #include "TextLayout.h"
 #include "UiLook.h"
 #include "UiText.h"
@@ -9,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <string>
 #include <string_view>
 
 namespace Species
@@ -30,6 +33,11 @@ constexpr float PANEL_WIDTH_MAX = 960.0f;
 constexpr float SWATCH_SIZE = 48.0f;
 constexpr std::uint32_t STYLE_SCALE = 2;
 constexpr std::uint32_t SCALE_LINES = 4;
+// The test page's strings (ADR-146): the game's name, which the table holds, an id no table holds, and a plural.
+constexpr std::string_view TEST_PAGE_TITLE_ID = "ui.title.game_name";
+constexpr std::string_view TEST_PAGE_UNWRITTEN_ID = "ui.test_page.unwritten";
+constexpr std::string_view TEST_PAGE_PLURAL = "{count, plural, one {# Worker} other {# Workers}}";
+constexpr std::array<std::int64_t, 3> TEST_PAGE_COUNTS{1, 2, 1500};
 
 std::array<float, 4> Rgba(double _r, double _g, double _b, double _a) noexcept
 {
@@ -83,8 +91,8 @@ void AppendBadgeCount(const BadgeLabel& _label, const Neuron::FontAsset& _face, 
   Neuron::AppendText(_out, _face, _label.text, _label.left, _label.middle - cellHeight * 0.5f, style);
 }
 
-void AppendUiTestPage(const Neuron::FontAsset& _face, const TuningPresentation& _presentation, Neuron::SizePx _size,
-                      std::vector<Neuron::UiBatch>& _out)
+void AppendUiTestPage(const Neuron::FontAsset& _face, const TuningPresentation& _presentation, const Neuron::StringTable& _strings,
+                      const Neuron::MessageLocale& _locale, Neuron::SizePx _size, std::vector<Neuron::UiBatch>& _out)
 {
   const TuningPresentation::Ui& ui = _presentation.ui;
   const std::array<float, 4> bodyTint =
@@ -144,6 +152,25 @@ void AppendUiTestPage(const Neuron::FontAsset& _face, const TuningPresentation& 
   y += cell * STYLE_SCALE + PAGE_GAP;
   Neuron::AppendText(_out, _face, "Missing: € Ł ж 漢", x, y, outlined);
   y += cell * STYLE_SCALE + PAGE_GAP;
+
+  // ADR-146: a string the table holds, one it does not, which a Debug build shows as its id, and a plural formatted in
+  // the language's forms through ICU.
+  Neuron::TextStyle plain;
+  Neuron::AppendText(_out, _face, _strings.Lookup(TEST_PAGE_TITLE_ID), x, y, plain);
+  y += cell + PAGE_GAP;
+  Neuron::AppendText(_out, _face, _strings.Lookup(TEST_PAGE_UNWRITTEN_ID), x, y, plain);
+  y += cell + PAGE_GAP;
+  if (const auto workers = Neuron::ParseMessage(TEST_PAGE_PLURAL))
+  {
+    std::string counts;
+    for (const std::int64_t count : TEST_PAGE_COUNTS)
+    {
+      const std::array arguments{Neuron::MessageArgument{"count", count}};
+      counts += (counts.empty() ? "" : ", ") + Neuron::FormatPattern(*workers, arguments, _locale);
+    }
+    Neuron::AppendText(_out, _face, counts, x, y, plain);
+  }
+  y += cell + PAGE_GAP;
 
   // A swatch in each blend the UI draws solid and image quads in.
   const std::array<float, 4> whole{0.0f, 0.0f, 1.0f, 1.0f};
