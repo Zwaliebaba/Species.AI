@@ -179,7 +179,7 @@ GrowthJudgement JudgeGrowth(const GrowthRun& _run, double _tickPeriodSeconds)
   return judgement;
 }
 
-SnapshotCost MeasureSnapshot(const Species::WorldSimulation& _world, const std::filesystem::path& _folder)
+std::optional<SnapshotCost> MeasureSnapshot(const Species::WorldSimulation& _world, const std::filesystem::path& _folder)
 {
   SnapshotCost cost;
   const std::int64_t start = Neuron::MarkerClockNanoseconds();
@@ -189,7 +189,10 @@ SnapshotCost MeasureSnapshot(const Species::WorldSimulation& _world, const std::
   cost.bytes = file.size();
   Neuron::SnapshotStore store(_folder, 1);
   const std::int64_t saving = Neuron::MarkerClockNanoseconds();
-  static_cast<void>(store.Save(contents));
+  if (!store.Save(contents))
+  {
+    return std::nullopt;
+  }
   cost.saveNanoseconds = Neuron::MarkerClockNanoseconds() - saving;
   return cost;
 }

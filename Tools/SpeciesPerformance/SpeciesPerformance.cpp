@@ -440,6 +440,10 @@ int Run(const Options& _options)
           // ADR-137: the whole world's snapshot at the end of the run, saved into a folder of the tool's own.
           const std::filesystem::path folder = std::filesystem::temp_directory_path() / L"SpeciesPerformance-snapshot";
           snapshot = Performance::MeasureSnapshot(*end, folder);
+          if (!snapshot)
+          {
+            Print(stderr, std::format("the snapshot cannot be saved in {}", folder.string()));
+          }
           std::error_code ignored;
           std::filesystem::remove_all(folder, ignored);
         }

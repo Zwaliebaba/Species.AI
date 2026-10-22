@@ -81,11 +81,10 @@ Chosen options: 1 and 3.
 * **The CI regression** (`GrowthSceneTests`) runs the scene's first hour on the tests' valley and records, at 2 worker threads, at a cost of about 11 s on the Linux harness.
   - Its first five minutes hash alike at 0 worker threads (MVP-093).
   - The hour must hold:
-    - a growth step within the first 15 minutes;
-    - no gap of more than 20 minutes;
-    - a dwelling by 45 minutes;
-    - 60 to 85 Workers at its end.
-  - Those bounds sit about the 70 Workers at 0.9 hours that it had when they were recorded.
+    - no gap of more than 20 minutes between growth steps, counted from its start and up to its end;
+    - a dwelling by 50 minutes;
+    - 50 to 75 Workers at its end.
+  - Those bounds sit about the scene of the tests' valley on the tuned values: a first step at 15 minutes, a first dwelling at 40, and 60 Workers at the hour.
 
 * **The tuning** (the M2 plan §9, question 2), measured by the growth scene on seeds 1 to 8 on the Linux harness's optimised build of the game's libraries. Its results are the same simulation that CI and the owner's machine run, though a compiler that contracts floating point differently may move them by a tick here and there.
   - On the first guesses:

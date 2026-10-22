@@ -76,7 +76,7 @@ struct SnapshotCost
   std::int64_t saveNanoseconds = 0;
 };
 
-// _world's snapshot, encoded and saved into _folder, which keeps one.
-[[nodiscard]] SnapshotCost MeasureSnapshot(const Species::WorldSimulation& _world, const std::filesystem::path& _folder);
+// _world's snapshot, encoded and saved into _folder, which keeps one; none when the save fails.
+[[nodiscard]] std::optional<SnapshotCost> MeasureSnapshot(const Species::WorldSimulation& _world, const std::filesystem::path& _folder);
 
 } // namespace Performance
