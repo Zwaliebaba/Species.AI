@@ -63,6 +63,9 @@
     <ClInclude Include="SettlementHud.h">
       <Filter>View</Filter>
     </ClInclude>
+    <ClInclude Include="SettlementVerbs.h">
+      <Filter>Input</Filter>
+    </ClInclude>
     <ClInclude Include="SettlementView.h">
       <Filter>View</Filter>
     </ClInclude>
@@ -127,6 +130,9 @@
     </ClCompile>
     <ClCompile Include="SettlementHud.cpp">
       <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="SettlementVerbs.cpp">
+      <Filter>Input</Filter>
     </ClCompile>
     <ClCompile Include="SettlementView.cpp">
       <Filter>View</Filter>

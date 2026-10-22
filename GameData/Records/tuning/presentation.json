@@ -295,6 +295,10 @@
             "r": 255,
             "g": 0,
             "b": 0
+          },
+          "place_hotspot": {
+            "x": 0.5,
+            "y": 0.5
           }
         },
         "circle_particles": 30,
@@ -537,7 +541,8 @@
       "world_hotspot": {
         "x": 0.113,
         "y": 0.082
-      }
+      },
+      "place_size": 48
     },
     "selection": {
       "disc_size_factor": 0.8,
@@ -548,7 +553,8 @@
       "rise_depth_factor": 1.0,
       "inactive_brightness": 0.35,
       "flash_size": 40,
-      "flash_seconds": 0.5
+      "flash_seconds": 0.5,
+      "ghost_brightness": 0.5
     },
     "wellspring": {
       "glow_blobs": 5,
@@ -647,7 +653,9 @@
           "b": 0.9,
           "a": 0.9
         }
-      }
+      },
+      "priority_step": 10,
+      "disabled_alpha": 0.35
     }
   },
   "dbg": {

@@ -40,6 +40,7 @@ enum class UiImage : std::uint16_t
   IconStorehouse,        // icon.hud.storehouse
   IconWorkers,           // icon.power.workers: the Workers and the population limit
   IconTurret,            // icon.power.gun_turret: the turret on the construction bar
+  ArrowPointer,          // cursor.pointer: the arrows of HUD lists (UI-465), pointing down; the priorities' arrows (ADR-153)
   Count
 };
 

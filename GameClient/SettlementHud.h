@@ -31,6 +31,16 @@ struct HudNotice
   double arrivedSeconds = 0.0;
 };
 
+/// What the HUD shows of the settlement verbs (M2 task T17, ADR-153).
+struct HudVerbs
+{
+  std::optional<StructureKind> placing;              // the structure the steward is placing
+  std::optional<PlacementRefusal> foreseen;          // the refusal the client foresees at the pointer while placing
+  std::optional<PlacementRefusal> refusal;           // the server's last refusal of a placement,
+  double refusalAgeSeconds = 0.0;                    // and how long ago it came, in real time
+  std::optional<std::array<std::uint8_t, 3>> shares; // the priorities sent, shown until a status holds them
+};
+
 /// What the HUD shows (MVP-102 at M2): the client's own settlement in the replica, whose stores and population are
 /// fresh every tick; the server's latest status (MVP-098) for its growth, priorities, tasks, idle Workers, upkeep and
 /// queue; the construction bar's costs (MVP-034); the notices; and the world's seed (MVP-005).
@@ -43,16 +53,19 @@ struct HudModel
   std::vector<HudNotice> notices; // oldest first
   double nowSeconds = 0.0;        // real time
   double tickSeconds = 0.1;       // ref.sim.tick_period
+  HudVerbs verbs;                 // ADR-153
 };
 
-// The HUD's screen zones (UI-461, R-CTRL-223): the pointer over one reaches no world verb (T17).
+// The HUD's screen zones (UI-461, R-CTRL-223): a press over one reaches no world verb (ADR-153).
 enum class HudZone : std::uint8_t
 {
-  Settlement, // the settlement panel
-  Build,      // a construction bar entry; its index is BUILD_KINDS's
-  Queue,      // the construction queue
-  Notices,    // the notification cards
-  World       // the world's information panel
+  Settlement,    // the settlement panel
+  Build,         // a construction bar entry; its index is BUILD_KINDS's
+  Queue,         // the construction queue
+  Notices,       // the notification cards
+  World,         // the world's information panel
+  PriorityRaise, // a priority's raising arrow; its index is the task's, from gathering (ADR-153)
+  PriorityLower  // a priority's lowering arrow
 };
 
 struct HudZoneRect
@@ -67,9 +80,13 @@ struct HudZoneRect
 [[nodiscard]] std::vector<HudNotice> AgeNotices(std::vector<HudNotice> _notices, std::span<const SettlementNotice> _arrived,
                                                 double _nowSeconds, const TuningPresentation& _presentation);
 
-// The HUD's model from the session at real time _nowSeconds, with the notices of AgeNotices.
+// The dwellings of team _team in a replica's tick, built or queued, as the server counts them for MVP-034's cost.
+[[nodiscard]] std::int64_t TeamDwellings(const StateReplica::View& _latest, std::uint8_t _team);
+
+// The HUD's model from the session at real time _nowSeconds, with the notices of AgeNotices and the verbs' _verbs.
 [[nodiscard]] HudModel HudModelOf(const ClientSession& _session, const TuningMvp& _tuning, const TuningPresentation& _presentation,
-                                  std::vector<HudNotice> _notices, std::span<const SettlementNotice> _arrived, double _nowSeconds);
+                                  std::vector<HudNotice> _notices, std::span<const SettlementNotice> _arrived, double _nowSeconds,
+                                  const HudVerbs& _verbs);
 
 /// MVP-102's settlement HUD at M2 (ADR-152, recipe D of UI-460): panels over the world in the HUD space of RND-377,
 /// with no focus of their own, drawn in the UI pass. The settlement panel holds the stores and their capacity, the
@@ -83,9 +100,9 @@ public:
   SettlementHud(const TuningPresentation& _presentation, const TuningMvp& _tuning);
 
   // Once a frame in the UI's update (UI-460): asks the server for the settlement's status every mvp.hud.status_period of
-  // real time (MVP-098), takes the session's notices, and lays the panels out for _metrics, producing their zones,
-  // which the pointer's hit test reads from the next frame (UI-461).
-  void Update(ClientSession& _session, double _realSeconds, const Neuron::UiMetrics& _metrics);
+  // real time (MVP-098), takes the session's notices and the verbs' state, and lays the panels out for _metrics,
+  // producing their zones, which the pointer's hit test reads from the next frame (UI-461).
+  void Update(ClientSession& _session, double _realSeconds, const Neuron::UiMetrics& _metrics, const HudVerbs& _verbs);
   // The frame's panels, from the model and layout of the last update.
   void Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale,
             std::vector<Neuron::UiBatch>& _out) const;
@@ -98,7 +115,8 @@ public:
   {
     return m_zones;
   }
-  // The zone under a client position, or none: the world lies under it.
+  // The zone under a client position, the last laid out that holds it, so an arrow before its panel; or none: the
+  // world lies under it.
   [[nodiscard]] std::optional<HudZoneRect> ZoneAt(Neuron::PointPx _position) const noexcept;
 
   // For a test: the model and the layout as an update would make them.
@@ -116,6 +134,7 @@ private:
   Neuron::UiRect m_panel;
   Neuron::UiRect m_world;
   std::array<Neuron::UiRect, BUILD_KINDS.size()> m_build{};
+  std::array<std::array<Neuron::UiRect, 2>, 3> m_arrows{}; // each priority's lowering and raising arrows (ADR-153)
   Neuron::UiRect m_queue;
   std::size_t m_panelRows = 0;
   std::optional<double> m_lastRequest;

@@ -8,6 +8,7 @@
 #include "UiLook.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <vector>
@@ -66,8 +67,9 @@ public:
     Species::SettlementHud hud(CommittedPresentation(), CommittedTuning());
     const Neuron::UiMetrics metrics = MetricsAt({1280, 720});
     hud.SetModel(SettlementModel(), metrics);
-    // The settlement panel, three construction bar entries, the queue, the notices and the world's panel.
-    ExpectEqual(7, static_cast<std::int64_t>(hud.Zones().size()), L"every panel is a zone");
+    // The settlement panel, three construction bar entries, the queue, the notices and the world's panel; and each
+    // priority's two arrows (ADR-153).
+    ExpectEqual(7 + 6, static_cast<std::int64_t>(hud.Zones().size()), L"every panel and arrow is a zone");
     const auto& keys = CommittedPresentation().mvp.hud;
     const double unit = 720.0 / 600.0;
     const Neuron::UiRect panel = hud.Zones()[0].rect;
@@ -75,12 +77,20 @@ public:
     const double rows = 7 + 1 + 2;
     Assert::AreEqual(std::round(keys.padding * unit) * 2.0 + std::round(keys.rowHeight * unit) * rows, static_cast<double>(panel.Height()),
                      1e-3, L"the panel holds its rows");
-    const Species::HudZoneRect storehouse = hud.Zones()[2];
-    Assert::IsTrue(storehouse.zone == Species::HudZone::Build && storehouse.index == 1, L"the bar's second entry, the storehouse");
+    const auto found = std::ranges::find_if(hud.Zones(), [](const Species::HudZoneRect& _zone)
+                                            { return _zone.zone == Species::HudZone::Build && _zone.index == 1; });
+    Assert::IsTrue(found != hud.Zones().end(), L"the bar's second entry, the storehouse");
+    const Species::HudZoneRect storehouse = *found;
     const auto hit =
       hud.ZoneAt({static_cast<std::int32_t>(storehouse.rect.left + 2.0f), static_cast<std::int32_t>(storehouse.rect.top + 2.0f)});
     Assert::IsTrue(hit.has_value() && hit->zone == Species::HudZone::Build && hit->index == 1, L"the pointer over it finds it");
     Assert::IsFalse(hud.ZoneAt({640, 360}).has_value(), L"the middle of the view is the world's");
+    // ADR-153: an arrow over its panel is found before the panel.
+    const auto raise = std::ranges::find_if(hud.Zones(), [](const Species::HudZoneRect& _zone)
+                                            { return _zone.zone == Species::HudZone::PriorityRaise && _zone.index == 2; });
+    Assert::IsTrue(raise != hud.Zones().end() && panel.Contains(raise->rect.left + 1.0f, raise->rect.top + 1.0f), L"guard's raise arrow");
+    const auto arrow = hud.ZoneAt({static_cast<std::int32_t>(raise->rect.left + 1.0f), static_cast<std::int32_t>(raise->rect.top + 1.0f)});
+    Assert::IsTrue(arrow.has_value() && arrow->zone == Species::HudZone::PriorityRaise && arrow->index == 2, L"the arrow, not the panel");
 
     Species::HudModel sandbox;
     hud.SetModel(sandbox, metrics);
@@ -117,8 +127,64 @@ public:
     ExpectEqual(7 * 2 - 1, imageQuads(Species::UiImage::HudMeter), L"each meter's track and fill");
     ExpectEqual(2, imageQuads(Species::UiImage::NotificationCard), L"a card for each notice");
     ExpectEqual(1 + 1 + 2, imageQuads(Species::UiImage::IconDwelling), L"the dwelling on the bar, in the queue and on both cards");
+    ExpectEqual(6, imageQuads(Species::UiImage::ArrowPointer), L"each priority's two arrows (ADR-153)");
+    ExpectEqual(2, imageQuads(Species::UiImage::PanelAccent), L"the settlement and world panels in the accent strip");
     Assert::IsTrue(std::ranges::any_of(batches, [](const Neuron::UiBatch& _batch) { return _batch.source == Neuron::UiSource::Glyphs; }),
                    L"and its text");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp101TheHudShowsThePlacingTheRefusalAndTheSharesSent)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-036")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp101TheHudShowsThePlacingTheRefusalAndTheSharesSent)
+  {
+    Species::SettlementHud hud(CommittedPresentation(), CommittedTuning());
+    Neuron::TextSystem text(Species::TextSystemDesc(CommittedPresentation()));
+    const Neuron::StringTable strings;
+    const Neuron::MessageLocale locale("en-US");
+    const auto drawn = [&](const Species::HudVerbs& _verbs)
+    {
+      Species::HudModel model = SettlementModel();
+      model.verbs = _verbs;
+      hud.SetModel(model, MetricsAt({1920, 1080}));
+      std::vector<Neuron::UiBatch> batches;
+      hud.Draw(text, strings, locale, batches);
+      return batches;
+    };
+    const auto count = [](const std::vector<Neuron::UiBatch>& _batches, Neuron::UiSource _source, std::uint16_t _image)
+    {
+      std::int64_t quads = 0;
+      for (const Neuron::UiBatch& batch : _batches)
+      {
+        if (batch.source == _source && (_source != Neuron::UiSource::Image || batch.image == _image))
+        {
+          quads += static_cast<std::int64_t>(batch.quads.size());
+        }
+      }
+      return quads;
+    };
+    const auto accent = static_cast<std::uint16_t>(Species::UiImage::PanelAccent);
+    const std::vector<Neuron::UiBatch> idle = drawn({});
+    Species::HudVerbs placing;
+    placing.placing = Species::StructureKind::Storehouse;
+    const std::vector<Neuron::UiBatch> placed = drawn(placing);
+    ExpectEqual(count(idle, Neuron::UiSource::Image, accent) + 1, count(placed, Neuron::UiSource::Image, accent),
+                L"the entry being placed in the accent strip");
+    Assert::IsTrue(count(placed, Neuron::UiSource::Glyphs, 0) > count(idle, Neuron::UiSource::Glyphs, 0), L"and a line above the queue");
+    Species::HudVerbs refused;
+    refused.refusal = Species::PlacementRefusal::CannotAfford;
+    refused.refusalAgeSeconds = CommittedPresentation().mvp.hud.noticeSeconds;
+    ExpectEqual(count(idle, Neuron::UiSource::Glyphs, 0), count(drawn(refused), Neuron::UiSource::Glyphs, 0), L"a refusal past its time");
+    refused.refusalAgeSeconds = 0.0;
+    Assert::IsTrue(count(drawn(refused), Neuron::UiSource::Glyphs, 0) > count(idle, Neuron::UiSource::Glyphs, 0), L"a fresh refusal shows");
+    // MVP-036: the shares sent fill the meters until a status holds them.
+    Species::HudVerbs sent;
+    sent.shares = std::array<std::uint8_t, 3>{100, 0, 0};
+    const std::vector<Neuron::UiBatch> moved = drawn(sent);
+    ExpectEqual(count(idle, Neuron::UiSource::Image, static_cast<std::uint16_t>(Species::UiImage::HudMeter)) - 2,
+                count(moved, Neuron::UiSource::Image, static_cast<std::uint16_t>(Species::UiImage::HudMeter)),
+                L"two empty priority meters draw no fill");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp102ANoticeStaysItsSecondsAndTheNewestAreKept)

@@ -8,6 +8,8 @@
 #include "ReplicaTiming.h"
 #include "RoutePreview.h"
 #include "SettlementCamera.h"
+#include "SettlementHud.h"
+#include "SettlementVerbs.h"
 #include "StewardAreas.h"
 #include "TuningMvp.h"
 #include "TuningPresentation.h"
@@ -24,13 +26,14 @@
 namespace Species
 {
 
-// The cursors of mvp_assets.md table 7, in the order of CursorImages: the default pointer, over a selectable Leader, and
-// unavailable (ADR-119).
+// The cursors of mvp_assets.md table 7, in the order of CursorImages: the default pointer, over a selectable Leader,
+// unavailable (ADR-119), and placing a structure (ADR-153).
 enum class CursorKind : std::uint8_t
 {
   World,
   Highlight,
-  Unavailable
+  Unavailable,
+  Place
 };
 
 // The cursors' art from the content (AST-014 keys `textures/cursor/<name>` and `<name>shadow`): none when a file is
@@ -54,7 +57,9 @@ enum class CursorKind : std::uint8_t
 /// sends through the session, and the cursor it shows; with T17b (ADR-125), the route preview of the selection, the
 /// world markers, whose marker under the pointer the verbs read as a Leader under it, and the badge near the pointer;
 /// with O82 (ADR-127), the primary button's orders, the ordered route kept fading, and the badge's count; with M2 task
-/// T13 (ADR-142), the steward's areas, which bound the camera. Frame thread only.
+/// T13 (ADR-142), the steward's areas, which bound the camera; with M2 task T17 (ADR-153), the settlement verbs, which take
+/// a press over the HUD and the presses of placing before the battle verbs, with the placement cursor and ghost. Frame
+/// thread only.
 class SettlementView
 {
 public:
@@ -70,8 +75,10 @@ public:
   explicit SettlementView(const Desc& _desc);
 
   // Once per frame, before the session's update: _dtSeconds is the real frame step, _view the client area the pointer is
-  // in. The verbs read the outcomes the session received since the last frame and send their commands through it.
-  void Update(ClientSession& _session, Neuron::InputRouter& _router, double _dtSeconds, Neuron::SizePx _view, bool _focused);
+  // in, and _hud the HUD whose zones of the last frame take the presses over them (UI-461), none where no HUD is drawn.
+  // The verbs read the outcomes the session received since the last frame and send their commands through it.
+  void Update(ClientSession& _session, Neuron::InputRouter& _router, double _dtSeconds, Neuron::SizePx _view, bool _focused,
+              const SettlementHud* _hud);
   // CAM-060's entry pose about the ground point _ground in place of the steward's site, in the world entered: the frame
   // bench aims its fixed camera at a scene's fight this way (O79, ADR-126). Nothing while no world is entered.
   void EnterAt(const Neuron::Vec3& _ground);
@@ -106,6 +113,11 @@ public:
   [[nodiscard]] const BattleVerbs& Verbs() const noexcept
   {
     return m_verbs;
+  }
+  // ADR-153: the settlement verbs: placing, the priorities and the refusals the HUD shows.
+  [[nodiscard]] const SettlementVerbs& Settlement() const noexcept
+  {
+    return m_settlement;
   }
   [[nodiscard]] const RoutePreview& Preview() const noexcept
   {
@@ -146,6 +158,7 @@ private:
   const RegionTerrain* m_terrain = nullptr; // the terrain the camera entered
   CameraBounds m_region;
   BattleVerbs m_verbs;
+  SettlementVerbs m_settlement;
   RoutePreview m_preview;
   WorldMarkers m_markers;
   std::vector<Neuron::OverlayQuad> m_badge;

@@ -393,7 +393,7 @@ SceneEnd RunScene(const Scene& _scene, const Options& _options, const Bench& _be
     }
     const Neuron::SizePx size = _bench.window->ClientSize();
     // The camera never moves: the view is updated without focus, and aimed at the fight once the world is entered.
-    view.Update(session, *_bench.router, stepSeconds, size, false);
+    view.Update(session, *_bench.router, stepSeconds, size, false, &world.Hud());
     if (!aimed && view.InWorld() && session.Terrain() != nullptr)
     {
       view.EnterAt(FightOf(_scene.kind, *session.Terrain(), tuning));
@@ -401,7 +401,7 @@ SceneEnd RunScene(const Scene& _scene, const Options& _options, const Bench& _be
     }
     session.Update();
     world.Update(session);
-    world.UpdateHud(session, size, _bench.window->DpiScale()); // ADR-152: drawn as the client draws it, where a settlement exists
+    world.UpdateHud(session, view, size, _bench.window->DpiScale()); // ADR-152: drawn as the client draws it, where a settlement exists
     const Neuron::FrameInputs inputs = world.Frame(session, view, _bench.renderer->FramesPerSecond(), _bench.window->DpiScale());
     const std::uint64_t worldFrames = _bench.renderer->WorldFrames();
     const Neuron::FrameOutcome outcome =

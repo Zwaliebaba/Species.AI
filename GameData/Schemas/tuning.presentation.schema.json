@@ -2397,12 +2397,44 @@
                       "additionalProperties": false,
                       "x-species-type": "object",
                       "x-species-presence": "required"
+                    },
+                    "place_hotspot": {
+                      "type": "object",
+                      "description": "ref.ctrl.cursor.set.place_hotspot (R-CTRL-350)",
+                      "properties": {
+                        "x": {
+                          "type": "number",
+                          "description": "ref.ctrl.cursor.set.place_hotspot.x",
+                          "minimum": 0,
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "fraction of the size",
+                          "x-species-presence": "required"
+                        },
+                        "y": {
+                          "type": "number",
+                          "description": "ref.ctrl.cursor.set.place_hotspot.y",
+                          "minimum": 0,
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "fraction of the size",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "x",
+                        "y"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
                     }
                   },
                   "required": [
                     "highlight_hotspot",
                     "unavailable_hotspot",
-                    "unavailable_color"
+                    "unavailable_color",
+                    "place_hotspot"
                   ],
                   "additionalProperties": false,
                   "x-species-type": "object",
@@ -4438,13 +4470,23 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "place_size": {
+              "type": "number",
+              "description": "mvp.cursor.place_size (MVP-101)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "physical px",
+              "x-species-presence": "required",
+              "exclusiveMinimum": 0
             }
           },
           "required": [
             "world_size",
             "highlight_size",
             "unavailable_size",
-            "world_hotspot"
+            "world_hotspot",
+            "place_size"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -4531,13 +4573,23 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "s",
               "x-species-presence": "required"
+            },
+            "ghost_brightness": {
+              "type": "number",
+              "description": "mvp.structure.ghost_brightness (MVP-101)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "brightness multiplier",
+              "x-species-presence": "required"
             }
           },
           "required": [
             "rise_depth_factor",
             "inactive_brightness",
             "flash_size",
-            "flash_seconds"
+            "flash_seconds",
+            "ghost_brightness"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -5363,6 +5415,23 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "priority_step": {
+              "type": "integer",
+              "description": "mvp.hud.priority_step (MVP-036)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "percent",
+              "x-species-presence": "required"
+            },
+            "disabled_alpha": {
+              "type": "number",
+              "description": "mvp.hud.disabled_alpha (MVP-102)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "fraction",
+              "x-species-presence": "required"
             }
           },
           "required": [
@@ -5382,7 +5451,9 @@
             "bar_button_width",
             "bar_height",
             "queue_size",
-            "palette"
+            "palette",
+            "priority_step",
+            "disabled_alpha"
           ],
           "additionalProperties": false,
           "x-species-type": "object",

@@ -177,7 +177,7 @@ enum class ScenePass : std::uint8_t
   Effects,        // pass 10a
   Lasers,         // pass 10b
   Orbs,           // pass 11
-  Routes,         // pass 12
+  Routes,         // pass 12: the route preview (ADR-125) and the placement ghost (ADR-153)
   Particles,      // pass 15
   Count
 };

@@ -431,6 +431,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.cursor.highlight_size` | 48 | physical px | — | provisional | MVP-101 | The pointer over a selectable Leader, `cursor.highlight` (O76) |
 | `mvp.cursor.unavailable_size` | 60 | physical px | — | provisional | MVP-101 | `cursor.unavailable` (O76), R-CTRL-350's size |
 | `mvp.cursor.world_hotspot` | 0.113, 0.082 | fraction of the size (x, y) | — | provisional | MVP-101 | The tip of the owner's arrow, in place of `ref.ctrl.cursor.set.world_hotspot` (0.055, 0.070), which misses it by 7 texels (ADR-119) |
+| `mvp.cursor.place_size` | 48 | physical px | — | provisional | MVP-101 | The placement cursor `cursor.place` (ADR-153), the size of the owner's other cursors in place of R-CTRL-350's 40 px; centred on `ref.ctrl.cursor.set.place_hotspot` |
 | `mvp.selection.disc_size_factor` | 0.8 | × the Worker card's half-size | — | provisional | MVP-101 | The disc on the ground under a selected Worker (O82, ADR-127) |
 | `mvp.selection.disc_alpha` | 0.35 | alpha, 0 to 1 | — | provisional | MVP-101 | The disc's strength in the control glow's colour |
 | `mvp.selection.circle_fade_seconds` | 0.4 | s of real time | — | provisional | MVP-101 | The released selection circle's fade |
@@ -438,6 +439,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.structure.inactive_brightness` | 0.35 | × the lit colour | — | provisional | MVP-083 | An inactive structure is dark (MVP-035) |
 | `mvp.structure.flash_size` | 40 | wu, half-size | — | provisional | MVP-083 | The completion flash of `fx.starburst` in the team colour |
 | `mvp.structure.flash_seconds` | 0.5 | s | — | provisional | MVP-083 | The flash fades over this time from its event |
+| `mvp.structure.ghost_brightness` | 0.5 | × the lit colour | — | provisional | MVP-101 | The placement ghost of R-CTRL-366 row 1b, drawn in RND-365's ghost blend (ADR-153); the owner tunes it at M2 task T17's run |
 | `mvp.wellspring.glow_blobs` | 5 | quads | — | provisional | MVP-083 | The Wellspring's cloudy glow, `fx.glow_cloudy` blobs circling its crystal in the team colour (O77) |
 | `mvp.wellspring.glow_radius` | 12 | wu | — | provisional | MVP-083 | The circle the blobs ride |
 | `mvp.wellspring.glow_size` | 22 | wu, half-size | — | provisional | MVP-083 | — |
@@ -471,6 +473,8 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.hud.bar_button_width` | 96 | HUD units | — | provisional | MVP-101 | The construction bar's entries |
 | `mvp.hud.bar_height` | 34 | HUD units | — | provisional | MVP-101 | — |
 | `mvp.hud.queue_size` | 26 | HUD units | — | provisional | MVP-102 | A queued site's square |
+| `mvp.hud.priority_step` | 10 | % | — | provisional | MVP-036 | A priority's arrow moves its share by this much, the other two shares the other way (ADR-153) |
+| `mvp.hud.disabled_alpha` | 0.35 | opacity | — | provisional | MVP-102 | An arrow that cannot move its share |
 | `mvp.hud.palette.accent` | 0.55, 0.6, 1.0, 0.85 | linear RGBA | — | provisional | MVP-102 | O95's provisional palette for RND-403's roles: the accent panel's tint |
 | `mvp.hud.palette.neutral` | 0.7, 0.7, 0.75, 0.75 | linear RGBA | — | provisional | MVP-102 | The neutral panel's tint |
 | `mvp.hud.palette.text` | 1.0, 1.0, 1.0, 1.0 | linear RGBA | — | provisional | MVP-102 | — |

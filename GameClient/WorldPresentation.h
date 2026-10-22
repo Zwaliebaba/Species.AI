@@ -53,9 +53,9 @@ public:
 
   // Once per frame, after the session's update: builds the world's surfaces when the session's terrain is new.
   void Update(const ClientSession& _session);
-  // ADR-152: once per frame, after the session's update: the settlement HUD's model, its status requests and its layout
-  // for a client area of _client at _dpiScale.
-  void UpdateHud(ClientSession& _session, Neuron::SizePx _client, float _dpiScale);
+  // ADR-152: once per frame, after the session's update: the settlement HUD's model, with the settlement verbs of _view
+  // (ADR-153), its status requests and its layout for a client area of _client at _dpiScale.
+  void UpdateHud(ClientSession& _session, const SettlementView& _view, Neuron::SizePx _client, float _dpiScale);
   [[nodiscard]] const SettlementHud& Hud() const noexcept
   {
     return *m_hud;

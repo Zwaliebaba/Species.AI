@@ -157,6 +157,7 @@
     <ClInclude Include="RoutePreview.h" />
     <ClInclude Include="SettlementCamera.h" />
     <ClInclude Include="SettlementHud.h" />
+    <ClInclude Include="SettlementVerbs.h" />
     <ClInclude Include="SettlementView.h" />
     <ClInclude Include="StewardAreas.h" />
     <ClInclude Include="StructureLook.h" />
@@ -180,6 +181,7 @@
     <ClCompile Include="RoutePreview.cpp" />
     <ClCompile Include="SettlementCamera.cpp" />
     <ClCompile Include="SettlementHud.cpp" />
+    <ClCompile Include="SettlementVerbs.cpp" />
     <ClCompile Include="SettlementView.cpp" />
     <ClCompile Include="StewardAreas.cpp" />
     <ClCompile Include="StructureLook.cpp" />

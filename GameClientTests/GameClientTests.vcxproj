@@ -180,6 +180,7 @@
     <ClCompile Include="RoutePreviewTests.cpp" />
     <ClCompile Include="SettlementCameraTests.cpp" />
     <ClCompile Include="SettlementHudTests.cpp" />
+    <ClCompile Include="SettlementVerbsTests.cpp" />
     <ClCompile Include="StewardAreasTests.cpp" />
     <ClCompile Include="StructureLookTests.cpp" />
     <ClCompile Include="TerritoryLookTests.cpp" />

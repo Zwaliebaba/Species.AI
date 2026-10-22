@@ -31,17 +31,25 @@ constexpr std::string_view STRING_BUILD = "ui.hud.build";
 constexpr std::string_view STRING_COST = "ui.hud.cost";
 constexpr std::string_view STRING_COMPLETED = "ui.hud.completed";
 constexpr std::string_view STRING_SEED = "ui.hud.seed";
+constexpr std::string_view STRING_PLACING = "ui.hud.placing"; // ADR-153
+constexpr std::string_view STRING_REFUSED = "ui.hud.refused";
 
 // The selectors of the strings' select arguments, in GrowthState's, WorkerTask's, IdleReason's and StructureKind's orders.
 constexpr std::array<std::string_view, 3> GROWTH_SELECTORS{"growing", "at_limit", "stores_short"};
 constexpr std::array<std::string_view, 3> TASK_SELECTORS{"gather", "construct", "guard"};
 constexpr std::array<std::string_view, 4> IDLE_SELECTORS{"no_free_port", "queue_empty", "store_full", "share_met"};
+// PlacementRefusal's selectors, from NotBuildable (ADR-153).
+constexpr std::array<std::string_view, PLACEMENT_REFUSAL_MAX> REFUSAL_SELECTORS{
+  "not_buildable", "queue_full", "outside_territory", "in_center_ring", "not_walkable", "overlaps", "cannot_afford"};
 
 constexpr std::array<UiImage, 3> PRIORITY_ICONS{UiImage::IconPriorityGather, UiImage::IconPriorityConstruct, UiImage::IconPriorityGuard};
 
 // The rows of the settlement panel before its idle rows: the stores, the Workers, growth, the upkeep and the three
-// priorities.
+// priorities, which start at PRIORITY_ROW.
 constexpr std::size_t FIXED_ROWS = 7;
+constexpr std::size_t PRIORITY_ROW = 4;
+// The share a priority reaches at most (MVP-036).
+constexpr std::uint8_t SHARE_MAX = 100;
 // The gap between two notification cards and between the queue and the bar, in HUD units.
 constexpr double CARD_GAP = 4.0;
 
@@ -91,10 +99,18 @@ std::int64_t WholeRu(std::int64_t _milliRu) noexcept
   return _milliRu / 1000;
 }
 
-std::int64_t DwellingsOf(const StateReplica& _replica, std::uint8_t _team)
+std::string_view RefusalSelector(PlacementRefusal _refusal) noexcept
+{
+  const auto index = static_cast<std::size_t>(_refusal);
+  return index >= 1 && index <= REFUSAL_SELECTORS.size() ? REFUSAL_SELECTORS[index - 1] : "other";
+}
+
+} // namespace
+
+std::int64_t TeamDwellings(const StateReplica::View& _latest, std::uint8_t _team)
 {
   std::int64_t dwellings = 0;
-  for (const auto& [id, state] : _replica.Latest())
+  for (const auto& [id, state] : _latest)
   {
     const auto* structure = std::get_if<ReplicatedStructure>(&state);
     if (structure != nullptr && structure->kind == StructureKind::Dwelling && structure->owner == std::optional<std::uint8_t>(_team))
@@ -105,12 +121,11 @@ std::int64_t DwellingsOf(const StateReplica& _replica, std::uint8_t _team)
   return dwellings;
 }
 
-} // namespace
-
 HudModel HudModelOf(const ClientSession& _session, const TuningMvp& _tuning, const TuningPresentation& _presentation,
-                    std::vector<HudNotice> _notices, std::span<const SettlementNotice> _arrived, double _nowSeconds)
+                    std::vector<HudNotice> _notices, std::span<const SettlementNotice> _arrived, double _nowSeconds, const HudVerbs& _verbs)
 {
   HudModel model;
+  model.verbs = _verbs;
   model.nowSeconds = _nowSeconds;
   model.tickSeconds = _tuning.ref.sim.tickPeriod;
   model.settlement = _session.OwnSettlement();
@@ -121,7 +136,7 @@ HudModel HudModelOf(const ClientSession& _session, const TuningMvp& _tuning, con
     model.status = status;
   }
   // MVP-034: the dwelling's cost grows with every dwelling the settlement has, built or queued, as the server counts it.
-  const std::int64_t dwellings = model.settlement.has_value() ? DwellingsOf(_session.Replica(), model.settlement->team) : 0;
+  const std::int64_t dwellings = model.settlement.has_value() ? TeamDwellings(_session.Replica().Latest(), model.settlement->team) : 0;
   for (std::size_t index = 0; index < BUILD_KINDS.size(); ++index)
   {
     model.buildCostsMilliRu[index] = StructureCostMilliRu(_tuning, BUILD_KINDS[index], dwellings);
@@ -159,10 +174,10 @@ float SettlementHud::Units(double _hudUnits) const noexcept
     std::round(_hudUnits * static_cast<double>(m_metrics.HudUnitPixels()) * static_cast<double>(m_metrics.uiScale)));
 }
 
-void SettlementHud::Update(ClientSession& _session, double _realSeconds, const Neuron::UiMetrics& _metrics)
+void SettlementHud::Update(ClientSession& _session, double _realSeconds, const Neuron::UiMetrics& _metrics, const HudVerbs& _verbs)
 {
   const std::vector<SettlementNotice> arrived = _session.TakeNotices();
-  m_model = HudModelOf(_session, m_tuning, m_presentation, std::move(m_model.notices), arrived, _realSeconds);
+  m_model = HudModelOf(_session, m_tuning, m_presentation, std::move(m_model.notices), arrived, _realSeconds, _verbs);
   // MVP-098: the status is server data, asked for once a period while the client has a settlement.
   if (m_model.settlement.has_value() &&
       (!m_lastRequest.has_value() || _realSeconds - *m_lastRequest >= m_presentation.mvp.hud.statusPeriod || _realSeconds < *m_lastRequest))
@@ -207,6 +222,20 @@ void SettlementHud::Layout(const Neuron::UiMetrics& _metrics)
   m_panelRows = m_model.status.has_value() ? FIXED_ROWS + idleRows : 3;
   m_panel = Neuron::UiRect::FromSize(margin, margin, Units(hud.panelWidth), 2.0f * padding + row * static_cast<float>(m_panelRows));
   m_zones.push_back({HudZone::Settlement, 0, m_panel});
+  // ADR-153: each priority's lowering and raising arrows at its row's right end, once the status gives the shares.
+  if (m_model.status.has_value())
+  {
+    const float icon = Units(hud.iconSize);
+    for (std::size_t task = 0; task < m_arrows.size(); ++task)
+    {
+      const float top = std::round(m_panel.top + padding + row * static_cast<float>(PRIORITY_ROW + task) + (row - icon) * 0.5f);
+      const float raiseLeft = m_panel.right - padding - icon;
+      m_arrows[task][0] = Neuron::UiRect::FromSize(raiseLeft - padding - icon, top, icon, icon);
+      m_arrows[task][1] = Neuron::UiRect::FromSize(raiseLeft, top, icon, icon);
+      m_zones.push_back({HudZone::PriorityLower, static_cast<std::uint8_t>(task), m_arrows[task][0]});
+      m_zones.push_back({HudZone::PriorityRaise, static_cast<std::uint8_t>(task), m_arrows[task][1]});
+    }
+  }
 
   // The construction bar, bottom centre, and the queue's row above it.
   const float buttonWidth = Units(hud.barButtonWidth);
@@ -246,11 +275,11 @@ void SettlementHud::Layout(const Neuron::UiMetrics& _metrics)
 
 std::optional<HudZoneRect> SettlementHud::ZoneAt(Neuron::PointPx _position) const noexcept
 {
-  for (const HudZoneRect& zone : m_zones)
+  for (auto zone = m_zones.rbegin(); zone != m_zones.rend(); ++zone)
   {
-    if (zone.rect.Contains(static_cast<float>(_position.x), static_cast<float>(_position.y)))
+    if (zone->rect.Contains(static_cast<float>(_position.x), static_cast<float>(_position.y)))
     {
-      return zone;
+      return *zone;
     }
   }
   return std::nullopt;
@@ -356,15 +385,27 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
       line(STRING_INACTIVE, inactive, 0.0f, top, row, negative, true, m_panel.right - padding);
     }
     top += row;
-    // MVP-036: each priority's share with the Workers that hold its task.
+    // MVP-036: each priority's share with the Workers that hold its task; the shares sent until a status holds them, and
+    // the arrows that move them (ADR-153), cursor.pointer's art pointing down and flipped for up (UI-076).
+    const std::array<std::uint8_t, 3> shares = m_model.verbs.shares.value_or(status.priorities);
+    const float arrowsWidth = 2.0f * (icon + padding);
     for (std::size_t task = 0; task < TASK_SELECTORS.size(); ++task)
     {
       rowIcon(PRIORITY_ICONS[task]);
       const std::array arguments{Neuron::FormatArgument{"task", TASK_SELECTORS[task]},
-                                 Neuron::FormatArgument{"share", static_cast<std::int64_t>(status.priorities[task])},
+                                 Neuron::FormatArgument{"share", static_cast<std::int64_t>(shares[task])},
                                  Neuron::FormatArgument{"workers", static_cast<std::int64_t>(status.tasks[task])}};
       line(STRING_PRIORITY, arguments, textLeft, top, row - meterHeight, text);
-      meter(textLeft, top + row - meterHeight - 1.0f, meterWidth, static_cast<double>(status.priorities[task]) / 100.0);
+      meter(textLeft, top + row - meterHeight - 1.0f, meterWidth - arrowsWidth, static_cast<double>(shares[task]) / SHARE_MAX);
+      const std::array<bool, 2> movable{shares[task] > 0, shares[task] < SHARE_MAX};
+      for (std::size_t arrow = 0; arrow < movable.size(); ++arrow)
+      {
+        const Neuron::UiRect& rect = m_arrows[task][arrow];
+        panel(UiImage::PanelNeutral, rect, Rgba(palette.neutral));
+        const std::array<float, 4> uv =
+          arrow == 1 ? std::array<float, 4>{0.0f, 1.0f, 1.0f, 0.0f} : std::array<float, 4>{0.0f, 0.0f, 1.0f, 1.0f};
+        image(UiImage::ArrowPointer, rect, Rgba(palette.text, movable[arrow] ? 1.0 : hud.disabledAlpha), uv);
+      }
       top += row;
     }
     // MVP-037: the idle Workers, by reason.
@@ -393,7 +434,15 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
   for (std::size_t index = 0; index < BUILD_KINDS.size(); ++index)
   {
     const Neuron::UiRect& button = m_build[index];
-    panel(UiImage::PanelNeutral, button, Rgba(palette.neutral));
+    // ADR-153: the entry being placed in the accent strip.
+    if (m_model.verbs.placing == BUILD_KINDS[index])
+    {
+      panel(UiImage::PanelAccent, button, Rgba(palette.accent));
+    }
+    else
+    {
+      panel(UiImage::PanelNeutral, button, Rgba(palette.neutral));
+    }
     image(KindIcon(BUILD_KINDS[index]),
           Neuron::UiRect::FromSize(button.left + padding, std::round(button.top + (button.Height() - icon) * 0.5f), icon, icon), text);
     const float left = button.left + 2.0f * padding + icon;
@@ -419,6 +468,39 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
       image(KindIcon(queued.kind), Neuron::UiRect::FromSize(cell.left + inset, cell.top + inset - meterHeight, icon, icon), text);
       meter(cell.left + 2.0f, cell.bottom - meterHeight - 2.0f, site - 4.0f, static_cast<double>(queued.progressPermille) / 1000.0);
       left += site + gap;
+    }
+  }
+
+  // ADR-153: above the queue, the server's last refusal of a placement with its reason, fading as a card does; else,
+  // while placing, the refusal the client foresees at the pointer, or the structure being placed.
+  {
+    const auto centered = [&](std::string_view _id, std::span<const Neuron::FormatArgument> _arguments, const std::array<float, 4>& _color)
+    {
+      const std::string formatted = _strings.Format(_id, _arguments, _locale);
+      const Neuron::TextLine laid = _text.Layout(formatted, Neuron::FontRole::Body, textPixels);
+      Neuron::TextStyle style;
+      style.color = _color;
+      const float lineTop = m_queue.top - Units(CARD_GAP) - row;
+      Neuron::AppendText(_out, laid, std::round((static_cast<float>(m_metrics.client.width) - laid.widthPixels) * 0.5f),
+                         Neuron::RowTextTop(lineTop, row, laid.heightPixels), style);
+    };
+    const HudVerbs& verbs = m_model.verbs;
+    if (verbs.refusal.has_value() && verbs.refusalAgeSeconds < hud.noticeSeconds)
+    {
+      const double left = hud.noticeSeconds - verbs.refusalAgeSeconds;
+      const double alpha = hud.noticeFade > 0.0 ? std::clamp(left / hud.noticeFade, 0.0, 1.0) : 1.0;
+      const std::array arguments{Neuron::FormatArgument{"reason", RefusalSelector(*verbs.refusal)}};
+      centered(STRING_REFUSED, arguments, Rgba(palette.negative, alpha));
+    }
+    else if (verbs.placing.has_value() && verbs.foreseen.has_value())
+    {
+      const std::array arguments{Neuron::FormatArgument{"reason", RefusalSelector(*verbs.foreseen)}};
+      centered(STRING_REFUSED, arguments, negative);
+    }
+    else if (verbs.placing.has_value())
+    {
+      const std::array arguments{Neuron::FormatArgument{"kind", KindSelector(*verbs.placing)}};
+      centered(STRING_PLACING, arguments, text);
     }
   }
 

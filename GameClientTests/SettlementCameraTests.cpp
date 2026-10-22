@@ -431,6 +431,10 @@ public:
     const Neuron::CursorQuad unavailable = Species::CursorAt(Species::CursorKind::Unavailable, {500, 300}, CommittedPresentation());
     Assert::IsTrue(unavailable.image == 2 && unavailable.sidePixels == 60.0f && unavailable.left == 470.0f, L"60 px, centred");
     Assert::IsTrue(unavailable.color[0] == 1.0f && unavailable.color[1] == 0.0f && unavailable.color[2] == 0.0f, L"red");
+    // ADR-153: the placement cursor, mvp.cursor.place_size, centred on ref.ctrl.cursor.set.place_hotspot, white.
+    const Neuron::CursorQuad place = Species::CursorAt(Species::CursorKind::Place, {500, 300}, CommittedPresentation());
+    Assert::IsTrue(place.image == 3 && place.sidePixels == 48.0f && place.left == 476.0f && place.top == 276.0f, L"48 px, centred");
+    Assert::IsTrue(place.color[0] == 1.0f && place.color[1] == 1.0f && place.color[2] == 1.0f, L"white");
   }
 };
 

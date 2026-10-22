@@ -101,5 +101,10 @@ Chosen option: 1.
 
 ## More Information
 
+* **Amendment 2026-10-22 (M2 task T17, [ADR-153](ADR-153-the-settlement-verbs-at-m2.md)).** The HUD's verbs are built:
+  - each priority row has a lowering and a raising arrow, each a zone, found by `ZoneAt` before its panel;
+  - the entry being placed is drawn in the accent strip;
+  - a line above the queue shows the server's refusal, the refusal the client foresees while placing, or the structure being placed;
+  - the priorities show the shares sent until a status holds them.
 * Owner decision O95; DEC-1005; MVP-005, MVP-034, MVP-037, MVP-098, MVP-101, MVP-102; UI-168, UI-171, UI-460, UI-461; RND-377, RND-403.
 * The code: `GameClient/SettlementHud`, `ClientSession` (`LatestStatus`, `WorldSeed`), `UiLook` (the HUD's images), `WorldPresentation` (`UpdateHud`, pass 19); `GameShared/StructureCost`; `GameLogic/Construction`.

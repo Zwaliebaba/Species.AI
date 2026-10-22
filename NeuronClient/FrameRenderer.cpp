@@ -423,6 +423,10 @@ constexpr auto WORLD_PIPELINES = std::to_array<PipelineEntry>({
    PipelineTarget::Scene},
   {"glow_additive_fog", g_UnlitTexturedVS, g_UnlitTexturedGlowFogPS, VertexLayout::QuadInstance, BlendState::Additive, DepthState::Test,
    CullState::None, PipelineTarget::Scene},
+  // M2 task T17 (ADR-153): the placement ghost model of R-CTRL-366 row 1b, lit with no fog, in the ghost blend of RND-365,
+  // depth-tested and writing no depth, in pass 12.
+  {"cursor_ghost", g_MeshLitVS, g_MeshLitPS, VertexLayout::MeshInstanced, BlendState::Ghost, DepthState::Test, CullState::Back,
+   PipelineTarget::Scene},
   // M2 task T14 (ADR-145, ADR-149): the UI's quads over the back buffer in pass 19 and with the cursor in pass 20, by
   // what they read and how they blend (UI-180, UI-184); the UI never tests or writes depth (UI-183).
   {"ui_solid_alpha", g_UiVS, g_UiSolidPS, VertexLayout::UiQuadInstance, BlendState::Alpha, DepthState::None, CullState::None,
@@ -1033,8 +1037,9 @@ void RecordWorldFrame(RendererState& _state, const FrameInputs& _inputs, ID3D12R
     }
     case WorldPass::Routes:
     {
-      // RND-353: the route preview's spots, then its arrows.
+      // ADR-153: the placement ghost; then RND-353's route preview, its spots and then its arrows.
       ENGINE_PROFILE_SCOPE("render.route_lines");
+      _state.meshes->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::Routes, _inputs.meshBatches);
       _state.quads->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::Routes, _inputs.quadBatches);
       break;
     }

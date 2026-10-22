@@ -265,12 +265,13 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
     const Neuron::Nanoseconds frameStart = stepStart;
     const Neuron::Nanoseconds frameTime = frameStart - previousFrame;
     previousFrame = frameStart;
-    _view.Update(_session, router, std::chrono::duration<double>(frameTime).count(), _window.ClientSize(), _window.HasFocus());
+    _view.Update(_session, router, std::chrono::duration<double>(frameTime).count(), _window.ClientSize(), _window.HasFocus(),
+                 &_world.Hud());
     endStep(ClientStep::Input);
     _session.Update();
     endStep(ClientStep::Session);
     _world.Update(_session);
-    _world.UpdateHud(_session, _window.ClientSize(), _window.DpiScale());
+    _world.UpdateHud(_session, _view, _window.ClientSize(), _window.DpiScale());
     const Neuron::FrameInputs inputs = _world.Frame(_session, _view, _renderer.FramesPerSecond(), _window.DpiScale());
     endStep(ClientStep::Presentation);
     const Neuron::FrameOutcome outcome =

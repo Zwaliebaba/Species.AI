@@ -258,10 +258,11 @@ void WorldPresentation::SetDisplay(const DisplayOptions& _display)
   m_ui->SetScales(_display.uiScale, _display.textScale);
 }
 
-void WorldPresentation::UpdateHud(ClientSession& _session, Neuron::SizePx _client, float _dpiScale)
+void WorldPresentation::UpdateHud(ClientSession& _session, const SettlementView& _view, Neuron::SizePx _client, float _dpiScale)
 {
   const double seconds = std::chrono::duration<double>(m_desc.clock->Now() - m_start).count();
-  m_hud->Update(_session, seconds, UiMetricsOf(*m_desc.presentation, _client, _dpiScale, m_desc.display.uiScale, m_desc.display.textScale));
+  m_hud->Update(_session, seconds, UiMetricsOf(*m_desc.presentation, _client, _dpiScale, m_desc.display.uiScale, m_desc.display.textScale),
+                _view.Settlement().ForHud());
 }
 
 void WorldPresentation::Update(const ClientSession& _session)
@@ -391,6 +392,11 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
       std::vector<InterpolatedStructure> shown = InterpolateStructures(_session.Replica(), fraction);
       EraseOutside(areas, shown, [](const InterpolatedStructure& _structure) { return PositionOf(_structure.state.position); });
       m_structures.Draw(shown, *m_sceneMeshes, m_terrain->field, structureView, structures);
+      // M2 task T17 (ADR-153): the placement ghost in pass 12.
+      if (const std::optional<StructureGhost>& ghost = _view.Settlement().Ghost(); ghost.has_value())
+      {
+        AppendGhost(*ghost, *m_sceneMeshes, *m_desc.presentation, structures.meshes);
+      }
       inputs.sceneMeshes = m_sceneMeshes;
       inputs.meshBatches.insert(inputs.meshBatches.end(), std::make_move_iterator(structures.meshes.begin()),
                                 std::make_move_iterator(structures.meshes.end()));

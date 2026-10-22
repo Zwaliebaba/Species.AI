@@ -800,9 +800,19 @@ struct TuningPresentation
             double b = 0.0;
           };
 
+          struct PlaceHotspot
+          {
+            // ref.ctrl.cursor.set.place_hotspot.x, in fraction of the size
+            double x = 0.0;
+
+            // ref.ctrl.cursor.set.place_hotspot.y, in fraction of the size
+            double y = 0.0;
+          };
+
           HighlightHotspot highlightHotspot;
           UnavailableHotspot unavailableHotspot;
           UnavailableColor unavailableColor;
+          PlaceHotspot placeHotspot;
         };
 
         Set set;
@@ -1456,6 +1466,8 @@ struct TuningPresentation
       double unavailableSize = 0.0;
 
       WorldHotspot worldHotspot;
+      // mvp.cursor.place_size, in physical px
+      double placeSize = 0.0;
     };
 
     struct Selection
@@ -1483,6 +1495,9 @@ struct TuningPresentation
 
       // mvp.structure.flash_seconds, in s
       double flashSeconds = 0.0;
+
+      // mvp.structure.ghost_brightness, in brightness multiplier
+      double ghostBrightness = 0.0;
     };
 
     struct Wellspring
@@ -1742,6 +1757,11 @@ struct TuningPresentation
       double queueSize = 0.0;
 
       Palette palette;
+      // mvp.hud.priority_step, in percent
+      std::int64_t priorityStep = 0;
+
+      // mvp.hud.disabled_alpha, in fraction
+      double disabledAlpha = 0.0;
     };
 
     Light light;
@@ -3532,11 +3552,20 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object,
+                       TuningPresentation::Ref::Ctrl::Cursor::Set::PlaceHotspot& _out)
+{
+  _out.x = _reader.Decimal(_object, "x", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.y = _reader.Decimal(_object, "y", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ref::Ctrl::Cursor::Set& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "highlight_hotspot"), _out.highlightHotspot);
   ReadFields(_reader, _reader.Object(_object, "unavailable_hotspot"), _out.unavailableHotspot);
   ReadFields(_reader, _reader.Object(_object, "unavailable_color"), _out.unavailableColor);
+  ReadFields(_reader, _reader.Object(_object, "place_hotspot"), _out.placeHotspot);
   _reader.Close(_object);
 }
 
@@ -3962,6 +3991,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.highlightSize = _reader.Decimal(_object, "highlight_size", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.unavailableSize = _reader.Decimal(_object, "unavailable_size", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   ReadFields(_reader, _reader.Object(_object, "world_hotspot"), _out.worldHotspot);
+  _out.placeSize = _reader.Decimal(_object, "place_size", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -3979,6 +4009,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.inactiveBrightness = _reader.Decimal(_object, "inactive_brightness", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.flashSize = _reader.Decimal(_object, "flash_size", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.flashSeconds = _reader.Decimal(_object, "flash_seconds", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.ghostBrightness = _reader.Decimal(_object, "ghost_brightness", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -4139,6 +4170,8 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.barHeight = _reader.Decimal(_object, "bar_height", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.queueSize = _reader.Decimal(_object, "queue_size", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   ReadFields(_reader, _reader.Object(_object, "palette"), _out.palette);
+  _out.priorityStep = _reader.Integer(_object, "priority_step", 0);
+  _out.disabledAlpha = _reader.Decimal(_object, "disabled_alpha", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -5983,11 +6016,24 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.b = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Ctrl::Cursor::Set::PlaceHotspot& _in)
+{
+  _writer.F64(_in.x);
+  _writer.F64(_in.y);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref::Ctrl::Cursor::Set::PlaceHotspot& _out)
+{
+  _out.x = _reader.F64();
+  _out.y = _reader.F64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Ctrl::Cursor::Set& _in)
 {
   CookFields(_writer, _in.highlightHotspot);
   CookFields(_writer, _in.unavailableHotspot);
   CookFields(_writer, _in.unavailableColor);
+  CookFields(_writer, _in.placeHotspot);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref::Ctrl::Cursor::Set& _out)
@@ -5995,6 +6041,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.highlightHotspot);
   ReadCookedFields(_reader, _out.unavailableHotspot);
   ReadCookedFields(_reader, _out.unavailableColor);
+  ReadCookedFields(_reader, _out.placeHotspot);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Ctrl::Cursor& _in)
@@ -6741,6 +6788,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::
   _writer.F64(_in.highlightSize);
   _writer.F64(_in.unavailableSize);
   CookFields(_writer, _in.worldHotspot);
+  _writer.F64(_in.placeSize);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Mvp::Cursor& _out)
@@ -6749,6 +6797,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.highlightSize = _reader.F64();
   _out.unavailableSize = _reader.F64();
   ReadCookedFields(_reader, _out.worldHotspot);
+  _out.placeSize = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Mvp::Selection& _in)
@@ -6771,6 +6820,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::
   _writer.F64(_in.inactiveBrightness);
   _writer.F64(_in.flashSize);
   _writer.F64(_in.flashSeconds);
+  _writer.F64(_in.ghostBrightness);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Mvp::Structure& _out)
@@ -6779,6 +6829,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.inactiveBrightness = _reader.F64();
   _out.flashSize = _reader.F64();
   _out.flashSeconds = _reader.F64();
+  _out.ghostBrightness = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Mvp::Wellspring& _in)
@@ -7044,6 +7095,8 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::
   _writer.F64(_in.barHeight);
   _writer.F64(_in.queueSize);
   CookFields(_writer, _in.palette);
+  _writer.I64(_in.priorityStep);
+  _writer.F64(_in.disabledAlpha);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Mvp::Hud& _out)
@@ -7065,6 +7118,8 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.barHeight = _reader.F64();
   _out.queueSize = _reader.F64();
   ReadCookedFields(_reader, _out.palette);
+  _out.priorityStep = _reader.I64();
+  _out.disabledAlpha = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Mvp& _in)

@@ -16,6 +16,8 @@
     "ui.hud.build": "{kind, select, dwelling {Dwelling} storehouse {Storehouse} turret {Turret} other {Structure}}",
     "ui.hud.cost": "{cost, number, integer}",
     "ui.hud.completed": "{kind, select, dwelling {Dwelling completed} storehouse {Storehouse completed} turret {Turret completed} other {Structure completed}}",
-    "ui.hud.seed": "World seed {seed}"
+    "ui.hud.seed": "World seed {seed}",
+    "ui.hud.placing": "{kind, select, dwelling {Placing a dwelling} storehouse {Placing a storehouse} turret {Placing a turret} other {Placing a structure}}",
+    "ui.hud.refused": "{reason, select, not_buildable {Nothing can be built here} queue_full {The construction queue is full} outside_territory {Outside the territory} in_center_ring {Too close to the Wellspring} not_walkable {The ground is too steep or wet} overlaps {Something is in the way} cannot_afford {The stores cannot pay for it} other {It cannot be placed here}}"
   }
 }

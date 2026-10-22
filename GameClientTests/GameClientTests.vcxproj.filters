@@ -65,6 +65,9 @@
     <ClCompile Include="SettlementHudTests.cpp">
       <Filter>View</Filter>
     </ClCompile>
+    <ClCompile Include="SettlementVerbsTests.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
     <ClCompile Include="StewardAreasTests.cpp">
       <Filter>View</Filter>
     </ClCompile>
