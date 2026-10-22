@@ -644,6 +644,9 @@
       "founding_radius": 500,
       "site_clearance": 200
     },
+    "view": {
+      "settlement_margin": 800
+    },
     "resource": {
       "home_inner": 3,
       "home_outer": 5,

@@ -1749,6 +1749,12 @@ struct TuningMvp
       double siteClearance = 0.0;
     };
 
+    struct View
+    {
+      // wld.view.settlement_margin, in wu
+      double settlementMargin = 0.0;
+    };
+
     struct Resource
     {
       // wld.resource.home_inner, in home resource sites
@@ -1793,6 +1799,7 @@ struct TuningMvp
     Terrain terrain;
     Generation generation;
     Territory territory;
+    View view;
     Resource resource;
     Travel travel;
   };
@@ -2842,6 +2849,12 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Wld::View& _out)
+{
+  _out.settlementMargin = _reader.Decimal(_object, "settlement_margin", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Wld::Resource& _out)
 {
   _out.homeInner = _reader.Integer(_object, "home_inner", 0);
@@ -2870,6 +2883,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "terrain"), _out.terrain);
   ReadFields(_reader, _reader.Object(_object, "generation"), _out.generation);
   ReadFields(_reader, _reader.Object(_object, "territory"), _out.territory);
+  ReadFields(_reader, _reader.Object(_object, "view"), _out.view);
   ReadFields(_reader, _reader.Object(_object, "resource"), _out.resource);
   ReadFields(_reader, _reader.Object(_object, "travel"), _out.travel);
   _reader.Close(_object);
@@ -4770,6 +4784,16 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld::Terr
   _out.siteClearance = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::View& _in)
+{
+  _writer.F64(_in.settlementMargin);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld::View& _out)
+{
+  _out.settlementMargin = _reader.F64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::Resource& _in)
 {
   _writer.I64(_in.homeInner);
@@ -4815,6 +4839,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld& _in)
   CookFields(_writer, _in.terrain);
   CookFields(_writer, _in.generation);
   CookFields(_writer, _in.territory);
+  CookFields(_writer, _in.view);
   CookFields(_writer, _in.resource);
   CookFields(_writer, _in.travel);
 }
@@ -4826,6 +4851,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld& _out
   ReadCookedFields(_reader, _out.terrain);
   ReadCookedFields(_reader, _out.generation);
   ReadCookedFields(_reader, _out.territory);
+  ReadCookedFields(_reader, _out.view);
   ReadCookedFields(_reader, _out.resource);
   ReadCookedFields(_reader, _out.travel);
 }

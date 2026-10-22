@@ -8,6 +8,7 @@
 #include "ReplicaTiming.h"
 #include "RoutePreview.h"
 #include "SettlementCamera.h"
+#include "StewardAreas.h"
 #include "TuningMvp.h"
 #include "TuningPresentation.h"
 #include "WorldMarkers.h"
@@ -54,8 +55,8 @@ inline constexpr double WORKER_DISTANCE_SCALE_FACTOR = 2.0;
 /// over the client's own Leaders, the battle verbs that follow the camera (M1 task T17, ADR-124), whose commands it
 /// sends through the session, and the cursor it shows; with T17b (ADR-125), the route preview of the selection, the
 /// world markers, whose marker under the pointer the verbs read as a Leader under it, and the badge near the pointer;
-/// with O82 (ADR-127), the primary button's orders, the ordered route kept fading, and the badge's count. Frame thread
-/// only.
+/// with O82 (ADR-127), the primary button's orders, the ordered route kept fading, and the badge's count; with M2 task
+/// T13 (ADR-142), the steward's areas, which bound the camera. Frame thread only.
 class SettlementView
 {
 public:
@@ -87,6 +88,11 @@ public:
   [[nodiscard]] const SettlementCamera& Camera() const noexcept
   {
     return m_camera;
+  }
+  // WLD-244: the steward's areas of this frame, from the session's replica.
+  [[nodiscard]] const StewardAreas& Areas() const noexcept
+  {
+    return m_areas;
   }
   [[nodiscard]] CursorKind Cursor() const noexcept
   {
@@ -131,6 +137,7 @@ private:
 
   Desc m_desc;
   SettlementCamera m_camera;
+  StewardAreas m_areas;
   const RegionTerrain* m_terrain = nullptr; // the terrain the camera entered
   CameraBounds m_region;
   BattleVerbs m_verbs;

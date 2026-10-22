@@ -1,0 +1,268 @@
+#include "pch.h"
+
+#include "StewardAreas.h"
+
+#include <algorithm>
+#include <cmath>
+#include <limits>
+#include <span>
+#include <utility>
+#include <variant>
+
+namespace Species
+{
+
+namespace
+{
+
+// The squared distance, in cells², of a cell with no territory cell in its line: beyond any raster, and finite, so that
+// the transform's sums stay numbers.
+constexpr double FAR_SQUARED = 1e18;
+
+// Felzenszwalb and Huttenlocher's exact squared Euclidean distance transform of one line of cells: _out[q] is the least
+// (q − p)² + _in[p] over every p, from the lower envelope of the parabolas rooted at each p.
+void DistanceLine(std::span<const double> _in, std::span<double> _out, std::vector<std::int32_t>& _roots, std::vector<double>& _bounds)
+{
+  const auto count = static_cast<std::int32_t>(_in.size());
+  _roots.assign(_in.size(), 0);
+  _bounds.assign(_in.size() + 1, 0.0);
+  std::int32_t k = 0;
+  _bounds[0] = -std::numeric_limits<double>::infinity();
+  _bounds[1] = std::numeric_limits<double>::infinity();
+  for (std::int32_t q = 1; q < count; ++q)
+  {
+    const double rootQ = _in[static_cast<std::size_t>(q)] + static_cast<double>(q) * static_cast<double>(q);
+    double meet = 0.0;
+    while (true)
+    {
+      const std::int32_t p = _roots[static_cast<std::size_t>(k)];
+      meet =
+        (rootQ - (_in[static_cast<std::size_t>(p)] + static_cast<double>(p) * static_cast<double>(p))) / (2.0 * static_cast<double>(q - p));
+      if (meet > _bounds[static_cast<std::size_t>(k)] || k == 0)
+      {
+        break;
+      }
+      --k;
+    }
+    ++k;
+    _roots[static_cast<std::size_t>(k)] = q;
+    _bounds[static_cast<std::size_t>(k)] = meet;
+    _bounds[static_cast<std::size_t>(k) + 1] = std::numeric_limits<double>::infinity();
+  }
+  k = 0;
+  for (std::int32_t q = 0; q < count; ++q)
+  {
+    while (_bounds[static_cast<std::size_t>(k) + 1] < static_cast<double>(q))
+    {
+      ++k;
+    }
+    const std::int32_t p = _roots[static_cast<std::size_t>(k)];
+    _out[static_cast<std::size_t>(q)] = static_cast<double>(q - p) * static_cast<double>(q - p) + _in[static_cast<std::size_t>(p)];
+  }
+}
+
+} // namespace
+
+void StewardAreas::Update(const StateReplica::View& _latest, std::optional<std::uint8_t> _team, const RegionLayout& _layout,
+                          const TuningMvp& _tuning)
+{
+  std::optional<std::uint8_t> site;
+  if (_team.has_value())
+  {
+    const auto last = _latest.upper_bound(SettlementObjectId(std::numeric_limits<std::uint8_t>::max()));
+    for (auto it = _latest.lower_bound(SettlementObjectId(0)); it != last; ++it)
+    {
+      if (const auto* settlement = std::get_if<ReplicatedSettlement>(&it->second); settlement != nullptr && settlement->team == *_team)
+      {
+        site = settlement->site;
+        break;
+      }
+    }
+  }
+  std::vector<ReplicatedCells> chunks;
+  if (site.has_value())
+  {
+    constexpr std::uint8_t LAST_CHUNK = std::numeric_limits<std::uint8_t>::max();
+    const auto last = _latest.upper_bound(CellChunkObjectId(CellLayer::Territory, *site, LAST_CHUNK, LAST_CHUNK));
+    for (auto it = _latest.lower_bound(CellChunkObjectId(CellLayer::Territory, *site, 0, 0)); it != last; ++it)
+    {
+      if (const auto* cells = std::get_if<ReplicatedCells>(&it->second); cells != nullptr)
+      {
+        chunks.push_back(*cells);
+      }
+    }
+  }
+  if (chunks.empty() || !site.has_value())
+  {
+    Clear();
+    return;
+  }
+  if (chunks == m_chunks && site.value() == m_site)
+  {
+    return;
+  }
+  m_chunks = std::move(chunks);
+  m_site = site.value();
+  Rebuild(_layout, _tuning);
+  ++m_revision;
+}
+
+void StewardAreas::Clear() noexcept
+{
+  if (!Known())
+  {
+    return;
+  }
+  m_chunks.clear();
+  m_territory.clear();
+  m_inside.clear();
+  m_cellsPerAxis = 0;
+  ++m_revision;
+}
+
+void StewardAreas::Rebuild(const RegionLayout& _layout, const TuningMvp& _tuning)
+{
+  // The region's raster of ADR-139, widened by the margin's cells on each side.
+  m_cellSize = _tuning.mvp.territory.cellSize;
+  const double margin = _tuning.wld.view.settlementMargin;
+  const auto regionCells = static_cast<std::int32_t>(std::ceil(_layout.side / m_cellSize));
+  m_padCells = static_cast<std::int32_t>(std::ceil(margin / m_cellSize));
+  m_cellsPerAxis = regionCells + 2 * m_padCells;
+  m_originX = _layout.originX - m_padCells * m_cellSize;
+  m_originZ = _layout.originZ - m_padCells * m_cellSize;
+  const std::size_t cells = static_cast<std::size_t>(m_cellsPerAxis) * static_cast<std::size_t>(m_cellsPerAxis);
+  m_territory.assign(cells, 0);
+  m_inside.assign(cells, 0);
+  std::int32_t minX = m_cellsPerAxis;
+  std::int32_t minZ = m_cellsPerAxis;
+  std::int32_t maxX = -1;
+  std::int32_t maxZ = -1;
+  for (const ReplicatedCells& chunk : m_chunks)
+  {
+    for (std::int32_t z = 0; z < CELL_CHUNK_SIDE; ++z)
+    {
+      for (std::int32_t x = 0; x < CELL_CHUNK_SIDE; ++x)
+      {
+        const std::int32_t cellX = chunk.chunkX * CELL_CHUNK_SIDE + x;
+        const std::int32_t cellZ = chunk.chunkZ * CELL_CHUNK_SIDE + z;
+        if (((chunk.cells >> (z * CELL_CHUNK_SIDE + x)) & 1u) != 0 && cellX < regionCells && cellZ < regionCells)
+        {
+          m_territory[Index(cellX + m_padCells, cellZ + m_padCells)] = 1;
+          minX = std::min(minX, cellX);
+          minZ = std::min(minZ, cellZ);
+          maxX = std::max(maxX, cellX + 2 * m_padCells);
+          maxZ = std::max(maxZ, cellZ + 2 * m_padCells);
+        }
+      }
+    }
+  }
+  if (maxX < 0)
+  {
+    return;
+  }
+  // The exact distance of each cell's centre from the nearest territory cell's centre, along the rows and then along the
+  // columns, in cells², over the territory's box widened by the margin, beyond which no cell is near enough (ADR-142).
+  const auto boxX = static_cast<std::size_t>(minX);
+  const auto boxZ = static_cast<std::size_t>(minZ);
+  const std::size_t width = static_cast<std::size_t>(maxX) - boxX + 1;
+  const std::size_t depth = static_cast<std::size_t>(maxZ) - boxZ + 1;
+  const auto side = static_cast<std::size_t>(m_cellsPerAxis);
+  std::vector<double> distance(width * depth);
+  for (std::size_t z = 0; z < depth; ++z)
+  {
+    for (std::size_t x = 0; x < width; ++x)
+    {
+      distance[z * width + x] = m_territory[(boxZ + z) * side + boxX + x] != 0 ? 0.0 : FAR_SQUARED;
+    }
+  }
+  std::vector<double> line(std::max(width, depth));
+  std::vector<double> result(depth);
+  std::vector<std::int32_t> roots;
+  std::vector<double> bounds;
+  for (std::size_t z = 0; z < depth; ++z)
+  {
+    const std::span<double> row(distance.data() + z * width, width);
+    std::copy(row.begin(), row.end(), line.begin());
+    DistanceLine(std::span<const double>(line.data(), width), row, roots, bounds);
+  }
+  for (std::size_t x = 0; x < width; ++x)
+  {
+    for (std::size_t z = 0; z < depth; ++z)
+    {
+      line[z] = distance[z * width + x];
+    }
+    DistanceLine(std::span<const double>(line.data(), depth), result, roots, bounds);
+    for (std::size_t z = 0; z < depth; ++z)
+    {
+      m_inside[(boxZ + z) * side + boxX + x] = result[z] * m_cellSize * m_cellSize <= margin * margin ? 1 : 0;
+    }
+  }
+}
+
+std::int32_t StewardAreas::CellOf(double _coordinate, double _origin) const noexcept
+{
+  const double cell = std::floor((_coordinate - _origin) / m_cellSize);
+  return cell < 0.0 || cell >= static_cast<double>(m_cellsPerAxis) ? -1 : static_cast<std::int32_t>(cell);
+}
+
+std::size_t StewardAreas::Index(std::int32_t _x, std::int32_t _z) const noexcept
+{
+  return static_cast<std::size_t>(_z) * static_cast<std::size_t>(m_cellsPerAxis) + static_cast<std::size_t>(_x);
+}
+
+bool StewardAreas::Contains(double _x, double _z) const noexcept
+{
+  if (!Known())
+  {
+    return true;
+  }
+  const std::int32_t x = CellOf(_x, m_originX);
+  const std::int32_t z = CellOf(_z, m_originZ);
+  return x >= 0 && z >= 0 && m_inside[Index(x, z)] != 0;
+}
+
+bool StewardAreas::InTerritory(double _x, double _z) const noexcept
+{
+  if (!Known())
+  {
+    return false;
+  }
+  const std::int32_t x = CellOf(_x, m_originX);
+  const std::int32_t z = CellOf(_z, m_originZ);
+  return x >= 0 && z >= 0 && m_territory[Index(x, z)] != 0;
+}
+
+std::optional<StewardAreas::Point> StewardAreas::Nearest(double _x, double _z) const
+{
+  if (!Known())
+  {
+    return std::nullopt;
+  }
+  if (Contains(_x, _z))
+  {
+    return Point{_x, _z};
+  }
+  // A point outside is rare (ADR-142), so every cell of the areas is tried.
+  std::optional<Point> nearest;
+  double best = std::numeric_limits<double>::infinity();
+  for (std::int32_t z = 0; z < m_cellsPerAxis; ++z)
+  {
+    for (std::int32_t x = 0; x < m_cellsPerAxis; ++x)
+    {
+      if (m_inside[Index(x, z)] == 0)
+      {
+        continue;
+      }
+      const Point center{m_originX + (x + 0.5) * m_cellSize, m_originZ + (z + 0.5) * m_cellSize};
+      const double squared = (center.x - _x) * (center.x - _x) + (center.z - _z) * (center.z - _z);
+      if (squared < best)
+      {
+        best = squared;
+        nearest = center;
+      }
+    }
+  }
+  return nearest;
+}
+
+} // namespace Species

@@ -189,6 +189,7 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
   {
     m_terrain = terrain;
     m_camera.LeaveWorld();
+    m_areas.Clear();
     m_verbs.Reset();
     m_preview.Reset();
     m_markers.Clear();
@@ -211,6 +212,12 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
     m_confined = advancing;
   }
   m_pointer = _router.Pointer().positionPixels;
+  // WLD-244 (ADR-142): the steward's areas from the territory the replica holds; a sandbox has none.
+  const std::optional<std::uint8_t> ownTeam = _session.CommandedTeam();
+  if (terrain != nullptr)
+  {
+    m_areas.Update(_session.Replica().Latest(), ownTeam, terrain->layout, *m_desc.tuning);
+  }
   if (m_camera.InWorld() && terrain != nullptr)
   {
     if (advancing)
@@ -230,7 +237,8 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
       {
         controls.wheelNotches = wheel.x;
       }
-      if (const std::optional<Neuron::PointPx> warp = m_camera.Advance(_dtSeconds, controls, m_pointer, _view, terrain->field).warpTo)
+      if (const std::optional<Neuron::PointPx> warp =
+            m_camera.Advance(_dtSeconds, controls, m_pointer, _view, terrain->field, &m_areas).warpTo)
       {
         _router.WarpPointer(*warp);
         m_pointer = _router.Pointer().positionPixels;
@@ -243,7 +251,6 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
   }
   // The hover over the client's own Leaders (R-CTRL-055), and the cursor it gives.
   m_hovered.reset();
-  const std::optional<std::uint8_t> ownTeam = _session.CommandedTeam();
   std::vector<InterpolatedFigure> figures;
   if (m_camera.InWorld() && ownTeam.has_value())
   {

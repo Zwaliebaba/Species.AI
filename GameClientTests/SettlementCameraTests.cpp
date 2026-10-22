@@ -4,12 +4,14 @@
 #include "RegionTerrain.h"
 #include "SettlementCamera.h"
 #include "SettlementView.h"
+#include "StewardAreas.h"
 #include "TestSupport.h"
 
 #include <algorithm>
 #include <cmath>
 #include <memory>
 #include <numbers>
+#include <variant>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -51,21 +53,66 @@ std::unique_ptr<Species::SettlementCamera> EnteredCamera(Neuron::PointPx& _point
   return camera;
 }
 
+// High on the screen: on the entry pose, a ground point far beyond the steward's site.
+constexpr Neuron::PointPx FAR_POINTER{960, 380};
+
 // Advances _frames frames of _dt with the pointer kept where the cursor lock puts it.
-void Run(Species::SettlementCamera& _camera, const Species::CameraControls& _controls, Neuron::PointPx& _pointer, double _dt, int _frames)
+void Run(Species::SettlementCamera& _camera, const Species::CameraControls& _controls, Neuron::PointPx& _pointer, double _dt, int _frames,
+         const Species::StewardAreas* _areas = nullptr)
 {
   for (int n = 0; n < _frames; ++n)
   {
-    if (const auto warp = _camera.Advance(_dt, _controls, _pointer, VIEW, SeedOne().field).warpTo)
+    if (const auto warp = _camera.Advance(_dt, _controls, _pointer, VIEW, SeedOne().field, _areas).warpTo)
     {
       _pointer = *warp;
     }
   }
 }
 
+// Advances _frames frames of _dt with the pointer held where it is, the cursor lock's warps not followed, so that over
+// a short run the front hardly turns.
+void RunHeld(Species::SettlementCamera& _camera, const Species::CameraControls& _controls, Neuron::PointPx _pointer, double _dt,
+             int _frames)
+{
+  for (int n = 0; n < _frames; ++n)
+  {
+    static_cast<void>(_camera.Advance(_dt, _controls, _pointer, VIEW, SeedOne().field));
+  }
+}
+
 double Land(const Neuron::Vec3& _at)
 {
   return std::max(SeedOne().field.Height(_at.x, _at.z), CommittedPresentation().ref.ctrl.camera.minHeight);
+}
+
+// A replica in which the settlement of site 0, team 0, holds the territory cells whose centres lie within _radius of
+// its site, in chunks as ADR-139 sends them.
+Species::StateReplica::View TerritoryDisc(double _radius)
+{
+  const Species::RegionLayout& layout = SeedOne().layout;
+  const double cell = CommittedTuning().mvp.territory.cellSize;
+  Species::StateReplica::View view;
+  Species::ReplicatedSettlement settlement;
+  view.emplace(Species::SettlementObjectId(0), settlement);
+  const auto cells = static_cast<std::int32_t>(std::ceil(layout.side / cell));
+  for (std::int32_t z = 0; z < cells; ++z)
+  {
+    for (std::int32_t x = 0; x < cells; ++x)
+    {
+      const Neuron::Vec3 center{layout.originX + (x + 0.5) * cell, 0.0, layout.originZ + (z + 0.5) * cell};
+      if (Neuron::HorizontalDistance(center, layout.sites[0]) > _radius)
+      {
+        continue;
+      }
+      const auto chunkX = static_cast<std::uint8_t>(x / Species::CELL_CHUNK_SIDE);
+      const auto chunkZ = static_cast<std::uint8_t>(z / Species::CELL_CHUNK_SIDE);
+      const auto entry = view.try_emplace(Species::CellChunkObjectId(Species::CellLayer::Territory, 0, chunkX, chunkZ),
+                                          Species::ReplicatedCells{Species::CellLayer::Territory, 0, chunkX, chunkZ, 0});
+      std::get<Species::ReplicatedCells>(entry.first->second).cells |=
+        std::uint64_t{1} << ((z % Species::CELL_CHUNK_SIDE) * Species::CELL_CHUNK_SIDE + x % Species::CELL_CHUNK_SIDE);
+    }
+  }
+  return view;
 }
 
 } // namespace
@@ -102,23 +149,86 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(AcCtrlCa01TheKeysPanAtTheirSpeed)
   {
-    // One second of the forward pan moves the target 250 wu, and with the fast pan 1,000 wu, along the ground. The
-    // camera is raised first, so that no cliff shortens the step.
+    // One second of the forward key moves the target 250 wu, and with the fast pan 1,000 wu, along the view (O90), and
+    // one second of the side key as far along the ground. The camera is raised first, so that no cliff shortens the step,
+    // and the pointer is held at the screen's centre, so that the front does not turn.
     for (const bool fast : {false, true})
     {
-      Neuron::PointPx pointer;
-      auto camera = EnteredCamera(pointer);
-      Species::CameraControls raise;
-      raise.wheelNotches = 40.0f;
-      Run(*camera, raise, pointer, 0.01, 1);
-      const Neuron::Vec3 before = camera->Target();
-      Species::CameraControls forward;
-      forward.panForward = true;
-      forward.fastPan = fast;
-      Run(*camera, forward, pointer, 0.01, 100);
-      const double moved = Neuron::HorizontalDistance(camera->Target(), before);
-      Assert::AreEqual(fast ? 1'000.0 : 250.0, moved, fast ? 4.0 : 1.0, L"the pan's path, nearly straight");
+      for (const bool side : {false, true})
+      {
+        Neuron::PointPx pointer;
+        auto camera = EnteredCamera(pointer);
+        Species::CameraControls raise;
+        raise.wheelNotches = 40.0f;
+        RunHeld(*camera, raise, pointer, 0.01, 1);
+        const Neuron::Vec3 before = camera->Target();
+        Species::CameraControls keys;
+        keys.panForward = !side;
+        keys.panLeft = side;
+        keys.fastPan = fast;
+        RunHeld(*camera, keys, pointer, 0.01, 100);
+        const double moved = Neuron::Length(camera->Target() - before);
+        Assert::AreEqual(fast ? 1'000.0 : 250.0, moved, fast ? 4.0 : 1.0, L"the path, nearly straight");
+        if (side)
+        {
+          Assert::AreEqual(before.y, camera->Target().y, 1e-9, L"the side keys keep the height");
+        }
+      }
     }
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(O90TheForwardKeyFliesAlongTheView)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-471")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(O90TheForwardKeyFliesAlongTheView)
+  {
+    // From the entry pose, which looks down along the fallback direction, one second of the forward key lowers the
+    // camera by about 250 wu × the front's downward share and moves it the rest along the ground; the front turns a
+    // little towards the ground point as the camera closes on it (R-CTRL-471 step 8).
+    Neuron::PointPx pointer;
+    auto camera = EnteredCamera(pointer);
+    const Neuron::Vec3 front = camera->Front();
+    const double height = camera->Height();
+    const Neuron::Vec3 before = camera->Target();
+    Species::CameraControls forward;
+    forward.panForward = true;
+    Run(*camera, forward, pointer, 0.01, 100);
+    Assert::AreEqual(height + front.y * 250.0, camera->Height(), 2.0, L"down along the view");
+    Assert::AreEqual(std::hypot(front.x, front.z) * 250.0, Neuron::HorizontalDistance(camera->Target(), before), 2.0,
+                     L"and forward along the ground");
+    Species::CameraControls back;
+    back.panBack = true;
+    Run(*camera, back, pointer, 0.01, 100);
+    Assert::AreEqual(height, camera->Height(), 2.0, L"back up along it");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(O90TheForwardKeyFliesToThePointUnderThePointer)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-471")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-464")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(O90TheForwardKeyFliesToThePointUnderThePointer)
+  {
+    // The cursor lock keeps the pointer on its ground point and the camera turns to face it, so the forward key held
+    // brings the camera down onto that point: it comes to rest above it at the ground clearance, looking almost straight
+    // down (ADR-142). The back key held climbs away from it to the highest height.
+    Neuron::PointPx pointer;
+    auto camera = EnteredCamera(pointer);
+    const auto& entered = camera->PointerGround();
+    Assert::IsTrue(entered.has_value() && entered->onTerrain);
+    const Neuron::Vec3 ground = entered.value_or(Species::SettlementCamera::GroundPoint{}).position;
+    Species::CameraControls forward;
+    forward.panForward = true;
+    forward.fastPan = true;
+    Run(*camera, forward, pointer, 0.01, 1'000);
+    const double clearance = CommittedPresentation().ref.ctrl.camera.groundClearance;
+    Assert::IsTrue(Neuron::HorizontalDistance(camera->Position(), ground) < 50.0, L"above the point");
+    Assert::AreEqual(Land(camera->Target()) + clearance, camera->Height(), 1.0, L"at the ground clearance");
+    Assert::IsTrue(camera->Front().y < -0.99, L"looking down");
+    Species::CameraControls climb;
+    climb.panBack = true;
+    climb.fastPan = true;
+    Run(*camera, climb, pointer, 0.25, 200);
+    Assert::AreEqual(CommittedPresentation().ref.ctrl.camera.maxHeight, camera->Height(), 1e-9, L"at most 5,000 wu");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(AcCtrlCa02ZoomConvergesOnAQuarterOfTheField)
@@ -166,17 +276,55 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(AcCtrlCa04ThePanStopsAtTheRegionsBorder)
   {
-    // Panning for 60 s towards the region's low corner leaves the camera on the bound on both axes (ADR-119).
+    // With the pointer high on the screen, on a point beyond the region's low corner, flying for 60 s towards it leaves
+    // the camera on the bound on at least one axis (ADR-119); a sandbox has no territory, so the region alone bounds it.
     Neuron::PointPx pointer;
     auto camera = EnteredCamera(pointer);
+    pointer = FAR_POINTER;
+    camera->UpdatePointerGround(pointer, VIEW, SeedOne().field);
     Species::CameraControls forward;
     forward.panForward = true;
     forward.fastPan = true;
-    Run(*camera, forward, pointer, 0.25, 240);
+    Species::StewardAreas areas;
+    Run(*camera, forward, pointer, 0.25, 240, &areas);
     const Species::CameraBounds& bounds = camera->Bounds();
     Assert::IsTrue(camera->Position().x >= bounds.minX - 1e-9 && camera->Position().z >= bounds.minZ - 1e-9, L"never beyond it");
     Assert::IsTrue(std::abs(camera->Position().x - bounds.minX) < 1e-6 || std::abs(camera->Position().z - bounds.minZ) < 1e-6,
                    L"on the bound");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Wld244TheCameraStaysInTheStewardsAreas)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"WLD-244")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Wld244TheCameraStaysInTheStewardsAreas)
+  {
+    // With the steward's territory a disc of 300 wu about its site, its areas reach 1,100 wu from the site. Flying for
+    // 60 s towards a point beyond them, the camera's ground point never leaves them, and comes to rest at their edge
+    // (ADR-142).
+    constexpr double RADIUS = 300.0;
+    const double reach = RADIUS + CommittedTuning().wld.view.settlementMargin;
+    const double cell = CommittedTuning().mvp.territory.cellSize;
+    Species::StewardAreas areas;
+    areas.Update(TerritoryDisc(RADIUS), std::uint8_t{0}, SeedOne().layout, CommittedTuning());
+    Assert::IsTrue(areas.Known());
+    const Neuron::Vec3& site = SeedOne().layout.sites[0];
+    Neuron::PointPx pointer;
+    auto camera = EnteredCamera(pointer);
+    pointer = FAR_POINTER;
+    camera->UpdatePointerGround(pointer, VIEW, SeedOne().field);
+    Species::CameraControls forward;
+    forward.panForward = true;
+    forward.fastPan = true;
+    double farthest = 0.0;
+    for (int n = 0; n < 240; ++n)
+    {
+      Run(*camera, forward, pointer, 0.25, 1, &areas);
+      Assert::IsTrue(areas.Contains(camera->Target().x, camera->Target().z) && areas.Contains(camera->Position().x, camera->Position().z),
+                     L"inside the areas every frame");
+      farthest = std::max(farthest, Neuron::HorizontalDistance(camera->Target(), site));
+    }
+    Assert::IsTrue(farthest <= reach + cell * std::numbers::sqrt2, L"never beyond the margin's last cell");
+    Assert::IsTrue(Neuron::HorizontalDistance(camera->Target(), site) > reach - 3.0 * cell, L"at rest on the areas' edge");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(AcCtrlCa05ThePointerStaysOnItsGroundPointWhileTheCameraMoves)

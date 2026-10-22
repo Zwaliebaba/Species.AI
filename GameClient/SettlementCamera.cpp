@@ -2,6 +2,7 @@
 
 #include "Geometry.h"
 #include "SettlementCamera.h"
+#include "StewardAreas.h"
 
 #include <algorithm>
 #include <cmath>
@@ -23,6 +24,38 @@ constexpr double STEEPEST_FRONT_DEGREES = 89.0;
 Neuron::Vec3 Horizontal(const Neuron::Vec3& _vector) noexcept
 {
   return Neuron::NormalizedOr({_vector.x, 0.0, _vector.z}, {0.0, 0.0, -1.0});
+}
+
+// ADR-142: a move from _from, which is inside the areas, to _point, which may not be, slides along whichever axis keeps it
+// inside, or stays at _from; a point already outside goes to the nearest point of the areas.
+void KeepInside(const StewardAreas& _areas, Neuron::Vec3& _point, const Neuron::Vec3& _from)
+{
+  if (_areas.Contains(_point.x, _point.z))
+  {
+    return;
+  }
+  if (_areas.Contains(_from.x, _from.z))
+  {
+    if (_areas.Contains(_point.x, _from.z))
+    {
+      _point.z = _from.z;
+    }
+    else if (_areas.Contains(_from.x, _point.z))
+    {
+      _point.x = _from.x;
+    }
+    else
+    {
+      _point.x = _from.x;
+      _point.z = _from.z;
+    }
+    return;
+  }
+  if (const std::optional<StewardAreas::Point> nearest = _areas.Nearest(_point.x, _point.z))
+  {
+    _point.x = nearest->x;
+    _point.z = nearest->z;
+  }
 }
 
 // Rodrigues' rotation of _vector about the unit _axis by _angle radians.
@@ -81,13 +114,16 @@ void SettlementCamera::LeaveWorld() noexcept
 }
 
 SettlementCamera::PointerRequest SettlementCamera::Advance(double _dtSeconds, const CameraControls& _controls, Neuron::PointPx _pointer,
-                                                           Neuron::SizePx _view, const Neuron::TerrainField& _terrain)
+                                                           Neuron::SizePx _view, const Neuron::TerrainField& _terrain,
+                                                           const StewardAreas* _areas)
 {
   PointerRequest request;
   if (!m_inWorld)
   {
     return request;
   }
+  const Neuron::Vec3 startPosition = m_position;
+  const Neuron::Vec3 startTarget = m_target;
   const double dt = std::clamp(_dtSeconds, 0.0, m_presentation.ref.sim.frame.deltaClamp);
   if (m_centerPointer)
   {
@@ -130,6 +166,13 @@ SettlementCamera::PointerRequest SettlementCamera::Advance(double _dtSeconds, co
   m_position.z = std::clamp(m_position.z, m_bounds.minZ, m_bounds.maxZ);
   m_target.x = std::clamp(m_target.x, m_bounds.minX, m_bounds.maxX);
   m_target.z = std::clamp(m_target.z, m_bounds.minZ, m_bounds.maxZ);
+  // WLD-244 (ADR-142): the camera's ground point, the point under its position and under its target, stays in the
+  // steward's areas as well.
+  if (_areas != nullptr && _areas->Known())
+  {
+    KeepInside(*_areas, m_target, startTarget);
+    KeepInside(*_areas, m_position, startPosition);
+  }
   // R-CTRL-456 steps 6 and 7 (CAM-034): the front is kept unit and the up vector is rebuilt from world up by the pose.
   m_front = Neuron::NormalizedOr(m_front, {0.0, 0.0, -1.0});
   if (std::abs(m_front.y) < VERTICAL_FRONT_LIMIT)
@@ -181,9 +224,9 @@ void SettlementCamera::AdjustHeight(double _dt, const CameraControls& _controls,
 void SettlementCamera::FreeMovement(double _dt, const CameraControls& _controls, const Neuron::TerrainField& _terrain) noexcept
 {
   const TuningPresentation::Ref::Ctrl::Camera& camera = m_presentation.ref.ctrl.camera;
-  // Step 3: the pan along the horizontal front and the horizontal left vector, up × front (R-CTRL-451).
+  // Step 3: the pan along the horizontal left vector, up × front (R-CTRL-451). The forward and back keys fly along the
+  // whole front (O90, ADR-142): its level part moves the target here, and its vertical part the height after step 5.
   const double rate = camera.panSpeed * (_controls.fastPan ? camera.fastPanFactor : 1.0);
-  const Neuron::Vec3 forward = Horizontal(m_front);
   const Neuron::Vec3 left = Horizontal(Neuron::Cross(WORLD_UP, m_front));
   if (_controls.panLeft)
   {
@@ -193,14 +236,9 @@ void SettlementCamera::FreeMovement(double _dt, const CameraControls& _controls,
   {
     m_target = m_target - left * (_dt * rate);
   }
-  if (_controls.panForward)
-  {
-    m_target = m_target + forward * (_dt * rate);
-  }
-  if (_controls.panBack)
-  {
-    m_target = m_target - forward * (_dt * rate);
-  }
+  const double along = ((_controls.panForward ? 1.0 : 0.0) - (_controls.panBack ? 1.0 : 0.0)) * _dt * rate;
+  m_target.x += m_front.x * along;
+  m_target.z += m_front.z * along;
   // Step 5: cliff avoidance. A blockage ahead shortens the step and lifts the camera by what it cut.
   const double distance = std::hypot(m_target.x - m_position.x, m_target.z - m_position.z);
   const std::int64_t samples = std::max<std::int64_t>(camera.cliffProbe.samples, 1);
@@ -225,6 +263,12 @@ void SettlementCamera::FreeMovement(double _dt, const CameraControls& _controls,
       m_target = m_position + (m_target - m_position) * s;
       m_height += (1.0 - s) * distance;
     }
+  }
+  // The fly's vertical part, after the cliff test, so that a descent is no cliff ahead. It stops at the highest height,
+  // and at the ground clearance in step 6.
+  if (along != 0.0)
+  {
+    m_height = std::min(m_height + m_front.y * along, camera.maxHeight);
   }
   // Step 6: the target's ground clearance from the target and the four points about it.
   const double around = camera.groundSamples;

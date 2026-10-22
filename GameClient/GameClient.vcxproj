@@ -155,6 +155,7 @@
     <ClInclude Include="RoutePreview.h" />
     <ClInclude Include="SettlementCamera.h" />
     <ClInclude Include="SettlementView.h" />
+    <ClInclude Include="StewardAreas.h" />
     <ClInclude Include="StructureLook.h" />
     <ClInclude Include="WorldMarkers.h" />
     <ClInclude Include="WorldPresentation.h" />
@@ -172,6 +173,7 @@
     <ClCompile Include="RoutePreview.cpp" />
     <ClCompile Include="SettlementCamera.cpp" />
     <ClCompile Include="SettlementView.cpp" />
+    <ClCompile Include="StewardAreas.cpp" />
     <ClCompile Include="StructureLook.cpp" />
     <ClCompile Include="WorldMarkers.cpp" />
     <ClCompile Include="WorldPresentation.cpp" />
