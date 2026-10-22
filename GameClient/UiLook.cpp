@@ -144,6 +144,12 @@ Neuron::UiStyle UiStyleOf(const TuningPresentation& _presentation)
   style.checkBoxRight = static_cast<float>(ui.check.boxRight);
   style.checkTickInset = static_cast<float>(ui.check.tickInset);
   style.checkTickSize = static_cast<float>(ui.check.tickSize);
+  // ADR-154: the page text field's caret (UI-070, UI-121).
+  style.caretBlinkPeriod = static_cast<float>(ui.field.caretBlinkPeriod);
+  style.caretDuty = static_cast<float>(ui.field.caretDuty);
+  style.caretMarginPixels = static_cast<float>(ui.field.caretMargin);
+  style.fieldCaretWidthPixels = static_cast<float>(ui.pageField.caretWidth);
+  style.fieldCaretOffset = static_cast<float>(ui.pageField.caretOffset);
   return style;
 }
 

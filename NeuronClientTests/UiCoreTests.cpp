@@ -24,6 +24,8 @@ namespace
 constexpr Neuron::UiPageId TITLE = 1;
 constexpr Neuron::UiPageId OPTIONS = 2;
 constexpr Neuron::UiPageId CREDITS = 3;
+constexpr Neuron::UiPageId FIELDS = 4;
+constexpr std::size_t SEED_DIGITS = 5;
 
 /// What the test pages saw, shared with the test.
 struct Record
@@ -156,26 +158,35 @@ private:
 struct Harness
 {
   Record record;
-  Neuron::UiCore ui{[this](Neuron::UiPageId _page) -> std::unique_ptr<Neuron::UiPage>
-                    {
-                      using Kind = Neuron::UiWidgetKind;
-                      switch (_page)
-                      {
-                      case TITLE:
-                        return std::make_unique<TestPage>("title", record,
-                                                          std::vector{TestPage::Row("caption", Kind::Label), TestPage::Row("push"),
-                                                                      TestPage::Row("idle", Kind::PageButton, true), TestPage::Row("layer"),
-                                                                      TestPage::Row("check", Kind::CheckBox)},
-                                                          true);
-                      case OPTIONS:
-                        return std::make_unique<TestPage>("options", record,
-                                                          std::vector{TestPage::Row("cycle", Kind::Cycler), TestPage::Row("back")});
-                      case CREDITS:
-                        return std::make_unique<TestPage>("credits", record, std::vector{TestPage::Row("only")});
-                      default:
-                        return nullptr;
-                      }
-                    }};
+  Neuron::UiCore ui{
+    [this](Neuron::UiPageId _page) -> std::unique_ptr<Neuron::UiPage>
+    {
+      using Kind = Neuron::UiWidgetKind;
+      switch (_page)
+      {
+      case TITLE:
+        return std::make_unique<TestPage>("title", record,
+                                          std::vector{TestPage::Row("caption", Kind::Label), TestPage::Row("push"),
+                                                      TestPage::Row("idle", Kind::PageButton, true), TestPage::Row("layer"),
+                                                      TestPage::Row("check", Kind::CheckBox)},
+                                          true);
+      case OPTIONS:
+        return std::make_unique<TestPage>("options", record, std::vector{TestPage::Row("cycle", Kind::Cycler), TestPage::Row("back")});
+      case CREDITS:
+        return std::make_unique<TestPage>("credits", record, std::vector{TestPage::Row("only")});
+      case FIELDS:
+      {
+        // ADR-154: a digits-only field of SEED_DIGITS at most, a text field, a button and a back action.
+        Neuron::UiWidgetDesc seed = TestPage::Row("seed", Kind::TextField);
+        seed.digitsOnly = true;
+        seed.maxLength = SEED_DIGITS;
+        return std::make_unique<TestPage>(
+          "fields", record, std::vector{seed, TestPage::Row("name", Kind::TextField), TestPage::Row("go"), TestPage::Row("back")});
+      }
+      default:
+        return nullptr;
+      }
+    }};
   Neuron::UiMetrics metrics;
 
   Harness()
@@ -197,7 +208,7 @@ struct Harness
     {
       return {};
     }
-    for (const char* id : {"push", "idle", "layer", "check", "cycle", "back", "only", "close"})
+    for (const char* id : {"push", "idle", "layer", "check", "cycle", "back", "only", "close", "seed", "name", "go"})
     {
       if (window->Find(id) == window->Cursor() && window->Cursor())
       {
@@ -246,6 +257,24 @@ bool HasSolid(const std::vector<Neuron::UiBatch>& _batches, const Neuron::UiRect
     }
   }
   return false;
+}
+
+// The characters of _text, ASCII, as a frame's text input; _keys's actions with them, as Enter and Escape bring both.
+struct Typed
+{
+  std::vector<Neuron::TextCharacter> characters;
+  Neuron::UiInput input;
+};
+
+Typed Type(std::string_view _text, Neuron::UiInput _keys = {})
+{
+  Typed typed;
+  for (const char character : _text)
+  {
+    typed.characters.push_back({static_cast<char32_t>(character)});
+  }
+  typed.input = _keys;
+  return typed;
 }
 
 Neuron::UiInput Keys(bool _down, bool _up = false, bool _activate = false, bool _close = false)
@@ -509,6 +538,145 @@ public:
     h.ui.Draw(text, style, 0.0, checked);
     Assert::AreEqual(std::size_t{1}, ImageQuads(checked, 3), L"UI-081: the tick while checked");
     Assert::IsFalse(HasSolid(checked, window.RectOf(window.Find("push")), style.focusBand), L"the band moved with the cursor");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Ui064ATextFieldEditsOnActivationAndAppliesOnEnter)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-064")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-066")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-068")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-123")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Ui064ATextFieldEditsOnActivationAndAppliesOnEnter)
+  {
+    Harness h;
+    h.ui.Request({Neuron::UiPageRequest::Kind::Push, FIELDS});
+    h.Frame({});
+    const Neuron::UiHandle seed = h.ui.Focused()->Find("seed");
+    Assert::AreEqual(std::string("seed"), h.CursorId());
+    h.Frame(Keys(false, false, true));
+    Assert::IsTrue(h.ui.IsTextEditing(), L"an activation starts the edit");
+    // ADR-154: a digits-only field takes the digits; Backspace deletes; nothing beyond the maximum length is inserted.
+    Typed typed = Type("12a3\b4567");
+    typed.input.down = true; // the keys type rather than navigate while a field is edited
+    typed.input.text = typed.characters;
+    h.Frame(typed.input);
+    Assert::AreEqual(std::string("seed"), h.CursorId(), L"no navigation while editing");
+    Assert::IsTrue(h.ui.Focused()->Value(seed).empty(), L"the value waits for the edit to be applied");
+    const std::size_t clicks = h.record.clicked.size();
+    typed = Type("\r", Keys(false, false, true)); // Enter is a character and the activation in one frame
+    typed.input.text = typed.characters;
+    h.Frame(typed.input);
+    Assert::IsFalse(h.ui.IsTextEditing(), L"Enter applies the edit");
+    Assert::AreEqual(std::string_view("12456"), h.ui.Focused()->Value(seed));
+    Assert::AreEqual(std::string("fields:seed"), h.record.changed.back(), L"a Changed event");
+    Assert::AreEqual(clicks, h.record.clicked.size(), L"and the same key press did not activate the field again");
+    // Ctrl's commands and control characters insert nothing.
+    h.Frame(Keys(false, false, true));
+    typed = Type("\b\b9");
+    typed.characters.push_back({U'8', false, true, false});
+    typed.characters.push_back({U'\t'});
+    typed.characters.push_back({U'\r'});
+    typed.input.text = typed.characters;
+    h.Frame(typed.input);
+    Assert::AreEqual(std::string_view("1249"), h.ui.Focused()->Value(seed), L"Ctrl+8 and Tab type nothing");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Ui064EscapeCancelsAndAPressElsewhereAppliesTheEdit)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-064")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-038")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Ui064EscapeCancelsAndAPressElsewhereAppliesTheEdit)
+  {
+    Harness h;
+    h.ui.Request({Neuron::UiPageRequest::Kind::Push, FIELDS});
+    h.Frame({});
+    const Neuron::UiHandle seed = h.ui.Focused()->Find("seed");
+    const Neuron::UiHandle name = h.ui.Focused()->Find("name");
+    // Escape cancels the edit, and the close action of the same key press does not leave the page.
+    h.Frame(Keys(false, false, true));
+    Typed typed = Type("9\x1b", Keys(false, false, false, true));
+    typed.input.text = typed.characters;
+    h.Frame(typed.input);
+    h.Frame({});
+    Assert::IsFalse(h.ui.IsTextEditing(), L"Escape ends the edit");
+    Assert::IsTrue(h.ui.Focused()->Value(seed).empty(), L"with nothing applied");
+    Assert::IsTrue(h.ui.Stack().size() == 2 && h.record.backs.empty(), L"and the page stays");
+
+    // A click starts an edit; ADR-154: a press on a button applies it first, and the button clicks on its release.
+    Neuron::UiInput input = h.PointerOn("seed");
+    input.pointerDown = true;
+    h.Frame(input);
+    input.pointerDown = false;
+    input.pointerUp = true;
+    h.Frame(input);
+    Assert::IsTrue(h.ui.IsTextEditing(), L"a click starts the edit");
+    typed = Type("77");
+    typed.input.text = typed.characters;
+    h.Frame(typed.input);
+    input = h.PointerOn("go");
+    input.pointerDown = true;
+    h.Frame(input);
+    Assert::AreEqual(std::string_view("77"), h.ui.Focused()->Value(seed), L"the press elsewhere applies it");
+    input.pointerDown = false;
+    input.pointerUp = true;
+    h.Frame(input);
+    Assert::AreEqual(std::string("fields:go"), h.record.clicked.back(), L"and the button clicks");
+
+    // UI-064: a press on another text field abandons the edit, and that field's edit starts on the release.
+    input = h.PointerOn("name");
+    input.pointerDown = true;
+    h.Frame(input);
+    input.pointerDown = false;
+    input.pointerUp = true;
+    h.Frame(input);
+    typed = Type("ab");
+    typed.input.text = typed.characters;
+    h.Frame(typed.input);
+    input = h.PointerOn("seed");
+    input.pointerDown = true;
+    h.Frame(input);
+    input.pointerDown = false;
+    input.pointerUp = true;
+    h.Frame(input);
+    Assert::IsTrue(h.ui.Focused()->Value(name).empty(), L"the other field's text is not applied");
+    Assert::IsTrue(h.ui.IsTextEditing(), L"and the field pressed is edited");
+    // A page change abandons the edit.
+    h.ui.Request({Neuron::UiPageRequest::Kind::Pop, 0});
+    h.Frame({});
+    Assert::IsFalse(h.ui.IsTextEditing(), L"a field that left the focused window is no longer edited");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Ui121AnEditedFieldDrawsItsTextAndABlinkingCaret)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-121")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-070")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Ui121AnEditedFieldDrawsItsTextAndABlinkingCaret)
+  {
+    Harness h;
+    h.ui.Request({Neuron::UiPageRequest::Kind::Push, FIELDS});
+    h.Frame({});
+    Neuron::TextSystem::Desc desc;
+    for (std::vector<std::string>& chain : desc.families)
+    {
+      chain = {"Bahnschrift", "Segoe UI"};
+    }
+    Neuron::TextSystem text(desc);
+    const Neuron::UiStyle style;
+    const auto solids = [&](double _seconds)
+    {
+      std::vector<Neuron::UiBatch> batches;
+      h.ui.Draw(text, style, _seconds, batches);
+      std::size_t count = 0;
+      for (const Neuron::UiBatch& batch : batches)
+      {
+        count += batch.source == Neuron::UiSource::Solid ? batch.quads.size() : 0;
+      }
+      return count;
+    };
+    const std::size_t idle = solids(0.0);
+    h.Frame(Keys(false, false, true));
+    Assert::AreEqual(idle + 1, solids(0.0), L"the caret in the first half of its period");
+    Assert::AreEqual(idle, solids(style.caretBlinkPeriod * 0.75), L"and not in the second");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Ui036AClosedScreenTakesNoInputAndAStaleHandleFindsNothing)

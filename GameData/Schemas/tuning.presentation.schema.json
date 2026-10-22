@@ -9287,6 +9287,78 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "field": {
+          "type": "object",
+          "description": "the ui.field.* keys",
+          "properties": {
+            "caret_blink_period": {
+              "type": "number",
+              "description": "ui.field.caret_blink_period (UI-070, UI-121)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "s",
+              "x-species-presence": "required"
+            },
+            "caret_duty": {
+              "type": "number",
+              "description": "ui.field.caret_duty (UI-070, UI-121)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "fraction of the period visible",
+              "x-species-presence": "required"
+            },
+            "caret_margin": {
+              "type": "number",
+              "description": "ui.field.caret_margin (UI-070)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "px",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "caret_blink_period",
+            "caret_duty",
+            "caret_margin"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "page_field": {
+          "type": "object",
+          "description": "the ui.page_field.* keys",
+          "properties": {
+            "caret_width": {
+              "type": "number",
+              "description": "ui.page_field.caret_width (UI-121)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "px",
+              "x-species-presence": "required"
+            },
+            "caret_offset": {
+              "type": "number",
+              "description": "ui.page_field.caret_offset (UI-121)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "× the font size from the right edge",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "caret_width",
+            "caret_offset"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
@@ -9299,7 +9371,9 @@
         "page_button",
         "page_title",
         "fill_box",
-        "check"
+        "check",
+        "field",
+        "page_field"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

@@ -3009,6 +3009,27 @@ struct TuningPresentation
       double tickSize = 0.0;
     };
 
+    struct Field
+    {
+      // ui.field.caret_blink_period, in s
+      double caretBlinkPeriod = 0.0;
+
+      // ui.field.caret_duty, in fraction of the period visible
+      double caretDuty = 0.0;
+
+      // ui.field.caret_margin, in px
+      double caretMargin = 0.0;
+    };
+
+    struct PageField
+    {
+      // ui.page_field.caret_width, in px
+      double caretWidth = 0.0;
+
+      // ui.page_field.caret_offset, in × the font size from the right edge
+      double caretOffset = 0.0;
+    };
+
     Text text;
     Access access;
     Chrome chrome;
@@ -3019,6 +3040,8 @@ struct TuningPresentation
     PageTitle pageTitle;
     FillBox fillBox;
     Check check;
+    Field field;
+    PageField pageField;
   };
 
   struct Inp
@@ -5071,6 +5094,21 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ui::Field& _out)
+{
+  _out.caretBlinkPeriod = _reader.Decimal(_object, "caret_blink_period", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.caretDuty = _reader.Decimal(_object, "caret_duty", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.caretMargin = _reader.Decimal(_object, "caret_margin", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ui::PageField& _out)
+{
+  _out.caretWidth = _reader.Decimal(_object, "caret_width", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.caretOffset = _reader.Decimal(_object, "caret_offset", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ui& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "text"), _out.text);
@@ -5083,6 +5121,8 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "page_title"), _out.pageTitle);
   ReadFields(_reader, _reader.Object(_object, "fill_box"), _out.fillBox);
   ReadFields(_reader, _reader.Object(_object, "check"), _out.check);
+  ReadFields(_reader, _reader.Object(_object, "field"), _out.field);
+  ReadFields(_reader, _reader.Object(_object, "page_field"), _out.pageField);
   _reader.Close(_object);
 }
 
@@ -8656,6 +8696,32 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.tickSize = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ui::Field& _in)
+{
+  _writer.F64(_in.caretBlinkPeriod);
+  _writer.F64(_in.caretDuty);
+  _writer.F64(_in.caretMargin);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ui::Field& _out)
+{
+  _out.caretBlinkPeriod = _reader.F64();
+  _out.caretDuty = _reader.F64();
+  _out.caretMargin = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ui::PageField& _in)
+{
+  _writer.F64(_in.caretWidth);
+  _writer.F64(_in.caretOffset);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ui::PageField& _out)
+{
+  _out.caretWidth = _reader.F64();
+  _out.caretOffset = _reader.F64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ui& _in)
 {
   CookFields(_writer, _in.text);
@@ -8668,6 +8734,8 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::
   CookFields(_writer, _in.pageTitle);
   CookFields(_writer, _in.fillBox);
   CookFields(_writer, _in.check);
+  CookFields(_writer, _in.field);
+  CookFields(_writer, _in.pageField);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ui& _out)
@@ -8682,6 +8750,8 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.pageTitle);
   ReadCookedFields(_reader, _out.fillBox);
   ReadCookedFields(_reader, _out.check);
+  ReadCookedFields(_reader, _out.field);
+  ReadCookedFields(_reader, _out.pageField);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Inp::Repeat& _in)

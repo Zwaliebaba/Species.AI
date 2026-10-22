@@ -21,7 +21,65 @@ using Color = UiStyle::Color;
 
 [[nodiscard]] bool Focusable(UiWidgetKind _kind) noexcept
 {
-  return _kind == UiWidgetKind::PageButton || _kind == UiWidgetKind::CheckBox || _kind == UiWidgetKind::Cycler;
+  return _kind == UiWidgetKind::PageButton || _kind == UiWidgetKind::CheckBox || _kind == UiWidgetKind::Cycler ||
+         _kind == UiWidgetKind::TextField;
+}
+
+// UI-066's editing characters, which arrive as characters (INP-113).
+constexpr char32_t CHARACTER_BACKSPACE = 0x08;
+constexpr char32_t CHARACTER_ENTER = 0x0D;
+constexpr char32_t CHARACTER_ESCAPE = 0x1B;
+constexpr char32_t CHARACTER_FIRST_PRINTABLE = 0x20;
+constexpr char32_t CHARACTER_DELETE = 0x7F;
+constexpr char32_t CHARACTER_LAST = 0x10FFFF;
+constexpr char32_t SURROGATE_FIRST = 0xD800;
+constexpr char32_t SURROGATE_LAST = 0xDFFF;
+
+// A Unicode scalar value as UTF-8, appended.
+void AppendUtf8(std::string& _out, char32_t _codePoint)
+{
+  if (_codePoint < 0x80)
+  {
+    _out.push_back(static_cast<char>(_codePoint));
+  }
+  else if (_codePoint < 0x800)
+  {
+    _out.push_back(static_cast<char>(0xC0 | (_codePoint >> 6)));
+    _out.push_back(static_cast<char>(0x80 | (_codePoint & 0x3F)));
+  }
+  else if (_codePoint < 0x10000)
+  {
+    _out.push_back(static_cast<char>(0xE0 | (_codePoint >> 12)));
+    _out.push_back(static_cast<char>(0x80 | ((_codePoint >> 6) & 0x3F)));
+    _out.push_back(static_cast<char>(0x80 | (_codePoint & 0x3F)));
+  }
+  else
+  {
+    _out.push_back(static_cast<char>(0xF0 | (_codePoint >> 18)));
+    _out.push_back(static_cast<char>(0x80 | ((_codePoint >> 12) & 0x3F)));
+    _out.push_back(static_cast<char>(0x80 | ((_codePoint >> 6) & 0x3F)));
+    _out.push_back(static_cast<char>(0x80 | (_codePoint & 0x3F)));
+  }
+}
+
+// The characters of UTF-8 text: its bytes that do not continue a character.
+[[nodiscard]] std::size_t CharacterCount(std::string_view _utf8) noexcept
+{
+  return static_cast<std::size_t>(
+    std::ranges::count_if(_utf8, [](char _byte) { return (static_cast<std::uint8_t>(_byte) & 0xC0u) != 0x80u; }));
+}
+
+// The last character of UTF-8 text removed, with its continuation bytes.
+void RemoveLastCharacter(std::string& _utf8)
+{
+  while (!_utf8.empty() && (static_cast<std::uint8_t>(_utf8.back()) & 0xC0u) == 0x80u)
+  {
+    _utf8.pop_back();
+  }
+  if (!_utf8.empty())
+  {
+    _utf8.pop_back();
+  }
 }
 
 [[nodiscard]] Color WithAlpha(const Color& _color, float _alpha) noexcept
@@ -259,6 +317,14 @@ void UiWindow::SetSelected(UiHandle _widget, std::size_t _option)
   }
 }
 
+void UiWindow::SetValue(UiHandle _widget, std::string _value)
+{
+  if (Widget* widget = Get(_widget))
+  {
+    widget->desc.value = std::move(_value);
+  }
+}
+
 void UiWindow::SetInactive(UiHandle _widget, bool _inactive)
 {
   if (Widget* widget = Get(_widget))
@@ -296,6 +362,12 @@ std::size_t UiWindow::Selected(UiHandle _widget) const noexcept
 {
   const Widget* widget = Get(_widget);
   return widget != nullptr ? widget->desc.selected : 0;
+}
+
+std::string_view UiWindow::Value(UiHandle _widget) const noexcept
+{
+  const Widget* widget = Get(_widget);
+  return widget != nullptr ? std::string_view(widget->desc.value) : std::string_view{};
 }
 
 UiRect UiWindow::RectOf(UiHandle _widget) const noexcept
@@ -561,10 +633,26 @@ void UiCore::Update(const UiInput& _input, const UiMetrics& _metrics)
   {
     return;
   }
+  // UI-038: an edit whose field is no longer in the focused window is abandoned (UI-064).
+  if (m_editing && !focused->window->Contains(m_editing))
+  {
+    m_editing = {};
+    m_editText.clear();
+  }
   if (_input.windowFocused)
   {
+    // UI-123, INP-156: while a field is edited, and in the frame its edit ends by Enter or Escape, the keys type and do
+    // not navigate, so one key press never does both.
+    const bool editing = static_cast<bool>(m_editing);
     Point(*focused->window, _input);
-    Navigate(*focused->window, *focused->page, _input);
+    if (m_editing)
+    {
+      Type(*focused->window, _input.text);
+    }
+    if (!editing && !m_editing)
+    {
+      Navigate(*focused->window, *focused->page, _input);
+    }
   }
   else
   {
@@ -606,6 +694,13 @@ void UiCore::Point(UiWindow& _window, const UiInput& _input)
   // UI-031, UI-035: a press captures the widget under the pointer, and a release on it clicks it (UI-006: in order).
   if (_input.pointerDown)
   {
+    // UI-064: a press on another text field abandons the edit; ADR-154: a press anywhere else applies it first, so that
+    // a value typed before a button is pressed is kept.
+    if (m_editing && under != m_editing)
+    {
+      const UiWindow::Widget* target = _window.Get(under);
+      EndEdit(_window, target == nullptr || target->desc.kind != UiWidgetKind::TextField);
+    }
     m_captured = under;
     if (under)
     {
@@ -710,7 +805,64 @@ void UiCore::Click(UiWindow& _window, UiHandle _widget)
     widget->desc.selected = (widget->desc.selected + 1) % widget->desc.options.size(); // UI-116's cycle mode
     m_events.push_back({UiEventKind::Changed, _widget});
   }
+  else if (widget->desc.kind == UiWidgetKind::TextField && m_editing != _widget)
+  {
+    BeginEdit(_window, _widget); // UI-064, UI-123
+  }
   m_events.push_back({UiEventKind::Click, _widget});
+}
+
+void UiCore::BeginEdit(UiWindow& _window, UiHandle _widget)
+{
+  if (const UiWindow::Widget* widget = _window.Get(_widget); widget != nullptr)
+  {
+    m_editing = _widget;
+    m_editText = widget->desc.value;
+  }
+}
+
+void UiCore::EndEdit(UiWindow& _window, bool _apply)
+{
+  const UiHandle edited = std::exchange(m_editing, UiHandle{});
+  if (UiWindow::Widget* widget = _window.Get(edited); widget != nullptr && _apply)
+  {
+    widget->desc.value = std::move(m_editText);
+    m_events.push_back({UiEventKind::Changed, edited});
+  }
+  m_editText.clear();
+}
+
+void UiCore::Type(UiWindow& _window, std::span<const TextCharacter> _text)
+{
+  const UiWindow::Widget* widget = _window.Get(m_editing);
+  if (widget == nullptr)
+  {
+    return;
+  }
+  const UiWidgetDesc& desc = widget->desc;
+  for (const TextCharacter& character : _text)
+  {
+    const char32_t point = character.codePoint;
+    // UI-066 in the order of its tests: Backspace, Enter, Escape, then the characters a field takes.
+    if (point == CHARACTER_BACKSPACE)
+    {
+      RemoveLastCharacter(m_editText);
+    }
+    else if (point == CHARACTER_ENTER || point == CHARACTER_ESCAPE)
+    {
+      EndEdit(_window, point == CHARACTER_ENTER);
+      return; // the rest of the frame's characters reach no field
+    }
+    else if (point < CHARACTER_FIRST_PRINTABLE || point == CHARACTER_DELETE || point > CHARACTER_LAST ||
+             (point >= SURROGATE_FIRST && point <= SURROGATE_LAST) || character.control)
+    {
+      continue; // control characters and Ctrl's commands insert nothing (INP-113)
+    }
+    else if ((!desc.digitsOnly || (point >= U'0' && point <= U'9')) && (desc.maxLength == 0 || CharacterCount(m_editText) < desc.maxLength))
+    {
+      AppendUtf8(m_editText, point); // UI-068: a character beyond the maximum length is not inserted
+    }
+  }
 }
 
 void UiCore::Draw(TextSystem& _text, const UiStyle& _style, double _timeSeconds, std::vector<UiBatch>& _out) const
@@ -819,6 +971,30 @@ void UiCore::DrawWindow(const UiWindow& _window, const UiMetrics& _metrics, Text
       }
       AppendRowText(_out, _text, desc.text, desc.role, pixels, rect, UiAlign::Left, captionLeft,
                     CaptionStyle(_style, CaptionColor(_style, desc, highlighted), outline));
+      break;
+    }
+    case UiWidgetKind::TextField:
+    {
+      // UI-121's first style: the row box, the caption at the caption inset, the value right-aligned one font size in from
+      // the right, and while it is edited the typed text and the caret line at its fixed place, blinking (UI-070).
+      const bool edited = widget.handle == m_editing;
+      AppendQuad(_out, UiSource::Solid, UiBlend::Alpha, 0, Quad(rect, highlighted || edited ? _style.focusBand : _style.rowBand));
+      const TextStyle style = CaptionStyle(_style, CaptionColor(_style, desc, highlighted), outline);
+      AppendRowText(_out, _text, desc.text, desc.role, pixels, rect, UiAlign::Left, captionLeft, style);
+      const std::string& shown = edited ? m_editText : desc.value;
+      if (!shown.empty())
+      {
+        AppendRowText(_out, _text, shown, desc.role, pixels, rect, UiAlign::Right, std::round(rect.right - pixels), style);
+      }
+      const double period = std::max(static_cast<double>(_style.caretBlinkPeriod), 1e-3);
+      if (edited && std::fmod(std::max(_timeSeconds, 0.0), period) < period * static_cast<double>(_style.caretDuty))
+      {
+        const float caretLeft = std::round(rect.right - _style.fieldCaretOffset * pixels);
+        const float margin = metrics.LinePixels(_style.caretMarginPixels);
+        AppendQuad(_out, UiSource::Solid, UiBlend::Alpha, 0,
+                   Quad({caretLeft, rect.top + margin, caretLeft + metrics.LinePixels(_style.fieldCaretWidthPixels), rect.bottom - margin},
+                        CaptionColor(_style, desc, true)));
+      }
       break;
     }
     case UiWidgetKind::Cycler:

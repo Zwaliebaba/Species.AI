@@ -28,8 +28,12 @@ Neuron::Nanoseconds SecondsOf(double _seconds) noexcept
 
 #if ENGINE_DEVELOPMENT
 
+// The test page's text field's digits at most: a 64-bit seed's (ADR-154).
+constexpr std::size_t TEST_FIELD_DIGITS = 20;
+
 // The test screen (ADR-149): fill boxes on the page grid of UI-163, the page title of UI-373's skeleton, and a column of
-// rows in the medium font: page buttons, a check box, a cycler and an inactive button. Its texts are the test's own.
+// rows in the medium font: page buttons, a check box, a cycler, a text field (ADR-154) and an inactive button. Its texts
+// are the test's own.
 class TestPage final : public Neuron::UiPage
 {
 public:
@@ -71,6 +75,14 @@ public:
       cycler.text = "A cycler";
       cycler.options = {"One", "Two", "Three"};
       order.push_back(_window.Add(std::move(cycler)));
+      // ADR-154: a page text field of digits, as the new world's seed is.
+      Neuron::UiWidgetDesc field;
+      field.kind = Kind::TextField;
+      field.id = "field";
+      field.text = "A text field of digits";
+      field.digitsOnly = true;
+      field.maxLength = TEST_FIELD_DIGITS;
+      order.push_back(_window.Add(std::move(field)));
       Neuron::UiWidgetDesc inactive;
       inactive.kind = Kind::PageButton;
       inactive.id = "inactive";
@@ -286,6 +298,7 @@ void GameUi::Update(Neuron::InputRouter& _router, Neuron::SizePx _client, float 
   input.pointerUp = (m_pointerHeld || input.pointerDown) && !input.pointerHeld;
   m_pointerHeld = input.pointerHeld;
   input.windowFocused = _windowFocused;
+  input.text = _router.Text(); // INP-112 (ADR-154)
   m_metrics = UiMetricsOf(m_presentation, _client, _dpiScale, m_uiScale, m_textScale);
   m_core.Update(input, m_metrics);
   // UI-006: what a focused window takes reaches no world action.

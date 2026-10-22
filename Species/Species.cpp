@@ -184,6 +184,7 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
   const std::size_t replaced = router.Rebuild(BindingLayers(_settings, _window.ActiveKeyboardLayoutTag()));
   Neuron::Log(Neuron::LogCategory::Input, Neuron::LogLevel::Info, "bindings built for the keyboard layout {}: {} replaced", layoutTag,
               replaced);
+  router.SetTextSource(&keyboardMouse); // INP-112 (ADR-154): characters reach the UI, never the bindings
   bool layoutChanged = false;
   _window.SetInputSink(&keyboardMouse);
   const Neuron::WindowListenerId listener = _window.AddListener(

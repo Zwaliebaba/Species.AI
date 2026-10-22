@@ -190,6 +190,16 @@ public:
   // held (INP-111); while the window has no focus, presses and movement are dropped. _clientSize clamps the pointer, and
   // _realTime advances the repeat timers (INP-133, INP-101 step 7), which fire only on the press while it stands still.
   void AdvanceFrame(const FrameGates& _gates, SizePx _clientSize, Nanoseconds _realTime = Nanoseconds{0});
+  // INP-112 (ADR-154): the source of text input, whose characters each frame forwards to the UI; none drops them.
+  void SetTextSource(TextSource* _source) noexcept
+  {
+    m_textSource = _source;
+  }
+  // The frame's characters, in order, while the window has focus; the UI core reads them (UI-007, UI-038).
+  [[nodiscard]] std::span<const TextCharacter> Text() const noexcept
+  {
+    return m_text;
+  }
   void SetRepeatTiming(const RepeatTiming& _timing) noexcept
   {
     m_repeat = _timing;
@@ -263,6 +273,8 @@ private:
   std::optional<Nanoseconds> m_lastRealTime;
   DeviceBackEnd& m_backEnd;
   PointerHost* m_pointerHost;
+  TextSource* m_textSource = nullptr;
+  std::vector<TextCharacter> m_text;
   std::array<ControlState, KEY_CODE_COUNT> m_keys{};
   std::array<ControlState, MOUSE_BUTTON_COUNT> m_buttons{};
   float m_motionX = 0.0f; // the frame's summed movement and wheel deltas (INP-118)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "InputEvents.h"
 #include "TextSystem.h"
 #include "UiLayout.h"
 #include "WorldScene.h"
@@ -31,7 +32,7 @@ struct UiHandle
   bool operator==(const UiHandle& _other) const = default;
 };
 
-// The widgets of the page family that M2 builds (ADR-149); the HUD's and the front end's own arrive with T16 and T18.
+// The widgets of the page family that M2 builds (ADR-149), and the page text field of the front end (T18, ADR-154).
 enum class UiWidgetKind : std::uint8_t
 {
   Label,      // UI-426: a line of text, never focusable
@@ -39,7 +40,8 @@ enum class UiWidgetKind : std::uint8_t
   FillBox,    // UI-115: a box behind the widgets, never focusable
   PageButton, // UI-105, UI-108: a caption that clicks
   CheckBox,   // UI-080, UI-125: a caption and a box that a click toggles
-  Cycler      // UI-116 in cycle mode, UI-117: a label and a value that a click steps to the next option, wrapping
+  Cycler,     // UI-116 in cycle mode, UI-117: a label and a value that a click steps to the next option, wrapping
+  TextField   // UI-120, UI-121's first style: a caption and a text value that a click or an activation starts editing
 };
 
 enum class UiAlign : std::uint8_t
@@ -60,6 +62,9 @@ struct UiWidgetDesc
   std::vector<std::string> options; // a cycler's option texts
   std::size_t selected = 0;         // a cycler's option
   bool checked = false;             // a check box's state
+  std::string value;                // a text field's value, UTF-8
+  std::size_t maxLength = 0;        // a text field's characters at most (UI-068); 0: no limit
+  bool digitsOnly = false;          // ADR-154: a text field takes only the digits 0 to 9
   bool inactive = false;            // UI-105: drawn inactive, never acts
   bool alternativeColor = false;    // UI-105: a page button's alternative caption color
   UiAlign align = UiAlign::Left;
@@ -101,6 +106,8 @@ public:
   void SetFontPixels(UiHandle _widget, float _pixels);
   void SetChecked(UiHandle _widget, bool _checked);
   void SetSelected(UiHandle _widget, std::size_t _option);
+  // UI-069: a text field's value, shown from the next draw while it is not being edited.
+  void SetValue(UiHandle _widget, std::string _value);
   void SetInactive(UiHandle _widget, bool _inactive);
   // UI-053: the cursor moves to _widget when it is in the navigation order, and stays otherwise.
   void SetCursor(UiHandle _widget);
@@ -109,6 +116,7 @@ public:
   [[nodiscard]] bool Contains(UiHandle _widget) const noexcept;
   [[nodiscard]] bool Checked(UiHandle _widget) const noexcept;
   [[nodiscard]] std::size_t Selected(UiHandle _widget) const noexcept;
+  [[nodiscard]] std::string_view Value(UiHandle _widget) const noexcept;
   [[nodiscard]] UiRect RectOf(UiHandle _widget) const noexcept;
   [[nodiscard]] UiHandle Cursor() const noexcept;
   [[nodiscard]] UiHandle BackAction() const noexcept
@@ -153,8 +161,9 @@ private:
 // What happened to a widget in a frame's update, in the order it happened (UI-035, UI-080, UI-116).
 enum class UiEventKind : std::uint8_t
 {
-  Click,  // a click or an activation: a page button acts, a check box has toggled, a cycler has stepped
-  Changed // a check box's or a cycler's value changed
+  Click,  // a click or an activation: a page button acts, a check box has toggled, a cycler has stepped, a text field
+          // starts its edit
+  Changed // a check box's or a cycler's value changed, or a text field's edit was applied
 };
 
 struct UiEvent
@@ -229,6 +238,7 @@ struct UiInput
   bool pointerHeld = false; // action.ui.pointer_held
   bool pointerUp = false;   // the primary button's release
   bool windowFocused = true;
+  std::span<const TextCharacter> text; // INP-112: the frame's characters, in order, which an edited text field takes
 };
 
 /// How the page family draws (UI-187, UI-188, UI-108 to UI-125, ADR-149): the palette's colors, the images' indices in
@@ -275,6 +285,11 @@ struct UiStyle
   float checkBoxRight = 1.5f;                    // ui.check.box_right, × the row's height from its right edge
   float checkTickInset = 0.05f;                  // ui.check.tick_inset, × the row's height
   float checkTickSize = 0.65f;                   // ui.check.tick_size, × the row's height
+  float caretBlinkPeriod = 1.0f;                 // ui.field.caret_blink_period, s
+  float caretDuty = 0.5f;                        // ui.field.caret_duty, the share of the period the caret shows
+  float caretMarginPixels = 2.0f;                // ui.field.caret_margin, above and below the caret
+  float fieldCaretWidthPixels = 5.0f;            // ui.page_field.caret_width
+  float fieldCaretOffset = 0.95f;                // ui.page_field.caret_offset, × the font size from the right edge
 };
 
 /// The UI core (ADR-030 to ADR-033 at M2, ADR-149): the screen's page stack and the layers above it, the focus, the
@@ -317,6 +332,11 @@ public:
   {
     return m_events;
   }
+  // UI-039: a text field of the focused window is being edited, so the keys type rather than navigate (INP-156).
+  [[nodiscard]] bool IsTextEditing() const noexcept
+  {
+    return static_cast<bool>(m_editing);
+  }
 
 private:
   struct Entry
@@ -335,6 +355,11 @@ private:
   void Navigate(UiWindow& _window, UiPage& _page, const UiInput& _input);
   void Point(UiWindow& _window, const UiInput& _input);
   void Click(UiWindow& _window, UiHandle _widget);
+  // UI-038, UI-064: the text field _widget becomes the edit's target with its value; the edit ends applied or not.
+  void BeginEdit(UiWindow& _window, UiHandle _widget);
+  void EndEdit(UiWindow& _window, bool _apply);
+  // UI-066: the frame's characters, into the edited field.
+  void Type(UiWindow& _window, std::span<const TextCharacter> _text);
   [[nodiscard]] Entry* FocusedEntry() noexcept;
   [[nodiscard]] const Entry* FocusedEntry() const noexcept;
   void DrawWindow(const UiWindow& _window, const UiMetrics& _metrics, TextSystem& _text, const UiStyle& _style, double _timeSeconds,
@@ -352,6 +377,8 @@ private:
   std::optional<UiMetrics> m_metrics;
   std::uint32_t m_nextSerial = 1;
   UiHandle m_captured; // UI-031: the widget the press began on, in the focused window
+  UiHandle m_editing;  // UI-038: the text field being edited, in the focused window
+  std::string m_editText;
   std::vector<UiEvent> m_events;
 };
 

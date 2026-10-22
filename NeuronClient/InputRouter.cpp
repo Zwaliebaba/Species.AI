@@ -486,6 +486,16 @@ void InputRouter::AdvanceFrame(const FrameGates& _gates, SizePx _clientSize, Nan
   {
     m_backEnd.ReleaseAll(m_queue);
   }
+  // INP-112: the frame's characters bypass the queue and the bindings; an unfocused window's are dropped.
+  m_text.clear();
+  if (m_textSource != nullptr)
+  {
+    m_textSource->TakeText(m_text);
+    if (!_gates.windowFocused)
+    {
+      m_text.clear();
+    }
+  }
   m_focused = _gates.windowFocused;
   for (const InputEvent& event : m_queue)
   {

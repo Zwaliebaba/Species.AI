@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "InputRouter.h"
+#include "KeyboardMouseBackEnd.h"
 #include "TestSupport.h"
 
 #include <chrono>
@@ -94,6 +95,19 @@ private:
   std::vector<Neuron::InputEvent> m_pending;
   std::vector<std::uint16_t> m_heldKeys;
   Neuron::PointPx m_pointer;
+};
+
+// A text source whose characters the test queues (ADR-154).
+class ScriptedText final : public Neuron::TextSource
+{
+public:
+  void TakeText(std::vector<Neuron::TextCharacter>& _out) override
+  {
+    _out.insert(_out.end(), pending.begin(), pending.end());
+    pending.clear();
+  }
+
+  std::vector<Neuron::TextCharacter> pending;
 };
 
 class RecordingPointer final : public Neuron::PointerHost
@@ -496,6 +510,37 @@ public:
     Assert::IsFalse(router.Query(FORWARD_DOWN), L"read once a frame, in AdvanceFrame");
     router.AdvanceFrame({}, CLIENT);
     Assert::IsTrue(router.Query(FORWARD_DOWN) && !router.Query(FORWARD_UP), L"on");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Inp112CharactersReachTheUiAndNeverABinding)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-112")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-007")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Inp112CharactersReachTheUiAndNeverABinding)
+  {
+    ScriptedBackEnd keys;
+    ScriptedText text;
+    const std::vector<Neuron::ActionBindings> actions = Actions();
+    Neuron::InputRouter router(actions, keys, nullptr);
+    router.SetTextSource(&text);
+    text.pending = {{U'w'}, {U'4', true}};
+    router.AdvanceFrame({}, CLIENT);
+    Assert::IsTrue(router.Text().size() == 2 && router.Text()[0].codePoint == U'w' && router.Text()[1].shift, L"in order, with Shift");
+    Assert::IsFalse(router.Query(FORWARD_DOWN), L"a character satisfies no binding");
+    router.AdvanceFrame({}, CLIENT);
+    Assert::IsTrue(router.Text().empty(), L"each frame's own");
+    text.pending = {{U'x'}};
+    router.AdvanceFrame({.windowFocused = false}, CLIENT);
+    Assert::IsTrue(router.Text().empty(), L"an unfocused window's are dropped");
+
+    // UI-007: UTF-16 at the boundary, scalar values inside; a lone half is dropped.
+    char16_t pending = 0;
+    Assert::IsTrue(Neuron::JoinUtf16(pending, u'A') == std::optional<char32_t>(U'A'), L"a unit of the basic plane");
+    Assert::IsFalse(Neuron::JoinUtf16(pending, char16_t{0xD83D}).has_value(), L"a high half waits");
+    Assert::IsTrue(Neuron::JoinUtf16(pending, char16_t{0xDE00}) == std::optional<char32_t>(U'\U0001F600'), L"for its low half");
+    Assert::IsFalse(Neuron::JoinUtf16(pending, char16_t{0xDE00}).has_value(), L"a low half alone gives nothing");
+    static_cast<void>(Neuron::JoinUtf16(pending, char16_t{0xD83D}));
+    Assert::IsTrue(Neuron::JoinUtf16(pending, u'B') == std::optional<char32_t>(U'B') && pending == 0, L"a high half then another unit");
   }
 };
 
