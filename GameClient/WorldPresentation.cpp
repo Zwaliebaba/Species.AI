@@ -479,6 +479,40 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
   return inputs;
 }
 
+Neuron::FrameInputs WorldPresentation::FrontEndFrame(Neuron::PointPx _pointer, Neuron::SizePx _client, double _framesPerSecond,
+                                                     float _dpiScale)
+{
+  m_text->BeginFrame(++m_frames);
+  const TuningPresentation::Rnd::Frame::ClearColorNoMatch& background = m_desc.presentation->rnd.frame.clearColorNoMatch;
+  Neuron::FrameInputs inputs;
+  inputs.background = Rgb(background.r, background.g, background.b);
+  inputs.presentationSeconds = std::chrono::duration<double>(m_desc.clock->Now() - m_start).count();
+  inputs.brightness = static_cast<float>(m_desc.display.brightness);
+  // O65, UI-465: the system pointer is hidden, and the world cursor draws the standard pointer over the pages.
+  if (m_cursorImages != nullptr)
+  {
+    inputs.cursorImages = m_cursorImages;
+    inputs.cursor = CursorAt(CursorKind::World, _pointer, *m_desc.presentation);
+  }
+  m_ui->Draw(*m_text, inputs.presentationSeconds, inputs.ui);
+#if ENGINE_DEVELOPMENT
+  // DBG-095: the frame-rate line while the overlay is shown.
+  if (m_overlayShown)
+  {
+    const auto textSize = static_cast<float>(m_desc.presentation->dbg.overlay.textSize);
+    const std::vector<Neuron::OverlayLine> lines{FrameRateLine(*m_desc.presentation, _framesPerSecond, std::nullopt)};
+    Neuron::AppendOverlayLines(inputs.overlayText, *m_text, lines, _client, textSize, _dpiScale);
+  }
+#else
+  static_cast<void>(_framesPerSecond);
+  static_cast<void>(_client);
+  static_cast<void>(_dpiScale);
+#endif
+  inputs.glyphs = m_text->Atlas();
+  inputs.uiImages = m_uiImages;
+  return inputs;
+}
+
 FramePageInputs WorldPresentation::FramePageOf(const ClientSession& _session, double _framesPerSecond) const
 {
   FramePageInputs figures;

@@ -42,6 +42,9 @@
     <ClInclude Include="ClientSettings.h">
       <Filter>Session</Filter>
     </ClInclude>
+    <ClInclude Include="FrontEnd.h">
+      <Filter>View</Filter>
+    </ClInclude>
     <ClInclude Include="GameUi.h">
       <Filter>View</Filter>
     </ClInclude>
@@ -87,6 +90,9 @@
     <ClInclude Include="WorldPresentation.h">
       <Filter>Session</Filter>
     </ClInclude>
+    <ClInclude Include="WorldSaves.h">
+      <Filter>Session</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Build</Filter>
     </ClInclude>
@@ -109,6 +115,9 @@
     </ClCompile>
     <ClCompile Include="ClientSettings.cpp">
       <Filter>Session</Filter>
+    </ClCompile>
+    <ClCompile Include="FrontEnd.cpp">
+      <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="GameUi.cpp">
       <Filter>View</Filter>
@@ -153,6 +162,9 @@
       <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="WorldPresentation.cpp">
+      <Filter>Session</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldSaves.cpp">
       <Filter>Session</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">

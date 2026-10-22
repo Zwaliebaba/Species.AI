@@ -18,6 +18,25 @@
     "ui.hud.completed": "{kind, select, dwelling {Dwelling completed} storehouse {Storehouse completed} turret {Turret completed} other {Structure completed}}",
     "ui.hud.seed": "World seed {seed}",
     "ui.hud.placing": "{kind, select, dwelling {Placing a dwelling} storehouse {Placing a storehouse} turret {Placing a turret} other {Placing a structure}}",
-    "ui.hud.refused": "{reason, select, not_buildable {Nothing can be built here} queue_full {The construction queue is full} outside_territory {Outside the territory} in_center_ring {Too close to the Wellspring} not_walkable {The ground is too steep or wet} overlaps {Something is in the way} cannot_afford {The stores cannot pay for it} other {It cannot be placed here}}"
+    "ui.hud.refused": "{reason, select, not_buildable {Nothing can be built here} queue_full {The construction queue is full} outside_territory {Outside the territory} in_center_ring {Too close to the Wellspring} not_walkable {The ground is too steep or wet} overlaps {Something is in the way} cannot_afford {The stores cannot pay for it} other {It cannot be placed here}}",
+    "ui.front.continue": "Continue",
+    "ui.front.continue_world": "Continue the world of seed {seed}",
+    "ui.front.continue_failed": "{reason, select, no_snapshot {This world has no save to continue.} unreadable {This world's save cannot be read.} damaged {This world's save is damaged.} version {This world was saved by another version of Species.} other {This world cannot be continued.}}",
+    "ui.front.saves_unavailable": "Worlds cannot be saved: the folder for your data is not available.",
+    "ui.front.new_world": "New world",
+    "ui.front.options": "Options",
+    "ui.front.quit": "Quit",
+    "ui.front.back": "Back",
+    "ui.front.start": "Start",
+    "ui.front.seed": "Seed (empty: drawn)",
+    "ui.front.seed_too_large": "A seed is at most {largest}.",
+    "ui.front.site": "Site",
+    "ui.front.site_option": "Site {site, number, integer}",
+    "ui.front.window": "Play in a window",
+    "ui.front.anti_aliasing": "Anti-aliasing (next start)",
+    "ui.front.anti_aliasing_option": "{mode, select, off {Off} two {2x} four {4x} other {On}}",
+    "ui.front.vsync": "Vertical sync",
+    "ui.front.volume": "Master volume",
+    "ui.front.volume_option": "{percent, number, integer}%"
   }
 }

@@ -39,6 +39,8 @@ inline constexpr std::string_view PRESENT_MODE_UNCAPPED = "uncapped";
 inline constexpr std::string_view ANTI_ALIASING_OFF = "off";
 inline constexpr std::string_view ANTI_ALIASING_2X = "2x";
 inline constexpr std::string_view ANTI_ALIASING_4X = "4x";
+// audio.master_volume's maximum (ref.meta.options.sound.volume_max), which the options page shows as 100 % (O96).
+inline constexpr std::int64_t MASTER_VOLUME_MAX = 255;
 
 // The one defaults table (DAT-193, DEC-100, PLT-030): every setting the client stores, with its type, range and default,
 // compiled in so that it exists before any content is mounted. The `rnd.option.*.default` keys stay named constants

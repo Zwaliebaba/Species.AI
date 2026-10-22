@@ -1388,6 +1388,11 @@ std::uint64_t FrameRenderer::WorldFrames() const noexcept
   return m_state->worldFrames;
 }
 
+std::uint64_t FrameRenderer::PresentedFrames() const noexcept
+{
+  return m_state->frameNumber;
+}
+
 Nanoseconds FrameRenderer::LastFrameWaits() const noexcept
 {
   return m_state->timing.Waits();

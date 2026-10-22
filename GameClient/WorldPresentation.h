@@ -5,6 +5,7 @@
 #include "ClientSession.h"
 #include "DevelopmentOverlay.h"
 #include "EffectsLook.h"
+#include "FrontEnd.h"
 #include "FrameProfile.h"
 #include "GameUi.h"
 #include "InputRouter.h"
@@ -70,6 +71,25 @@ public:
   {
     return *m_ui;
   }
+  // ADR-155: the front end's screen over no world, its pages made by _frontEnd; and the screen closed as a world starts.
+  void OpenFrontEnd(FrontEnd& _frontEnd, FrontEndPage _page)
+  {
+    m_ui->OpenFrontEnd(_frontEnd,
+                       static_cast<GamePage>(static_cast<Neuron::UiPageId>(GamePage::FrontEndMain) + static_cast<Neuron::UiPageId>(_page)));
+  }
+  void CloseFrontEnd()
+  {
+    m_ui->CloseFrontEnd();
+  }
+  // ADR-146: the en-US strings and their locale, which the front end formats its texts with.
+  [[nodiscard]] const Neuron::StringTable& Strings() const noexcept
+  {
+    return *m_strings;
+  }
+  [[nodiscard]] const Neuron::MessageLocale& Locale() const noexcept
+  {
+    return *m_locale;
+  }
   // ADR-150: the display options from the store, taken at once; the sea detail takes effect when the next world's
   // surfaces are built.
   void SetDisplay(const DisplayOptions& _display);
@@ -81,6 +101,10 @@ public:
   // Debug build's development overlay shows (DBG-095, ADR-118), and _dpiScale the window's, which text sizes take
   // (UI-170, ADR-147). The frame takes the session's presentation events, which its effects play (ADR-123).
   [[nodiscard]] Neuron::FrameInputs Frame(ClientSession& _session, const SettlementView& _view, double _framesPerSecond, float _dpiScale);
+  // ADR-155: the inputs of a front-end frame, with no world: the background, the UI's pages, and the standard pointer at
+  // _pointer (UI-465); in a Debug build with the overlay shown, the frame-rate line.
+  [[nodiscard]] Neuron::FrameInputs FrontEndFrame(Neuron::PointPx _pointer, Neuron::SizePx _client, double _framesPerSecond,
+                                                  float _dpiScale);
 
   [[nodiscard]] const std::shared_ptr<const Neuron::WorldScene>& World() const noexcept
   {

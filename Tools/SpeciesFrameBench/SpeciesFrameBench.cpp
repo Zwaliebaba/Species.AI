@@ -332,7 +332,11 @@ SceneEnd RunScene(const Scene& _scene, const Options& _options, const Bench& _be
   Species::IntegratedServer server(serverDesc);
   if (const auto started = server.Start(); !started)
   {
-    Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "{}", Neuron::FormatAssetError(started.error()));
+    // The bench continues no world, so its only fault is a record's (ADR-155).
+    if (const auto* fault = std::get_if<Neuron::AssetError>(&started.error()); fault != nullptr)
+    {
+      Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "{}", Neuron::FormatAssetError(*fault));
+    }
     return SceneEnd::ServerFailed;
   }
   Species::ClientSession::Desc sessionDesc;

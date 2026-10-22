@@ -24,7 +24,6 @@ constexpr std::int64_t SEA_DETAIL_DEFAULT = 1;                                //
 constexpr std::int64_t ENTITY_DETAIL_DEFAULT = 1;                             // rnd.option.entity_detail.default
 constexpr double WORKER_SCALE_FACTOR_DEFAULT = 2.0;                           // rnd.option.worker_scale_factor.default
 constexpr std::int64_t VOLUME_DEFAULT = 255;                                  // aen.settings.volume_default
-constexpr std::int64_t VOLUME_MAX = 255;                                      // ref.meta.options.sound.volume_max
 
 // The ranges that no requirement states yet, chosen by ADR-150: a frame-rate cap of at most 1,000 frames per second (0
 // is none), a render size of at most 16,384 pixels a side (D3D12's largest texture), a brightness from 0.5 to 2, a
@@ -74,7 +73,7 @@ std::vector<Neuron::SettingSpec> ClientSettingSpecs()
   specs.push_back(Spec(SETTING_TEXT_SCALE, SettingType::Decimal, std::nullopt, UI_SCALE_MIN, UI_SCALE_MAX));
   specs.push_back(Spec(SETTING_REDUCED_FLASH, SettingType::Boolean, false));
   specs.push_back(Spec(SETTING_REDUCED_MOTION, SettingType::Boolean, false));
-  specs.push_back(Spec(SETTING_MASTER_VOLUME, SettingType::Integer, VOLUME_DEFAULT, 0.0, static_cast<double>(VOLUME_MAX)));
+  specs.push_back(Spec(SETTING_MASTER_VOLUME, SettingType::Integer, VOLUME_DEFAULT, 0.0, static_cast<double>(MASTER_VOLUME_MAX)));
   specs.push_back(Spec(SETTING_KEYBOARD_LAYOUT, SettingType::Text, std::nullopt));
   specs.push_back(Spec(SETTING_BINDING_FAMILY, SettingType::Binding, std::nullopt));
   return specs;

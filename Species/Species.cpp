@@ -9,6 +9,7 @@
 #include "FatalPath.h"
 #include "FloatEnvironment.h"
 #include "FrameRenderer.h"
+#include "FrontEnd.h"
 #include "InputBindings.h"
 #include "InputRouter.h"
 #include "IntegratedServer.h"
@@ -28,6 +29,7 @@
 #include "Tuning.h"
 #include "UserData.h"
 #include "WorldPresentation.h"
+#include "WorldSaves.h"
 
 #include <algorithm>
 #include <array>
@@ -35,6 +37,7 @@
 #include <cstdint>
 #include <expected>
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -46,8 +49,8 @@
 
 // The client's entry point and composition root (ADR-090 item 2, DEC-221). It runs the start-up steps of PLT-038 that
 // exist in M0, composes the integrated server through IntegratedServer.h and the client session (M0 task T7), and runs
-// the frame loop of task T4, which draws the world frame of M1 task T13; the application's states of ADR-083 item 3 come
-// with the front end.
+// the frame loop of task T4, which draws the world frame of M1 task T13; with M2 task T18 (ADR-155), the application's
+// states of ADR-083 item 3 as M2 has them: the front end, then a world.
 namespace Species
 {
 
@@ -166,12 +169,38 @@ Presentation CreatePresentation(const Neuron::PlatformClock& _clock, const Neuro
 // The render check's limit on its run: a check that has not drawn its frames by then fails (ADR-113).
 constexpr Neuron::Nanoseconds RENDER_CHECK_LIMIT{120'000'000'000};
 
-// The frame loop until the quit, or, for a render check, until it has drawn _checkFrames world frames or its limit has
-// passed.
-void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neuron::FrameRenderer& _renderer, ClientSession& _session,
-                  WorldPresentation& _world, SettlementView& _view, const Neuron::SettingsStore& _settings,
-                  std::optional<std::uint32_t> _checkFrames)
+// ADR-155 (ADR-083 item 3): the world the client runs once the front end or a Debug start-up option chose one: the
+// integrated server, the client session on its connection and the settlement view; and the saved world it continues
+// or began, whose seed is recorded once its terrain gives it (MVP-005).
+struct ClientWorld
 {
+  std::unique_ptr<IntegratedServer> server;
+  std::unique_ptr<ClientSession> session;
+  std::unique_ptr<SettlementView> view;
+  std::optional<SavedWorld> saved;
+  bool seedRecorded = false;
+};
+
+// A world for the steward's choice, or why the world to continue cannot be continued.
+using WorldStarter = std::function<std::expected<ClientWorld, ContinueFault>(const FrontEndChoice&)>;
+
+// PLT-042: one teardown for every exit: the session closes, then the server stops and freezes its world (O4).
+void EndWorld(ClientWorld& _world)
+{
+  _world.session->Close();
+  _world.server->Stop();
+}
+
+// The frame loop until the quit, or, for a render check, until it has drawn _checkFrames frames, world frames when it
+// checks a world, or its limit has passed: the front end's state while no world runs, and the world's once _active
+// holds one (ADR-155). Returns the frames the render check counts.
+std::uint64_t RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neuron::FrameRenderer& _renderer,
+                           Neuron::RenderConfig _renderConfig, WorldPresentation& _world, FrontEnd& _frontEnd,
+                           const WorldStarter& _startWorld, std::optional<ClientWorld> _active, const Neuron::SettingsStore& _settings,
+                           std::optional<std::uint32_t> _checkFrames)
+{
+  const bool checksWorld = _active.has_value();
+  const auto checkedFrames = [&]() { return checksWorld ? _renderer.WorldFrames() : _renderer.PresentedFrames(); };
   // M1 task T14 (ADR-119): the keyboard and mouse back-end and the input router with the compiled-in bindings replace
   // O65's stand-in; the window's close request is the quit (PLT-009).
   Neuron::KeyboardMouseBackEnd keyboardMouse(_window);
@@ -236,7 +265,7 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
     {
       break;
     }
-    if (_checkFrames.has_value() && (_renderer.WorldFrames() >= *_checkFrames || _clock.Now() - start > RENDER_CHECK_LIMIT))
+    if (_checkFrames.has_value() && (checkedFrames() >= *_checkFrames || _clock.Now() - start > RENDER_CHECK_LIMIT))
     {
       break;
     }
@@ -257,23 +286,75 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
       _world.ToggleOverlay();
     }
     const bool newSeed = router.Query(ActionOf(GameAction::DebugRestartSandboxNewSeed));
-    if (newSeed || router.Query(ActionOf(GameAction::DebugRestartSandbox)))
+    if (_active.has_value() && (newSeed || router.Query(ActionOf(GameAction::DebugRestartSandbox))))
     {
-      static_cast<void>(_session.RequestSandboxRestart(newSeed));
+      static_cast<void>(_active->session->RequestSandboxRestart(newSeed));
     }
 #endif
+    // ADR-155: on the front end, the steward's choice starts a world or quits; a world that cannot be continued shows why
+    // on the main page again.
+    if (!_active.has_value())
+    {
+      if (const std::optional<FrontEndChoice> choice = _frontEnd.TakeChoice(); choice.has_value())
+      {
+        if (choice->kind == FrontEndChoice::Kind::Quit)
+        {
+          break;
+        }
+        if (std::expected<ClientWorld, ContinueFault> started = _startWorld(*choice); started.has_value())
+        {
+          _active = std::move(*started);
+          _world.CloseFrontEnd();
+        }
+        else
+        {
+          _frontEnd.SetContinueFault(started.error());
+          _world.OpenFrontEnd(_frontEnd, FrontEndPage::Main);
+        }
+      }
+      // O96: the window mode and vertical sync apply at once; anti-aliasing at the next start (ADR-150).
+      if (_frontEnd.TakeDisplayChange())
+      {
+        const RenderSettings display = RenderSettingsOf(_settings);
+        _window.SetMode(display.windowed ? Neuron::WindowMode::Windowed : Neuron::WindowMode::BorderlessFullScreen,
+                        Neuron::Permanence::Permanent);
+        _renderConfig.presentMode = display.uncapped ? Neuron::PresentMode::Uncapped : Neuron::PresentMode::VerticalSync;
+        _renderer.Reconfigure(_renderConfig);
+      }
+    }
     // The camera's step is the real time since the previous frame's start (CAM-030), clamped by the camera.
     const Neuron::Nanoseconds frameStart = stepStart;
     const Neuron::Nanoseconds frameTime = frameStart - previousFrame;
     previousFrame = frameStart;
-    _view.Update(_session, router, std::chrono::duration<double>(frameTime).count(), _window.ClientSize(), _window.HasFocus(),
-                 &_world.Hud());
-    endStep(ClientStep::Input);
-    _session.Update();
-    endStep(ClientStep::Session);
-    _world.Update(_session);
-    _world.UpdateHud(_session, _view, _window.ClientSize(), _window.DpiScale());
-    const Neuron::FrameInputs inputs = _world.Frame(_session, _view, _renderer.FramesPerSecond(), _window.DpiScale());
+    Neuron::FrameInputs inputs;
+    if (_active.has_value())
+    {
+      ClientSession& session = *_active->session;
+      SettlementView& view = *_active->view;
+      view.Update(session, router, std::chrono::duration<double>(frameTime).count(), _window.ClientSize(), _window.HasFocus(),
+                  &_world.Hud());
+      endStep(ClientStep::Input);
+      session.Update();
+      endStep(ClientStep::Session);
+      // MVP-005: the saved world's seed, as its terrain gave it, which a drawn seed or MVP-011's re-roll decides.
+      if (_active->saved.has_value() && !_active->seedRecorded && session.WorldSeed().has_value())
+      {
+        _active->seedRecorded = true;
+        if (_active->saved->seed != session.WorldSeed())
+        {
+          static_cast<void>(RecordWorldSeed(*_active->saved, *session.WorldSeed()));
+        }
+      }
+      _world.Update(session);
+      _world.UpdateHud(session, view, _window.ClientSize(), _window.DpiScale());
+      inputs = _world.Frame(session, view, _renderer.FramesPerSecond(), _window.DpiScale());
+    }
+    else
+    {
+      endStep(ClientStep::Input);
+      endStep(ClientStep::Session);
+      inputs = _world.FrontEndFrame(router.Pointer().positionPixels, _window.ClientSize(), _renderer.FramesPerSecond(), _window.DpiScale());
+    }
     endStep(ClientStep::Presentation);
     const Neuron::FrameOutcome outcome =
       begun == Neuron::FrameOutcome::Suspended ? Neuron::FrameOutcome::Suspended : _renderer.RenderFrame(inputs);
@@ -292,11 +373,11 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
     profile.EndFrame(_clock.Now(), frameTime, previousRenderWaits + beginWaits);
     previousRenderWaits = renderWaits;
 #if ENGINE_DEVELOPMENT
-    if (profile.Periods() != loggedPeriods && profile.Periods() % STATISTICS_LOG_PERIODS == 0)
+    if (_active.has_value() && profile.Periods() != loggedPeriods && profile.Periods() % STATISTICS_LOG_PERIODS == 0)
     {
       loggedPeriods = profile.Periods();
       Neuron::Log(Neuron::LogCategory::Diagnostics, Neuron::LogLevel::Info, "{}",
-                  StatisticsLine(_world.FramePageOf(_session, _renderer.FramesPerSecond()), _world.Presentation()));
+                  StatisticsLine(_world.FramePageOf(*_active->session, _renderer.FramesPerSecond()), _world.Presentation()));
     }
 #endif
   }
@@ -304,6 +385,12 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
   router.ConfinePointer(false);
   _window.RemoveListener(listener);
   _window.SetInputSink(nullptr);
+  const std::uint64_t frames = checkedFrames();
+  if (_active.has_value())
+  {
+    EndWorld(*_active);
+  }
+  return frames;
 }
 
 int Run()
@@ -344,12 +431,14 @@ int Run()
   // PLT-016, PLT-018, PLT-025: the user-data root, which `--user-data` replaces; inside the install directory it ends the
   // start-up, and when it cannot be made the settings live in memory for this run (ADR-150).
   std::optional<std::filesystem::path> settingsFile;
+  std::optional<std::filesystem::path> savesFolder; // ADR-155: the saved worlds (PLT-017); none: no world is kept
   if (const auto root = Neuron::ResolveUserDataRoot(options.userDataDirectory, PRODUCT_FOLDER); root.has_value())
   {
     if (const std::optional<std::filesystem::path> folder = Neuron::UserDataFolder(*root, Neuron::SETTINGS_FOLDER))
     {
       settingsFile = *folder / Neuron::SETTINGS_FILE;
     }
+    savesFolder = Neuron::UserDataFolder(*root, SAVES_FOLDER);
     Neuron::Log(Neuron::LogCategory::Platform, Neuron::LogLevel::Info, "user data in {}", Neuron::ToUtf8(root->wstring()));
   }
   else
@@ -426,34 +515,6 @@ int Run()
     renderConfig.frameRateWindowSeconds = presentationTuning->ref.sim.frame.fpsWindow;
     renderConfig.frameRateInitial = presentationTuning->ref.sim.frame.fpsInitial;
     presentation.renderer->Reconfigure(renderConfig);
-    // The integrated server is a child of this root (ADR-083 item 2): it runs on its own tick thread until the session
-    // ends, and stopping it freezes the world (O4). It loads the tuning record when it starts (MVP-099).
-    IntegratedServer::Desc serverDesc;
-    serverDesc.clock = &clock;
-    serverDesc.content = &*content;
-    // M1 plan §6: the battle sandbox, from the seed of --seed or one the server draws (MVP-005); a Debug build's --world
-    // starts a new world with the steward's settlement in its place, until T18's front end starts worlds (ADR-139).
-    serverDesc.worldSeed = options.worldSeed;
-    serverDesc.sandbox = !options.world;
-    // O77: a Debug build's --watch, both sides under the AI; with --world, the steward's settlement under the scripted
-    // steward (ADR-140).
-    serverDesc.watched = options.watch;
-    if (options.world)
-    {
-      serverDesc.stewardSite = static_cast<std::uint8_t>(std::clamp<std::int64_t>(clientTuning->mvp.sandbox.stewardSite, 0, 3));
-    }
-    IntegratedServer server(serverDesc);
-    if (const auto started = server.Start(); !started)
-    {
-      endWithError(started.error());
-    }
-    ClientSession::Desc sessionDesc;
-    sessionDesc.transport = server.Connect();
-    sessionDesc.showTitle = [&window = *presentation.window](std::string_view _title) { window.SetTitle(_title); };
-    sessionDesc.productName = std::string(PRODUCT_NAME);
-    sessionDesc.tuning = &*clientTuning;
-    sessionDesc.clock = &clock;
-    ClientSession session(std::move(sessionDesc));
     WorldPresentation::Desc worldDesc;
     worldDesc.tuning = &*clientTuning;
     worldDesc.presentation = &*presentationTuning;
@@ -464,29 +525,124 @@ int Run()
     worldDesc.uiTest = options.uiTest; // ADR-145: the UI's test page
 #endif
     WorldPresentation world(worldDesc);
-    SettlementView::Desc viewDesc;
-    viewDesc.tuning = &*clientTuning;
-    viewDesc.presentation = &*presentationTuning;
-    viewDesc.planes = WorldLookOf(*clientTuning, *presentationTuning, {}).planes;
-    viewDesc.workerScaleFactor = worldDesc.display.workerScaleFactor;
+
+    // ADR-155: a world as the integrated server runs it, a child of this root (ADR-083 item 2) on its own tick thread
+    // until the world ends, when stopping it freezes the world (O4). It loads the tuning record when it starts (MVP-099),
+    // and a record that cannot be loaded ends the run; a world to continue that cannot be is the front end's to show.
+    const auto makeWorld = [&](IntegratedServer::Desc _desc, std::optional<SavedWorld> _saved) -> std::expected<ClientWorld, ContinueFault>
+    {
+      _desc.clock = &clock;
+      _desc.content = &*content;
 #if ENGINE_DEVELOPMENT
-    viewDesc.scriptedVerbs = checkFrames.has_value(); // ADR-125: the render check draws the verbs' marks
+      // O77: a Debug build's --watch, both sides under the AI; in a world, the steward's settlement under the scripted
+      // steward (ADR-140).
+      _desc.watched = options.watch;
 #endif
-    SettlementView view(viewDesc);
+      ClientWorld made;
+      made.server = std::make_unique<IntegratedServer>(_desc);
+      if (const auto started = made.server->Start(); !started)
+      {
+        if (const auto* fault = std::get_if<ContinueFault>(&started.error()); fault != nullptr)
+        {
+          Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "the world in {} cannot be continued",
+                      Neuron::ToUtf8(_desc.snapshotFolder.wstring()));
+          return std::unexpected(*fault);
+        }
+        endWithError(std::get<Neuron::AssetError>(started.error()));
+      }
+      ClientSession::Desc sessionDesc;
+      sessionDesc.transport = made.server->Connect();
+      sessionDesc.showTitle = [&window = *presentation.window](std::string_view _title) { window.SetTitle(_title); };
+      sessionDesc.productName = std::string(PRODUCT_NAME);
+      sessionDesc.tuning = &*clientTuning;
+      sessionDesc.clock = &clock;
+      made.session = std::make_unique<ClientSession>(std::move(sessionDesc));
+      SettlementView::Desc viewDesc;
+      viewDesc.tuning = &*clientTuning;
+      viewDesc.presentation = &*presentationTuning;
+      viewDesc.planes = WorldLookOf(*clientTuning, *presentationTuning, {}).planes;
+      viewDesc.workerScaleFactor = worldDesc.display.workerScaleFactor;
 #if ENGINE_DEVELOPMENT
+      viewDesc.scriptedVerbs = checkFrames.has_value(); // ADR-125: the render check draws the verbs' marks
+#endif
+      made.view = std::make_unique<SettlementView>(viewDesc);
+      made.saved = std::move(_saved);
+      return made;
+    };
+
+    // MVP-103 (ADR-155): the front end, which continues the latest saved world or starts a new one in the saves folder.
+    FrontEnd::Desc frontEndDesc;
+    frontEndDesc.presentation = &*presentationTuning;
+    frontEndDesc.tuning = &*clientTuning;
+    frontEndDesc.strings = &world.Strings();
+    frontEndDesc.locale = &world.Locale();
+    frontEndDesc.settings = &settings;
+    frontEndDesc.savesAvailable = savesFolder.has_value();
+    FrontEnd frontEnd(frontEndDesc);
+    if (savesFolder.has_value())
+    {
+      frontEnd.SetLatest(LatestWorld(*savesFolder));
+    }
+    const WorldStarter startWorld = [&](const FrontEndChoice& _choice) -> std::expected<ClientWorld, ContinueFault>
+    {
+      IntegratedServer::Desc desc;
+      std::optional<SavedWorld> saved;
+      if (_choice.kind == FrontEndChoice::Kind::Continue && frontEnd.Latest().has_value())
+      {
+        // MVP-075: the latest world from its newest snapshot that validates, or not at all (ADR-155).
+        saved = frontEnd.Latest();
+        desc.snapshotFolder = saved->folder;
+        desc.restoreOnly = true;
+        desc.worldSeed = saved->seed;
+        desc.stewardSite = saved->site;
+      }
+      else
+      {
+        // MVP-005, MVP-012: a new world from the seed typed or one the server draws, at the site chosen, in a new folder.
+        desc.worldSeed = _choice.seed;
+        desc.stewardSite = _choice.site;
+        if (savesFolder.has_value())
+        {
+          saved = CreateWorld(*savesFolder, _choice.seed, _choice.site);
+          desc.snapshotFolder = saved.has_value() ? saved->folder : std::filesystem::path{};
+        }
+      }
+      return makeWorld(std::move(desc), std::move(saved));
+    };
+
+    // A Debug build's start-up options start a world at once, which saves nothing: --sandbox the battle sandbox (M1 plan
+    // §6), --world a new world with the steward's settlement (ADR-139); either takes --seed. Else the front end opens.
+    std::optional<ClientWorld> initial;
+#if ENGINE_DEVELOPMENT
+    if (options.sandbox || options.world)
+    {
+      IntegratedServer::Desc desc;
+      desc.worldSeed = options.worldSeed;
+      desc.sandbox = options.sandbox && !options.world;
+      if (options.world)
+      {
+        desc.stewardSite = static_cast<std::uint8_t>(std::clamp<std::int64_t>(clientTuning->mvp.sandbox.stewardSite, 0, 3));
+      }
+      std::expected<ClientWorld, ContinueFault> started = makeWorld(std::move(desc), std::nullopt);
+      if (started.has_value())
+      {
+        initial = std::move(*started);
+      }
+    }
     if (checkFrames.has_value())
     {
       world.ToggleOverlay(); // ADR-120: the render check draws the overlay, so that the debug layer sees its draws
     }
 #endif
+    if (!initial.has_value())
+    {
+      // ADR-155: a render check of the front end draws the new world's page, whose seed field and site it shows.
+      world.OpenFrontEnd(frontEnd, checkFrames.has_value() ? FrontEndPage::NewWorld : FrontEndPage::Main);
+    }
 
     presentation.window->Show();
-    RunFrameLoop(clock, *presentation.window, *presentation.renderer, session, world, view, settings, checkFrames);
-#if ENGINE_DEVELOPMENT
-    const std::uint64_t worldFrames = presentation.renderer->WorldFrames();
-#endif
-    session.Close();
-    server.Stop();
+    const std::uint64_t checkedFrames = RunFrameLoop(clock, *presentation.window, *presentation.renderer, renderConfig, world, frontEnd,
+                                                     startWorld, std::move(initial), settings, checkFrames);
     // PLT-043: the renderer releases its swap chain before the window is destroyed.
     presentation.renderer.reset();
     presentation.window.reset();
@@ -494,11 +650,13 @@ int Run()
     if (checkFrames.has_value())
     {
       const std::uint64_t layerMessages = Neuron::FrameRenderer::DebugLayerMessages();
-      checkPassed = worldFrames >= *checkFrames && layerMessages == 0;
+      checkPassed = checkedFrames >= *checkFrames && layerMessages == 0;
       Neuron::Log(Neuron::LogCategory::Render, checkPassed ? Neuron::LogLevel::Info : Neuron::LogLevel::Error,
-                  "render check {}: {} of {} world frames drawn, {} debug-layer messages", checkPassed ? "passed" : "failed", worldFrames,
+                  "render check {}: {} of {} frames drawn, {} debug-layer messages", checkPassed ? "passed" : "failed", checkedFrames,
                   *checkFrames, layerMessages);
     }
+#else
+    static_cast<void>(checkedFrames);
 #endif
   }
 

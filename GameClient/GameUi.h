@@ -15,7 +15,7 @@
 namespace Species
 {
 
-// The client's pages (ADR-149). M2's front end adds its own (T18).
+// The client's pages (ADR-149), and the front end's of T18 (ADR-155).
 enum class GamePage : Neuron::UiPageId
 {
   None = 0,
@@ -23,7 +23,12 @@ enum class GamePage : Neuron::UiPageId
   TestRoot,   // `--ui-test`: the test screen's root page
   TestSecond, // and the page it pushes
 #endif
+  FrontEndMain = 16, // MVP-103's page, the front end's root
+  FrontEndNewWorld,
+  FrontEndOptions
 };
+
+class FrontEnd;
 
 /// The client's UI (ADR-030 to ADR-033 at M2, ADR-149): the UI core with the game's pages, the page family's look from the
 /// presentation record, and its input from the router's menu and pointer actions. It is updated before the camera and
@@ -40,6 +45,10 @@ public:
   // A Debug build's `--ui-test` (ADR-145, ADR-149): the test screen, from the next update.
   void OpenTestScreen();
 #endif
+  // ADR-155: the front end's screen from the next update, its pages made by _frontEnd, which outlives the screen, with
+  // _page pushed over its main page; and the screen closed, as a world starts.
+  void OpenFrontEnd(FrontEnd& _frontEnd, GamePage _page = GamePage::FrontEndMain);
+  void CloseFrontEnd();
   // The frame's update (UI-352) from _router's actions, laid out for a client area of _client at _dpiScale; while a
   // window has the focus, the world's camera and verb actions are suppressed for the rest of the frame.
   void Update(Neuron::InputRouter& _router, Neuron::SizePx _client, float _dpiScale, bool _windowFocused);
@@ -63,6 +72,7 @@ private:
   std::optional<double> m_uiScale;
   std::optional<double> m_textScale;
   bool m_pointerHeld = false;
+  FrontEnd* m_frontEnd = nullptr;
 };
 
 } // namespace Species

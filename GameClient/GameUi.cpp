@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "FrontEnd.h"
 #include "GameUi.h"
 #include "InputBindings.h"
 #include "UiLook.h"
@@ -255,9 +256,13 @@ GameUi::GameUi(const TuningPresentation& _presentation)
         {
           return std::make_unique<TestPage>(m_presentation, _page == static_cast<Neuron::UiPageId>(GamePage::TestRoot));
         }
-#else
-        static_cast<void>(_page);
 #endif
+        // ADR-155: the front end's pages, while it is open.
+        const auto first = static_cast<Neuron::UiPageId>(GamePage::FrontEndMain);
+        if (m_frontEnd != nullptr && _page >= first && _page <= static_cast<Neuron::UiPageId>(GamePage::FrontEndOptions))
+        {
+          return m_frontEnd->MakePage(static_cast<FrontEndPage>(_page - first));
+        }
         return nullptr;
       })
 {
@@ -269,6 +274,21 @@ void GameUi::OpenTestScreen()
   m_core.OpenScreen(static_cast<Neuron::UiPageId>(GamePage::TestRoot));
 }
 #endif
+
+void GameUi::OpenFrontEnd(FrontEnd& _frontEnd, GamePage _page)
+{
+  m_frontEnd = &_frontEnd;
+  m_core.OpenScreen(static_cast<Neuron::UiPageId>(GamePage::FrontEndMain));
+  if (_page != GamePage::FrontEndMain)
+  {
+    m_core.Request({Neuron::UiPageRequest::Kind::Push, static_cast<Neuron::UiPageId>(_page)});
+  }
+}
+
+void GameUi::CloseFrontEnd()
+{
+  m_core.CloseScreen();
+}
 
 void GameUi::SetScales(std::optional<double> _uiScale, std::optional<double> _textScale)
 {

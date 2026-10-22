@@ -24,6 +24,7 @@ constexpr std::wstring_view SEED_OPTION = L"--seed";
 constexpr std::wstring_view RENDER_CHECK_OPTION = L"--render-check";
 constexpr std::wstring_view WATCH_OPTION = L"--watch";
 constexpr std::wstring_view WORLD_OPTION = L"--world";
+constexpr std::wstring_view SANDBOX_OPTION = L"--sandbox"; // ADR-155
 constexpr std::wstring_view UI_TEST_OPTION = L"--ui-test";
 
 // A decimal number of digits only that fits 64 bits, or none.
@@ -106,6 +107,11 @@ StartupOptions ParseArguments(std::span<const std::wstring> _arguments)
     if (_arguments[i] == WORLD_OPTION)
     {
       options.world = true;
+      continue;
+    }
+    if (_arguments[i] == SANDBOX_OPTION)
+    {
+      options.sandbox = true;
       continue;
     }
     if (_arguments[i] == UI_TEST_OPTION)

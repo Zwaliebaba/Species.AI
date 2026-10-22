@@ -21,8 +21,9 @@ inline constexpr std::uint32_t RENDER_CHECK_FRAMES_MAX = 10'000;
 /// every build (PLT-025, ADR-150). `--loose-content <directory>` names the loose-content
 /// folder to mount (PLT-026, AST-105), `--seed <number>` a new world's seed (MVP-005, ADR-109), `--render-check
 /// <frames>` the number of world frames a render check draws (ADR-113), `--watch` a session that watches and
-/// commands nothing (O77), `--world` a new world in place of the development sandbox (ADR-139), and `--ui-test` the UI's
-/// test page over the world (ADR-145); all are compiled into Debug builds only, so a Release build ignores them as
+/// commands nothing (O77), `--world` a new world in place of the development sandbox (ADR-139), `--sandbox` the battle
+/// sandbox in place of the front end (ADR-155), and `--ui-test` the UI's test page over the world (ADR-145); all are
+/// compiled into Debug builds only, so a Release build ignores them as
 /// unknown arguments (PLT-107). The other options of the table arrive with the services
 /// they configure.
 struct StartupOptions
@@ -33,6 +34,7 @@ struct StartupOptions
   std::optional<std::uint32_t> renderCheckFrames; // a decimal number from 1 to RENDER_CHECK_FRAMES_MAX
   bool watch = false;                             // takes no value
   bool world = false;                             // takes no value
+  bool sandbox = false;                           // takes no value (ADR-155)
   bool uiTest = false;                            // takes no value
   std::vector<std::string> ignoredArguments;      // PLT-022: logged and ignored, as UTF-8
 };

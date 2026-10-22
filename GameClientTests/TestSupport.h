@@ -17,6 +17,25 @@ namespace GameClientTests
 // The failed development checks since the last call, which the module's check hook collects (DBG-072).
 [[nodiscard]] std::vector<std::string> TakeDevelopmentChecks();
 
+/// A folder of its own under the temporary directory, removed with everything in it when the test ends.
+class TemporaryFolder
+{
+public:
+  TemporaryFolder();
+  ~TemporaryFolder();
+
+  TemporaryFolder(const TemporaryFolder&) = delete;
+  TemporaryFolder& operator=(const TemporaryFolder&) = delete;
+
+  [[nodiscard]] const std::filesystem::path& Path() const noexcept
+  {
+    return m_path;
+  }
+
+private:
+  std::filesystem::path m_path;
+};
+
 // The repository's content root, found from this source file's own path, so a test reads the committed data
 // wherever its runner is.
 [[nodiscard]] std::filesystem::path RepositoryContentRoot();

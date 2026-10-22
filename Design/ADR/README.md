@@ -155,6 +155,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-152](ADR-152-the-settlement-hud-at-m2.md) | The settlement HUD at M2 | Proposed | 2026-10-22 |
 | [ADR-153](ADR-153-the-settlement-verbs-at-m2.md) | The settlement verbs at M2 | Proposed | 2026-10-22 |
 | [ADR-154](ADR-154-text-input-and-the-page-text-field-at-m2.md) | Text input and the page text field at M2 | Proposed | 2026-10-22 |
+| [ADR-155](ADR-155-the-front-end-and-saved-worlds-at-m2.md) | The front end and saved worlds at M2 | Proposed | 2026-10-22 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

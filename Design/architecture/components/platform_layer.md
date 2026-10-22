@@ -476,6 +476,7 @@ Table 3.1-A: user-data folders.
 | Folder | Holds | Written by | Specified by |
 |---|---|---|---|
 | `settings\` | the settings file | the settings store | §3.5, §4.7; DEC-250 |
+| `saves\` | a folder per saved world | the client | ADR-155 |
 | `logs\` | one log file per run, rotated | the logger | ADR-067 |
 | `crashes\` | local dumps on development and test machines; device-removal data | Windows Error Reporting under the local-dump registry file that the build provides ([build tooling](build_tooling_and_distribution/README.md) BLD-113); the renderer | ADR-065, ADR-008, [renderer](renderer/README.md) RND-034 |
 | `maps\` | the player's map folder: custom maps | the map editor hooks | [map editor hooks](../../reference/08_maps_and_level_design/map_editor_hooks.md) R-MAP-391 |

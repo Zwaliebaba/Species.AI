@@ -121,6 +121,8 @@ public:
 
   // The frames presented with the world drawn, since the renderer was created.
   [[nodiscard]] std::uint64_t WorldFrames() const noexcept;
+  // ADR-155: every frame presented, a world's or not, which a render check of the front end counts.
+  [[nodiscard]] std::uint64_t PresentedFrames() const noexcept;
   // RND-011, R-SIM-576: the frames presented in the last window, per second of the window.
   [[nodiscard]] double FramesPerSecond() const noexcept;
   // ADR-120, ADR-148: the time the last frame has spent so far waiting for the frame-latency object, the frame-rate cap,

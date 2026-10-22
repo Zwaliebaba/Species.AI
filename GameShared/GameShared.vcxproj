@@ -145,6 +145,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="CommandMessages.h" />
+    <ClInclude Include="ContinueFault.h" />
     <ClInclude Include="EffectEvent.h" />
     <ClInclude Include="EffectKind.h" />
     <ClInclude Include="FigureKind.h" />

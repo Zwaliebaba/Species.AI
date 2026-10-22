@@ -1,12 +1,13 @@
 """CheckWorldFrame.py: the render check of ADR-113 -- the world frame drawn on the WARP adapter with the debug layer silent.
 
-  python Build/CheckWorldFrame.py [--exe <path>] [--frames <n>] [--seed <n>] [--world] [--ui-test] [--timeout <seconds>]
+  python Build/CheckWorldFrame.py [--exe <path>] [--frames <n>] [--seed <n>] [--world | --front-end] [--ui-test] [--timeout <seconds>]
 
 Runs the client's Debug build (x64\\Debug\\Species.exe by default) with `--seed <n> --render-check <n>`. The client starts
-the battle sandbox, or with --world a new world with the steward's settlement (ADR-139, ADR-140), builds the world, and,
-with --ui-test, the UI's test screen over it (ADR-145, ADR-149), and draws that many world frames on the WARP adapter with the debug layer and GPU-based validation; it shows no dialog, and
-it ends with exit code 0 only when every frame was drawn and the debug layer raised no message of warning severity or
-above. This prints the run's log, then fails unless the client passed.
+the battle sandbox (`--sandbox`), or with --world a new world with the steward's settlement (ADR-139, ADR-140), builds
+the world, and, with --ui-test, the UI's test screen over it (ADR-145, ADR-149), and draws that many world frames on the
+WARP adapter with the debug layer and GPU-based validation; with --front-end it starts no world and draws that many
+frames of the front end's new world page (ADR-155). It shows no dialog, and it ends with exit code 0 only when every
+frame was drawn and the debug layer raised no message of warning severity or above. This prints the run's log, then fails unless the client passed.
 CI's hosted runner has no GPU; WARP is the one adapter that every Windows install holds.
 """
 import argparse
@@ -31,6 +32,7 @@ def main():
   parser.add_argument('--frames', type=int, default=40, help='the world frames to draw')
   parser.add_argument('--seed', default='1', help='the battle sandbox\'s seed')
   parser.add_argument('--world', action='store_true', help='a settlement world in place of the battle sandbox (ADR-140)')
+  parser.add_argument('--front-end', action='store_true', help='the front end, with no world (ADR-155)')
   parser.add_argument('--ui-test', action='store_true', help='the UI\'s test screen over the world (ADR-145, ADR-149)')
   parser.add_argument('--timeout', type=int, default=900, help='seconds before the run is stopped')
   args = parser.parse_args()
@@ -41,8 +43,8 @@ def main():
     return 1
   logs = os.path.join(os.path.dirname(exe), 'logs')
   before = set(glob.glob(os.path.join(logs, '*.log')))
-  command = [exe, '--seed', args.seed, '--render-check', str(args.frames)] + (['--world'] if args.world else []) + \
-    (['--ui-test'] if args.ui_test else [])
+  start = [] if args.front_end else ['--world'] if args.world else ['--sandbox']
+  command = [exe, '--seed', args.seed, '--render-check', str(args.frames)] + start + (['--ui-test'] if args.ui_test else [])
   try:
     run = subprocess.run(command, cwd=os.path.dirname(exe), timeout=args.timeout)
     code = run.returncode
@@ -60,7 +62,7 @@ def main():
   if code != 0:
     print(f'CheckWorldFrame: the render check failed (exit code {code}): {" ".join(command)}')
     return 1
-  print(f'CheckWorldFrame: {args.frames} world frames drawn on WARP with the debug layer silent')
+  print(f'CheckWorldFrame: {args.frames} {"front-end" if args.front_end else "world"} frames drawn on WARP with the debug layer silent')
   return 0
 
 

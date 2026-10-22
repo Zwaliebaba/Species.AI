@@ -47,6 +47,9 @@
     <ClCompile Include="ClientSettingsTests.cpp">
       <Filter>Session</Filter>
     </ClCompile>
+    <ClCompile Include="FrontEndTests.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
     <ClCompile Include="GameUiTests.cpp">
       <Filter>View</Filter>
     </ClCompile>
@@ -87,6 +90,9 @@
       <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="WorldPresentationTests.cpp">
+      <Filter>Session</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldSavesTests.cpp">
       <Filter>Session</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">

@@ -27,6 +27,9 @@
     <ClInclude Include="CommandMessages.h">
       <Filter>Messages</Filter>
     </ClInclude>
+    <ClInclude Include="ContinueFault.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="EffectEvent.h">
       <Filter>Simulation</Filter>
     </ClInclude>
