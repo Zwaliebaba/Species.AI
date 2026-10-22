@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <optional>
 #include <span>
+#include <string>
 #include <vector>
 
 namespace Species
@@ -91,8 +92,17 @@ private:
                                                            Neuron::PointPx _pointer, Neuron::SizePx _size,
                                                            const TuningPresentation& _presentation);
 
-// R-CTRL-366's count (ADR-127): the selected Workers' count in white, its cell's left edge at the right edge of the
-// badge's shadow, its first layer, and its middle level with the badge's centre; none for no badge or no Worker.
-[[nodiscard]] std::optional<Neuron::OverlayLine> BadgeCount(std::span<const Neuron::OverlayQuad> _badge, std::size_t _workers);
+/// R-CTRL-366's count (ADR-127, ADR-145): its text, and the point in physical pixels where its line's left edge and
+/// vertical middle lie; the UI lays it out in the body role (ADR-147).
+struct BadgeLabel
+{
+  std::string text;
+  float left = 0.0f;
+  float middle = 0.0f;
+};
+
+// The selected Workers' count, its line's left edge at the right edge of the badge's shadow, its first layer, and its
+// middle level with the badge's centre; none for no badge or no Worker.
+[[nodiscard]] std::optional<BadgeLabel> BadgeCount(std::span<const Neuron::OverlayQuad> _badge, std::size_t _workers);
 
 } // namespace Species

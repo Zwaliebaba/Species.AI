@@ -57,6 +57,9 @@
     <ClInclude Include="FxRng.h">
       <Filter>Effects</Filter>
     </ClInclude>
+    <ClInclude Include="GlyphAtlas.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
     <ClInclude Include="GpuDescriptions.h">
       <Filter>Rendering</Filter>
     </ClInclude>
@@ -80,6 +83,12 @@
     </ClInclude>
     <ClInclude Include="MeshRenderer.h">
       <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="MessageFormat.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="MessageLocale.h">
+      <Filter>Resources</Filter>
     </ClInclude>
     <ClInclude Include="OverlayRenderer.h">
       <Filter>Rendering</Filter>
@@ -123,7 +132,16 @@
     <ClInclude Include="SkyLayers.h">
       <Filter>Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="TextLayout.h">
+    <ClInclude Include="StringTable.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="TextSystem.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="UiRenderer.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="UiText.h">
       <Filter>Rendering</Filter>
     </ClInclude>
     <ClInclude Include="UploadRing.h">
@@ -173,6 +191,9 @@
     <ClCompile Include="FxRng.cpp">
       <Filter>Effects</Filter>
     </ClCompile>
+    <ClCompile Include="GlyphAtlas.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
     <ClCompile Include="GpuDescriptions.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
@@ -193,6 +214,12 @@
     </ClCompile>
     <ClCompile Include="MeshRenderer.cpp">
       <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="MessageFormat.cpp">
+      <Filter>Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="MessageLocale.cpp">
+      <Filter>Resources</Filter>
     </ClCompile>
     <ClCompile Include="OverlayRenderer.cpp">
       <Filter>Rendering</Filter>
@@ -233,7 +260,16 @@
     <ClCompile Include="SkyLayers.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="TextLayout.cpp">
+    <ClCompile Include="StringTable.cpp">
+      <Filter>Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="TextSystem.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="UiRenderer.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="UiText.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="UploadRing.cpp">
@@ -273,19 +309,19 @@
     <FXCompile Include="Shader\DevelopmentDotVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
-    <FXCompile Include="Shader\DevelopmentTextPS.hlsl">
+    <FXCompile Include="Shader\DevelopmentRectPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
-    <FXCompile Include="Shader\DevelopmentTextSolidPS.hlsl">
-      <Filter>Shader</Filter>
-    </FXCompile>
-    <FXCompile Include="Shader\DevelopmentTextVS.hlsl">
+    <FXCompile Include="Shader\DevelopmentRectVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\FinalPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\FinalVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\MeshLitFogPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\MeshLitPS.hlsl">
@@ -327,7 +363,22 @@
     <FXCompile Include="Shader\TerrainVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
+    <FXCompile Include="Shader\UiGlyphsPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\UiImagePS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\UiSolidPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\UiVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
     <FXCompile Include="Shader\UnlitTexturedCutoutPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedGlowFogPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\UnlitTexturedLevelZeroPS.hlsl">
@@ -368,7 +419,7 @@
     <None Include="Shader\DevelopmentDot.hlsli">
       <Filter>Shader</Filter>
     </None>
-    <None Include="Shader\DevelopmentText.hlsli">
+    <None Include="Shader\DevelopmentRect.hlsli">
       <Filter>Shader</Filter>
     </None>
     <None Include="Shader\Final.hlsli">
@@ -390,6 +441,9 @@
       <Filter>Shader</Filter>
     </None>
     <None Include="Shader\Terrain.hlsli">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="Shader\Ui.hlsli">
       <Filter>Shader</Filter>
     </None>
     <None Include="Shader\UnlitTextured.hlsli">

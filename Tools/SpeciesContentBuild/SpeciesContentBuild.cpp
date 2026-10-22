@@ -36,7 +36,7 @@ void Print(std::FILE* _stream, std::string_view _text)
   std::fflush(_stream);
 }
 
-// "texture 44, font 2": the entries of each content type, for the summary line.
+// "texture 44, string_table 1": the entries of each content type, for the summary line.
 std::string Census(std::span<const Neuron::ContentEntry> _entries)
 {
   std::array<std::size_t, Neuron::CONTENT_TYPE_COUNT> counts{};
@@ -101,8 +101,8 @@ int Run(std::span<const std::wstring_view> _arguments)
     return 1;
   }
   Print(stdout, std::format("{} entries ({}) into {}", written->size(), Census(*written), Neuron::ToUtf8(out.wstring())));
-  Print(stdout,
-        std::format("{} manifest rows have no authored file; M1 generates no placeholder for them (AST-082, ADR-108)", rowsWithoutFile));
+  Print(stdout, std::format("{} manifest rows have no authored file; {} of them have a generated stand-in (AST-082, ADR-140)",
+                            rowsWithoutFile, result.placeholders));
   Print(stdout, std::format("simulation content identity {}, reported as modified while the content is loose (AST-100, AST-105)",
                             Neuron::ShortHex(Neuron::SimulationIdentity(*written))));
   return 0;

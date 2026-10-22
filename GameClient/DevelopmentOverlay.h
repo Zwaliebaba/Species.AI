@@ -1,8 +1,6 @@
 #pragma once
 
-#include "FontAsset.h"
 #include "FrameProfile.h"
-#include "LooseContent.h"
 #include "ReplicaTiming.h"
 #include "ServerStats.h"
 #include "StateReplica.h"
@@ -24,16 +22,10 @@ namespace Species
 struct TuningMvp;
 struct TuningPresentation;
 
-// The content key of the development overlay's face, EditorFont (O62, O64; AST-014).
-inline constexpr std::string_view DEVELOPMENT_FACE_KEY = "fonts/editorfont";
-
 // ADR-118: a development dot's side in unscaled pixels, a Leader's larger, and how far above a figure's feet it sits.
 inline constexpr float WORKER_DOT_PIXELS = 3.0f;
 inline constexpr float LEADER_DOT_PIXELS = 6.0f;
 inline constexpr double DOT_LIFT_WU = 3.0;
-
-// The development overlay's face from the content: none when it is missing or damaged, which is logged.
-[[nodiscard]] std::shared_ptr<const Neuron::FontAsset> LoadDevelopmentFace(const Neuron::LooseContent& _content);
 
 // DBG-095: the frame-rate line's text, the frame rate and, while a world exists, the number of live simulated objects
 // (ui.dev.overlay.frame_rate, ui.dev.overlay.frame_rate_entities).
@@ -103,9 +95,9 @@ struct FramePage
 // DBG-096, DBG-097, DBG-089: the frame page, besides the frame-rate line: the percentiles of the frame time, and of the
 // frame's work against its budget (rnd.budget.target_frame_rate); each step's share; the counts; the server's tick
 // against half the tick period (ADR-080 item 6); and the frame-time graph. A row over its budget is drawn in
-// dbg.overlay.warning_rgb. _cellHeightPixels is the face's, unscaled.
+// dbg.overlay.warning_rgb. _lineHeightPixels is the development role's at dbg.overlay.text_size, at a DPI scale of 1.
 [[nodiscard]] FramePage BuildFramePage(const FramePageInputs& _inputs, const TuningPresentation& _presentation, const TuningMvp& _tuning,
-                                       float _cellHeightPixels);
+                                       float _lineHeightPixels);
 // ADR-120: the frame page's figures as one line of the log, written every tenth roll-up period so that the overlay can
 // be checked against it.
 [[nodiscard]] std::string StatisticsLine(const FramePageInputs& _inputs, const TuningPresentation& _presentation);

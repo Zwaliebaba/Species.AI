@@ -2,22 +2,20 @@
 
 #include "BitReader.h"
 #include "BitWriter.h"
+#include "RegionTerrain.h"
 #include "Settlement.h"
 #include "Vec3.h"
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 namespace Species
 {
 
 class RegionSimulation;
-
-// WLD-062: the region's pairs of valley neighbours, by local site, in the order of the navigation nodes' border areas
-// (MVP-017).
-inline constexpr std::array<std::array<std::uint8_t, 2>, 4> VALLEY_PAIRS{{{0, 1}, {2, 3}, {0, 2}, {1, 3}}};
 
 /// A set of cells of a region's square (ADR-134): a settlement's territory, in cells of mvp.territory.cell_size (MVP-026,
 /// WLD-060), or its seen layer, in cells of mvp.vision.cell_size (MVP-016). A cell is held when its centre is. Both are
@@ -52,6 +50,18 @@ public:
   [[nodiscard]] bool HoldsDisc(double _x, double _z, double _radius) const noexcept;
   // MVP-016: every cell whose centre lies within _radius of (_x, _z) becomes held.
   void HoldDisc(double _x, double _z, double _radius);
+  // ADR-139: the cells of the chunk (_chunkX, _chunkZ) of CELL_CHUNK_SIDE cells a side, bit (z × CELL_CHUNK_SIDE + x)
+  // for the cell x across and z up from its corner; and the chunks that hold a cell, as the first and last chunk on
+  // each axis, or none while no cell is held.
+  [[nodiscard]] std::uint64_t ChunkCells(std::int32_t _chunkX, std::int32_t _chunkZ) const noexcept;
+  struct ChunkBounds
+  {
+    std::int32_t firstX = 0;
+    std::int32_t firstZ = 0;
+    std::int32_t lastX = 0;
+    std::int32_t lastZ = 0;
+  };
+  [[nodiscard]] std::optional<ChunkBounds> HeldChunks() const noexcept;
 
 private:
   [[nodiscard]] std::int32_t CellOf(double _coordinate, double _origin) const noexcept;
@@ -62,6 +72,11 @@ private:
   std::int32_t m_cellsPerAxis = 0;
   std::vector<std::uint8_t> m_cells;
   std::size_t m_count = 0;
+  // The held cells' bounds, which only grow: no cell is ever released.
+  std::int32_t m_minX = 0;
+  std::int32_t m_minZ = 0;
+  std::int32_t m_maxX = -1;
+  std::int32_t m_maxZ = -1;
 };
 
 // WLD-060 and WLD-061 for a point of the settlement at _site, before its radius: inside the coast bands, within

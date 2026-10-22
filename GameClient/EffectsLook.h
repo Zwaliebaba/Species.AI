@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <optional>
 #include <span>
 #include <vector>
@@ -30,6 +31,7 @@ enum class ParticleKind : std::uint8_t
   ControlFlash,
   MissileTrail,
   WorkerFire,
+  Spark, // vfx.particle.spark.* (ADR-141): a turret round's or a laser bolt's hit on a structure
   Count
 };
 
@@ -66,8 +68,9 @@ struct EffectDraws
 /// R-CRATE-414, R-CRATE-445, R-CRATE-473, R-CRATE-475, RND-331 to RND-340, VFX-207 to VFX-235). Laser bolts and muzzle
 /// flashes are rebuilt from the presentation events, each played as the display time reaches its tick; grenades and
 /// shockwave rings are drawn from the replica, a ring's blast from a presentation copy that outlives it; the per-tick
-/// emitters run once for each new tick of the replica. Nothing here reaches the simulation (DEC-007, DEC-013). Frame
-/// thread only.
+/// emitters run once for each new tick of the replica. From M2 task T12 (ADR-141), the turret's rounds are drawn from the
+/// replica with their tracers, and each shot's muzzle flash and ejected casing, and the sparks and dust of a hit, come from
+/// its events. Nothing here reaches the simulation (DEC-007, DEC-013). Frame thread only.
 class EffectsLook
 {
 public:
@@ -89,6 +92,8 @@ public:
             EffectDraws& _draws);
   // A new world: every effect, particle and waiting event is dropped.
   void Clear();
+  // ADR-141: the scene meshes, whose turret barrel set places each shot's casing; until they are given, a shot ejects none.
+  void UseMeshes(std::shared_ptr<const Neuron::SceneMeshes> _meshes) noexcept;
 
   [[nodiscard]] std::size_t LiveBolts() const noexcept
   {
@@ -101,6 +106,10 @@ public:
   [[nodiscard]] std::size_t LiveRings() const noexcept
   {
     return m_rings.size();
+  }
+  [[nodiscard]] std::size_t LiveCasings() const noexcept
+  {
+    return m_casings.size();
   }
   [[nodiscard]] const Neuron::ParticlePool& Particles() const noexcept
   {
@@ -123,7 +132,23 @@ private:
     StableId id = 0;
     std::uint8_t team = 0;
     double firedTick = 0.0;
-    std::vector<Leg> legs; // the first flight, and the flight after its ricochet
+    std::vector<Leg> legs;         // the first flight, and the flight after its ricochet
+    std::optional<double> endTick; // the display tick at which it meets a structure (R-CRATE-441 step 6), when it does
+  };
+  struct RoundShot // a turret round's velocity, wu/s, and the display tick its shot's event played at
+  {
+    Neuron::Vec3 velocity;
+    double firedTick = 0.0;
+  };
+  struct Casing // a shell casing (R-CRATE-455, R-CRATE-456), presentation alone
+  {
+    Neuron::Vec3 position;
+    Neuron::Vec3 velocity; // wu/s
+    Neuron::Vec3 front;    // its mesh's +z
+    Neuron::Vec3 up;       // its mesh's +y
+    Neuron::Vec3 spinAxis; // a unit vector
+    double force = 1.0;
+    double seconds = 0.0; // the scaled time it has moved to
   };
   struct Flash // a muzzle flash (R-CRATE-475)
   {
@@ -155,6 +180,8 @@ private:
   };
 
   void Play(const Waiting& _waiting, const EffectsView& _view);
+  void LaunchCasing(const EffectEvent& _event, Neuron::FxRng& _rng, const EffectsView& _view);
+  void AdvanceCasings(const Neuron::TerrainField& _field, const EffectsView& _view);
   void RunTickEmitters(std::uint64_t _tick, const StateReplica& _replica, std::span<const InterpolatedFigure> _figures,
                        const EffectsView& _view);
   void EmitBurst(Neuron::FxRng& _rng, double _count, const Neuron::Vec3& _at, const EffectsView& _view, ParticleKind _kind,
@@ -164,6 +191,8 @@ private:
   void DrawBolts(const Neuron::TerrainField& _field, const EffectsView& _view, EffectDraws& _draws, double& _shakeRequest);
   void DrawFlashes(const EffectsView& _view, EffectDraws& _draws);
   void DrawGrenades(std::span<const InterpolatedEffect> _effects, const EffectsView& _view, EffectDraws& _draws);
+  void DrawRounds(std::span<const InterpolatedEffect> _effects, const EffectsView& _view, EffectDraws& _draws);
+  void DrawCasings(EffectDraws& _draws) const;
   void DrawRings(const EffectsView& _view, EffectDraws& _draws, double& _flashAlpha, double& _shakeRequest);
   void DrawMarkers(std::span<const InterpolatedEffect> _effects, const EffectsView& _view, EffectDraws& _draws) const;
   void DrawTrailMarks(std::span<const InterpolatedEffect> _effects, const Neuron::TerrainField& _field, const EffectsView& _view,
@@ -180,6 +209,10 @@ private:
   std::vector<Flash> m_flashes;
   std::vector<Ring> m_rings;
   std::vector<Recoil> m_recoils;
+  std::vector<Casing> m_casings;
+  std::uint64_t m_casingSerial = 0;       // R-CRATE-456's serial, which turns each casing's spin axis
+  std::map<StableId, RoundShot> m_rounds; // each turret round's shot, from its event (R-CRATE-450)
+  std::shared_ptr<const Neuron::SceneMeshes> m_meshes;
   std::map<StableId, bool> m_controlled;  // each Worker's crowd control at the last tick seen (VFX-219's ControlGained)
   std::map<StableId, double> m_trailBorn; // each order trail mark's display tick when first seen, from which its age runs
   std::optional<std::uint64_t> m_lastTick;

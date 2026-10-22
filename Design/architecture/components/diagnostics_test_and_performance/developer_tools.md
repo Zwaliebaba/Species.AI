@@ -14,7 +14,7 @@ The development drawing queue and the debug-command declarations are those of Li
 
 ## 3 Data model
 
-**Development text.** Development captions are developer-facing, in the base language only, and live in the development string table, which uses `strings.dev_en_gb`: only the editions that are never released hold it, and no player edition contains it (ADR-056). New text, keyed as follows; arguments are ICU MessageFormat arguments (ADR-063):
+**Development text.** Development captions are developer-facing, in the base language only, and live in the development string table, which uses `strings.dev_en_us`: only the editions that are never released hold it, and no player edition contains it (ADR-056). New text, keyed as follows; arguments are ICU MessageFormat arguments (ADR-063):
 
 | String id | Text |
 |---|---|
@@ -54,6 +54,8 @@ The development drawing queue and the debug-command declarations are those of Li
 > **Amendment 2026-10-20 (M1 task T15a, [ADR-118](../../../ADR/ADR-118-development-overlay-at-m1.md)).** Until the input router of M1 task T15b binds `action.debug.overlay`, a Debug build shows the frame-rate line on every frame; T15b restores the default of off. The line's object count is the size of the client's replica of its interest set (ADR-086), since a client holds no other. The two strings are literals that cite their ids until the string table is data. EditorFont holds no U+00B7, so the separator of `ui.dev.overlay.frame_rate_entities` draws as the face's missing glyph until the face holds it.
 
 > **Amendment 2026-10-21 (M1 task T15b, [ADR-120](../../../ADR/ADR-120-frame-page-toggle-and-sandbox-restart-at-m1.md)).** `action.debug.overlay` is bound (F5), and the line is off by default again.
+
+> **Amendment 2026-10-22 (O92, [ADR-147](../../../ADR/ADR-147-the-directwrite-text-system-at-m2.md)).** EditorFont is retired. The development role draws from Cascadia Mono, or Consolas where that is not installed, through DirectWrite, at `dbg.overlay.text_size` × the DPI scale. The line's distances from the edges, `dbg.overlay.frame_rate_right` and `dbg.overlay.frame_rate_bottom`, are scaled by the DPI scale too.
 
 **DBG-096** (MUST) The **frame page** shows, besides the frame-rate line: the frame-time graph of DBG-089; the percentiles `dbg.telemetry.percentiles` (50th, 95th and 99th) of the frame-time history; the CPU share of each root profile node, as its last-period time × 100 ÷ the length of the last period, in percent; and the live entity counts per actor kind and per structure kind, with the counts of Essence orbs, laser bolts, effects and particles.
 
@@ -202,6 +204,7 @@ A value whose notes say "Species" is a Species engine-baseline value; every othe
 |---|---|---|---|---|---|
 | `dbg.overlay.frame_rate_right` | 10 | px | from the right edge | DBG-095 | — |
 | `dbg.overlay.frame_rate_bottom` | 40 | px | from the bottom edge | DBG-095 | — |
+| `dbg.overlay.text_size` | 14 | px at a DPI scale of 1 | Species; the overlay's text in the development role (O92) | DBG-095 | — |
 | `dbg.overlay.warning_rgb` | (255, 64, 64) | RGB | Species; over-budget rows | DBG-097 | — |
 | `dbg.overlay.audio_share_warning` | 15 | % of the frame | | DBG-097 | — |
 | `dbg.netstats.width` | 600 | px | | DBG-106 | DEC-208 |

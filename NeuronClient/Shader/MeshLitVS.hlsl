@@ -14,6 +14,7 @@ struct Instance // MeshInstance
   float4 row1 : WORLD1;
   float4 row2 : WORLD2;
   float4 tint : TINTCOLOR;
+  float4 shade : SHADE; // x: the instance's brightness, 1 but for an inactive structure (ADR-140)
 };
 
 MeshLitVertex main(Vertex _vertex, Instance _instance)
@@ -26,6 +27,7 @@ MeshLitVertex main(Vertex _vertex, Instance _instance)
   output.normal = normalize(mul((float3x3)world, _vertex.normal));
   // RND-271: clamp(c + w × (T × f − c), 0, 1), the weight the triangle's times the instance's.
   const float weight = (float)_vertex.tintCorner.x / 255.0 * _instance.tint.a;
-  output.color = float4(saturate(_vertex.color.rgb + weight * (_instance.tint.rgb - _vertex.color.rgb)), _vertex.color.a);
+  output.color = float4(saturate(_vertex.color.rgb + weight * (_instance.tint.rgb - _vertex.color.rgb)) * _instance.shade.x, _vertex.color.a);
+  output.depth = dot(position, g_frame.cameraFront.xyz);
   return output;
 }

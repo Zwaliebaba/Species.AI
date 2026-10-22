@@ -13,5 +13,6 @@ SeaWavesVertex main(SeaInput _input)
   vertex.position = mul(float4(position, 1.0), g_frame.viewProjection);
   vertex.color = _input.color.rgb;
   vertex.depth = dot(position, g_frame.cameraFront.xyz);
+  vertex.ground = position.xz;
   return vertex;
 }

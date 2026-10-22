@@ -168,6 +168,7 @@
     <ClInclude Include="FrameRenderer.h" />
     <ClInclude Include="FrameView.h" />
     <ClInclude Include="FxRng.h" />
+    <ClInclude Include="GlyphAtlas.h" />
     <ClInclude Include="GpuDescriptions.h" />
     <ClInclude Include="GpuResourceFactory.h" />
     <ClInclude Include="GraphicsDevice.h" />
@@ -176,6 +177,8 @@
     <ClInclude Include="InputRouter.h" />
     <ClInclude Include="KeyboardMouseBackEnd.h" />
     <ClInclude Include="MeshRenderer.h" />
+    <ClInclude Include="MessageFormat.h" />
+    <ClInclude Include="MessageLocale.h" />
     <ClInclude Include="OverlayRenderer.h" />
     <ClInclude Include="ParticlePool.h" />
     <ClInclude Include="PassTable.h" />
@@ -190,7 +193,10 @@
     <ClInclude Include="SceneTargets.h" />
     <ClInclude Include="ShaderLayouts.h" />
     <ClInclude Include="SkyLayers.h" />
-    <ClInclude Include="TextLayout.h" />
+    <ClInclude Include="StringTable.h" />
+    <ClInclude Include="TextSystem.h" />
+    <ClInclude Include="UiRenderer.h" />
+    <ClInclude Include="UiText.h" />
     <ClInclude Include="UploadRing.h" />
     <ClInclude Include="WindowGeometry.h" />
     <ClInclude Include="WorldRenderer.h" />
@@ -208,6 +214,7 @@
     <ClCompile Include="FrameRenderer.cpp" />
     <ClCompile Include="FrameView.cpp" />
     <ClCompile Include="FxRng.cpp" />
+    <ClCompile Include="GlyphAtlas.cpp" />
     <ClCompile Include="GpuDescriptions.cpp" />
     <ClCompile Include="GpuResourceFactory.cpp" />
     <ClCompile Include="GraphicsDevice.cpp" />
@@ -215,6 +222,8 @@
     <ClCompile Include="InputRouter.cpp" />
     <ClCompile Include="KeyboardMouseBackEnd.cpp" />
     <ClCompile Include="MeshRenderer.cpp" />
+    <ClCompile Include="MessageFormat.cpp" />
+    <ClCompile Include="MessageLocale.cpp" />
     <ClCompile Include="OverlayRenderer.cpp" />
     <ClCompile Include="ParticlePool.cpp" />
     <ClCompile Include="PassTable.cpp" />
@@ -228,7 +237,10 @@
     <ClCompile Include="SceneQuads.cpp" />
     <ClCompile Include="SceneTargets.cpp" />
     <ClCompile Include="SkyLayers.cpp" />
-    <ClCompile Include="TextLayout.cpp" />
+    <ClCompile Include="StringTable.cpp" />
+    <ClCompile Include="TextSystem.cpp" />
+    <ClCompile Include="UiRenderer.cpp" />
+    <ClCompile Include="UiText.cpp" />
     <ClCompile Include="UploadRing.cpp" />
     <ClCompile Include="WindowGeometry.cpp" />
     <ClCompile Include="WorldRenderer.cpp" />
@@ -255,13 +267,10 @@
     <FXCompile Include="Shader\DevelopmentDotVS.hlsl">
       <ShaderType>Vertex</ShaderType>
     </FXCompile>
-    <FXCompile Include="Shader\DevelopmentTextPS.hlsl">
+    <FXCompile Include="Shader\DevelopmentRectPS.hlsl">
       <ShaderType>Pixel</ShaderType>
     </FXCompile>
-    <FXCompile Include="Shader\DevelopmentTextSolidPS.hlsl">
-      <ShaderType>Pixel</ShaderType>
-    </FXCompile>
-    <FXCompile Include="Shader\DevelopmentTextVS.hlsl">
+    <FXCompile Include="Shader\DevelopmentRectVS.hlsl">
       <ShaderType>Vertex</ShaderType>
     </FXCompile>
     <FXCompile Include="Shader\FinalPS.hlsl">
@@ -269,6 +278,9 @@
     </FXCompile>
     <FXCompile Include="Shader\FinalVS.hlsl">
       <ShaderType>Vertex</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\MeshLitFogPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
     </FXCompile>
     <FXCompile Include="Shader\MeshLitPS.hlsl">
       <ShaderType>Pixel</ShaderType>
@@ -309,7 +321,22 @@
     <FXCompile Include="Shader\TerrainVS.hlsl">
       <ShaderType>Vertex</ShaderType>
     </FXCompile>
+    <FXCompile Include="Shader\UiGlyphsPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\UiImagePS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\UiSolidPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\UiVS.hlsl">
+      <ShaderType>Vertex</ShaderType>
+    </FXCompile>
     <FXCompile Include="Shader\UnlitTexturedCutoutPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedGlowFogPS.hlsl">
       <ShaderType>Pixel</ShaderType>
     </FXCompile>
     <FXCompile Include="Shader\UnlitTexturedLevelZeroPS.hlsl">
@@ -344,7 +371,7 @@
     <None Include="Shader\Cloth.hlsli" />
     <None Include="Shader\Cursor.hlsli" />
     <None Include="Shader\DevelopmentDot.hlsli" />
-    <None Include="Shader\DevelopmentText.hlsli" />
+    <None Include="Shader\DevelopmentRect.hlsli" />
     <None Include="Shader\Final.hlsli" />
     <None Include="Shader\MeshLit.hlsli" />
     <None Include="Shader\OverlayQuad.hlsli" />
@@ -352,6 +379,7 @@
     <None Include="Shader\SeaWaves.hlsli" />
     <None Include="Shader\Sky.hlsli" />
     <None Include="Shader\Terrain.hlsli" />
+    <None Include="Shader\Ui.hlsli" />
     <None Include="Shader\UnlitTextured.hlsli" />
     <None Include="Shader\UnlitVertexColor.hlsli" />
     <None Include="packages.config" />

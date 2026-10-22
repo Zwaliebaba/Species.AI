@@ -5,15 +5,19 @@
 #include "ContentBuild.h"
 #include "ContentKey.h"
 #include "Files.h"
-#include "FontPacker.h"
+#include "FontCoverage.h"
+#include "GameFonts.h"
 #include "MeshCooker.h"
+#include "PlaceholderTexture.h"
 #include "RecordCooker.h"
 #include "SimulationRecordCooker.h"
+#include "StringTableCooker.h"
 #include "TextEncoding.h"
 #include "TextureCheck.h"
 
 #include <algorithm>
 #include <array>
+#include <expected>
 #include <format>
 #include <map>
 #include <optional>
@@ -32,6 +36,9 @@ constexpr std::string_view CONTENT_ROOT = "GameData";
 // GameData/Schemas/ holds the JSON Schema documents, which the generator reads and nothing packs (ADR-098).
 constexpr std::string_view SCHEMA_FOLDER = "Schemas/";
 constexpr std::string_view RECORD_FOLDER = "Records/";
+// The manifest category of the string tables (DAT-206). The en-US table's coverage is checked against the system fonts
+// of the player's font roles, Species::GAME_FONT_FAMILIES (UI-199 as O92 amends it, ADR-147).
+constexpr std::string_view STRING_TABLE_CATEGORY = "String table";
 
 // The manifest categories whose files are textures (AST table 3.2-A).
 constexpr std::array<std::string_view, 8> TEXTURE_CATEGORIES{"Unit sprites",
@@ -100,15 +107,6 @@ bool IsTextureCategory(std::string_view _category)
   return std::ranges::find(TEXTURE_CATEGORIES, _category) != TEXTURE_CATEGORIES.end();
 }
 
-// A face's members, the sheet and the table, as the run meets them (DAT-219 amendment).
-struct FaceFiles
-{
-  const Source* sheet = nullptr;
-  const ManifestRow* sheetRow = nullptr;
-  const Source* table = nullptr;
-  const ManifestRow* tableRow = nullptr;
-};
-
 } // namespace
 
 BuildResult CookContent(const std::filesystem::path& _root, BuildReport& _report)
@@ -128,10 +126,10 @@ BuildResult CookContent(const std::filesystem::path& _root, BuildReport& _report
   }
   const std::vector<Source> sources = ReadSources(_root / std::filesystem::path(Neuron::ToUtf16(CONTENT_ROOT)), _report);
 
-  std::map<std::string, FaceFiles> faces;  // by asset id
   std::map<std::string, std::string> keys; // a key's canonical form → the file it came from
   std::vector<CookedGeometry> meshes;      // for the pairing pass of ADR-129
   std::vector<CookedGeometry> collisions;
+  std::vector<std::pair<const ManifestRow*, const Source*>> stringTables; // cooked last, against the fonts' coverage
   for (const Source& source : sources)
   {
     if (source.contentPath.starts_with(SCHEMA_FOLDER))
@@ -140,11 +138,9 @@ BuildResult CookContent(const std::filesystem::path& _root, BuildReport& _report
     }
     std::optional<Neuron::CookedEntry> entry;
     const ManifestRow* row = manifest->RowOf(source.file);
-    if (row != nullptr && row->category == "Fonts")
+    if (row != nullptr && row->category == STRING_TABLE_CATEGORY)
     {
-      FaceFiles& face = faces[row->assetId];
-      (source.file.ends_with(".json") ? face.table : face.sheet) = &source;
-      (source.file.ends_with(".json") ? face.tableRow : face.sheetRow) = row;
+      stringTables.emplace_back(row, &source);
       continue;
     }
     if (row != nullptr && row->category == "Meshes" && row->subcategory == COLLISION_SUBCATEGORY)
@@ -187,20 +183,28 @@ BuildResult CookContent(const std::filesystem::path& _root, BuildReport& _report
     }
   }
   CookSimulationRecords(*manifest, meshes, collisions, result.entries, _report);
-  for (const auto& [assetId, face] : faces)
+  // DAT-217 (ADR-146): each language's table, its coverage checked against the system fonts its font roles draw from.
+  std::optional<std::expected<FontCoverage, std::string>> coverage;
+  for (const auto& [row, source] : stringTables)
   {
-    if (face.sheet == nullptr || face.table == nullptr)
+    if (row->assetId != "strings.en_us")
     {
-      const std::string& file = face.sheet != nullptr ? face.sheet->file : (face.table != nullptr ? face.table->file : assetId);
-      _report.Fail(file, std::format("the face {} needs both its glyph sheet and its glyph table (DAT-219, O63)", assetId));
+      _report.Fail(source->file, std::format("its row {} is a language the MVP does not offer (MVP scope §5.1, ADR-146)", row->assetId));
       continue;
     }
-    const FaceSources members{face.sheetRow, face.sheet->file, face.sheet->bytes, face.tableRow, face.table->file, face.table->bytes};
-    std::optional<Neuron::CookedEntry> entry = PackFont(members, _report);
+    if (!coverage)
+    {
+      coverage = FontCoverage::Open(Species::GAME_FONT_FAMILIES);
+    }
+    if (!*coverage)
+    {
+      _report.Fail(source->file, std::format("its coverage cannot be checked: {} (UI-199, ADR-147)", coverage->error()));
+      continue;
+    }
+    std::optional<Neuron::CookedEntry> entry = CookStringTable(*row, source->file, source->bytes, **coverage, _report);
     if (entry)
     {
-      // The face's one entry takes the sheet's key; its table is folded into it (ADR-108).
-      entry->entry.key = Neuron::KeyOfSource(face.sheet->contentPath);
+      entry->entry.key = Neuron::KeyOfSource(source->contentPath);
       result.entries.push_back(std::move(*entry));
     }
   }
@@ -220,12 +224,30 @@ BuildResult CookContent(const std::filesystem::path& _root, BuildReport& _report
       _report.Fail(file, std::format("its key {} is the key of {} too (AST-015)", entry.entry.key, at->second));
     }
   }
+  // AST-082 (O88, ADR-140): a row of the MVP's with no authored file takes a stand-in at its key, when the build makes one.
   for (const ManifestRow& row : manifest->Rows())
   {
     const bool authored = std::ranges::any_of(sources, [&](const Source& _source) { return _source.file == row.speciesFilename; });
-    if (!authored)
+    if (authored)
     {
-      ++result.rowsWithoutFile;
+      continue;
+    }
+    ++result.rowsWithoutFile;
+    if (std::optional<Neuron::CookedEntry> standIn = MakePlaceholderTexture(row))
+    {
+      // A stand-in meets its row as an authored file must, or the build fails with the ways it does not.
+      if (!CheckTexture(row, row.speciesFilename, standIn->bytes, _report))
+      {
+        continue;
+      }
+      if (const auto [at, added] = keys.emplace(standIn->entry.key, row.speciesFilename); !added)
+      {
+        _report.Fail(row.speciesFilename,
+                     std::format("its stand-in's key {} is the key of {} too (AST-015)", standIn->entry.key, at->second));
+        continue;
+      }
+      result.entries.push_back(std::move(*standIn));
+      ++result.placeholders;
     }
   }
   return result;

@@ -5483,6 +5483,27 @@
           "x-species-type": "object",
           "x-species-presence": "required"
         },
+        "view": {
+          "type": "object",
+          "description": "the wld.view.* keys",
+          "properties": {
+            "settlement_margin": {
+              "type": "number",
+              "description": "wld.view.settlement_margin (WLD-244, MVP-043)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "settlement_margin"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
         "resource": {
           "type": "object",
           "description": "the wld.resource.* keys",
@@ -5620,7 +5641,8 @@
         "generation",
         "territory",
         "travel",
-        "resource"
+        "resource",
+        "view"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

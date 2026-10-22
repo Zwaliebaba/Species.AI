@@ -225,20 +225,14 @@ std::vector<Neuron::OverlayQuad> CursorBadge(bool _leaderSelected, bool _workers
   return quads;
 }
 
-std::optional<Neuron::OverlayLine> BadgeCount(std::span<const Neuron::OverlayQuad> _badge, std::size_t _workers)
+std::optional<BadgeLabel> BadgeCount(std::span<const Neuron::OverlayQuad> _badge, std::size_t _workers)
 {
   if (_badge.empty() || _workers == 0)
   {
     return std::nullopt;
   }
   const Neuron::OverlayQuad& shadow = _badge.front();
-  Neuron::OverlayLine line;
-  line.text = std::to_string(_workers);
-  line.insetX = shadow.centerX + shadow.halfSize;
-  line.insetY = shadow.centerY;
-  line.corner = Neuron::OverlayCorner::PixelLeftMiddle;
-  line.color = WHITE;
-  return line;
+  return BadgeLabel{std::to_string(_workers), shadow.centerX + shadow.halfSize, shadow.centerY};
 }
 
 } // namespace Species

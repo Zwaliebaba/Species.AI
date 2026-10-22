@@ -9,6 +9,9 @@ This file records the decisions of the Species design and of the MVP built from 
 | ID | Title | Status | Affects |
 |---|---|---|---|
 | [DEC-1000](#dec-1000-the-place-of-the-ninth-home-resource-site-on-the-mvps-terrain) | The place of the ninth home resource site on the MVP's terrain | Resolved | WLD, MVP |
+| [DEC-1001](#dec-1001-the-provisional-looks-of-the-settlement) | The provisional looks of the settlement | Open | MVP |
+| [DEC-1002](#dec-1002-the-provisional-looks-of-the-territories) | The provisional looks of the territories | Open | MVP |
+| [DEC-1003](#dec-1003-the-weight-and-width-of-the-text-in-bahnschrift) | The weight and width of the text in Bahnschrift | Open | UI, MVP |
 
 ## 1 World and sites
 
@@ -28,3 +31,49 @@ This file records the decisions of the Species design and of the MVP built from 
 - Recommendation: A. It moves one value of the Final world design and nothing a steward can measure: every site keeps its 11 units at the same distances (WLD-042), and the valley of every seed that M1 measured stays as it was.
 - Decide by: M2 task T10, before the growth scene tunes the economy on the 11 units.
 - Resolution (2026-10-22, owner decision O87): option A. The ninth home resource site of a site without a crossing stands at `wld.resource.extra_radius` (1,050 wu) at `wld.resource.extra_bearing` (84°, now final) from the outward diagonal, as the specified behaviour states, and check 7 keeps counting no yield of a resource site in the sea or on a slope. Every site keeps its 11 units at the same distances, every seed's valley stays as M1 measured it, and M2 task T10's tuning, made on this place, stands (WLD-082 and MVP-010 amendments, [ADR-130](../ADR/ADR-130-settlements-structures-and-resource-sites-at-m2.md) amendment).
+
+## 2 Presentation
+
+### DEC-1001 The provisional looks of the settlement
+- Status: Open
+- Affects: implementation/mvp_scope.md (MVP-082, MVP-083, and table 3's `mvp.structure.*`, `mvp.wellspring.*`, `mvp.orb.cloudy_size`, `mvp.orb.cloudy_alpha` and `mvp.worker.load_color`); ADR-140
+- Specified behaviour: The client draws the settlement with the first values of table 3 (owner decision O89). MVP-083 states that a construction site rises with its progress, that an inactive structure is dark and that a completed structure flashes once, and MVP-082 that a carried load is visible, but not how far, how dark, how large or in what colour.
+  - A construction site is sunk by `mvp.structure.rise_depth_factor` (1.0) × its mesh's height × the share of its work still to come, so it rises out of the ground as it is built.
+  - An inactive structure's lit colour is multiplied by `mvp.structure.inactive_brightness` (0.35), and it shows no ownership lights.
+  - A completed structure flashes once: a camera-facing `fx.starburst` of half-size `mvp.structure.flash_size` (40 wu) in its team's colour, its own half-size above the structure's place, fading over `mvp.structure.flash_seconds` (0.5 s) from the tick of its event.
+  - The Wellspring glows: `mvp.wellspring.glow_blobs` (5) quads of `fx.glow_cloudy`, of half-size `mvp.wellspring.glow_size` (22 wu) and alpha `mvp.wellspring.glow_alpha` (0.45) in its team's colour, circle the centre of its crystal at `mvp.wellspring.glow_radius` (12 wu), one turn every `mvp.wellspring.glow_turn_seconds` (24 s).
+  - An orb drifting home or waiting at its Wellspring is wrapped in a quad of `fx.glow_cloudy` of half-size `mvp.orb.cloudy_size` (16 wu) and alpha `mvp.orb.cloudy_alpha` (0.5) in its settlement's colour.
+  - A Worker that carries a load shows `sprite.worker.carry_load` over its body in `mvp.worker.load_color` (0.6, 0.9, 1.0).
+- Options:
+  - A — the values as stated, which the owner retunes after M2 task T12's run, as the two lights were retuned after M1's runs (O75, O83);
+  - B — values that the owner sets before the run.
+- Recommendation: A. Each look is one key of the client's presentation record, read at start-up, so a retune changes no code and nothing the simulation computes.
+- Decide by: the owner's run of M2 task T12; the likeness review of PIL-027 at M2's end judges the result.
+
+### DEC-1002 The provisional looks of the territories
+- Status: Open
+- Affects: implementation/mvp_scope.md (MVP-084, and table 3's `mvp.territory_line.*`, `mvp.border_mark.*` and `mvp.view_fog.*`); ADR-143, ADR-144
+- Specified behaviour: The client draws the territories and the border areas with the first values of table 3 (owner decision O90). MVP-084 states that a territory is a glowing line of `fx.beam_long` in its Cladan's colour, that border areas are marked and that the land outside the steward's areas lies under black fog (WLD-244), but not how wide, how bright, how marked or how dark.
+  - Each settlement's territory line runs halfway between the cells it holds and those it does not, `mvp.territory_line.lift` (2 wu) over the terrain, a camera-facing segment of `fx.beam_long` of half-width `mvp.territory_line.half_width` (3 wu) at alpha `mvp.territory_line.alpha` (0.8) in its Cladan's colour.
+  - Each valley border area's halfway line and edge carry a spot of `fx.particle_dot` every `mvp.border_mark.spacing` (24 wu), of half-size `mvp.border_mark.spot_size` (4 wu), lifted by its size over the terrain, in `mvp.border_mark.color` (0.55, 0.55, 0.55) at alpha `mvp.border_mark.alpha` (0.6), outside the coast bands.
+  - Holders are not marked, since none is replicated at M2 (WLD-063); the strategic view's marks (WLD-241) are not drawn in the settlement view.
+  - Outside the steward's areas the terrain and the sea keep 1 − `mvp.view_fog.strength` (0.85) of their colour, and the fog's edge is a ramp `mvp.view_fog.edge_width` (64 wu) wide, centred on the areas' edge.
+- Options:
+  - A — the values as stated, which the owner retunes after M2 task T13's run, as DEC-1001's after T12's;
+  - B — values that the owner sets before the run.
+- Recommendation: A. Each look is one key of the client's presentation record, so a retune changes no code and nothing the simulation computes.
+- Decide by: the owner's run of M2 task T13; the likeness review of PIL-027 at M2's end judges the result.
+
+### DEC-1003 The weight and width of the text in Bahnschrift
+- Status: Open
+- Affects: architecture/components/ui_framework/layout_rendering_input_and_localisation.md (UI-195, UI-196, UI-197; `ui.font.spacing_*`, `ui.text.horizontal_scale_latin`); implementation/mvp_scope.md (MVP-100, MVP-102, MVP-103); ADR-147
+- Specified behaviour: Since owner decision O92 the player's text is set in Bahnschrift, a font Windows installs. UI-196 and UI-197 were written for the reference's fonts: they give each role a spacing factor (body 0.91, title 1.03) and condense Latin text to 0.6 of its width. The client builds the following until the owner decides.
+  - Every font role is set at Bahnschrift's normal weight.
+  - The spacing factors and the horizontal scale are 1.0, so the text keeps Bahnschrift's own widths, which are already narrow.
+  - The badge's count is `ui.text.default_size` (12 px) and the development overlay `dbg.overlay.text_size` (14 px), each × the DPI scale and never below the accessibility minimum of UI-171.
+- Options:
+  - A — as stated, with the HUD's weights and sizes set at M2 task T16 from the owner's view of T14's test page;
+  - B — the reference's factors and condensation applied to Bahnschrift (ADR-034's base text);
+  - C — Bahnschrift's own narrower widths (SemiCondensed or Condensed) for some roles, in place of a horizontal scale.
+- Recommendation: A. Bahnschrift is drawn narrow already, and condensing it again to 0.6 would make small text hard to read. A width or weight per role is one family name or one key, so a later choice changes no code.
+- Decide by: the owner's run of M2 task T14's DirectWrite step; the HUD of T16 uses the answer.

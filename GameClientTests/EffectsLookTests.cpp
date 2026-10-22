@@ -5,6 +5,7 @@
 #include "DevelopmentOverlay.h"
 #include "EffectKind.h"
 #include "EffectsLook.h"
+#include "MeshAsset.h"
 #include "RegionTerrain.h"
 #include "StableId.h"
 #include "StateUpdate.h"
@@ -12,6 +13,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
 #include <string_view>
 #include <vector>
 
@@ -121,6 +123,54 @@ Species::InterpolatedFigure WorkerAt(std::uint64_t _counter, const Neuron::Vec3&
   figure.health = 50.0;
   figure.position = _at;
   return figure;
+}
+
+// The muzzle and casing sockets of barrel 1 of mesh.structure.turret_barrel (ADR-128).
+constexpr Neuron::Vec3 MUZZLE_1{2.0, 1.4, 15.5};
+constexpr Neuron::Vec3 EJECT_1{3.6, 1.4, 1.6};
+
+// Every scene mesh, empty but the gun barrel set, which holds barrel 1's muzzle and casing sockets.
+std::shared_ptr<const Neuron::SceneMeshes> BarrelMeshes()
+{
+  auto meshes = std::make_shared<Neuron::SceneMeshes>();
+  for (std::size_t n = 0; n < static_cast<std::size_t>(Species::SceneMesh::Count); ++n)
+  {
+    auto mesh = std::make_shared<Neuron::MeshAsset>();
+    if (n == static_cast<std::size_t>(Species::SceneMesh::TurretBarrelGun))
+    {
+      for (const auto& [kind, at] : {std::pair{Neuron::SocketKind::Muzzle, MUZZLE_1}, std::pair{Neuron::SocketKind::CasingEject, EJECT_1}})
+      {
+        Neuron::MeshSocket socket;
+        socket.kind = kind;
+        socket.index = 1;
+        socket.transform = {1.0F,
+                            0.0F,
+                            0.0F,
+                            0.0F,
+                            0.0F,
+                            1.0F,
+                            0.0F,
+                            0.0F,
+                            0.0F,
+                            0.0F,
+                            1.0F,
+                            0.0F,
+                            static_cast<float>(at.x),
+                            static_cast<float>(at.y),
+                            static_cast<float>(at.z),
+                            1.0F};
+        mesh->sockets.push_back(socket);
+      }
+    }
+    meshes->meshes.push_back(std::move(mesh));
+  }
+  return meshes;
+}
+
+const Neuron::MeshBatch* MeshBatchOf(const Species::EffectDraws& _draws, Species::SceneMesh _mesh)
+{
+  const auto found = std::ranges::find(_draws.meshes, static_cast<std::uint16_t>(_mesh), &Neuron::MeshBatch::mesh);
+  return found != _draws.meshes.end() ? &*found : nullptr;
 }
 
 } // namespace
@@ -488,6 +538,133 @@ public:
     }
     Assert::IsTrue(burning.Particles().Live() > 0, L"a burning Worker gives off fire and smoke");
     Assert::IsTrue(control.Particles().Live() == 1, L"and none while its control is unchanged");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(RCrate453ATurretRoundIsItsMeshWithItsTracerAndItsShotsFlash)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CRATE-453")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CRATE-405")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"RND-331")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(RCrate453ATurretRoundIsItsMeshWithItsTracerAndItsShotsFlash)
+  {
+    const Species::TuningPresentation& presentation = CommittedPresentation();
+    Species::EffectsLook look(presentation, CommittedTuning());
+    const Species::StateReplica replica;
+    const std::vector<Species::ReceivedEvent> fired{EventOf(Species::EffectEventKind::TurretFired, 10, 7, Air(), {500.0, 0.0, 0.0}, 0.0)};
+    look.Update(fired, replica, {}, ViewAt(Air(), 9.0));
+    Assert::IsTrue(look.LiveFlashes() == 1, L"the shot's muzzle flash");
+    const Neuron::Vec3 at = Air() + Neuron::Vec3{25.0, 0.0, 0.0};
+    Species::InterpolatedEffect round = EffectAt(7, Species::EffectKind::TurretRound, at, 5);
+    Species::EffectDraws draws;
+    look.Draw(std::vector{round}, SeedOneTerrain().field, ViewAt(Air(), 9.0), draws);
+    const Neuron::MeshBatch* meshes = MeshBatchOf(draws, Species::SceneMesh::TurretRound);
+    Assert::IsTrue(meshes != nullptr && meshes->instances.size() == 1 && meshes->entry == "effect_mesh_lit", L"its lit mesh in pass 10a");
+    const Neuron::SceneMeshInstance& instance = meshes->instances.front();
+    Assert::IsTrue(Neuron::Length(instance.axisZ - Neuron::Vec3{1.0, 0.0, 0.0}) < 1e-9, L"along its flight, from its shot");
+    const Neuron::QuadBatch* tracers = BatchOf(draws.quads, "laser_bolt");
+    Assert::IsTrue(tracers != nullptr && tracers->quads.size() == 1, L"one tracer, a segment of pass 10b");
+    const Neuron::SceneQuad& tracer = tracers->quads.front();
+    const double length = 500.0 * presentation.ref.weapon.turretRound.tracerFactor;
+    Assert::IsTrue(tracer.orientation == Neuron::QuadOrientation::Segment && Neuron::Length(tracer.endPoint - at) < 1e-9 &&
+                     std::abs(Neuron::Length(tracer.position - at) - length) < 1e-9,
+                   L"its speed × the tracer factor behind it");
+    Assert::AreEqual(static_cast<float>(presentation.ref.weapon.turretRound.tracerAlpha), tracer.color[3], 1e-6f, L"at the tracer's alpha");
+    Assert::AreEqual(1.0f, tracer.color[1], 1e-6f, L"white");
+    ExpectEqual(presentation.ref.weapon.muzzleFlash.quads,
+                static_cast<std::int64_t>(QuadsOf(draws.quads, "effect_additive", Species::SceneTexture::MuzzleFlash)),
+                L"the round's flash, depth-tested at its size");
+
+    // A round whose shot was not seen flies along its latest tick's motion.
+    Species::EffectsLook unseen(presentation, CommittedTuning());
+    round.tickMotion = {0.0, 0.0, -50.0};
+    draws = {};
+    unseen.Draw(std::vector{round}, SeedOneTerrain().field, ViewAt(Air(), 9.0), draws);
+    Assert::IsTrue(
+      Neuron::Length(MeshBatchOf(draws, Species::SceneMesh::TurretRound)->instances.front().axisZ - Neuron::Vec3{0.0, 0.0, -1.0}) < 1e-9,
+      L"along its motion");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(RCrate456ACasingLeavesItsBarrelAndRestsAfterItsBounces)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CRATE-455")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CRATE-456")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-BLDG-418")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(RCrate456ACasingLeavesItsBarrelAndRestsAfterItsBounces)
+  {
+    const Species::TuningPresentation& presentation = CommittedPresentation();
+    const Species::StateReplica replica;
+    const std::vector<Species::ReceivedEvent> fired{EventOf(Species::EffectEventKind::TurretFired, 10, 7, Air(), {0.0, 0.0, 500.0}, 1.0)};
+    Species::EffectsLook without(presentation, CommittedTuning());
+    without.Update(fired, replica, {}, ViewAt(Air(), 9.0));
+    Assert::IsTrue(without.LiveCasings() == 0, L"no casing without the barrel set's sockets");
+
+    Species::EffectsLook look(presentation, CommittedTuning());
+    look.UseMeshes(BarrelMeshes());
+    look.Update(fired, replica, {}, ViewAt(Air(), 9.0));
+    Assert::IsTrue(look.LiveCasings() == 1, L"barrel 1 ejects its casing");
+    Species::EffectDraws draws;
+    look.Draw({}, SeedOneTerrain().field, ViewAt(Air(), 9.0), draws);
+    const Neuron::MeshBatch* casings = MeshBatchOf(draws, Species::SceneMesh::ShellCasing);
+    Assert::IsTrue(casings != nullptr && casings->instances.size() == 1, L"drawn as its mesh");
+    // The shot along +z: the barrels' right is +x and their up +y; barrel 1 is an upper barrel, so its casing starts below
+    // its socket, which stands on the barrel's outer, +x side.
+    const Neuron::Vec3 start = Air() + (EJECT_1 - MUZZLE_1) - Neuron::Vec3{0.0, presentation.ref.weapon.shellCasing.socketOffset, 0.0};
+    Assert::IsTrue(Neuron::Length(casings->instances.front().position - start) < 1e-5, L"at the casing socket, whose place is binary32");
+    Assert::IsTrue(Neuron::Length(casings->instances.front().axisZ - Neuron::Vec3{-1.0, 0.0, 0.0}) < 1e-9,
+                   L"its front the negated eject axis");
+    Neuron::Vec3 previous = casings->instances.front().position;
+    draws = {};
+    look.Draw({}, SeedOneTerrain().field, ViewAt(Air(), 9.5), draws);
+    const Neuron::Vec3 moved = MeshBatchOf(draws, Species::SceneMesh::ShellCasing)->instances.front().position;
+    Assert::IsTrue(moved.x > previous.x, L"thrown out to the barrel's outer side");
+    double tick = 9.5;
+    while (look.LiveCasings() > 0 && tick < 400.0)
+    {
+      tick += 0.5;
+      draws = {};
+      look.Draw({}, SeedOneTerrain().field, ViewAt(Air(), tick), draws);
+    }
+    Assert::IsTrue(look.LiveCasings() == 0, L"it rests after its bounces and goes");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Vfx219AHitShowsSparksOnAStructureAndDustOnTheGround)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"VFX-219")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CRATE-451")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CRATE-441")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Vfx219AHitShowsSparksOnAStructureAndDustOnTheGround)
+  {
+    const Species::TuningPresentation& presentation = CommittedPresentation();
+    const Species::StateReplica replica;
+    const auto particlesOf = [&](Species::EffectEventKind _kind, double _value)
+    {
+      Species::EffectsLook look(presentation, CommittedTuning());
+      const std::vector<Species::ReceivedEvent> hit{EventOf(_kind, 10, 7, Air(), {500.0, 0.0, 0.0}, _value)};
+      look.Update(hit, replica, {}, ViewAt(Air(), 9.0));
+      return static_cast<std::int64_t>(look.Particles().Live());
+    };
+    ExpectEqual(presentation.vfx.emit.roundHit.structureCount, particlesOf(Species::EffectEventKind::TurretRoundHit, 1.0),
+                L"a round on a structure: sparks");
+    ExpectEqual(presentation.vfx.emit.roundHit.terrainCount, particlesOf(Species::EffectEventKind::TurretRoundHit, 0.0),
+                L"a round on the ground: dust");
+    ExpectEqual(presentation.vfx.emit.laserHit.count, particlesOf(Species::EffectEventKind::LaserHitStructure, 0.0),
+                L"a bolt on a structure: a spark");
+    const std::vector<Neuron::ParticleType> types = Species::ParticleTypesOf(presentation);
+    const Neuron::ParticleType& spark = types[static_cast<std::size_t>(Species::ParticleKind::Spark)];
+    Assert::IsTrue(spark.lifeSeconds == 4.0 && spark.gravity == 15.0 && spark.blend == Neuron::ParticleBlend::Glow, L"VFX-207's spark");
+
+    // R-CRATE-441 step 6: the bolt ends where it meets the structure, two ticks out at 150 wu/s.
+    Species::EffectsLook look(presentation, CommittedTuning());
+    const std::vector<Species::ReceivedEvent> events{
+      EventOf(Species::EffectEventKind::LaserFired, 10, 1, Air(), {150.0, 0.0, 0.0}),
+      EventOf(Species::EffectEventKind::LaserHitStructure, 10, 1, Air() + Neuron::Vec3{30.0, 0.0, 0.0}, {150.0, 0.0, 0.0})};
+    look.Update(events, replica, {}, ViewAt(Air(), 9.0));
+    Species::EffectDraws draws;
+    look.Draw({}, SeedOneTerrain().field, ViewAt(Air(), 10.9), draws);
+    Assert::IsTrue(look.LiveBolts() == 1, L"flying until it meets the structure");
+    draws = {};
+    look.Draw({}, SeedOneTerrain().field, ViewAt(Air(), 11.0), draws);
+    Assert::IsTrue(look.LiveBolts() == 0, L"and gone there");
   }
 };
 

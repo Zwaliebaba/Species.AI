@@ -179,6 +179,13 @@ jobs:
         shell: pwsh
         run: python Build\CheckWorldFrame.py --exe "x64\$env:CONFIGURATION\Species.exe"
 
+      # The same check in a settlement world (ADR-140): the steward's settlement at its start, so that the structures'
+      # passes 6 and 8 draw their meshes, pads, stars, lights and glows under the debug layer; with the UI's test page
+      # (ADR-145), so that every pipeline of the UI pass draws too.
+      - name: Check a settlement world's frame on WARP
+        shell: pwsh
+        run: python Build\CheckWorldFrame.py --exe "x64\$env:CONFIGURATION\Species.exe" --world --ui-test
+
       # One suite per *Tests.vcxproj in the tree, and every one of them must have produced a DLL:
       # vstest reports "no tests found" as a pass, so a suite that did not build is not a suite
       # that passed, and a tree with no suites at all is a broken tree.

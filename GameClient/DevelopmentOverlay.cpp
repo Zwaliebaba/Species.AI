@@ -1,8 +1,6 @@
 #include "pch.h"
 
-#include "AssetError.h"
 #include "DevelopmentOverlay.h"
-#include "Log.h"
 #include "TuningMvp.h"
 #include "TuningPresentation.h"
 
@@ -45,7 +43,7 @@ constexpr std::array<float, 4> TEXT_COLOR{1.0f, 1.0f, 1.0f, 1.0f};
 constexpr std::array<float, 4> GRAPH_BACKDROP_COLOR{0.0f, 0.0f, 0.0f, 0.5f};
 constexpr std::array<float, 4> GRAPH_GUIDE_COLOR{0.6f, 0.6f, 0.6f, 1.0f};
 constexpr std::array<float, 4> GRAPH_BAR_COLOR{1.0f, 0.0f, 0.0f, 1.0f}; // DBG-089: one red line per frame
-// The parts of a page line: EditorFont holds no middle dot (ADR-118).
+// The parts of a page line (ADR-118).
 constexpr const char* SEPARATOR = ", ";
 
 // DBG-097: dbg.overlay.warning_rgb, from 0 to 255.
@@ -96,25 +94,6 @@ std::string SidesText(const ReplicaCounts& _counts)
 }
 
 } // namespace
-
-std::shared_ptr<const Neuron::FontAsset> LoadDevelopmentFace(const Neuron::LooseContent& _content)
-{
-  const auto bytes = _content.Read(DEVELOPMENT_FACE_KEY);
-  if (!bytes)
-  {
-    Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "the development overlay's face: {}",
-                Neuron::FormatAssetError(bytes.error()));
-    return nullptr;
-  }
-  auto face = Neuron::ReadFontAsset(*bytes);
-  if (!face)
-  {
-    Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "the development overlay's face {} is damaged: {}",
-                DEVELOPMENT_FACE_KEY, face.error());
-    return nullptr;
-  }
-  return std::make_shared<const Neuron::FontAsset>(std::move(*face));
-}
 
 std::string FrameRateText(double _framesPerSecond, std::optional<std::size_t> _objects)
 {
@@ -174,12 +153,12 @@ ReplicaCounts CountReplica(const StateReplica& _replica)
 }
 
 FramePage BuildFramePage(const FramePageInputs& _inputs, const TuningPresentation& _presentation, const TuningMvp& _tuning,
-                         float _cellHeightPixels)
+                         float _lineHeightPixels)
 {
   FramePage page;
   const std::array<float, 4> warning = WarningColor(_presentation);
   float top = PAGE_TOP_PIXELS;
-  const auto line = [&page, &top, _cellHeightPixels](const std::string& _text, const std::array<float, 4>& _color)
+  const auto line = [&page, &top, _lineHeightPixels](const std::string& _text, const std::array<float, 4>& _color)
   {
     Neuron::OverlayLine added;
     added.text = _text;
@@ -188,7 +167,7 @@ FramePage BuildFramePage(const FramePageInputs& _inputs, const TuningPresentatio
     added.corner = Neuron::OverlayCorner::TopLeft;
     added.color = _color;
     page.lines.push_back(std::move(added));
-    top += _cellHeightPixels + LINE_GAP_PIXELS;
+    top += _lineHeightPixels + LINE_GAP_PIXELS;
   };
   const Neuron::FrameProfile* profile = _inputs.profile;
   if (profile != nullptr)
@@ -252,7 +231,7 @@ FramePage BuildFramePage(const FramePageInputs& _inputs, const TuningPresentatio
     Neuron::OverlayLine label;
     label.text = std::format("{} ms ({} fps)", std::llround(mark), std::llround(1000.0 / mark));
     label.insetX = PAGE_LEFT_PIXELS + graphWidth + LABEL_GAP_PIXELS;
-    label.insetY = std::round(y - _cellHeightPixels / 2.0f);
+    label.insetY = std::round(y - _lineHeightPixels / 2.0f);
     label.corner = Neuron::OverlayCorner::TopLeft;
     label.color = GRAPH_GUIDE_COLOR;
     page.lines.push_back(std::move(label));

@@ -35,10 +35,16 @@ void MeshRenderer::Show(const std::shared_ptr<const SceneMeshes>& _meshes)
       for (std::size_t n = 0; n < m_meshes->meshes.size(); ++n)
       {
         const MeshAsset* mesh = m_meshes->meshes[n].get();
-        const std::uint64_t bytes = mesh != nullptr ? mesh->vertices.size() * sizeof(MeshVertex) : 0;
+        if (mesh == nullptr)
+        {
+          Log(LogCategory::Render, LogLevel::Error, "the scene mesh {} is missing", n);
+          m_buffers.push_back(GpuResourceId{});
+          continue;
+        }
+        const std::uint64_t bytes = mesh->vertices.size() * sizeof(MeshVertex);
         if (bytes == 0)
         {
-          Log(LogCategory::Render, LogLevel::Error, "the scene mesh {} has no vertices", n);
+          // A mesh of sockets alone, as the turret's mount is (RND-170, ADR-140), has nothing to draw.
           m_buffers.push_back(GpuResourceId{});
           continue;
         }

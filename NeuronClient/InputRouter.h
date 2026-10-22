@@ -13,6 +13,14 @@
 namespace Neuron
 {
 
+// INP-150: the input mode, which chooses a string's variant (UI-223). The MVP has no gamepad (MVP-100), so its mode is
+// always KeyboardMouse until the gamepad back-end tracks the device used last (ADR-146).
+enum class InputMode : std::uint8_t
+{
+  KeyboardMouse,
+  Gamepad
+};
+
 // INP-050: an action's value kind.
 enum class ValueKind : std::uint8_t
 {

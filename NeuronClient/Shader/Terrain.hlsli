@@ -11,5 +11,6 @@ struct TerrainVertex
   nointerpolation float4 color : COLOR0; // every corner of a facet holds its colour and normal (ADR-020)
   nointerpolation float3 normal : NORMAL0;
   float2 grid : TEXCOORD0;
-  float depth : TEXCOORD1; // view depth, the fog coordinate (RND-222)
+  float depth : TEXCOORD1;    // view depth, the fog coordinate (RND-222)
+  float3 relative : TEXCOORD2; // the position relative to the camera, where the view mask is read (ADR-144)
 };

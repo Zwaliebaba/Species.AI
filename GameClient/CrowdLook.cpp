@@ -31,6 +31,7 @@ constexpr std::array<std::string_view, static_cast<std::size_t>(SceneTexture::Co
   "textures/sprite/workerhurt02",
   "textures/sprite/workerhurt03",
   "textures/sprite/workerhurt04",
+  "textures/sprite/workercarryload",
   "textures/fx/glowround",
   "textures/marker/leaderbanneridle",
   "textures/marker/leaderbannerfollow",
@@ -52,9 +53,13 @@ constexpr std::array<std::string_view, static_cast<std::size_t>(SceneTexture::Co
   "textures/marker/teamdiscshadow",
   "textures/icon/power/leader",
   "textures/icon/power/workers",
+  "textures/fx/glowcloudy",
+  "textures/fx/beamlong",
 };
-constexpr std::array<std::string_view, static_cast<std::size_t>(SceneMesh::Count)> SCENE_MESH_KEYS{"meshes/leaderfigure",
-                                                                                                   "meshes/thrownweapon"};
+constexpr std::array<std::string_view, static_cast<std::size_t>(SceneMesh::Count)> SCENE_MESH_KEYS{
+  "meshes/leaderfigure", "meshes/thrownweapon", "meshes/wellspring",      "meshes/resourcesite", "meshes/resourcesitecentral",
+  "meshes/dwelling",     "meshes/storehouse",   "meshes/turretmount",     "meshes/turrethead",   "meshes/turretbarrelgun",
+  "meshes/turretround",  "meshes/shellcasing",  "meshes/structuredefault"};
 
 constexpr double FULL_ALPHA = 255.0;
 // ADR-121: R-UNIT-142's (slot index × unit id) mod 10 reads the unit id's counter times this prime, since a figure's
@@ -71,6 +76,7 @@ enum class WorkerLayer : std::uint8_t
 {
   Shadow,
   Body,
+  Load, // ADR-140: sprite.worker.carry_load over the body of a Worker that carries a load (MVP-082)
   Side,
   Fragments,
   Glow,
@@ -78,7 +84,9 @@ enum class WorkerLayer : std::uint8_t
 };
 
 constexpr std::array<std::string_view, static_cast<std::size_t>(WorkerLayer::Count)> WORKER_LAYER_ENTRIES{
-  "worker_ground_shadow", "worker_card", "worker_card", "worker_card", "worker_glow"};
+  "worker_ground_shadow", "worker_card", "worker_card", "worker_card", "worker_card", "worker_glow"};
+// ADR-140: the load's card stands this far nearer the camera than the body's, so the depth test keeps it over it.
+constexpr double LOAD_TOWARDS_CAMERA = 0.05; // wu
 // ADR-127: the selection discs' entry, the masked additive quad with no depth test of pass 10a's trail marks.
 constexpr std::string_view SELECTION_DISC_ENTRY = "effect_additive_nodepth";
 
@@ -341,6 +349,15 @@ void AppendWorkerBatches(std::span<const InterpolatedFigure> _figures, const Neu
       drawn.color = state.dead ? Scaled(team, worker.corpseColor, worker.corpseAlphaPerHealth * figure.health / FULL_ALPHA)
                                : Scaled(team, worker.colorBase + worker.colorHealthWeight * figure.health / maxHealth, 1.0);
       batches.Of(WorkerLayer::Body, texture).push_back(drawn);
+      // MVP-082 (ADR-140): a carried load on the card, scaled and turned with it, in mvp.worker.load_color.
+      if (state.loaded && !state.dead)
+      {
+        const auto& load = _presentation.mvp.worker.loadColor;
+        Neuron::SceneQuad carried = card;
+        carried.position = foot + Neuron::NormalizedOr(_view.camera - foot, WORLD_UP) * LOAD_TOWARDS_CAMERA;
+        carried.color = {static_cast<float>(load.r), static_cast<float>(load.g), static_cast<float>(load.b), 1.0f};
+        batches.Of(WorkerLayer::Load, SceneTexture::WorkerCarryLoad).push_back(carried);
+      }
       // VFX-118: the side strip of a card seen nearly edge-on, fading in with the sine of the view angle.
       const Neuron::Vec3 towardsCamera = Neuron::NormalizedOr(_view.camera - figure.position, WORLD_UP);
       const double edge = Neuron::Length(Cross(front, towardsCamera));
@@ -470,6 +487,29 @@ void AppendOrbBatches(std::span<const InterpolatedOrb> _orbs, const TuningPresen
   {
     batch.cullRadius = static_cast<float>(orb.outerSize * std::max(orb.birthScaleOffset, 1.0));
     _batches.push_back(std::move(batch));
+  }
+  // ADR-140 (O77): an orb drifting home or waiting at its Wellspring is wrapped in a cloudy glow, which the others lack.
+  const auto& cloudy = _presentation.mvp.orb;
+  Neuron::QuadBatch clouds;
+  clouds.pass = Neuron::ScenePass::Orbs;
+  clouds.entry = "orb_additive";
+  clouds.texture = static_cast<std::uint16_t>(SceneTexture::GlowCloudy);
+  clouds.cullRadius = static_cast<float>(cloudy.cloudySize);
+  for (const InterpolatedOrb& drawn : _orbs)
+  {
+    if (drawn.state.state == OrbState::Drifting || drawn.state.state == OrbState::Waiting)
+    {
+      Neuron::SceneQuad quad;
+      quad.position = drawn.position;
+      quad.halfWidth = static_cast<float>(cloudy.cloudySize);
+      quad.halfHeight = quad.halfWidth;
+      quad.color = Scaled(TeamColor(drawn.state.team), 1.0, cloudy.cloudyAlpha);
+      clouds.quads.push_back(quad);
+    }
+  }
+  if (!clouds.quads.empty())
+  {
+    _batches.push_back(std::move(clouds));
   }
 }
 

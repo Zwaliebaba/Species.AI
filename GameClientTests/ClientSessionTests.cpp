@@ -6,6 +6,7 @@
 #include "PresentationEvents.h"
 #include "RegionTerrain.h"
 #include "ReplicaTiming.h"
+#include "SettlementMessages.h"
 #include "StateUpdate.h"
 #include "TestSupport.h"
 #include "WorldTerrain.h"
@@ -150,6 +151,11 @@ public:
     Assert::IsTrue(Species::SessionTitle("Species", 7, 1234, sides, true) ==
                      "Species — seed 7 — tick 1234 — figures 200 : 198 — waiting for the server",
                    L"and the wait");
+    // ADR-139: the client's own settlement, in whole resource units.
+    const Species::ReplicatedSettlement settlement{2, 2, 2, 345'999, 1'500'000, 23, 40, 0};
+    Assert::IsTrue(Species::SessionTitle("Species", 7, 1234, sides, false, settlement) ==
+                     "Species — seed 7 — tick 1234 — figures 200 : 198 — stores 345 of 1500 — Workers 23 of 40",
+                   L"its stores and Workers");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Adr084TheTitleCountsEachSidesFiguresFromTheReplica)
@@ -332,6 +338,38 @@ public:
                      reports[0].result == Species::CommandResult::Applied,
                    L"the report, decoded");
     Assert::IsTrue(f.session->TakeReports().empty(), L"taken once");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr139TheTitleShowsTheOwnSettlementAndItsNoticesArrive)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-090")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-102")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr139TheTitleShowsTheOwnSettlementAndItsNoticesArrive)
+  {
+    // M2 task T11's run check: the title shows the stores and the population of the settlement of the team the client
+    // commands, from the replica, and not another team's; a notice on the reliable channel is taken once.
+    Fixture f;
+    const Species::WorldTerrain sent{SeedOne().seed, SeedOne().digest, std::uint8_t{2}};
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(sent)).has_value());
+    const Species::ReplicatedSettlement own{2, 2, 2, 120'500, 1'500'000, 20, 40, 5'600};
+    const Species::ReplicatedSettlement other{1, 1, 1, 0, 0, 0, 0, 5'600};
+    f.Send(Species::StateUpdate{
+      3, 0, {RecordOf(Species::SettlementObjectId(1), other, nullptr), RecordOf(Species::SettlementObjectId(2), own, nullptr)}});
+    const Species::SettlementNotice notice{3,
+                                           Species::NoticeKind::StructureCompleted,
+                                           2,
+                                           Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 9),
+                                           Species::StructureKind::Dwelling,
+                                           Species::QuantizedPosition{16, 0, 32}};
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(notice)).has_value());
+    f.session->Update();
+    Assert::IsTrue(f.session->OwnSettlement() == own, L"the settlement of its team");
+    Assert::IsTrue(!f.titles.empty() && f.titles.back() == "Species — seed 1 — tick 3 — stores 120 of 1500 — Workers 20 of 40",
+                   L"its stores and Workers in the title");
+    const std::vector<Species::SettlementNotice> notices = f.session->TakeNotices();
+    Assert::IsTrue(notices.size() == 1 && notices[0].subject == notice.subject && notices[0].structure == Species::StructureKind::Dwelling,
+                   L"the notice, decoded");
+    Assert::IsTrue(f.session->TakeNotices().empty(), L"taken once");
   }
 };
 

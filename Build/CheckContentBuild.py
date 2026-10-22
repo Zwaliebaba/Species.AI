@@ -3,15 +3,19 @@
   python Build/CheckContentBuild.py [--tool <SpeciesContentBuild.exe>]
 
 Runs the content build twice on the repository, each run into a temporary folder of its own, and fails unless the two
-folders are identical byte for byte (AST-066). Then it runs the build on fixtures: each a copy of GameData/ and of the
+folders are identical byte for byte (AST-066), and unless every texture row of the MVP's priority without an authored file
+has its stand-in at its key, in its row's format (AST-082, ADR-140). Then it runs the build on fixtures: each a copy of GameData/ and of the
 asset manifest with one fault in it, and each must fail with a message that names the faulty file and the fault
 (AST-093, ADR-019's confirmation): a texture off its row, a damaged mesh (one fixture per check of the CMO importer,
 built here from the owner's meshes by a small CMO reader and writer, so no binary fixture is committed), a misnumbered
 port, a collidable mesh without its collision asset and the reverse, a collision node of no render node (ADR-129), a
-damaged glyph table and glyph sheet, a glyph table naming another face, a stray file and a damaged record. The tool is the Debug|x64 build's unless --tool names
+stray file, a damaged record, and a string table with a character no system font of its roles draws (ADR-147), a text
+that is no message, a numbered argument, an unknown marker, a cycle of embedded strings, a malformed id and a language
+its file name does not give (ADR-146). The tool is the Debug|x64 build's unless --tool names
 another; the check writes nothing into the checkout.
 """
 import argparse
+import csv
 import os
 import shutil
 import struct
@@ -27,6 +31,7 @@ WEAPON = 'GameData/Meshes/ThrownWeapon.cmo'
 DWELLING = 'GameData/Meshes/Dwelling.cmo'
 STOREHOUSE_COLLISION = 'GameData/Meshes/StorehouseCollision.cmo'
 WELLSPRING_COLLISION = 'GameData/Meshes/WellspringCollision.cmo'
+STRINGS = 'GameData/Strings/en_us.json'
 
 
 # ── A CMO file of the Visual Studio mesh content pipeline, read and written whole ──────────────────────────────────
@@ -215,12 +220,6 @@ def remove(path):
   return lambda root: os.remove(os.path.join(root, path))
 
 
-def coverage(root):
-  data = bytearray(read(root, 'GameData/Fonts/GameFont.dds'))
-  data[128 + 4 * 1000 + 3] = 128
-  write(root, 'GameData/Fonts/GameFont.dds', bytes(data))
-
-
 FIXTURES = [
   ('a texture in another format than its row', lambda r: patch_u32(r, 'GameData/Textures/Cursor/World.dds', 128, 99),
    'GameData/Textures/Cursor/World.dds', 'asks for BC4_UNORM'),
@@ -249,16 +248,6 @@ FIXTURES = [
   ('a mesh over its row\'s triangle budget (AST-076)',
    replace_text(MANIFEST, '<= 100 triangles budget', '<= 50 triangles budget', line_with='mesh.unit.leader_figure,'),
    LEADER, 'pass the budget of 50'),
-  ('a glyph table listing a code point twice (DAT-219)', replace_text('GameData/Fonts/GameFontGlyphs.json', '{"cp": 34,', '{"cp": 33,'),
-   'GameData/Fonts/GameFontGlyphs.json', 'listed twice'),
-  ('a glyph table that is not JSON (DAT-021)', replace_text('GameData/Fonts/EditorFontGlyphs.json', '"missing": 63,', '"missing": 63,,'),
-   'GameData/Fonts/EditorFontGlyphs.json', 'syntax'),
-  ('a glyph cell outside its sheet (DAT-219)', replace_text('GameData/Fonts/GameFontGlyphs.json', '"row": 13,', '"row": 14,'),
-   'GameData/Fonts/GameFontGlyphs.json', 'outside the 256x224 px sheet'),
-  ('a glyph table with a field its schema lacks (DAT-026)',
-   replace_text('GameData/Fonts/GameFontGlyphs.json', '"missing": 63,', '"missing": 63, "kerning": [],'),
-   'GameData/Fonts/GameFontGlyphs.json', 'unknown_field'),
-  ('a glyph sheet with partial coverage (O63)', coverage, 'GameData/Fonts/GameFont.dds', 'coverage of 0 or 255'),
   ('a misnumbered port socket (AST-038)', mesh_change(DWELLING, rename_bone('socket_port_06', 'socket_port_07')), DWELLING,
    'gap before number 07'),
   ('a collidable mesh without its collision asset (AST-044)', remove('GameData/Meshes/DwellingCollision.cmo'), DWELLING, 'AST-044'),
@@ -266,13 +255,52 @@ FIXTURES = [
    'AST-090'),
   ('a collision node that is no node of its render member (AST-077)',
    mesh_change(WELLSPRING_COLLISION, rename_bone('wellspring_core', 'wellspring_crystal')), WELLSPRING_COLLISION, 'AST-077'),
-  ('a glyph table that names another face (AST-089)',
-   replace_text('GameData/Fonts/GameFontGlyphs.json', '"face": "font.ui.primary"', '"face": "font.ui.missing"'),
-   'GameData/Fonts/GameFontGlyphs.json', 'AST-089'),
   ('a stray file (AST-013)', lambda r: write(r, 'GameData/Textures/Fx/Notes.txt', b'x'), 'GameData/Textures/Fx/Notes.txt', 'stray'),
   ('a record value of the wrong type (DAT-024)', replace_text('GameData/Records/tuning/mvp.json', '"ai_count": 3', '"ai_count": "3"'),
    'GameData/Records/tuning/mvp.json', 'wrong_type'),
+  ('a string with a character no font of its roles draws (UI-199)', replace_text(STRINGS, '"Species"', '"Species \u6f22"'), STRINGS,
+   'U+6F22'),
+  ('a string that is no message (ADR-063)', replace_text(STRINGS, '"Species"', '"Species {count"'), STRINGS, 'not a message'),
+  ('a numbered argument (UI-227)', replace_text(STRINGS, '"Species"', '"Species {0}"'), STRINGS, 'numbered argument'),
+  ('an unknown caption marker (DAT-212)', replace_text(STRINGS, '"Species"', '"[[bold]]Species"'), STRINGS, 'unknown marker'),
+  ('a cycle of embedded strings (DAT-211)',
+   replace_text(STRINGS, '"ui.title.game_name": "Species"',
+                '"ui.title.game_name": "[[string:ui.title.other]]", "ui.title.other": "[[string:ui.title.game_name]]"'), STRINGS, 'cycle'),
+  ('a string id that is not lower-case and dotted (DAT-207)', replace_text(STRINGS, '"ui.title.game_name"', '"UI.Title"'), STRINGS,
+   'not a string id'),
+  ('a string table whose language is not its file name\'s (DAT-206)', replace_text(STRINGS, '"en-US"', '"en-GB"'), STRINGS,
+   'language field'),
 ]
+
+
+# AST-082 (ADR-140): the placeholder kinds the content build draws, and the DXGI formats it writes.
+STAND_IN_KINDS = ('generated figure', 'generated glyph', 'generated panel', 'generated gradient', 'derived by the cooker')
+STAND_IN_FORMATS = (('BC7_UNORM_SRGB', 99), ('BC4_UNORM', 80))
+BC7_MODE_6 = 0x40 # a BC7 block's first seven bits when it is of mode 6, the one the stand-ins use
+
+
+def stand_ins(files):
+  """The rows that should have a stand-in, and the faults of their stand-ins in a run's files."""
+  rows, faults = 0, []
+  with open(os.path.join(ROOT, MANIFEST), encoding='utf-8-sig', newline='') as fh:
+    for row in csv.DictReader(fh):
+      source = row['species_filename']
+      formats = [code for name, code in STAND_IN_FORMATS if name in row['target_format']]
+      if (row['priority'] != 'mvp' or not source.startswith('GameData/') or not source.endswith('.dds')
+          or os.path.exists(os.path.join(ROOT, source)) or row['placeholder'] not in STAND_IN_KINDS or len(formats) != 1):
+        continue
+      rows += 1
+      key = source[len('GameData/'):-len('.dds')].lower()
+      data = files.get(key)
+      if data is None:
+        faults.append(f'{source} has no stand-in at {key} (AST-082)')
+        continue
+      magic, fourcc, dxgi = data[:4], data[84:88], struct.unpack_from('<I', data, 128)[0]
+      if magic != b'DDS ' or fourcc != b'DX10' or dxgi != formats[0]:
+        faults.append(f'{key} is not a DDS file of DXGI format {formats[0]} with a DX10 header')
+      elif dxgi == 99 and data[148] & 0x7F != BC7_MODE_6:
+        faults.append(f'{key}\'s first block is not of BC7 mode 6')
+  return rows, faults
 
 
 def run(tool, root, out):
@@ -319,6 +347,9 @@ def main():
       differing = sorted(k for k in set(outputs[0]) | set(outputs[1]) if outputs[0].get(k) != outputs[1].get(k))
       failures.append(f'two runs differ in {", ".join(differing)} (AST-066)')
     print(f'CheckContentBuild: two runs wrote the same {len(outputs[0])} files, byte for byte')
+    rows, faults = stand_ins(outputs[0])
+    failures += faults
+    print(f'CheckContentBuild: {rows} texture rows of the MVP have no authored file, {rows - len(faults)} with their stand-in')
     for name, change, file, part in FIXTURES:
       case = os.path.join(work, 'case')
       root = copy_tree(case)

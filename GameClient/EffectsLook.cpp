@@ -6,6 +6,7 @@
 #include "EffectsLook.h"
 #include "FigureKind.h"
 #include "Geometry.h"
+#include "MeshAsset.h"
 #include "Profile.h"
 
 #include <algorithm>
@@ -44,6 +45,14 @@ constexpr std::uint64_t MAX_TICK_EMITTER_RUNS = 3;
 constexpr double STEP_TOLERANCE_SECONDS = 1e-9;
 // The grenade's view-test radius, wu: mesh.projectile.thrown_weapon fits within it (AST-076).
 constexpr float GRENADE_CULL_RADIUS = 4.0f;
+// The turret round's and the shell casing's view-test radius, wu: their meshes fit within it (ADR-128).
+constexpr float ROUND_CULL_RADIUS = 2.0f;
+// R-CRATE-456: the first two barrels eject their casings downwards, the others upwards.
+constexpr std::uint32_t UPPER_BARRELS = 2;
+// R-CRATE-456: the casing's draws of FxRng::NextSigned, per axis, about its eject direction.
+constexpr double CASING_JITTER = 0.5;
+// R-CRATE-456: the factors of the serial that turn each casing's spin axis.
+constexpr Neuron::Vec3 CASING_SPIN_FACTORS{0.1, 0.3, 0.7};
 
 constexpr Neuron::Vec3 UP{0.0, 1.0, 0.0};
 
@@ -128,6 +137,28 @@ bool PointInView(const Neuron::Vec3& _point, const EffectsView& _view, double _t
   return Neuron::Dot(Neuron::Normalized(towards), _view.cameraFront) >= std::cos(_view.verticalFovRadians) - _tolerance;
 }
 
+// A socket's place in its mesh (every node rests at the identity; ADR-128).
+Neuron::Vec3 SocketPoint(const Neuron::MeshSocket& _socket) noexcept
+{
+  return {static_cast<double>(_socket.transform[12]), static_cast<double>(_socket.transform[13]),
+          static_cast<double>(_socket.transform[14])};
+}
+
+const Neuron::MeshSocket* SocketOf(const Neuron::MeshAsset& _mesh, Neuron::SocketKind _kind, std::uint32_t _index) noexcept
+{
+  const auto found = std::ranges::find_if(_mesh.sockets, [&](const Neuron::MeshSocket& _socket)
+                                          { return _socket.kind == _kind && _socket.index == _index; });
+  return found != _mesh.sockets.end() ? &*found : nullptr;
+}
+
+// _vector turned about the unit _axis by _radians (Rodrigues' rotation).
+Neuron::Vec3 Turned(const Neuron::Vec3& _vector, const Neuron::Vec3& _axis, double _radians) noexcept
+{
+  const double c = std::cos(_radians);
+  const double s = std::sin(_radians);
+  return _vector * c + Neuron::Cross(_axis, _vector) * s + _axis * (Neuron::Dot(_axis, _vector) * (1.0 - c));
+}
+
 bool OnField(const Neuron::TerrainField& _field, const Neuron::Vec3& _point) noexcept
 {
   const double x = _point.x - _field.Heights().OriginX();
@@ -148,6 +179,8 @@ std::vector<Neuron::ParticleType> ParticleTypesOf(const TuningPresentation& _pre
   types[static_cast<std::size_t>(ParticleKind::ControlFlash)] = TypeOf(p.controlFlash, Neuron::ParticleBlend::Glow, 0);
   types[static_cast<std::size_t>(ParticleKind::MissileTrail)] = TypeOf(p.missileTrail, Neuron::ParticleBlend::Smoke, 2);
   types[static_cast<std::size_t>(ParticleKind::WorkerFire)] = TypeOf(p.workerFire, Neuron::ParticleBlend::Glow, 1);
+  // ADR-141: the spark falls through the terrain, which the depth test hides, since the pool has no terrain rule yet.
+  types[static_cast<std::size_t>(ParticleKind::Spark)] = TypeOf(p.spark, Neuron::ParticleBlend::Glow, 1);
   // VFX-210: explosion debris puffs missile trails as it flies.
   types[static_cast<std::size_t>(ParticleKind::ExplosionDebris)].puffType = static_cast<std::uint8_t>(ParticleKind::MissileTrail);
   return types;
@@ -193,6 +226,8 @@ void EffectsLook::Clear()
   m_flashes.clear();
   m_rings.clear();
   m_recoils.clear();
+  m_casings.clear();
+  m_rounds.clear();
   m_controlled.clear();
   m_trailBorn.clear();
   m_lastTick.reset();
@@ -204,6 +239,11 @@ void EffectsLook::Clear()
   m_flashOnsets.clear();
   m_flashAbove = false;
   m_flashSuppressed = false;
+}
+
+void EffectsLook::UseMeshes(std::shared_ptr<const Neuron::SceneMeshes> _meshes) noexcept
+{
+  m_meshes = std::move(_meshes);
 }
 
 void EffectsLook::Update(std::span<const ReceivedEvent> _events, const StateReplica& _replica, std::span<const InterpolatedFigure> _figures,
@@ -273,7 +313,7 @@ void EffectsLook::Play(const Waiting& _waiting, const EffectsView& _view)
   case EffectEventKind::LaserFired:
   {
     // R-CRATE-440, ADR-123: the bolt flies from the muzzle as the event plays; it is not replicated (ADR-111).
-    m_bolts.push_back({event.subject, event.team, dueTick, {{event.position, event.vector, dueTick}}});
+    m_bolts.push_back({event.subject, event.team, dueTick, {{event.position, event.vector, dueTick}}, std::nullopt});
     // R-CRATE-405: its muzzle flash, of the laser size factor × the bolt's life in seconds.
     const double lifeSeconds = static_cast<double>(tuning.ref.weapon.laser.lifeTicks) * tick;
     m_flashes.push_back({event.position, Neuron::Normalized(event.vector), dueTick, flash.laserSizeFactor * lifeSeconds, flash.laserLife});
@@ -298,6 +338,37 @@ void EffectsLook::Play(const Waiting& _waiting, const EffectsView& _view)
   case EffectEventKind::GrenadeThrown:
     m_flashes.push_back({event.position, Neuron::Normalized(event.vector), dueTick, flash.throwSize, flash.throwLife});
     break;
+  case EffectEventKind::TurretFired:
+    // R-CRATE-405: the round's muzzle flash, of no team, at the muzzle, where its flight passes half a tick after its
+    // start; R-BLDG-418 step 3: the barrel's casing (ADR-141). The round itself is the replica's (ADR-133).
+    m_rounds[event.subject] = {event.vector, dueTick};
+    m_flashes.push_back({event.position, Neuron::NormalizedOr(event.vector, UP), dueTick, flash.roundSize, flash.roundLife});
+    LaunchCasing(event, rng, _view);
+    break;
+  case EffectEventKind::TurretRoundHit:
+  {
+    // VFX-219's RoundHitStructure: sparks; its RoundHitTerrain: a puff of dust, a missile trail (DEC-962). The round's
+    // shatter waits for ADR-010's shards (ADR-141).
+    const auto& hit = presentation.vfx.emit.roundHit;
+    const bool structure = event.value > 0.0;
+    EmitBurst(rng, static_cast<double>(structure ? hit.structureCount : hit.terrainCount), event.position, _view,
+              structure ? ParticleKind::Spark : ParticleKind::MissileTrail, {}, std::nullopt, std::nullopt);
+    break;
+  }
+  case EffectEventKind::LaserHitStructure:
+  {
+    // VFX-219's LaserHitStructure: a spark; R-CRATE-441 step 6: the bolt ends where it meets the structure.
+    EmitBurst(rng, static_cast<double>(presentation.vfx.emit.laserHit.count), event.position, _view, ParticleKind::Spark, {}, std::nullopt,
+              std::nullopt);
+    const auto bolt = std::ranges::find(m_bolts, event.subject, &Bolt::id);
+    if (bolt != m_bolts.end())
+    {
+      const Leg& leg = bolt->legs.back();
+      const double speed = Neuron::Length(leg.velocity) * tick;
+      bolt->endTick = leg.originTick + (speed > 0.0 ? Neuron::Length(event.position - leg.origin) / speed : 0.0);
+    }
+    break;
+  }
   case EffectEventKind::Explosion:
   {
     // VFX-219's Explosion: the cores and the ring of debris, of the range r and the damage D.
@@ -511,8 +582,8 @@ void EffectsLook::DrawBolts(const Neuron::TerrainField& _field, const EffectsVie
   std::erase_if(m_bolts,
                 [&](const Bolt& _bolt)
                 {
-                  // R-CRATE-440: a bolt flies its life's advances.
-                  if (_view.displayTick - _bolt.firedTick >= lifeTicks)
+                  // R-CRATE-440: a bolt flies its life's advances; R-CRATE-441 step 6: a structure stops it.
+                  if (_view.displayTick - _bolt.firedTick >= lifeTicks || (_bolt.endTick && _view.displayTick >= *_bolt.endTick))
                   {
                     return true;
                   }
@@ -623,6 +694,153 @@ void EffectsLook::DrawGrenades(std::span<const InterpolatedEffect> _effects, con
   {
     _draws.meshes.push_back(std::move(meshes));
   }
+}
+
+void EffectsLook::LaunchCasing(const EffectEvent& _event, Neuron::FxRng& _rng, const EffectsView& _view)
+{
+  if (m_meshes == nullptr || m_meshes->meshes.size() <= static_cast<std::size_t>(SceneMesh::TurretBarrelGun))
+  {
+    return;
+  }
+  // R-BLDG-418 step 3, DEC-461: the barrel's casing_eject socket, placed from its muzzle socket, where the shot starts.
+  const Neuron::MeshAsset& barrels = *m_meshes->meshes[static_cast<std::size_t>(SceneMesh::TurretBarrelGun)];
+  const auto barrel = static_cast<std::uint32_t>(std::max(0.0, _event.value));
+  const Neuron::MeshSocket* muzzle = SocketOf(barrels, Neuron::SocketKind::Muzzle, barrel);
+  const Neuron::MeshSocket* eject = SocketOf(barrels, Neuron::SocketKind::CasingEject, barrel);
+  if (muzzle == nullptr || eject == nullptr)
+  {
+    return;
+  }
+  // The barrels' axes from the shot: its front along the round's velocity, its right level (ADR-140).
+  const Neuron::Vec3 front = Neuron::NormalizedOr(_event.vector, {0.0, 0.0, 1.0});
+  const Neuron::Vec3 right = Neuron::NormalizedOr(Neuron::Cross(UP, front), {1.0, 0.0, 0.0});
+  const Neuron::Vec3 up = Neuron::Cross(front, right);
+  const Neuron::Vec3 offset = SocketPoint(*eject) - SocketPoint(*muzzle);
+  // R-CRATE-456: it starts along the socket's up axis, downwards for the upper barrels, and leaves towards the barrel's
+  // outer side, where its ejector stands (ADR-128).
+  const auto& keys = m_presentation->ref.weapon.shellCasing;
+  const double along = barrel < UPPER_BARRELS ? -keys.socketOffset : keys.socketOffset;
+  const Neuron::Vec3 outward = right * (SocketPoint(*eject).x < 0.0 ? -1.0 : 1.0);
+  Casing casing;
+  casing.position = _event.position + right * offset.x + up * (offset.y + along) + front * offset.z;
+  const Neuron::Vec3 jitter{_rng.NextSigned(CASING_JITTER), _rng.NextSigned(CASING_JITTER), _rng.NextSigned(CASING_JITTER)};
+  casing.velocity = Neuron::NormalizedOr(outward + UP + jitter, UP) * (keys.speedMin + _rng.NextUnit(keys.speedSpread));
+  casing.front = outward * -1.0;
+  casing.up = up;
+  const double serial = static_cast<double>(m_casingSerial++);
+  const auto fraction = [](double _value) { return _value - std::floor(_value); };
+  casing.spinAxis =
+    Neuron::NormalizedOr(casing.front + Neuron::Vec3{fraction(serial * CASING_SPIN_FACTORS.x), fraction(serial * CASING_SPIN_FACTORS.y),
+                                                     fraction(serial * CASING_SPIN_FACTORS.z)},
+                         casing.front);
+  casing.seconds = _view.scaledSeconds;
+  m_casings.push_back(casing);
+}
+
+void EffectsLook::AdvanceCasings(const Neuron::TerrainField& _field, const EffectsView& _view)
+{
+  // R-CRATE-456: each casing falls by the thrown weapon's gravity and spins at its force, in steps of the particles' sub
+  // step; each bounce scales its force and its velocity, and it goes once its force is at its rest.
+  const auto& keys = m_presentation->ref.weapon.shellCasing;
+  const double gravity = m_tuning->ref.sim.physics.thrownGravity;
+  const double subStep = std::max(m_presentation->vfx.particle.subStep, STEP_TOLERANCE_SECONDS);
+  std::erase_if(m_casings,
+                [&](Casing& _casing)
+                {
+                  double remaining = std::max(0.0, _view.scaledSeconds - _casing.seconds);
+                  _casing.seconds = _view.scaledSeconds;
+                  while (remaining > STEP_TOLERANCE_SECONDS)
+                  {
+                    const double step = std::min(remaining, subStep);
+                    remaining -= step;
+                    _casing.velocity.y -= gravity * step;
+                    _casing.position = _casing.position + _casing.velocity * step;
+                    _casing.front = Turned(_casing.front, _casing.spinAxis, _casing.force * step);
+                    _casing.up = Turned(_casing.up, _casing.spinAxis, _casing.force * step);
+                    if (!OnField(_field, _casing.position))
+                    {
+                      return true;
+                    }
+                    const double ground = _field.Height(_casing.position.x, _casing.position.z);
+                    if (_casing.position.y < ground)
+                    {
+                      _casing.position.y = ground;
+                      _casing.force *= keys.bounceFactor;
+                      _casing.velocity = Neuron::Vec3{_casing.velocity.x, -_casing.velocity.y, _casing.velocity.z} * _casing.force;
+                      if (_casing.force <= keys.restForce)
+                      {
+                        return true;
+                      }
+                    }
+                  }
+                  return false;
+                });
+}
+
+void EffectsLook::DrawRounds(std::span<const InterpolatedEffect> _effects, const EffectsView& _view, EffectDraws& _draws)
+{
+  // R-CRATE-453: each round is its lit mesh along its flight, with a white tracer behind it of its speed × the tracer
+  // factor, drawn as one layer of a laser bolt's segment (ADR-141).
+  const auto& round = m_presentation->ref.weapon.turretRound;
+  const double tick = m_tuning->ref.sim.tickPeriod;
+  const auto halfWidth = static_cast<float>(m_presentation->rnd.laser.halfWidth);
+  Neuron::MeshBatch meshes{
+    Neuron::ScenePass::Effects, EFFECT_MESH_LIT, static_cast<std::uint16_t>(SceneMesh::TurretRound), ROUND_CULL_RADIUS, {}};
+  // A shot's velocity is kept for the round's life and a tick either side of it, as its event and its replicated state
+  // reach the frame at different ticks.
+  const double keepTicks = static_cast<double>(m_tuning->ref.weapon.turretRound.lifeTicks) + 2.0;
+  std::erase_if(m_rounds, [&](const auto& _round) { return _view.displayTick - _round.second.firedTick > keepTicks; });
+  for (const InterpolatedEffect& effect : _effects)
+  {
+    if (effect.state.kind != EffectKind::TurretRound)
+    {
+      continue;
+    }
+    // Its velocity from its shot's event; a round whose event was lost flies along its latest tick's motion, or its yaw.
+    const auto fired = m_rounds.find(effect.id);
+    const double yaw = YawRadians(effect.state.yaw);
+    const Neuron::Vec3 velocity = fired != m_rounds.end()                          ? fired->second.velocity
+                                  : Neuron::LengthSquared(effect.tickMotion) > 0.0 ? effect.tickMotion * (1.0 / tick)
+                                                                                   : Neuron::Vec3{std::sin(yaw), 0.0, std::cos(yaw)};
+    const Neuron::Vec3 front = Neuron::NormalizedOr(velocity, {0.0, 0.0, 1.0});
+    Neuron::SceneMeshInstance instance;
+    instance.position = effect.position;
+    instance.axisX = Neuron::NormalizedOr(Neuron::Cross(UP, front), {1.0, 0.0, 0.0});
+    instance.axisY = Neuron::Cross(front, instance.axisX);
+    instance.axisZ = front;
+    meshes.instances.push_back(instance);
+    Neuron::QuadBatch& batch = BatchOf(_draws.quads, Neuron::ScenePass::Lasers, LASER_BOLT, SceneTexture::BeamShort, halfWidth);
+    Neuron::SceneQuad tracer = Facing(effect.position - front * (Neuron::Length(velocity) * round.tracerFactor), halfWidth,
+                                      {1.0f, 1.0f, 1.0f, static_cast<float>(round.tracerAlpha)});
+    tracer.endPoint = effect.position;
+    tracer.orientation = Neuron::QuadOrientation::Segment;
+    batch.quads.push_back(tracer);
+  }
+  if (!meshes.instances.empty())
+  {
+    _draws.meshes.push_back(std::move(meshes));
+  }
+}
+
+void EffectsLook::DrawCasings(EffectDraws& _draws) const
+{
+  // R-CRATE-455: each casing is its lit mesh, turned as it spins.
+  if (m_casings.empty())
+  {
+    return;
+  }
+  Neuron::MeshBatch meshes{
+    Neuron::ScenePass::Effects, EFFECT_MESH_LIT, static_cast<std::uint16_t>(SceneMesh::ShellCasing), ROUND_CULL_RADIUS, {}};
+  for (const Casing& casing : m_casings)
+  {
+    Neuron::SceneMeshInstance instance;
+    instance.position = casing.position;
+    instance.axisZ = Neuron::NormalizedOr(casing.front, {0.0, 0.0, 1.0});
+    instance.axisX = Neuron::NormalizedOr(Neuron::Cross(casing.up, instance.axisZ), {1.0, 0.0, 0.0});
+    instance.axisY = Neuron::Cross(instance.axisZ, instance.axisX);
+    meshes.instances.push_back(instance);
+  }
+  _draws.meshes.push_back(std::move(meshes));
 }
 
 void EffectsLook::DrawRings(const EffectsView& _view, EffectDraws& _draws, double& _flashAlpha, double& _shakeRequest)
@@ -835,6 +1053,9 @@ void EffectsLook::Draw(std::span<const InterpolatedEffect> _effects, const Neuro
   double flashAlpha = 0.0;
   double shakeRequest = 0.0;
   DrawGrenades(_effects, _view, _draws);
+  DrawRounds(_effects, _view, _draws);
+  AdvanceCasings(_field, _view);
+  DrawCasings(_draws);
   DrawFlashes(_view, _draws);
   DrawRings(_view, _draws, flashAlpha, shakeRequest);
   DrawMarkers(_effects, _view, _draws);

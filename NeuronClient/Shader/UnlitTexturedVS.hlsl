@@ -79,5 +79,6 @@ QuadVertex main(uint _vertex : SV_VertexID, Instance _quad)
   vertex.position = mul(float4(world, 1.0), g_frame.viewProjection);
   vertex.uv = lerp(_quad.uv.xy, _quad.uv.zw, uvAt);
   vertex.color = color;
+  vertex.depth = dot(world, g_frame.cameraFront.xyz);
   return vertex;
 }

@@ -22,16 +22,24 @@ float3 Lit(float3 _normal, float3 _diffuse, float3 _specular, float _shininess)
 }
 
 // RND-266 with INVERTED off: the surface term, plus the grid term times the grid texel, each fogged towards the fog
-// colour by the pixel's view depth.
+// colour by the pixel's view depth; then, outside the view mask, darkened towards black by the mask's fog (ADR-144).
 float4 main(TerrainVertex _vertex) : SV_Target
 {
   Texture2D<float4> gridTexture = ResourceDescriptorHeap[g_draw.indices.x];
   SamplerState linearWrap = SamplerDescriptorHeap[SAMPLER_LINEAR_WRAP];
+  SamplerState linearClamp = SamplerDescriptorHeap[SAMPLER_LINEAR_CLAMP];
   const float grid = gridTexture.Sample(linearWrap, _vertex.grid).r; // a BC4 mask: its intensity is .r (ADR-115)
   const float3 surface = Lit(_vertex.normal, _vertex.color.rgb, float3(0.0, 0.0, 0.0), 1.0);
   const float3 overlay = Lit(_vertex.normal, _vertex.color.rgb, g_pass.values[0].rgb, g_pass.values[0].a);
   const float fog = saturate((g_frame.fogRange.y - _vertex.depth) * g_frame.fogRange.z);
   const float3 s = lerp(g_frame.fogColor.rgb, surface, fog);
   const float3 q = lerp(g_frame.fogColor.rgb, overlay * grid, fog);
-  return float4(saturate(s + q * _vertex.color.a), _vertex.color.a);
+  float clear = 1.0;
+  if (g_frame.viewMask.w > 0.0)
+  {
+    Texture2D<float4> viewMask = ResourceDescriptorHeap[g_frame.viewMaskIndex.x];
+    const float2 at = (_vertex.relative.xz - g_frame.viewMask.xy) * g_frame.viewMask.z;
+    clear = 1.0 - g_frame.viewMask.w * (1.0 - viewMask.SampleLevel(linearClamp, at, 0.0).r);
+  }
+  return float4(saturate(s + q * _vertex.color.a) * clear, _vertex.color.a);
 }

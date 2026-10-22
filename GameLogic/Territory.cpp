@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "RegionSimulation.h"
+#include "ReplicatedState.h"
 #include "Territory.h"
 
 #include <algorithm>
@@ -109,6 +110,35 @@ void CellRaster::Hold(std::int32_t _x, std::int32_t _z)
   std::uint8_t& cell = m_cells[static_cast<std::size_t>(_z) * static_cast<std::size_t>(m_cellsPerAxis) + static_cast<std::size_t>(_x)];
   m_count += cell == 0 ? 1 : 0;
   cell = 1;
+  m_minX = m_maxX < m_minX ? _x : std::min(m_minX, _x);
+  m_minZ = m_maxZ < m_minZ ? _z : std::min(m_minZ, _z);
+  m_maxX = std::max(m_maxX, _x);
+  m_maxZ = std::max(m_maxZ, _z);
+}
+
+std::uint64_t CellRaster::ChunkCells(std::int32_t _chunkX, std::int32_t _chunkZ) const noexcept
+{
+  std::uint64_t cells = 0;
+  for (std::int32_t z = 0; z < CELL_CHUNK_SIDE; ++z)
+  {
+    for (std::int32_t x = 0; x < CELL_CHUNK_SIDE; ++x)
+    {
+      if (HoldsCell(_chunkX * CELL_CHUNK_SIDE + x, _chunkZ * CELL_CHUNK_SIDE + z))
+      {
+        cells |= std::uint64_t{1} << (z * CELL_CHUNK_SIDE + x);
+      }
+    }
+  }
+  return cells;
+}
+
+std::optional<CellRaster::ChunkBounds> CellRaster::HeldChunks() const noexcept
+{
+  if (m_count == 0)
+  {
+    return std::nullopt;
+  }
+  return ChunkBounds{m_minX / CELL_CHUNK_SIDE, m_minZ / CELL_CHUNK_SIDE, m_maxX / CELL_CHUNK_SIDE, m_maxZ / CELL_CHUNK_SIDE};
 }
 
 std::int32_t CellRaster::CellOf(double _coordinate, double _origin) const noexcept

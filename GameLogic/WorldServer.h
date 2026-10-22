@@ -4,6 +4,7 @@
 #include "CommandMessages.h"
 #include "RegionTerrain.h"
 #include "ServerHost.h"
+#include "SettlementMessages.h"
 #include "Snapshot.h"
 #include "StableId.h"
 #include "StateHash.h"
@@ -48,7 +49,8 @@ public:
     std::filesystem::path snapshotFolder;    // where the world is saved when it freezes and restored when it opens; none: a new
                                              // world each run (ADR-099)
     bool sandbox = false;                    // M1 plan §6: a new world is the battle sandbox
-    bool watched = false;                    // O77: the sandbox's AI commands both sides, and its stewards none
+    bool watched = false;                    // O77: the sandbox's AI commands both sides, and its stewards none; ADR-140: a
+                                             // world's steward settlement is run by the scripted steward
     std::uint32_t syntheticFigures = 0;      // ADR-126: the sandbox's sides are a synthetic battle of this many figures, watched
     std::optional<std::uint8_t> stewardSite; // MVP-012: a new world that is no sandbox has the steward's settlement here
     // The calendar time, for the world record alone (ADR-137, PLT-053); none: the record holds no wall times.
@@ -132,6 +134,7 @@ private:
     std::vector<CommandReport> reports;    // the outcomes not yet sent, in the order they were made
     StateSender state;                     // ADR-111: what its client holds of the replicated state
     std::vector<std::uint8_t> statusTeams; // MVP-098: the settlements whose status it asked for, by team, not yet sent
+    std::vector<SettlementNotice> notices; // ADR-139: the guaranteed events of its teams not yet sent, in order
   };
 
   // Each queue's outcomes of the tick, to the steward that sent each command; an AI's are its own (ADR-106).

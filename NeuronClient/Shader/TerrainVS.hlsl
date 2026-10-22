@@ -17,5 +17,6 @@ TerrainVertex main(TerrainInput _input)
   vertex.normal = _input.normal;
   vertex.grid = _input.grid;
   vertex.depth = dot(position, g_frame.cameraFront.xyz);
+  vertex.relative = position;
   return vertex;
 }

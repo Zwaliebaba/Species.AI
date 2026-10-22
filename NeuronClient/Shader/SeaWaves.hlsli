@@ -9,4 +9,5 @@ struct SeaWavesVertex
   float4 position : SV_Position;
   nointerpolation float3 color : COLOR0; // each wave triangle's facet colour (RND-145)
   float depth : TEXCOORD0;
+  float2 ground : TEXCOORD1; // x and z relative to the camera, where the view mask is read (ADR-144)
 };

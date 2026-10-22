@@ -21,7 +21,9 @@ All text of this document is new, functional text keyed by Species string ids (D
 
 **R-TUT-001** (MUST) The help consists of exactly these parts: the help pages (§2.4), the contextual hints and the explainer panel of the hint overlay (§2.2, §2.3) and the two tutorials (§2.5 to §2.10). In a match no gamepad control prompts are drawn, and the contextual control-help panel and the in-match objective cards exist only as hooks (DEC-050); the control-help hook only records which controls the player has used, and its camera-moved condition reads the pointer's moved flag ([input](../architecture/components/input/devices_frames_and_queries.md) INP-160). No help part runs a script, a narrator or a cut-scene (DEC-053), and no tutorial step plays a camera animation: a tutorial's camera is the start-of-match camera of every match (R-CTRL-495 to R-CTRL-497, DEC-803).
 
-**R-TUT-002** (MUST) Every text that this document shows is new text, keyed by the string ids of §2.11, written in plain functional British English in the source string table `strings.en_gb` and translated in `strings.de_de`, `strings.es_es`, `strings.fr_fr`, `strings.it_it`, `strings.ja_jp`, `strings.ko_kr`, `strings.pt_br` and `strings.ru_ru` (ADR-063). Each string id is defined once per language; a second definition is a content-build error (DEC-801). The pictures that the hints and the explainer panels animate are new art; what a reference explainer animation depicts is a brief for that art, not a rule (DEC-037).
+**R-TUT-002** (MUST) Every text that this document shows is new text, keyed by the string ids of §2.11, written in plain functional British English in the source string table `strings.en_us` and translated in `strings.de_de`, `strings.es_es`, `strings.fr_fr`, `strings.it_it`, `strings.ja_jp`, `strings.ko_kr`, `strings.pt_br` and `strings.ru_ru` (ADR-063). Each string id is defined once per language; a second definition is a content-build error (DEC-801). The pictures that the hints and the explainer panels animate are new art; what a reference explainer animation depicts is a brief for that art, not a rule (DEC-037).
+
+> **Amendment 2026-10-22 (O91).** The source language is American English (en-US), and the source table is `strings.en_us`. The texts of tables 2.11-B to 2.11-D are the en-US source text, respelled in American English when they are written into the table.
 
 **R-TUT-003** (MUST) A string of §2.11 that is marked with a gamepad variant shows that variant while the input mode is gamepad, and its base text otherwise; the input mode is the device that the player last used (ADR-029, ADR-063). A string names an input through an action-glyph argument, which the UI resolves to the current binding of the named action id of [actions and bindings](06_controls_camera_and_commands/actions_and_bindings.md) table 2.1-A. A change of input mode re-resolves the text, the variants and the glyphs of every visible hint and tab on the next frame.
 
@@ -890,7 +892,7 @@ Keys cited here and defined elsewhere: `ref.match.grace_period`, `ref.match.opti
 - **Assets:**
   - help pictures `help.general_page` (5 variants), `help.mode_page` (16 variants) and `help.hint.camera_controls`;
   - explainers `anim.explainer` (6, one per mode) with `help.explainer_picture` (25);
-  - string tables `strings.en_gb`, `strings.de_de`, `strings.es_es`, `strings.fr_fr`, `strings.it_it`, `strings.ja_jp`, `strings.ko_kr`, `strings.pt_br` and `strings.ru_ru`;
+  - string tables `strings.en_us`, `strings.de_de`, `strings.es_es`, `strings.fr_fr`, `strings.it_it`, `strings.ja_jp`, `strings.ko_kr`, `strings.pt_br` and `strings.ru_ru`;
   - sound `match_ui.error` (R-TUT-025) and the tutorial maps `map_zone_control_2p_01` and `map_zone_control_3p_01`.
 
 ## 8 Open decisions

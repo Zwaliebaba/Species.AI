@@ -198,7 +198,9 @@ Table 3.3-A Fields of a binding set.
 
 ### 3.5 String tables
 
-**DAT-206** (MUST) A string table (`text.string_table`) is the text of one language: its authoring file holds the field `language`, the language's BCP 47 tag, which must match the file name of [GameAssets §2.2](../../../assets/GameAssets.md#22-file-names) (`en_gb.json` for `en-GB`), and the field `strings`, an object keyed by string id. The content build merges every string source of one language into one cooked table, one per asset `strings.en_gb`, `strings.fr_fr`, `strings.de_de`, `strings.it_it`, `strings.es_es`, `strings.pt_br`, `strings.ru_ru`, `strings.ja_jp` and `strings.ko_kr` (UI-222).
+**DAT-206** (MUST) A string table (`text.string_table`) is the text of one language: its authoring file holds the field `language`, the language's BCP 47 tag, which must match the file name of [GameAssets §2.2](../../../assets/GameAssets.md#22-file-names) (`en_us.json` for `en-GB`), and the field `strings`, an object keyed by string id. The content build merges every string source of one language into one cooked table, one per asset `strings.en_us`, `strings.fr_fr`, `strings.de_de`, `strings.it_it`, `strings.es_es`, `strings.pt_br`, `strings.ru_ru`, `strings.ja_jp` and `strings.ko_kr` (UI-222).
+
+> **Amendment 2026-10-22 (M2 task T14, [ADR-146](../../../ADR/ADR-146-the-string-table-and-its-formatting-at-m2.md)).** The table has no JSON Schema document, because the schema generator reads fixed fields only (DAT-026) and a table is an object keyed by id. The content build's string-table cooker is its validator: the fields `schema` (`text.string_table`), `version` (`1.0`), `language` and `strings`, and nothing else. At the MVP the one table is `strings.en_us`.
 
 **DAT-207** (MUST) A string id is a Species string id (CONVENTIONS §8): lower-case, dotted, at most `ui.lang.max_id_length` (96) characters, compared exactly. Two entries with one id in one language, in one source or in two sources of the language, are a build error (DEC-801 item 2, UI-222); no source overrides another by load order.
 
@@ -227,6 +229,8 @@ Table 3.5-B The text of an entry in input mode M.
 
 **DAT-210** (MUST) The base language is `ref.meta.lang.base` (en-GB), the source language of every string (ADR-063). The content build reports, for every other language, the ids that it lacks and the ids that the base language lacks, and fails on an id that is missing from the base language (UI-219, R-META-462, R-META-473, DEC-099).
 
+> **Amendment 2026-10-22 (O91).** `ref.meta.lang.base` is `en-US`: American English is the base language, and every en-GB in this document reads en-US.
+
 ### 3.6 Caption markup
 
 **DAT-211** (MUST) A text may contain the caption markers of table 3.6-A (UI-224, R-META-468). A marker starts with `[[` and ends with `]]`; the two characters `[[` always start a marker, and a literal `[[` is written as the marker `[[open]]`. Every other character, a single square bracket included, is text.
@@ -246,6 +250,8 @@ Table 3.6-A Caption markers.
 
 **DAT-213** (MUST) Markers are expanded when the table is built, once per input mode, and again whenever the bindings change (UI-224); an expanded binding argument or embedded string is quoted for ICU MessageFormat, so that no character of it is read as message syntax (DEC-800 item 4). ICU formatting of named arguments happens after expansion, at display time (ADR-063).
 
+> **Amendment 2026-10-22 (M2 task T14, [ADR-146](../../../ADR/ADR-146-the-string-table-and-its-formatting-at-m2.md)).** Until M2 task T15's settings store rebinds and names keys (INP-178), a binding argument is a build error. An embedded string is quoted by doubling its apostrophes and quoting its braces. One whose text holds `#` is a build error, since no quoting serves both a plural's case and plain text.
+
 ### 3.7 Ids that code builds
 
 **DAT-214** (MUST) Code and data build string ids only from the fixed patterns that the owning documents state, among them `map.<map id>.name` (R-MAP-020), `match.options.<option>` and `ui.advanced_options.help.<option>.<mode>` ([map_schema.md](map_schema.md) DAT-099), `<prefix>.name` for a structure kind (R-BLDG-012) and `mode.<mode>.name` (R-MODE-029); every id of a pattern that content can reach must exist in the base language (README DAT-030). A count that comes from data, such as the help pages of a mode or the lines of the credits page, is decided by `Exists` (UI-220, R-META-471), never by a look-up that returns its id.
@@ -257,6 +263,8 @@ Table 3.6-A Caption markers.
 > **Amendment 2026-10-19 (O61, O63).** A face has **one** glyph sheet (O63), so the rule on the 2x sheet does not apply, and the cooked `Font` holds one `R8_UNORM` page. The glyph table is a member of its face's asset beside the sheet in `GameData/Fonts/`, named after the face with the suffix `Glyphs` (`GameFont.dds` and `GameFontGlyphs.json`), so that the two members have different keys (AST-014). A cell may hold the glyph of any code point the table names, and two code points may share a cell (U+00A0 and U+0020 share the blank cell); code points still never repeat. The owner's two faces have `design_size_px`, `line_height_px`, `cell_width_px` and `cell_height_px` of 16 and `baseline_px` of 13 (their capitals stand on rows 1 to 12 of a cell and their descenders reach row 14), and every glyph has `width_px` and `advance_px` of 16 and `bearing_px` of 0, so the whole cell is drawn: both faces are monospaced as drawn. The `face` field names `font.ui.primary` or `font.dev.editor`.
 
 > **Amendment 2026-10-20 ([ADR-108](../../../ADR/ADR-108-content-build-loose-content-and-cooked-formats.md), M1 task T11).** The schema `GameData/Schemas/text.glyph_table.schema.json`, version 1.0, holds every field of tables 3.8-A and 3.8-B but `kerning`, which no face has. A table that adds one is refused as an unknown field, and kerning joins as version 1.1 with the first face that kerns (DAT-017). The font packer checks the rules that the schema cannot state, and the cooked `Font` is the `FontAsset` of ADR-108: the metrics, the glyphs sorted by code point, and the face's one page.
+
+> **Amendment 2026-10-22 (O92, [ADR-147](../../../ADR/ADR-147-the-directwrite-text-system-at-m2.md)).** This rule and table 3.8-A are retired with the bitmap faces. No glyph table, glyph sheet or cooked `Font` exists: the schema `text.glyph_table` and its generated header are removed, and DirectWrite reads the system fonts of the roles. The id DAT-219 stays reserved.
 
 Table 3.8-A Fields of a glyph table.
 
@@ -321,6 +329,8 @@ Caption: Figure 4.1-A, loading the settings file (DAT-193 to DAT-201; R-META-402
 ### 4.3 Building a string table
 
 **DAT-217** (MUST) The content build builds each language's table in these steps, and fails the language on any error: merge the sources of the language and reject duplicate ids (DAT-207); validate every entry (DAT-208, DAT-209); resolve and expand the markers per input mode (DAT-211 to DAT-213); check the lengths (DAT-212); compare the ids with the base language and write the coverage report (DAT-210); check the glyph coverage of the bundled fonts for the language (AST-088). The cooked table holds, for each id, its expanded text in each input mode, and a flag for embed-only entries, which `Lookup` never returns.
+
+> **Amendment 2026-10-22 (M2 task T14, [ADR-146](../../../ADR/ADR-146-the-string-table-and-its-formatting-at-m2.md)).** The cooked table is the `StringTableAsset` of ADR-146: the language tag, then each string sorted by id, with its embed-only flag and its text in each input mode, read back after cooking (AST-091). The comparison with the base language waits for a second language. Each text is checked as a message of ADR-146's subset of ICU MessageFormat, which the client parses once when the table loads.
 
 ```mermaid
 flowchart LR

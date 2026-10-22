@@ -1,12 +1,13 @@
 #include "pch.h"
 
-#include "AssetError.h"
 #include "CrowdLook.h"
 #include "DdsTexture.h"
 #include "Development.h"
 #include "DevelopmentOverlay.h"
 #include "LeaderLook.h"
 #include "Log.h"
+#include "UiLook.h"
+#include "UiText.h"
 #include "WorldPresentation.h"
 
 #include <algorithm>
@@ -31,26 +32,9 @@ constexpr std::string_view SEA_TILE_KEY = "textures/terrain/seatile01";
 constexpr std::string_view TERRAIN_GRID_KEY = "textures/fx/terraingrid";
 constexpr std::string_view SKY_CLOUD_KEY = "textures/fx/skycloud";
 constexpr std::string_view BEAM_SHORT_KEY = "textures/fx/beamshort";
-// ADR-127: GameFont, the player-facing face (MVP-100, O62), for the badge's count.
-constexpr std::string_view GAME_FACE_KEY = "fonts/gamefont";
-
-// GameFont from the content: none when it is missing or damaged, which is logged.
-std::shared_ptr<const Neuron::FontAsset> LoadGameFace(const Neuron::LooseContent& _content)
-{
-  const auto bytes = _content.Read(GAME_FACE_KEY);
-  if (!bytes)
-  {
-    Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "the game's face: {}", Neuron::FormatAssetError(bytes.error()));
-    return nullptr;
-  }
-  auto face = Neuron::ReadFontAsset(*bytes);
-  if (!face)
-  {
-    Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "the game's face {} is damaged: {}", GAME_FACE_KEY, face.error());
-    return nullptr;
-  }
-  return std::make_shared<const Neuron::FontAsset>(std::move(*face));
-}
+// ref.meta.lang.base: the base language and the MVP's one language (MVP scope §5.1), until the settings store chooses one
+// (M2 task T15, ADR-063, ADR-146).
+constexpr std::string_view UI_LANGUAGE = "en-US";
 
 std::array<float, 3> Rgb(double _r, double _g, double _b) noexcept
 {
@@ -241,16 +225,21 @@ WorldPresentation::WorldPresentation(Desc _desc)
   : m_desc(_desc),
     m_start(_desc.clock->Now()),
     m_effects(*_desc.presentation, *_desc.tuning),
+    m_structures(*_desc.presentation),
+    m_territories(*_desc.presentation, *_desc.tuning),
     m_profile(ProfileDescOf(*_desc.presentation)),
-    m_presentationClock(_desc.presentation->ref.sim.frame.deltaClamp)
+    m_presentationClock(_desc.presentation->ref.sim.frame.deltaClamp),
+    m_text(std::make_unique<Neuron::TextSystem>(TextSystemDesc(*_desc.presentation)))
 {
   m_cursorImages = LoadCursorImages(*m_desc.content);
   m_sceneTextures = LoadSceneTextures(*m_desc.content);
   m_sceneMeshes = LoadSceneMeshes(*m_desc.content);
-  m_gameFace = LoadGameFace(*m_desc.content);
-#if ENGINE_DEVELOPMENT
-  m_developmentFace = LoadDevelopmentFace(*m_desc.content);
-#endif
+  m_effects.UseMeshes(m_sceneMeshes); // ADR-141: the turret barrel set places each shot's casing
+  m_uiImages = LoadUiImages(*m_desc.content);
+  m_strings = Neuron::LoadStringTable(*m_desc.content, UI_LANGUAGE);
+  m_locale = std::make_unique<Neuron::MessageLocale>(UI_LANGUAGE);
+  Neuron::Log(Neuron::LogCategory::Ui, Neuron::LogLevel::Info, "text is drawn in {}, the development overlay in {}",
+              m_text->FaceFamily(Neuron::FontRole::Body), m_text->FaceFamily(Neuron::FontRole::Development));
 }
 
 void WorldPresentation::Update(const ClientSession& _session)
@@ -263,6 +252,10 @@ void WorldPresentation::Update(const ClientSession& _session)
   m_terrain = terrain;
   m_firstDisplayTick.reset();
   m_effects.Clear();
+  m_structures.Clear();
+  m_territories.Clear();
+  m_viewMask.reset();
+  m_viewMaskRevision.reset();
   if (terrain == nullptr)
   {
     m_world.reset();
@@ -278,8 +271,10 @@ void WorldPresentation::Update(const ClientSession& _session)
   }
 }
 
-Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const SettlementView& _view, double _framesPerSecond)
+Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const SettlementView& _view, double _framesPerSecond, float _dpiScale)
 {
+  // ADR-147: the frame whose use the glyph atlas's least-recently-used page counts.
+  m_text->BeginFrame(++m_frames);
   const TuningPresentation::Rnd::Frame::ClearColorNoMatch& background = m_desc.presentation->rnd.frame.clearColorNoMatch;
   Neuron::FrameInputs inputs;
   inputs.world = m_world;
@@ -335,6 +330,16 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
       m_effects.ApplyRecoil(figures, effectsView);
     }
     inputs.sceneTextures = m_sceneTextures;
+    // M2 task T13 (WLD-244, ADR-144): the black fog outside the steward's areas, its mask built again when they change,
+    // and no Worker, Leader, orb or structure drawn outside them.
+    const StewardAreas& areas = _view.Areas();
+    if (m_viewMaskRevision != areas.Revision())
+    {
+      m_viewMask = BuildViewMask(areas, *m_desc.presentation);
+      m_viewMaskRevision = areas.Revision();
+    }
+    inputs.viewMask = m_viewMask;
+    EraseOutside(areas, figures, [](const InterpolatedFigure& _figure) { return _figure.position; });
     // ADR-127: the selection discs under the Worker layers of pass 7d.
     AppendSelectionDiscs(figures, m_terrain->field, crowd, *m_desc.presentation, inputs.quadBatches);
     AppendWorkerBatches(figures, m_terrain->field, crowd, *m_desc.presentation, *m_desc.tuning, inputs.quadBatches);
@@ -350,8 +355,29 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
                                 std::make_move_iterator(leaders.quads.end()));
       inputs.triangleBatches = std::move(leaders.triangles);
     }
-    AppendOrbBatches(InterpolateOrbs(_session.Replica(), fraction), *m_desc.presentation, inputs.quadBatches);
-    // M1 task T17b (ADR-125): the route preview in pass 12, the world markers in pass 16 and the badge in pass 20.
+    // M2 task T12 (ADR-140): the structures' solid parts in pass 6 and their pads, stars, lights and glows in pass 8.
+    m_structures.Update(events);
+    if (displayTick.has_value() && m_sceneMeshes != nullptr && m_sceneMeshes->meshes.size() == static_cast<std::size_t>(SceneMesh::Count))
+    {
+      const StructureView structureView{*displayTick, m_desc.tuning->ref.sim.tickPeriod, m_presentationClock.RealSeconds()};
+      StructureDraws structures;
+      std::vector<InterpolatedStructure> shown = InterpolateStructures(_session.Replica(), fraction);
+      EraseOutside(areas, shown, [](const InterpolatedStructure& _structure) { return PositionOf(_structure.state.position); });
+      m_structures.Draw(shown, *m_sceneMeshes, m_terrain->field, structureView, structures);
+      inputs.sceneMeshes = m_sceneMeshes;
+      inputs.meshBatches.insert(inputs.meshBatches.end(), std::make_move_iterator(structures.meshes.begin()),
+                                std::make_move_iterator(structures.meshes.end()));
+      inputs.quadBatches.insert(inputs.quadBatches.end(), std::make_move_iterator(structures.quads.begin()),
+                                std::make_move_iterator(structures.quads.end()));
+    }
+    std::vector<InterpolatedOrb> orbs = InterpolateOrbs(_session.Replica(), fraction);
+    EraseOutside(areas, orbs, [](const InterpolatedOrb& _orb) { return _orb.position; });
+    AppendOrbBatches(orbs, *m_desc.presentation, inputs.quadBatches);
+    // M2 task T13 (ADR-143): every settlement's territory line and the border areas' spots, in pass 10a.
+    m_territories.Update(_session.Replica().Latest(), *m_terrain);
+    m_territories.AppendBatches(inputs.quadBatches);
+    // M1 task T17b (ADR-125): the route preview in pass 12, the world markers in pass 16 and the badge in pass 20, its
+    // count in the UI's batches of pass 20 (ADR-145).
     if (crowd.localTeam.has_value())
     {
       _view.Preview().AppendBatches(crowd.camera, crowd.cameraFront, m_presentationClock.RealSeconds(), TeamColor(*crowd.localTeam),
@@ -359,8 +385,10 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     }
     inputs.markers = _view.Markers().Quads();
     inputs.cursorBadge = _view.Badge();
-    inputs.badgeFont = m_gameFace;
-    inputs.badgeText = _view.BadgeText();
+    if (const std::optional<BadgeLabel>& count = _view.BadgeCountLabel(); count.has_value())
+    {
+      AppendBadgeCount(*count, *m_text, *m_desc.presentation, _view.ViewSize().height, _dpiScale, inputs.uiCursor);
+    }
     if (displayTick.has_value())
     {
       // Passes 10a, 10b and 15, and the camera shake as an offset of the frame's view alone (VFX-232).
@@ -381,15 +409,21 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     }
   }
 #if ENGINE_DEVELOPMENT
+  if (m_desc.uiTest)
+  {
+    AppendUiTestPage(*m_text, *m_desc.presentation, *m_strings, *m_locale, _view.ViewSize(), _dpiScale, inputs.ui);
+  }
   // DBG-095, DBG-096, ADR-120: while the overlay is shown, the frame-rate line, whose objects are counted while a world
-  // exists, and the frame page.
-  if (m_developmentFace != nullptr && m_overlayShown)
+  // exists, and the frame page, its text in the development role (ADR-147).
+  if (m_overlayShown)
   {
     const FramePageInputs figures = FramePageOf(_session, _framesPerSecond);
-    inputs.overlayFont = m_developmentFace;
-    inputs.overlay.push_back(FrameRateLine(*m_desc.presentation, _framesPerSecond, figures.objects));
-    FramePage page = BuildFramePage(figures, *m_desc.presentation, *m_desc.tuning, static_cast<float>(m_developmentFace->cellHeightPixels));
-    inputs.overlay.insert(inputs.overlay.end(), std::make_move_iterator(page.lines.begin()), std::make_move_iterator(page.lines.end()));
+    const auto textSize = static_cast<float>(m_desc.presentation->dbg.overlay.textSize);
+    std::vector<Neuron::OverlayLine> lines{FrameRateLine(*m_desc.presentation, _framesPerSecond, figures.objects)};
+    FramePage page =
+      BuildFramePage(figures, *m_desc.presentation, *m_desc.tuning, m_text->Metrics(Neuron::FontRole::Development, textSize).heightPixels);
+    lines.insert(lines.end(), std::make_move_iterator(page.lines.begin()), std::make_move_iterator(page.lines.end()));
+    Neuron::AppendOverlayLines(inputs.overlayText, *m_text, lines, _view.ViewSize(), textSize, _dpiScale);
     inputs.overlayRects = std::move(page.rects);
   }
   // ADR-121: with the crowds drawn, the figure dots are a world layer of the overlay (DBG-099), shown with it.
@@ -400,6 +434,10 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
 #else
   static_cast<void>(_framesPerSecond);
 #endif
+  // ADR-145, ADR-147: the glyph atlas and the UI's images, which the batches read, after every text of the frame is laid
+  // out.
+  inputs.glyphs = m_text->Atlas();
+  inputs.uiImages = m_uiImages;
   return inputs;
 }
 

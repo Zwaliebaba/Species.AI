@@ -133,3 +133,5 @@ Chosen option: 1, because it meets the frame page of DBG-096 and the budget rows
 ## More Information
 
 The frame page's other rows wait for their components: the render page for GPU timestamps, and the audio share of DBG-097 (`dbg.overlay.audio_share_warning`) for audio. The DBG-099 world layers and the profile view of DBG-086 to DBG-089 also wait. This ADR is confirmed by the owner's T15 run, as the M1 plan's table 2 states.
+
+* **Amendment 2026-10-22 (M2 task T14, owner decision O92, [ADR-147](ADR-147-the-directwrite-text-system-at-m2.md)).** The frame page's lines and the frame-time graph's rectangles keep their unscaled insets. They are now scaled by the window's DPI scale instead of the whole-number scale. Their line height is the development role's at `dbg.overlay.text_size`.

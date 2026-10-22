@@ -36,6 +36,9 @@
     <ClInclude Include="FigureKind.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="GameFonts.h">
+      <Filter>Records</Filter>
+    </ClInclude>
     <ClInclude Include="GameMessages.h">
       <Filter>Messages</Filter>
     </ClInclude>

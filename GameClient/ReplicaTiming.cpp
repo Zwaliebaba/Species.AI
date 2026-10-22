@@ -3,6 +3,7 @@
 #include "ReplicaTiming.h"
 
 #include <algorithm>
+#include <cmath>
 #include <numbers>
 #include <variant>
 
@@ -115,6 +116,39 @@ std::vector<InterpolatedOrb> InterpolateOrbs(const StateReplica& _replica, doubl
     }
   }
   return orbs;
+}
+
+std::vector<InterpolatedStructure> InterpolateStructures(const StateReplica& _replica, double _fraction)
+{
+  const double f = std::clamp(_fraction, 0.0, 1.0);
+  std::vector<InterpolatedStructure> structures;
+  const StateReplica::View& previous = _replica.Previous();
+  auto before = previous.begin();
+  for (const auto& [id, state] : _replica.Latest())
+  {
+    const auto* structure = std::get_if<ReplicatedStructure>(&state);
+    if (structure == nullptr)
+    {
+      continue;
+    }
+    InterpolatedStructure& drawn = structures.emplace_back(InterpolatedStructure{
+      id, *structure, YawRadians(structure->aimYaw), static_cast<double>(structure->aimPitch) * 2.0 * std::numbers::pi / YAW_STEPS});
+    while (before != previous.end() && before->first < id)
+    {
+      ++before;
+    }
+    const auto* was = before != previous.end() && before->first == id ? std::get_if<ReplicatedStructure>(&before->second) : nullptr;
+    if (was != nullptr)
+    {
+      // The shorter way round, as a figure's yaw (ADR-111).
+      const double from = YawRadians(was->aimYaw);
+      const double turn = std::remainder(drawn.aimYawRadians - from, 2.0 * std::numbers::pi);
+      drawn.aimYawRadians = from + turn * f;
+      const double pitchFrom = static_cast<double>(was->aimPitch) * 2.0 * std::numbers::pi / YAW_STEPS;
+      drawn.aimPitchRadians = pitchFrom + (drawn.aimPitchRadians - pitchFrom) * f;
+    }
+  }
+  return structures;
 }
 
 std::vector<InterpolatedEffect> InterpolateEffects(const StateReplica& _replica, double _fraction)

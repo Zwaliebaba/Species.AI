@@ -176,7 +176,11 @@
     <ClCompile Include="LeaderLookTests.cpp" />
     <ClCompile Include="RoutePreviewTests.cpp" />
     <ClCompile Include="SettlementCameraTests.cpp" />
+    <ClCompile Include="StewardAreasTests.cpp" />
+    <ClCompile Include="StructureLookTests.cpp" />
+    <ClCompile Include="TerritoryLookTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />
+    <ClCompile Include="UiLookTests.cpp" />
     <ClCompile Include="WorldMarkersTests.cpp" />
     <ClCompile Include="WorldPresentationTests.cpp" />
     <ClCompile Include="pch.cpp">

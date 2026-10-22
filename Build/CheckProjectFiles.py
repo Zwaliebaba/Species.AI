@@ -66,6 +66,9 @@ PROGRAMS = {'Species', 'SpeciesServer'}
 SERVER = 'SpeciesServer'
 PRESENTATION_PROJECTS = {'NeuronClient', 'GameClient'}
 PRESENTATION_LIBRARIES = ('d3d12', 'dxgi', 'xaudio2', 'x3daudio', 'gameinput', 'd2d1', 'dwrite')
+# ADR-147: the one source outside the client libraries that links a presentation library: the content build checks the
+# string tables against the system fonts that the client draws them with. The tool never ships and no server links it.
+PRESENTATION_LIBRARY_EXCEPTIONS = {('Tools/SpeciesContentBuild/FontCoverage.cpp', 'dwrite')}
 SHADER_PROJECT = 'NeuronClient'                           # ADR-090 item 1
 
 # R14 and BLD-038: the packages a game or engine project may restore, with the tuning key of each pin.
@@ -181,7 +184,9 @@ R2_AFFIX = re.compile(r'^(?:[ICSE][A-Z][a-z]|Base[A-Z]|Abstract[A-Z])|(?:Base|Ab
 R11_BRITISH = ('colour', 'initialis', 'serialis', 'normalis', 'quantis', 'synchronis', 'behaviour', 'neighbour',
                'centre', 'grey', 'cancell')
 IDENTIFIER = re.compile(r'[A-Za-z_]\w*')
-SOCKET_NAME_TEXT = re.compile(r'"socket_', re.IGNORECASE)
+# DAT-277: the socket kinds of AST table 3.8-A, as the cooked-mesh reader lists them; a string socket_<kind> names one.
+SOCKET_KINDS_FILE = 'NeuronCore/MeshAsset.cpp'
+SOCKET_KIND_ENTRY = re.compile(r'\{"([a-z_]+)",\s*(?:true|false),\s*(?:true|false)\}')
 REQUIREMENT_ATTRIBUTE = re.compile(r'TEST_METHOD_ATTRIBUTE\s*\(\s*L"Requirement"\s*,\s*L"([^"]*)"\s*\)')
 MODULE_LINE = re.compile(r'^\s*(?:export\s+)?(?:import\s+(?:std\b|<)|module\b)', re.MULTILINE)
 
@@ -701,8 +706,19 @@ def rule_13(tree):
                      '(ADR-090 item 4)'
 
 
+def socket_name_text(tree):
+  """DAT-277: a string that spells a socket, socket_<kind> with a kind of AST table 3.8-A, so that a record's key that
+  merely starts with socket_ (ref.weapon.shell_casing.socket_offset) is no socket. Without the table, any socket_ text."""
+  path = os.path.join(tree.root, SOCKET_KINDS_FILE)
+  kinds = SOCKET_KIND_ENTRY.findall(tree.read(SOCKET_KINDS_FILE)) if os.path.exists(path) else []
+  if not kinds:
+    return re.compile(r'"socket_', re.IGNORECASE)
+  return re.compile(r'"socket_(?:' + '|'.join(sorted(kinds, key=len, reverse=True)) + r')(?=["_\d])', re.IGNORECASE)
+
+
 def rule_14(tree):
   requirements = read_requirement_ids(tree)
+  socket_text = socket_name_text(tree)
   for path, text in hand_written_sources(tree):
     stripped = SolutionModel.strip_comments_and_strings(text)
     if path != WINDOWS_HEADERS:
@@ -752,13 +768,14 @@ def rule_14(tree):
     if project not in PRESENTATION_PROJECTS:
       for m in PRAGMA_LIBRARY.finditer(without_comments):
         library = m.group(1).lower()
-        if any(re.fullmatch(name + r'(?:\.lib)?', library) for name in PRESENTATION_LIBRARIES):
+        if any(re.fullmatch(name + r'(?:\.lib)?', library) and (path, name) not in PRESENTATION_LIBRARY_EXCEPTIONS
+               for name in PRESENTATION_LIBRARIES):
           line = without_comments.count('\n', 0, m.start()) + 1
           yield f'{path}:{line}', f'links {m.group(1)} outside the client libraries (ADR-001, BLD-045)'
     # DAT-277: code addresses a socket by its kind and index. Only the content build's importer reads socket names,
     # because a CMO file spells its sockets as bones named socket_<kind> (ADR-019, AST-038).
     if not path.startswith('Tools/'):
-      for m in SOCKET_NAME_TEXT.finditer(without_comments):
+      for m in socket_text.finditer(without_comments):
         line = without_comments.count('\n', 0, m.start()) + 1
         yield f'{path}:{line}', 'names a socket by its text; code addresses a socket by its kind and index (DAT-277)'
     for m in REQUIREMENT_ATTRIBUTE.finditer(without_comments):
@@ -971,6 +988,8 @@ FIXTURES = [
    lambda r: write(r, 'NeuronServer/pch.h', '\n#include "WindowsHeaders.h"\n', append=True)),
   (14, 'a Direct3D library linked by a pragma outside the client libraries (BLD-045)',
    lambda r: write(r, 'NeuronServer/pch.h', '\n#pragma comment(lib, "d3d12.lib")\n', append=True)),
+  (14, 'DirectWrite linked by a tool source other than the content build\'s coverage check (ADR-147)',
+   lambda r: write(r, 'Tools/SpeciesMeshKit/pch.h', '\n#pragma comment(lib, "dwrite.lib")\n', append=True)),
 ]
 
 

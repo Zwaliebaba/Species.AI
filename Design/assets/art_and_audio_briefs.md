@@ -218,6 +218,8 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 **10 files, 6 asset ids**: the owner's two bitmap faces (O62), the game face GameFont and the development face EditorFont, each one glyph sheet and a glyph table; two optional later faces of the same two files, for the Body and Caption roles; and the Japanese and Korean companions of the game face, font files for the DirectWrite upgrade of ADR-034. GameFont serves the Title, Body and Caption roles of the UI framework, and EditorFont the Development role, in Debug builds only (UI-195 amendment of O62).
 
+**Amendment 2026-10-22 (owner decision O92, [ADR-147](../ADR/ADR-147-the-directwrite-text-system-at-m2.md)).** Nothing in this section is to be drawn any more. The game's text is set in the Windows fonts Bahnschrift and Segoe UI, and the development tools' text in Cascadia Mono or Consolas, all drawn by DirectWrite. The two faces, their sheets and glyph tables, and the marks still to draw are therefore retired, and the bullets below on them lapse. The six font ids keep one manifest row each, none with a file at the MVP. An optional later face would be a font file or a Windows family, and the companions stay as their bullet states.
+
 - **Drawn by the owner.** Both faces are drawn from scratch for Species; nothing is traced, resampled or adapted from an existing font, the reference game's fonts included (O9). They are Species' own content, so **no licence is needed**; like other drawn art they go through the likeness review (PIL-027).
 - **The sheet.** One sheet per face, on a grid of 16 x 16 px cells, 16 to a row from U+0020 in the top-left cell, white with the coverage in the alpha channel, as the owner's two are; an 8-bit greyscale PNG of coverage on black works as well. No 2x sheet is drawn: the UI draws the sheet at 1, 2, 3 or more times its size with the point sampler, never between, so the pixels stay crisp (O63).
 - **What to draw next.** Both faces cover U+0020 to U+007E and U+00BF to U+00FF. The en-GB strings would use the dashes, curly quotes, bullet and ellipsis mark (U+2013, U+2014, U+2018, U+2019, U+201C, U+201D, U+2022, U+2026), and £ (U+00A3) and ° (U+00B0) if the HUD shows them; drawn into free cells of GameFont (0x7F to 0x9F are empty), each is mapped by one line of the glyph table. Until then the strings use ASCII punctuation.
@@ -227,7 +229,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ## 17 Player-facing text
 
-**9 string tables** (en-GB first, then French, German, Italian, Spanish, Portuguese, Russian, Japanese, Korean), and a development string table (en-GB only, development editions only). About 209 reference text entries in scope size the work: mode messages, objectives and HUD lines (74), team and faction names (11), menus (35), help (11), leaderboard pages (26), options (33), dialogs, windows and fields (19).
+**9 string tables** (en-US first (O91), then French, German, Italian, Spanish, Portuguese, Russian, Japanese, Korean), and a development string table (en-US only, development editions only). About 209 reference text entries in scope size the work: mode messages, objectives and HUD lines (74), team and faction names (11), menus (35), help (11), leaderboard pages (26), options (33), dialogs, windows and fields (19).
 
 - All text is new, in plain functional English, keyed by Species string ids; no reference line is copied or paraphrased closely.
 - Messages are short, read at a glance during a battle, and avoid jokes that need translation notes.

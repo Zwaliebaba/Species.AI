@@ -28,6 +28,8 @@ struct ManifestRow
   std::string variants;
   std::string speciesFilename; // the source under GameData/, which gives the member's key (AST-014)
   std::string sourceFormat;
+  std::string priority;    // the stage that first ships it (AST table 2.4-A)
+  std::string placeholder; // what stands in for it until its file is authored (GameAssets.md §2.6)
   std::uint32_t line = 0;
 };
 
@@ -41,7 +43,7 @@ public:
   // content build reads missing from the header.
   [[nodiscard]] static std::expected<AssetManifest, std::string> Read(std::span<const std::byte> _csv);
 
-  // The row of a source, by its path from the repository root ("GameData/Fonts/GameFont.dds"); null when no row names it.
+  // The row of a source, by its path from the repository root ("GameData/Meshes/Dwelling.cmo"); null when no row names it.
   [[nodiscard]] const ManifestRow* RowOf(std::string_view _speciesFilename) const;
   // The rows of one asset, in member order (AST-016).
   [[nodiscard]] std::vector<const ManifestRow*> MembersOf(std::string_view _assetId) const;

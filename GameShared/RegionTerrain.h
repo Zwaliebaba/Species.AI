@@ -45,6 +45,10 @@ enum class TerrainCheck : std::uint8_t
   Routes = 8
 };
 
+// WLD-062: the region's pairs of valley neighbours, by local site, in the order of the navigation nodes' border areas
+// (MVP-017).
+inline constexpr std::array<std::array<std::uint8_t, 2>, 4> VALLEY_PAIRS{{{0, 1}, {2, 3}, {0, 2}, {1, 3}}};
+
 /// Where a region's valley stands (WLD-022, WLD-040): its square, the valley's centre, the rotation of its site pattern,
 /// its four site centres in local order (0 at low x and low z, 1 at high x, 2 at high z, 3 at both), and the levels its
 /// first pass read (WLD-162).

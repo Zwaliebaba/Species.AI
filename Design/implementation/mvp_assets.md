@@ -4,7 +4,7 @@
 
 ## 1 Purpose
 
-This page is the owner's working list of the assets that the MVP's milestones M1 to M4 need (O55), at the minimum that still meets the look of O52: generated low-poly terrain, a few structures, and Workers that are seen walking, carrying and fighting, with no placeholder dots outside the development views (MVP-080). It holds **90 asset ids in 123 files**: 87 files of asset ids that the asset list already had for the skirmish first playable or for launch, and 36 new files in 31 asset ids. **19 of the files are made already**: the owner's 17 textures and two bitmap fonts in `GameData/`, the content root (O61), listed with their authorship in §6. Each is a manifest row with the priority `mvp`, which comes before `skirmish-first-playable` ([GameAssets.md §2.5](../assets/GameAssets.md#25-priorities-and-the-first-playable-assumption)). The manifest stays the record of every file's format, spec, sockets and consumers; this page adds the milestone that first needs each asset and how it is made. M0 needs no asset: from the first content build, the content build generates a stand-in for every row that has no authored file ([GameAssets.md §2.6](../assets/GameAssets.md#26-placeholders)), and a milestone's exit needs the authored files of the assets it first needs.
+This page is the owner's working list of the assets that the MVP's milestones M1 to M4 need (O55), at the minimum that still meets the look of O52: generated low-poly terrain, a few structures, and Workers that are seen walking, carrying and fighting, with no placeholder dots outside the development views (MVP-080). It holds **90 asset ids in 123 files**: 87 files of asset ids that the asset list already had for the skirmish first playable or for launch, and 36 new files in 31 asset ids. **19 of the files are made already**: the owner's 17 textures and two bitmap fonts in `GameData/`, the content root (O61), listed with their authorship in §6. **Since O92** ([ADR-147](../ADR/ADR-147-the-directwrite-text-system-at-m2.md)) the two bitmap faces are retired and their four files have left `GameData/`: the list holds 121 files, and the two font ids name Windows fonts. Each is a manifest row with the priority `mvp`, which comes before `skirmish-first-playable` ([GameAssets.md §2.5](../assets/GameAssets.md#25-priorities-and-the-first-playable-assumption)). The manifest stays the record of every file's format, spec, sockets and consumers; this page adds the milestone that first needs each asset and how it is made. M0 needs no asset: from the first content build, the content build generates a stand-in for every row that has no authored file ([GameAssets.md §2.6](../assets/GameAssets.md#26-placeholders)), and a milestone's exit needs the authored files of the assets it first needs.
 
 **Every asset is newly authored** (O9). Each file is made from scratch for its role in the Species style of the [art and audio briefs](../assets/art_and_audio_briefs.md#2-style-guide-the-look-and-feel-to-keep): nothing is traced, re-coloured, resampled or edited from the reference game's art, audio or text, and no reference file is a starting point, a model, an input to a generator or a placeholder. A generator's recipe (its falloff curves, colour stops, mesh shapes and synthesiser patches) is written for Species. **Each asset carries its authorship record** (PIL-027): who made it, by hand or with which tool and recipe, and when, kept beside the asset's import record (ADR-018, ADR-019) until the design phase fixes the record's form. At each art milestone, people allowed to see the reference game (the owner or counsel, outside the clean room) review the features that must differ, and the result is recorded in the asset manifest (PIL-027). Fonts are made like the rest: the owner has drawn two new bitmap faces for Species (O56, O62), so no licence is needed for them.
 
@@ -23,8 +23,8 @@ The generators are development tools under `Tools/`, projects of the one solutio
 | hand-drawn card | an image editor | the carried-load overlay, cut-out art at its exact size | draws it | 1 | 1 |
 | hand-drawn icon art | the owner's tools, exported as DDS in each row's runtime format (O64) | the placement cursor and its shadow, the pointer arrow, the turret icon, the check-box tick and the HUD icons | draws them | 20 | 22 |
 | recorded | a microphone | the Worker death group: eight short voices of a small crowd figure | records them | 1 | 8 |
-| written by hand | a text editor | the en-GB string table | writes it | 1 | 1 |
-| the owner's bitmap font sheet | the owner's image tool for the sheet; the glyph table generated from the sheet's grid; the font packer under `Tools/` writes the atlas page and the cooked glyph table | the game face GameFont and the development face EditorFont: one 16 px glyph sheet and a glyph table each (O62, O63) | drew both sheets; reviews the generated tables (§6) | 2 | 4 |
+| written by hand | a text editor | the en-US string table (O91) | writes it | 1 | 1 |
+| the owner's bitmap font sheet, retired by O92 | none since O92: DirectWrite draws the Windows fonts of the two font ids | the game face GameFont and the development face EditorFont, one 16 px glyph sheet and a glyph table each (O62, O63), until O92 | drew both sheets (§6); nothing since O92 | 0 | 0 |
 
 *Table 1 — The production methods of the MVP's assets.*
 
@@ -135,9 +135,9 @@ MVP-102 and MVP-103: the HUD's panels are bodies of the two panel strips (UI-460
 | `icon.hud.renown` | Renown standing and epilogue | 64x64 px display, white art | new | M3 | hand-drawn icon art |
 | `icon.hud.run_clock` | Time left in the run | 64x64 px display, white art | new | M3 | hand-drawn icon art |
 | `icon.hud.deputy` | Deputy actions in the away report | 64x64 px display, white art | new | M4 | hand-drawn icon art |
-| `font.ui.primary` | Game face GameFont: every text that a player sees, in the Title, Body and Caption roles (O62); its Japanese and Korean companions are not needed | 2 files: the 16 px glyph sheet and its glyph table; one R8_UNORM page, drawn at whole-number scales; U+0020-007E, U+00BF-00FF | existing | M2 | the owner's bitmap font sheet (§6) |
-| `font.dev.editor` | Development face EditorFont: the development overlay and windows, in Debug builds only (O62) | 2 files: the 16 px glyph sheet and its glyph table; one R8_UNORM page; U+0020-007E, U+00BF-00FF | new | M1 | the owner's bitmap font sheet (§6) |
-| `strings.en_gb` | English (United Kingdom) string table: HUD, notifications, reports and the front end | UTF-8 JSON, ICU MessageFormat | existing | M2 | written by hand |
+| `font.ui.primary` | Game font: every text that a player sees, in the Title, Body and Caption roles, in Bahnschrift with Segoe UI (O92); its Japanese and Korean companions are not needed | no file: Windows fonts that DirectWrite reads and rasterizes at the final size; the chain's coverage | existing | M2 | a Windows font (O92) |
+| `font.dev.editor` | Development font: the development overlay and windows, in Debug builds only, in Cascadia Mono or Consolas (O92) | no file: Windows fonts that DirectWrite reads and rasterizes at the final size | new | M1 | a Windows font (O92) |
+| `strings.en_us` | English (United States) string table (O91): HUD, notifications, reports and the front end | UTF-8 JSON, ICU MessageFormat | existing | M2 | written by hand |
 
 *Table 6 — The MVP's UI and text assets.*
 
@@ -212,8 +212,8 @@ MVP-087, from M3: one sample group per sound, the smallest that suits it. The wa
 - **The carried-load overlay** (1 file) for M2; the Worker's front and side cards and its four hurt poses are made (§6), and their silhouette is the first feature of the likeness review.
 - **Icon art** (22 files): the placement cursor and its shadow, the pointer arrow, the turret icon, the check-box tick and the 17 new HUD icon files (15 asset ids): 12 files for M2, the nine relations and run icons for M3 and the deputy icon for M4; the M1 cursors, markers, banners and icons are made (§6).
 - **The Worker death group** (8 files) for M3, recorded; a synthesised set may stand in for it.
-- **The faces' missing marks**, optional: the eight punctuation marks, £ and ° drawn into free cells of GameFont (0x7F to 0x9F are empty) and mapped in its glyph table; until then the en-GB strings use ASCII punctuation ([GameAssets.md §17](../assets/GameAssets.md#17-fonts)).
-- **The en-GB string table**, grown at each milestone; the names of the resource (Crystal), the dwelling and the storehouse are confirmed (O57).
+- **The faces' missing marks**: no longer needed. Since O92 Bahnschrift draws the punctuation marks, £ and °, so the en-US strings may use them ([GameAssets.md §17](../assets/GameAssets.md#17-fonts)).
+- **The en-US string table** (O91), grown at each milestone; the names of the resource (Crystal), the dwelling and the storehouse are confirmed (O57).
 
 **What the owner approves:**
 
@@ -293,6 +293,8 @@ The owner added these files to `GameData/`, the content root, on 2026-10-19 (O61
 | `GameData/Fonts/GameFontGlyphs.json` | `font.ui.primary` | generated on 2026-10-19 from the sheet's grid: cell n holds U+0020 + n, each glyph the whole 16 px cell; the owner reviews it | 161 code points: U+0020-007E, U+00A0 (blank), U+00BF-00FF |
 
 *Table 11 — The files in `GameData/` that have a role, with their authorship and their check against the manifest.*
+
+O92 retired the four files under `GameData/Fonts/` on 2026-10-22, and they left `GameData/` with the glyph tables' schema ([ADR-147](../ADR/ADR-147-the-directwrite-text-system-at-m2.md)); their rows above record what the owner made.
 
 **Four files first differed from their rows**, and the owner settled them on 2026-10-19 (O61). `IconHalo.dds` and `MenuHighlight.dds` were drawn at the display size with one level, where the rows asked for art at 2x with a full mip chain: the rows are amended to the files, so the UI scales the halo and the highlight beam with linear filtering and no mips at UI scales other than 1, which softens them above 1; both are soft gradients, and the owner accepts it. `Ramp01.dds` and `ShoreWaveGradient01.dds` named `R8G8B8A8_UNORM` where the rows ask for `R8G8B8A8_UNORM_SRGB`: both tables are read on the CPU, so the format only says how their bytes are read, and it was set to the sRGB format, one byte of each header, with no pixel changed.
 

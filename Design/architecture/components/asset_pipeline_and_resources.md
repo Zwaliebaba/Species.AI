@@ -823,6 +823,8 @@ Table 4.7-A Placeholder generators.
 
 **AST-088** (MUST) For every language that an edition includes, the content build checks that the edition's bundled fonts cover every character of that language's string table and every character of the currency-symbol block `ast.font.currency_block` (U+20A0 to U+20AF), and fails naming the language, the font role and the first missing characters (ADR-059, ADR-063). A language is offered only when its string table is complete (DEC-099).
 
+> **Amendment 2026-10-22 ([ADR-146](../../ADR/ADR-146-the-string-table-and-its-formatting-at-m2.md)).** At the MVP this is UI-199's check as O63 amends it; the currency block waits for the DirectWrite upgrade.
+
 ### 4.8 Validation
 
 **AST-089** (MUST) The content build checks that **no name is missing**: every reference from a data record, a map, a sound-event layer, an explainer script, a material, an import record (tint masks, collision assets, derived variants) or the engine asset table resolves to an existing asset id of the expected category, member and variant. A missing or wrong-kind reference is a build error with the file, line and field of the reference (ADR-059, DEC-015).

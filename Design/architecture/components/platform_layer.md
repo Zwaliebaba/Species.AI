@@ -786,7 +786,7 @@ Table 4.5-A: presentation features.
 
 1. the stored language setting, whose first-run value is `ref.meta.settings.language.default` (unset);
 2. each preferred user-interface language of PLT-075, falling back along its tag, first without the region and then without the script;
-3. the base language `ref.meta.lang.base` (`en-GB`);
+3. the base language `ref.meta.lang.base` (`en-US`, O91);
 4. the first offered language.
 
 A candidate loads only when it is an offered language: one whose string table the mounted packs hold and which is complete (R-META-463, ADR-063). The language that loads is stored in the language setting. When none loads, start-up ends through a fatal exit with `ui.error.language_missing`, using its compiled-in text (PLT-039).
@@ -803,7 +803,7 @@ flowchart TD
   B --> T2{"Offered and loads?"}
   T2 -- yes --> OK
   T2 -- "no, more candidates" --> B
-  T2 -- "no, none left" --> C["Base language en-GB"]
+  T2 -- "no, none left" --> C["Base language en-US"]
   C --> T3{"Offered and loads?"}
   T3 -- yes --> OK
   T3 -- no --> D["First offered language"]

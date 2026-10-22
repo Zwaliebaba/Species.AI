@@ -30,8 +30,9 @@ public:
     std::size_t workers = 2;                       // ADR-080 item 7: the tick thread and at most 2 workers
     std::optional<std::uint64_t> worldSeed;        // MVP-005: the seed the world is built from; none: a seed the server draws
     bool sandbox = false;                          // M1 plan §6: a new world is the battle sandbox
-    bool watched = false;                          // O77: the sandbox's AI commands both sides, and the client none
+    bool watched = false;                          // O77: the AI commands the sandbox's sides or the world's settlement (ADR-140)
     std::uint32_t syntheticFigures = 0;            // ADR-126: the sandbox's sides are a synthetic battle of this many figures
+    std::optional<std::uint8_t> stewardSite;       // MVP-012: a new world that is no sandbox has the steward's settlement here
     std::filesystem::path snapshotFolder;          // MVP-075 (ADR-137): where the world is saved and continued; none: never
   };
 

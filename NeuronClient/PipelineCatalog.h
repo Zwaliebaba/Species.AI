@@ -19,7 +19,8 @@ enum class BlendState : std::uint8_t
   Opaque,
   Alpha,
   Additive,
-  Darkening
+  Darkening,
+  Ink // UI-180 (ADR-145): source alpha, one minus source colour
 };
 
 // RND-059: the depth variants; a pass with depth testing off never writes depth (RND-056).

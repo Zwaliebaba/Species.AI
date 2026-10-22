@@ -398,6 +398,29 @@
         "highlight_wobble": 0.3,
         "pole_width_wu": 0.4,
         "pole_height_factor": 1.5
+      },
+      "port": {
+        "pad_height_wu": 0.5,
+        "status_star_size_wu": 6,
+        "status_occupied_rgb": {
+          "r": 0.3,
+          "g": 1.0,
+          "b": 0.3
+        },
+        "status_empty_rgb": {
+          "r": 1.0,
+          "g": 0.3,
+          "b": 0.3
+        }
+      },
+      "structure": {
+        "light_cycle_ticks": 10,
+        "light_ticks_per_team": 2,
+        "light_quads": 10,
+        "light_size_wu": 6
+      },
+      "turret": {
+        "tint_weight": 0.2
       }
     },
     "weapon": {
@@ -416,7 +439,9 @@
         "quads": 5,
         "shrink": 0.8,
         "alpha_factor": 0.75,
-        "depth_test_size": 50
+        "depth_test_size": 50,
+        "round_size": 60,
+        "round_life": 2
       },
       "thrown": {
         "color": {
@@ -443,6 +468,17 @@
         "flash_time": 0.1,
         "flash_range": 500,
         "billboard_time": 1
+      },
+      "turret_round": {
+        "tracer_factor": 0.05,
+        "tracer_alpha": 0.5
+      },
+      "shell_casing": {
+        "socket_offset": 2.5,
+        "speed_min": 20,
+        "speed_spread": 20,
+        "rest_force": 0.2,
+        "bounce_factor": 0.5
       }
     }
   },
@@ -486,6 +522,49 @@
       "disc_size_factor": 0.8,
       "disc_alpha": 0.35,
       "circle_fade_seconds": 0.4
+    },
+    "structure": {
+      "rise_depth_factor": 1.0,
+      "inactive_brightness": 0.35,
+      "flash_size": 40,
+      "flash_seconds": 0.5
+    },
+    "wellspring": {
+      "glow_blobs": 5,
+      "glow_radius": 12,
+      "glow_size": 22,
+      "glow_alpha": 0.45,
+      "glow_turn_seconds": 24
+    },
+    "orb": {
+      "cloudy_size": 16,
+      "cloudy_alpha": 0.5
+    },
+    "worker": {
+      "load_color": {
+        "r": 0.6,
+        "g": 0.9,
+        "b": 1.0
+      }
+    },
+    "territory_line": {
+      "half_width": 3,
+      "lift": 2,
+      "alpha": 0.8
+    },
+    "border_mark": {
+      "spot_size": 4,
+      "spacing": 24,
+      "color": {
+        "r": 0.55,
+        "g": 0.55,
+        "b": 0.55
+      },
+      "alpha": 0.6
+    },
+    "view_fog": {
+      "strength": 0.85,
+      "edge_width": 64
     }
   },
   "dbg": {
@@ -496,7 +575,8 @@
         "r": 255,
         "g": 64,
         "b": 64
-      }
+      },
+      "text_size": 14
     },
     "profile": {
       "rollup_period_ms": 1000,
@@ -623,6 +703,13 @@
       },
       "order_marker": {
         "size": 30
+      },
+      "round_hit": {
+        "structure_count": 3,
+        "terrain_count": 1
+      },
+      "laser_hit": {
+        "count": 1
       }
     },
     "thrown": {
@@ -730,6 +817,24 @@
           }
         }
       },
+      "spark": {
+        "life": 4.0,
+        "size": 15,
+        "gravity": 15.0,
+        "friction": 1.5,
+        "colors": {
+          "first": {
+            "r": 250,
+            "g": 200,
+            "b": 0
+          },
+          "second": {
+            "r": 250,
+            "g": 200,
+            "b": 50
+          }
+        }
+      },
       "missile_trail": {
         "life": 5.0,
         "size": 200,
@@ -769,6 +874,38 @@
     },
     "motion": {
       "order_marker_flare": 15
+    }
+  },
+  "ui": {
+    "text": {
+      "default_size": 12,
+      "outline_offset": 1
+    },
+    "access": {
+      "min_text_1080p": 9,
+      "min_text_2160p": 19
+    },
+    "chrome": {
+      "body_repeat": 8
+    },
+    "palette": {
+      "window_body_tint": {
+        "r": 1,
+        "g": 1,
+        "b": 1,
+        "a": 0.96
+      },
+      "text_outline": {
+        "r": 1,
+        "g": 1,
+        "b": 1,
+        "a": 0
+      }
+    },
+    "glyph": {
+      "page_size": 1024,
+      "page_count": 8,
+      "subpixel_steps": 4
     }
   }
 }

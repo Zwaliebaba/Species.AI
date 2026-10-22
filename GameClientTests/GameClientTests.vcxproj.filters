@@ -53,8 +53,20 @@
     <ClCompile Include="SettlementCameraTests.cpp">
       <Filter>View</Filter>
     </ClCompile>
+    <ClCompile Include="StewardAreasTests.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="StructureLookTests.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="TerritoryLookTests.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
     <ClCompile Include="TestSupport.cpp">
       <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="UiLookTests.cpp">
+      <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="WorldMarkersTests.cpp">
       <Filter>View</Filter>

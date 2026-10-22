@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "Check.h"
+#include "Construction.h"
 #include "Profile.h"
 #include "RegionSimulation.h"
 #include "StateSender.h"
@@ -9,6 +10,7 @@
 #include <cmath>
 #include <iterator>
 #include <map>
+#include <numbers>
 
 namespace Species
 {
@@ -37,6 +39,7 @@ ReplicatedFigure FigureState(const Figure& _figure, std::uint8_t _team, StableId
   state.underControl = _figure.underControl;
   state.formation = _figure.formation;
   state.selected = _figure.id == _selected;
+  state.loaded = _figure.carriedMilliRu > 0; // ADR-139
   // O78, ADR-125: the flag pointer aims at the first point after the start of a Waypoint order's route (R-UNIT-191).
   if (_figure.kind == FigureKind::Leader && _figure.order == LeaderOrder::Waypoint)
   {
@@ -65,6 +68,94 @@ ReplicatedEffect EffectState(const Effect& _effect)
 bool IsTeamsOwn(const ReplicatedEffect& _effect) noexcept
 {
   return _effect.kind == EffectKind::OrderMarker || _effect.kind == EffectKind::OrderTrailMark;
+}
+
+// ADR-139: a structure as a client sees it.
+ReplicatedStructure StructureState(const Structure& _structure, const TuningMvp& _tuning)
+{
+  ReplicatedStructure state;
+  state.owner = _structure.owner;
+  state.kind = _structure.kind;
+  state.position = QuantizePosition(_structure.position);
+  state.yaw = QuantizeYaw(_structure.front.x, _structure.front.z);
+  state.built = _structure.built;
+  state.active = _structure.active;
+  if (!_structure.built)
+  {
+    // The status's progress (ADR-136), in thousandths of the work the site needs.
+    const std::int64_t required = std::max<std::int64_t>(1, RequiredWorkTicks(_structure, _tuning));
+    state.progress = static_cast<std::uint16_t>(
+      std::clamp<std::int64_t>(_structure.workTicks * PROGRESS_PERMILLE_MAX / required, 0, PROGRESS_PERMILLE_MAX));
+  }
+  for (std::size_t port = 0; port < std::min(_structure.ports.size(), STRUCTURE_PORTS_MAX); ++port)
+  {
+    if (_structure.ports[port].occupant)
+    {
+      state.mannedPorts = static_cast<std::uint16_t>(state.mannedPorts | (1u << port));
+    }
+  }
+  if (_structure.turret)
+  {
+    const TurretState& turret = *_structure.turret;
+    state.turretTeam = turret.team;
+    state.turretHealth = ClampToU16(turret.health);
+    state.aimYaw = QuantizeYaw(turret.headFront.x, turret.headFront.z);
+    // The barrels' up vector leans from vertical towards the head's front as they aim (R-BLDG-416).
+    const double lean = turret.barrelUp.x * turret.headFront.x + turret.barrelUp.z * turret.headFront.z;
+    const double turns = std::atan2(lean, turret.barrelUp.y) / (2.0 * std::numbers::pi);
+    constexpr double PITCH_LIMIT = static_cast<double>(std::int64_t{1} << (PITCH_BITS - 1));
+    state.aimPitch =
+      static_cast<std::int16_t>(std::clamp(std::isfinite(turns) ? std::round(turns * YAW_STEPS) : 0.0, -PITCH_LIMIT, PITCH_LIMIT - 1.0));
+  }
+  return state;
+}
+
+// An amount of the stores in their replicated field.
+std::uint64_t StoredMilliRu(std::int64_t _milliRu) noexcept
+{
+  constexpr std::uint64_t STORES_LIMIT = (std::uint64_t{1} << STORES_BITS) - 1;
+  return std::min(static_cast<std::uint64_t>(std::max<std::int64_t>(0, _milliRu)), STORES_LIMIT);
+}
+
+// ADR-139: a settlement as its commander's client sees it; ViewForSteward clears what other clients do not see.
+ReplicatedSettlement SettlementState(const RegionSimulation& _region, const Settlement& _settlement)
+{
+  constexpr std::uint32_t RADIUS_LIMIT = (std::uint32_t{1} << SETTLEMENT_RADIUS_BITS) - 1;
+  const TuningMvp& tuning = _region.Tuning();
+  ReplicatedSettlement state;
+  state.site = _settlement.site;
+  state.team = _settlement.team;
+  state.color = _settlement.cladan.color;
+  state.storesMilliRu = StoredMilliRu(_settlement.storesMilliRu);
+  state.capacityMilliRu = StoredMilliRu(StoreCapacityMilliRu(tuning, ActiveCount(_region, _settlement.team, StructureKind::Storehouse)));
+  state.population = static_cast<std::uint16_t>(std::min<std::uint32_t>(Population(_region, _settlement), 65'535));
+  state.limit = static_cast<std::uint16_t>(std::min<std::uint32_t>(PopulationLimitOf(_region, _settlement), 65'535));
+  state.radius = static_cast<std::uint32_t>(
+    std::clamp(std::round(_settlement.territoryRadius * POSITION_STEPS_PER_UNIT), 0.0, static_cast<double>(RADIUS_LIMIT)));
+  return state;
+}
+
+// ADR-139: the chunks of a raster that hold a cell, as objects of the site's layer.
+void CollectCells(std::vector<ReplicatedObject>& _objects, const CellRaster* _raster, CellLayer _layer, std::uint8_t _site)
+{
+  const std::optional<CellRaster::ChunkBounds> bounds = _raster != nullptr ? _raster->HeldChunks() : std::nullopt;
+  if (!bounds)
+  {
+    return;
+  }
+  // A chunk's place travels in 8 bits on each axis, which every region's rasters fit (ADR-139).
+  for (std::int32_t z = bounds->firstZ; z <= std::min(bounds->lastZ, 255); ++z)
+  {
+    for (std::int32_t x = bounds->firstX; x <= std::min(bounds->lastX, 255); ++x)
+    {
+      if (const std::uint64_t cells = _raster->ChunkCells(x, z); cells != 0)
+      {
+        const auto chunkX = static_cast<std::uint8_t>(x);
+        const auto chunkZ = static_cast<std::uint8_t>(z);
+        _objects.push_back({CellChunkObjectId(_layer, _site, chunkX, chunkZ), ReplicatedCells{_layer, _site, chunkX, chunkZ, cells}});
+      }
+    }
+  }
 }
 
 } // namespace
@@ -102,6 +193,21 @@ std::vector<ReplicatedObject> CollectReplicatedObjects(const RegionSimulation& _
       objects.push_back({orb.id, ReplicatedOrb{orb.team, QuantizePosition(orb.position), orb.state, ClampToU16(orb.timerTicks)}});
     }
   }
+  // M2 task T11 (ADR-139): the structures, the settlements and their territories and seen layers.
+  for (std::uint32_t n = 0; n < _region.Structures().Capacity(); ++n)
+  {
+    if (_region.Structures().Used(n))
+    {
+      const Structure& structure = _region.Structures().At(n);
+      objects.push_back({structure.id, StructureState(structure, _region.Tuning())});
+    }
+  }
+  for (const Settlement& settlement : _region.Settlements())
+  {
+    objects.push_back({SettlementObjectId(settlement.site), SettlementState(_region, settlement)});
+    CollectCells(objects, _region.TerritoryOf(settlement.site), CellLayer::Territory, settlement.site);
+    CollectCells(objects, _region.SeenLayerOf(settlement.site), CellLayer::Seen, settlement.site);
+  }
   std::ranges::sort(objects, {}, &ReplicatedObject::id);
   return objects;
 }
@@ -118,11 +224,28 @@ std::vector<ReplicatedObject> ViewForSteward(std::span<const ReplicatedObject> _
     {
       continue;
     }
+    // MVP-097 (ADR-139): a settlement's seen layer goes to its commander only.
+    if (const auto* cells = std::get_if<ReplicatedCells>(&object.state); cells != nullptr && cells->layer == CellLayer::Seen)
+    {
+      const Settlement* settlement = _region.SettlementAt(cells->site);
+      if (settlement == nullptr || !commands(settlement->team))
+      {
+        continue;
+      }
+    }
     ReplicatedObject& seen = view.emplace_back(object);
     if (auto* figure = std::get_if<ReplicatedFigure>(&seen.state); figure != nullptr && !commands(figure->team))
     {
       figure->underControl = false;
       figure->selected = false;
+    }
+    // A settlement's stores and population are its commander's (ADR-139).
+    if (auto* settlement = std::get_if<ReplicatedSettlement>(&seen.state); settlement != nullptr && !commands(settlement->team))
+    {
+      settlement->storesMilliRu = 0;
+      settlement->capacityMilliRu = 0;
+      settlement->population = 0;
+      settlement->limit = 0;
     }
   }
   return view;

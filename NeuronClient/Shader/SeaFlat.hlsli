@@ -12,4 +12,5 @@ struct SeaFlatVertex
   float2 tile : TEXCOORD0;
   float2 mask : TEXCOORD1;
   float depth : TEXCOORD2;
+  float2 ground : TEXCOORD3; // x and z relative to the camera, where the view mask is read (ADR-144)
 };

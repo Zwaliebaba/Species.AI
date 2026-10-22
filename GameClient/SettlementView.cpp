@@ -189,6 +189,7 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
   {
     m_terrain = terrain;
     m_camera.LeaveWorld();
+    m_areas.Clear();
     m_verbs.Reset();
     m_preview.Reset();
     m_markers.Clear();
@@ -211,6 +212,13 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
     m_confined = advancing;
   }
   m_pointer = _router.Pointer().positionPixels;
+  m_viewSize = _view;
+  // WLD-244 (ADR-142): the steward's areas from the territory the replica holds; a sandbox has none.
+  const std::optional<std::uint8_t> ownTeam = _session.CommandedTeam();
+  if (terrain != nullptr)
+  {
+    m_areas.Update(_session.Replica().Latest(), ownTeam, terrain->layout, *m_desc.tuning);
+  }
   if (m_camera.InWorld() && terrain != nullptr)
   {
     if (advancing)
@@ -230,7 +238,8 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
       {
         controls.wheelNotches = wheel.x;
       }
-      if (const std::optional<Neuron::PointPx> warp = m_camera.Advance(_dtSeconds, controls, m_pointer, _view, terrain->field).warpTo)
+      if (const std::optional<Neuron::PointPx> warp =
+            m_camera.Advance(_dtSeconds, controls, m_pointer, _view, terrain->field, &m_areas).warpTo)
       {
         _router.WarpPointer(*warp);
         m_pointer = _router.Pointer().positionPixels;
@@ -243,7 +252,6 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
   }
   // The hover over the client's own Leaders (R-CTRL-055), and the cursor it gives.
   m_hovered.reset();
-  const std::optional<std::uint8_t> ownTeam = _session.CommandedTeam();
   std::vector<InterpolatedFigure> figures;
   if (m_camera.InWorld() && ownTeam.has_value())
   {
@@ -313,7 +321,7 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
   // M1 task T17b (ADR-125): the route preview, the world markers and the badge near the pointer, with its count
   // (ADR-127).
   m_badge.clear();
-  m_badgeText.clear();
+  m_badgeCount.reset();
   m_selectedWorkers = 0;
   if (verbTeam.has_value())
   {
@@ -328,11 +336,7 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
     markers.realStepSeconds = _dtSeconds;
     m_markers.Update(figures, verbTeam, m_verbs.SelectedLeader(), markers);
     m_badge = CursorBadge(m_verbs.LeaderSelected(), m_verbs.WorkersSelected(), team, m_pointer, _view, *m_desc.presentation);
-    if (const std::optional<Neuron::OverlayLine> count =
-          BadgeCount(m_badge, !m_verbs.LeaderSelected() && m_verbs.WorkersSelected() ? m_selectedWorkers : 0))
-    {
-      m_badgeText.push_back(*count);
-    }
+    m_badgeCount = BadgeCount(m_badge, !m_verbs.LeaderSelected() && m_verbs.WorkersSelected() ? m_selectedWorkers : 0);
   }
   else
   {

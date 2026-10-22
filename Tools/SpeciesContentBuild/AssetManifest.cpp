@@ -14,8 +14,9 @@ namespace
 {
 
 // The columns the content build reads, in the order of ManifestRow (AST table 2.4-A).
-constexpr std::array<std::string_view, 10> COLUMNS{"asset_id",     "category",   "subcategory", "target_format",    "spec",
-                                                   "colour_space", "alpha_mode", "variants",    "species_filename", "source_format"};
+constexpr std::array<std::string_view, 12> COLUMNS{"asset_id",     "category",   "subcategory", "target_format",    "spec",
+                                                   "colour_space", "alpha_mode", "variants",    "species_filename", "source_format",
+                                                   "priority",     "placeholder"};
 
 /// Splits RFC 4180 text into records of fields.
 class CsvReader
@@ -157,6 +158,8 @@ std::expected<AssetManifest, std::string> AssetManifest::Read(std::span<const st
     row.variants = fields[index[7]];
     row.speciesFilename = fields[index[8]];
     row.sourceFormat = fields[index[9]];
+    row.priority = fields[index[10]];
+    row.placeholder = fields[index[11]];
     row.line = line;
     manifest.m_rows.push_back(std::move(row));
   }

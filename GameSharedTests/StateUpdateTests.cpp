@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <limits>
 #include <optional>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -192,6 +193,108 @@ public:
     Assert::IsTrue(RecordOf(Id(1), orb, &held).kind == Species::RecordKind::Whole, L"another class goes whole");
     Assert::IsFalse(Species::ApplyRecord(record, &orb).has_value(), L"and a delta never applies to another class");
     Assert::IsFalse(Species::ApplyRecord(record, nullptr).has_value(), L"nor to no baseline");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr139TheSettlementsClassesRoundTripWholeAndAsDeltas)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-090")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-097")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr139TheSettlementsClassesRoundTripWholeAndAsDeltas)
+  {
+    // M2 task T11: a structure, a settlement and a chunk of cells each go whole with every field at its bound, and as a
+    // delta of the fields that changed; a Worker's load is one of its flags.
+    Species::ReplicatedStructure turret;
+    turret.owner = std::uint8_t{3};
+    turret.kind = Species::StructureKind::Turret;
+    turret.position = {(1 << 23) - 1, -(1 << 19), 17};
+    turret.yaw = 1023;
+    turret.built = false;
+    turret.active = false;
+    turret.progress = Species::PROGRESS_PERMILLE_MAX;
+    turret.mannedPorts = 0xFFFF;
+    turret.turretTeam = std::uint8_t{255};
+    turret.turretHealth = 65'535;
+    turret.aimYaw = 1023;
+    turret.aimPitch = -512;
+    Species::ReplicatedStructure site;
+    site.kind = Species::StructureKind::ResourceSiteCentral;
+    site.position = {100, 200, 300};
+    site.mannedPorts = 0x0A5F;
+    const Species::ReplicatedSettlement settlement{3, 3, 2, (std::uint64_t{1} << 40) - 1, 1'000'000, 65'535, 300, (1 << 20) - 1};
+    const Species::ReplicatedCells cells{Species::CellLayer::Seen, 3, 255, 0, ~std::uint64_t{0}};
+    std::optional<Species::StableId> previous;
+    for (const auto& [id, state] :
+         {std::pair{Id(4), Species::ReplicatedState{turret}}, std::pair{Id(90), Species::ReplicatedState{site}},
+          std::pair{Species::SettlementObjectId(3), Species::ReplicatedState{settlement}},
+          std::pair{Species::CellChunkObjectId(Species::CellLayer::Seen, 3, 255, 0), Species::ReplicatedState{cells}}})
+    {
+      const Species::StateRecord record = RecordOf(id, state, nullptr);
+      Assert::IsTrue(RoundTrip(record, previous) == record, L"the same whole record");
+      Assert::IsTrue(Species::ApplyRecord(record, nullptr) == state, L"it gives its state alone");
+      previous = id;
+    }
+    Assert::IsTrue(Species::OwnerOf(Species::SettlementObjectId(0)) == Species::REPLICATION_OWNER_ID &&
+                     Species::SettlementObjectId(3) < Species::CellChunkObjectId(Species::CellLayer::Territory, 0, 0, 0) &&
+                     Species::CellChunkObjectId(Species::CellLayer::Territory, 3, 255, 255) <
+                       Species::CellChunkObjectId(Species::CellLayer::Seen, 0, 0, 0) &&
+                     Id(Species::STABLE_ID_COUNTER_MAX) < Species::SettlementObjectId(0),
+                   L"every replication-only id sorts after every simulated object's, and apart from each other");
+
+    // Deltas: a construction site's progress and its manned ports; a turret's aim alone; its team and health.
+    const Species::ReplicatedState held{site};
+    Species::ReplicatedStructure working = site;
+    working.built = false;
+    working.progress = 512;
+    working.mannedPorts = 0x0001;
+    const Species::StateRecord work = RecordOf(Id(90), working, &held);
+    Assert::IsTrue(work.changed == (Species::STRUCTURE_FIELD_FLAGS | Species::STRUCTURE_FIELD_PROGRESS | Species::STRUCTURE_FIELD_PORTS),
+                   L"the flags, the progress and the ports");
+    Assert::IsTrue(Species::ApplyRecord(RoundTrip(work, std::nullopt), &held) == Species::ReplicatedState{working}, L"applied");
+    const Species::ReplicatedState heldTurret{turret};
+    Species::ReplicatedStructure aimed = turret;
+    aimed.aimYaw = 12;
+    aimed.aimPitch = 30;
+    const Species::StateRecord aim = RecordOf(Id(4), aimed, &heldTurret);
+    Assert::IsTrue(aim.changed == Species::STRUCTURE_FIELD_AIM, L"the aim alone");
+    Assert::IsTrue(Species::ApplyRecord(RoundTrip(aim, std::nullopt), &heldTurret) == Species::ReplicatedState{aimed}, L"applied");
+    Species::ReplicatedStructure unmanned = turret;
+    unmanned.turretTeam.reset();
+    unmanned.turretHealth = 40;
+    const Species::StateRecord left = RecordOf(Id(4), unmanned, &heldTurret);
+    Assert::IsTrue(left.changed == Species::STRUCTURE_FIELD_TURRET, L"its team and health");
+    Assert::IsTrue(Species::ApplyRecord(RoundTrip(left, std::nullopt), &heldTurret) == Species::ReplicatedState{unmanned}, L"applied");
+
+    // A settlement's stores, then its population and radius; a chunk's cells.
+    const Species::ReplicatedState heldSettlement{settlement};
+    Species::ReplicatedSettlement richer = settlement;
+    richer.storesMilliRu = 12'345;
+    const Species::StateRecord stores = RecordOf(Species::SettlementObjectId(3), richer, &heldSettlement);
+    Assert::IsTrue(stores.changed == Species::SETTLEMENT_FIELD_STORES, L"the stores alone");
+    Assert::IsTrue(Species::ApplyRecord(RoundTrip(stores, std::nullopt), &heldSettlement) == Species::ReplicatedState{richer}, L"applied");
+    Species::ReplicatedSettlement grown = settlement;
+    grown.population = 21;
+    grown.radius = 4'000;
+    const Species::StateRecord growth = RecordOf(Species::SettlementObjectId(3), grown, &heldSettlement);
+    Assert::IsTrue(growth.changed == (Species::SETTLEMENT_FIELD_POPULATION | Species::SETTLEMENT_FIELD_RADIUS), L"population and radius");
+    Assert::IsTrue(Species::ApplyRecord(RoundTrip(growth, std::nullopt), &heldSettlement) == Species::ReplicatedState{grown}, L"applied");
+    const Species::ReplicatedState heldCells{cells};
+    Species::ReplicatedCells fewer = cells;
+    fewer.cells = 0x8000'0000'0000'0001;
+    const Species::StateRecord chunk = RecordOf(Species::CellChunkObjectId(Species::CellLayer::Seen, 3, 255, 0), fewer, &heldCells);
+    Assert::IsTrue(chunk.changed == Species::CELLS_FIELD_CELLS, L"the cells");
+    Assert::IsTrue(Species::ApplyRecord(RoundTrip(chunk, std::nullopt), &heldCells) == Species::ReplicatedState{fewer}, L"applied");
+    Assert::IsTrue(Species::RecordBits(chunk, std::nullopt) < Species::RecordBits(RecordOf(Id(1), fewer, nullptr), std::nullopt),
+                   L"a chunk's delta is smaller than its whole record");
+
+    // MVP-031: a Worker's load.
+    const Species::ReplicatedFigure walking = Worker(3, 10, 10);
+    const Species::ReplicatedState heldWorker{walking};
+    Species::ReplicatedFigure carrying = walking;
+    carrying.loaded = true;
+    const Species::StateRecord loaded = RecordOf(Id(7), carrying, &heldWorker);
+    Assert::IsTrue(loaded.changed == Species::FIGURE_FIELD_FLAGS, L"a load is a flag");
+    Assert::IsTrue(Species::ApplyRecord(RoundTrip(loaded, std::nullopt), &heldWorker) == Species::ReplicatedState{carrying}, L"applied");
+    Assert::IsTrue(RoundTrip(RecordOf(Id(7), carrying, nullptr), std::nullopt).state == Species::ReplicatedState{carrying}, L"and whole");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Adr088AnUpdateFillsDatagramsToTheirLimit)

@@ -8,7 +8,9 @@
 #include "WorldRenderer.h"
 
 #include <algorithm>
+#include <array>
 #include <cstring>
+#include <span>
 #include <utility>
 
 namespace Neuron
@@ -32,6 +34,8 @@ WorldRenderer::WorldRenderer(DeviceGpuResourceFactory& _factory) noexcept
 WorldRenderer::~WorldRenderer()
 {
   Release();
+  ReleaseMask(m_shownMask);
+  ReleaseMask(m_nextMask);
 }
 
 void WorldRenderer::Show(const std::shared_ptr<const WorldScene>& _world)
@@ -54,6 +58,111 @@ void WorldRenderer::UploadAgain()
   m_pending = m_uploads;
   m_lastFence = 0;
   Pump();
+  // ADR-144: the mask shown is uploaded again as the next one, and the ground is clear until it completes.
+  if (m_shownMask.texture.has_value() && m_nextMask.mask == nullptr)
+  {
+    m_nextMask = std::move(m_shownMask);
+    m_nextMask.fence.reset();
+    m_shownMask = {};
+  }
+  else
+  {
+    ReleaseMask(m_shownMask);
+    m_nextMask.fence.reset();
+  }
+  PumpMask();
+}
+
+void WorldRenderer::ReleaseMask(MaskTexture& _mask)
+{
+  if (_mask.texture.has_value())
+  {
+    m_factory.Release(*_mask.texture); // destroyed after the frames in flight that may read it
+  }
+  _mask = {};
+}
+
+void WorldRenderer::ShowMask(const std::shared_ptr<const ViewMask>& _mask)
+{
+  const bool wanted = _mask != nullptr && _mask->side > 0 && _mask->cells.size() == std::size_t{_mask->side} * _mask->side;
+  if (!wanted)
+  {
+    ReleaseMask(m_shownMask);
+    ReleaseMask(m_nextMask);
+    return;
+  }
+  if (_mask == m_shownMask.mask)
+  {
+    ReleaseMask(m_nextMask);
+    return;
+  }
+  if (_mask != m_nextMask.mask && _mask != m_refusedMask)
+  {
+    // A newer mask replaces one whose upload has not completed. A creation refused during a rebuild is tried again on
+    // the next frame; one refused otherwise is not, and the last mask stays.
+    ReleaseMask(m_nextMask);
+    const auto created = m_factory.CreateTexture({_mask->side, _mask->side, 1, DXGI_FORMAT_R8_UNORM, "view mask"});
+    if (!created)
+    {
+      if (created.error() != GpuResourceError::DeviceRebuilding)
+      {
+        Log(LogCategory::Render, LogLevel::Error, "the view mask of {} cells a side was not created", _mask->side);
+        m_refusedMask = _mask;
+      }
+      return;
+    }
+    m_nextMask = {_mask, *created, std::nullopt};
+  }
+  PumpMask();
+}
+
+void WorldRenderer::PumpMask()
+{
+  if (!m_nextMask.texture.has_value() || m_nextMask.mask == nullptr)
+  {
+    return;
+  }
+  const GpuResourceId texture = *m_nextMask.texture;
+  std::uint64_t fence = m_nextMask.fence.value_or(0);
+  if (!m_nextMask.fence.has_value())
+  {
+    const ViewMask& mask = *m_nextMask.mask;
+    const std::array<GpuSubresourceData, 1> level{GpuSubresourceData{std::as_bytes(std::span(mask.cells)), mask.side}};
+    const auto scheduled = m_factory.ScheduleUpload(texture, level);
+    if (!scheduled)
+    {
+      if (scheduled.error() != GpuResourceError::StagingFull && scheduled.error() != GpuResourceError::DeviceRebuilding)
+      {
+        Log(LogCategory::Render, LogLevel::Error, "the view mask's upload was refused");
+        ReleaseMask(m_nextMask);
+      }
+      return;
+    }
+    fence = *scheduled;
+    m_nextMask.fence = fence;
+  }
+  if (m_factory.IsUploadComplete(fence))
+  {
+    ReleaseMask(m_shownMask);
+    m_shownMask = std::move(m_nextMask);
+    m_nextMask = {};
+  }
+}
+
+void WorldRenderer::MaskConstants(const Vec3& _camera, Float4& _place, Uint4& _index) const
+{
+  _place = Float4(0.0f, 0.0f, 0.0f, 0.0f);
+  _index = Uint4{DEFAULT_RESOURCE_INDEX, 0, 0, 0};
+  if (!m_shownMask.texture.has_value() || m_shownMask.mask == nullptr)
+  {
+    return;
+  }
+  const GpuResourceId texture = *m_shownMask.texture;
+  const ViewMask& mask = *m_shownMask.mask;
+  const double extent = mask.cellSize * static_cast<double>(mask.side);
+  _place = Float4(static_cast<float>(mask.originX - _camera.x), static_cast<float>(mask.originZ - _camera.z),
+                  static_cast<float>(1.0 / std::max(extent, 1e-6)), std::clamp(mask.fogStrength, 0.0f, 1.0f));
+  _index = Uint4{m_factory.HeapIndex(texture), 0, 0, 0};
 }
 
 bool WorldRenderer::Ready() const

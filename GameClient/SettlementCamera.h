@@ -12,6 +12,8 @@
 namespace Species
 {
 
+class StewardAreas;
+
 /// The camera's controls in one frame (R-CTRL-460, R-CTRL-461, R-CTRL-471, R-CTRL-472): the actions of table 2.1-A rows
 /// A1 to A3, A5 and A6 as the input router answered them.
 struct CameraControls
@@ -39,8 +41,9 @@ struct CameraBounds
 
 /// The player camera of the settlement view (`MatchCamera`, R-CTRL-450 to R-CTRL-497; ADR-119), in the modes the MVP
 /// reaches: static until a world is entered, then free movement. It holds a front vector and rebuilds its up vector
-/// from world up each frame, since nothing rolls it at M1. It is local to the client and never sent (DEC-008), and it
-/// reads the terrain only through the client's own field. Frame thread only.
+/// from world up each frame, since nothing rolls it at M1. The forward and back keys fly it along its front (O90,
+/// ADR-142), and in a settlement world the steward's areas bound it (WLD-244). It is local to the client and never sent
+/// (DEC-008), and it reads the terrain only through the client's own field. Frame thread only.
 class SettlementCamera
 {
 public:
@@ -69,9 +72,10 @@ public:
 
   // R-CTRL-456: one rendered frame's advance, with the real frame step _dtSeconds (clamped to ref.sim.frame.delta_clamp,
   // CAM-030), the frame's controls, the pointer in client pixels of a view of _view, and the region's terrain. Nothing
-  // moves before a world is entered. The pointer ground point is recomputed last (step 7).
+  // moves before a world is entered. The pointer ground point is recomputed last (step 7). With _areas known, the
+  // camera's ground point stays inside them as well as inside the bounds (WLD-244, ADR-142).
   PointerRequest Advance(double _dtSeconds, const CameraControls& _controls, Neuron::PointPx _pointer, Neuron::SizePx _view,
-                         const Neuron::TerrainField& _terrain);
+                         const Neuron::TerrainField& _terrain, const StewardAreas* _areas = nullptr);
 
   // R-CTRL-058: the click ray through the pointer met with the terrain; when it misses, the inside of the far sphere
   // about the region (DEC-864 item 1). It also says whether the terrain was hit.

@@ -540,6 +540,8 @@ A percent sign is an ordinary character: no text path of the UI reads formatting
 
 > **Amendment 2026-10-19 (ADR-034; O56).** By default the measured width of item 3 and the advance before the caret of item 4 come from the glyph tables of the drawn faces, not from a text layout ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-200).
 
+> **Amendment 2026-10-22 (O92, [ADR-147](../../../ADR/ADR-147-the-directwrite-text-system-at-m2.md)).** The base text holds again: the width and the advance come from DirectWrite's layout (UI-200 amendment of O92), and the amendment above lapses.
+
 ### 4.17 Increment glyphs
 
 **UI-071** (MUST) An increment glyph (`UiIncrementGlyph`) steps its text field's value by its step while it is held:

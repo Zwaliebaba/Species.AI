@@ -52,7 +52,7 @@ All assets live under the content root `GameData/`. The content build rejects an
 | `GameData/Audio/ui/` | interface sounds |
 | `GameData/Audio/ambience/` | ambience beds |
 | `GameData/Audio/music/` | music (new) |
-| `GameData/Fonts/` | the glyph sheets and glyph tables of the faces drawn for Species (O56), and the font files of the Japanese and Korean companions for the DirectWrite upgrade of ADR-034 |
+| `GameData/Fonts/` | font files, when an optional face or the Japanese and Korean companions bring them (ADR-034); empty at the MVP, whose text is set in Windows fonts (O92) |
 | `GameData/Strings/` | string tables, one per language, and the development string table (development editions only) |
 | `GameData/Maps/` | map definitions, one per map slot |
 | `GameData/Thumbnails/` | map thumbnails, one per map |
@@ -77,7 +77,7 @@ The `GameData/Records/<family>/` folders hold the authored JSON data records of 
 - Textures and meshes are named in PascalCase by **role**, with no category prefix, because the kind folder carries it (O64): `Fx/BeamLong.dds`, `Icon/Power/Workers.dds`, `Help/HintCameraControls.dds`. Sprites and meshes start with the unit or structure name (`Sprite/WorkerFront.dds`, `LeaderFigure.cmo`). Every other file is lower-case snake_case, named by role. Audio files start with their source (`worker_die_01.wav`), UI sounds with `ui_`, ambience with `amb_`, outcome stings with `outcome_`.
 - Numbered variants end in two digits, `NN` in a PascalCase name (`Ramp01`) and `_NN` in a snake_case one, counting from 01 without gaps. A row with a numbered pattern is one asset id with interchangeable variants, unless its spec gives each number a meaning (states, pages, themes).
 - No stem repeats a reference file stem, and no name contains an IP word. Ids and names come from [CONVENTIONS §8](../CONVENTIONS.md#8-naming).
-- String tables are named by their BCP 47 language tag in lower case with `_` for `-` (`en_gb.json`); the tag itself is stored in the file.
+- String tables are named by their BCP 47 language tag in lower case with `_` for `-` (`en_us.json`); the tag itself is stored in the file.
 - Maps follow `map_<mode>_<players>p_<nn>`; a thumbnail adds `_thumb`.
 - A **collision asset** (AST-044) is named after its render member with the suffix `Collision`, beside it in `GameData/Meshes/` (`TurretHeadCollision.cmo`); a **tint mask** (AST-022) is named after its parent member with `Tint`, which the owner's banner masks place before the state (`Marker/LeaderBannerTintIdle.dds`).
 - A drawn face (§17) has one **glyph sheet**, named after the face, and a **glyph table** named after the sheet with the suffix `Glyphs`, or `_glyphs` for a snake_case name (`GameFont.dds` and `GameFontGlyphs.json`; `ui_compact.png` and `ui_compact_glyphs.json`), so that the two members have different keys (O63; DAT-219 amendment).
@@ -104,7 +104,7 @@ Asset ids are dotted and lower case. Numbered variants share one id; documents c
 | `amb.` | ambience beds | `amb.match_bed` |
 | `music.` | music | `music.front_end.theme` |
 | `font.` | fonts | `font.ui.primary` |
-| `strings.` | string tables | `strings.en_gb` |
+| `strings.` | string tables | `strings.en_us` |
 | `mapfile.`, `thumb.` | maps and thumbnails, one id per mode | `mapfile.spawn_control` |
 | `<parent id>.<variant id>` | derived texture variants (AST-028): `shadow`, `trail` | `cursor.world.shadow` |
 | `<parent id>_tint` | companion tint masks of team-tinted cloth (AST-022) | `marker.leader_banner_tint` |
@@ -217,10 +217,10 @@ No file is parked: `GameData/Textures/Particle.dds`, parked on 2026-10-19 (O61),
 | [UI sounds](#14-ui-sounds) | 15 | 18 | 2 | 16 | 0 | 0 | 16 |
 | [Ambience](#15-ambience) | 4 | 21 | 0 | 11 | 10 | 0 | 21 |
 | [Music](#16-music) | 4 | 6 | 0 | 0 | 2 | 4 | 0 |
-| [Fonts](#17-fonts) | 6 | 10 | 4 | 0 | 6 | 0 | 138 |
+| [Fonts](#17-fonts) | 6 | 6 | 2 | 0 | 4 | 0 | 138 |
 | [String table](#18-string-table) | 10 | 10 | 1 | 1 | 8 | 0 | 0 |
 | [Maps and thumbnails](#19-maps-and-thumbnails) | 12 | 98 | 0 | 4 | 94 | 0 | 98 |
-| **Total** | **463** | **1430** | **123** | **559** | **729** | **19** | **1436** |
+| **Total** | **463** | **1426** | **121** | **559** | **727** | **19** | **1436** |
 
 "Reference files replaced" counts the in-scope reference files whose role each category takes over; one Species file may replace several (138 bitmap font pages become the glyph sheets and glyph tables of four drawn faces, two of them the owner's, and two companion font files, 10 files). The `mvp` column counts the files that the MVP needs (§2.5): 87 files of rows that the list already had (86 of them from the skirmish first playable, 1 from `launch`; amendments of O55, O56 and O62) and the MVP's 36 new rows, the development face's two files among them. Music, string tables, some help pictures and every row with no reference counterpart (the application icon, the MVP's new rows, the new glyphs, markers and the Abductor beam ring, the tint masks, the collision assets, the derived variants, the Trooper grenade throw and the six outcome stings that wait for DEC-565) have no one-to-one counterpart. "Files" counts manifest rows: the 7 derived-variant rows have no authored file, because the cooker produces them from their parents.
 
@@ -1080,10 +1080,10 @@ Species draws its text from **bitmap faces drawn for Species** (O56), and since 
 
 | Files | Asset id | Role | Coverage | Priority |
 |---|---|---|---|---|
-| `GameData/Fonts/GameFont.dds`, `GameData/Fonts/GameFontGlyphs.json` | `font.ui.primary` | Game face GameFont: the Title, Body and Caption roles (UI-195), every player-facing text | U+0020-007E, U+00BF-00FF; U+00A0 as the blank cell | mvp |
-| `GameData/Fonts/EditorFont.dds`, `GameData/Fonts/EditorFontGlyphs.json` | `font.dev.editor` | Development face EditorFont: the Development role, in Debug builds only (DBG-095 amendment) | U+0020-007E, U+00BF-00FF; U+00A0 as the blank cell | mvp |
-| `GameData/Fonts/ui_compact.png`, `GameData/Fonts/ui_compact_glyphs.json` | `font.ui.compact` | An optional later body face (`FontRole::Body`); until it exists the role uses `font.ui.primary` | at least that of `font.ui.primary` | launch |
-| `GameData/Fonts/ui_stylised.png`, `GameData/Fonts/ui_stylised_glyphs.json` | `font.ui.stylised` | An optional later caption face (`FontRole::Caption`: tool-window titles, the session-browser header, player names in rows, overlays); until it exists the role uses `font.ui.primary` | at least that of `font.ui.primary` | launch |
+| none: the Windows fonts Bahnschrift and Segoe UI | `font.ui.primary` | Game font: the Title, Body and Caption roles (UI-195 as amended by O92), every player-facing text, in Bahnschrift with Segoe UI for what it lacks | the chain's: Latin, Greek, Cyrillic, punctuation and the currency signs | mvp |
+| none: the Windows fonts Cascadia Mono and Consolas | `font.dev.editor` | Development font: the Development role, in Debug builds only (DBG-095 amendment of O92) | the chain's | mvp |
+| `GameData/Fonts/ui_compact.otf` | `font.ui.compact` | An optional later body face (`FontRole::Body`), a font file or a Windows family; until it exists the role uses the chain of `font.ui.primary` | at least that of `font.ui.primary` | launch |
+| `GameData/Fonts/ui_stylised.otf` | `font.ui.stylised` | An optional later caption face (`FontRole::Caption`: tool-window titles, the session-browser header, player names in rows, overlays), a font file or a Windows family; until it exists the role uses the chain of `font.ui.primary` | at least that of `font.ui.primary` | launch |
 | `GameData/Fonts/ui_primary_ja.otf` | `font.ui.primary_ja` | Japanese companion of the primary face (kana and CJK ideographs), for the DirectWrite upgrade | U+3000-30FF, U+4E00-9EFF | launch |
 | `GameData/Fonts/ui_primary_ko.otf` | `font.ui.primary_ko` | Korean companion of the primary face (Hangul syllables), for the DirectWrite upgrade | U+AC00-D7FF | launch |
 
@@ -1098,6 +1098,8 @@ Species draws its text from **bitmap faces drawn for Species** (O56), and since 
 **Sizes.** A text is drawn at the whole-number scale k nearest its final size ÷ 16 px, rounded half up, at least 1, and raised until it meets the accessibility minimum: 16 px covers the minimum of 9 px at 1080p, and at 2160p, whose minimum is 19 px, text draws at 32 px or more (ADR-064, UI-171). The darkening outline pass draws behind the glyphs at every scale.
 
 **Amendment 2026-10-19 (owner decisions O62 and O63).** This section replaces the two faces that O56 asked the owner to draw, a 24 px title face and a 12 px body face of a 1x and a 2x sheet each, with the owner's GameFont and EditorFont, one 16 px sheet each at whole-number scales; the coverage of 199 glyphs becomes what the owner's sheets hold.
+
+**Amendment 2026-10-22 (owner decision O92, [ADR-147](../ADR/ADR-147-the-directwrite-text-system-at-m2.md)).** GameFont and EditorFont are retired. DirectWrite draws all of Species' text in Windows fonts, so no font file is delivered and no license is needed. The game's text is in Bahnschrift, with Segoe UI for what Bahnschrift lacks, and the development tools' text is in Cascadia Mono, or Consolas where that is not installed. Text is rasterized in grayscale at its exact final size. The table above lists the rows as they now stand. The glyph sheet, the glyph table, the coverage of the glyph tables and the whole-number sizes that the paragraphs above describe all lapse, together with the naming rule of §2.2 for a face's sheet and table, the drawn-face format of §2.4 and the placeholder kind "generated block font" of §2.6. The coverage is now the chain's, which the content build checks against the en-US table, and the sizes are those of UI-171.
 
 ## 18 String table
 
@@ -1125,7 +1127,7 @@ All player-facing text is new, written in plain functional English and keyed by 
 
 | File | Asset id | Language | Priority | Placeholder |
 |---|---|---|---|---|
-| `GameData/Strings/en_gb.json` | `strings.en_gb` | English (United Kingdom), the source language (`en-GB`) | mvp | pseudo-localised text |
+| `GameData/Strings/en_us.json` | `strings.en_us` | English (United States), the source language (`en-US`, O91) | mvp | pseudo-localised text |
 | `GameData/Strings/fr_fr.json` | `strings.fr_fr` | French (`fr-FR`) | launch | pseudo-localised text |
 | `GameData/Strings/de_de.json` | `strings.de_de` | German (`de-DE`) | launch | pseudo-localised text |
 | `GameData/Strings/it_it.json` | `strings.it_it` | Italian (`it-IT`) | launch | pseudo-localised text |
@@ -1134,13 +1136,13 @@ All player-facing text is new, written in plain functional English and keyed by 
 | `GameData/Strings/ru_ru.json` | `strings.ru_ru` | Russian (`ru-RU`) | launch | pseudo-localised text |
 | `GameData/Strings/ja_jp.json` | `strings.ja_jp` | Japanese (`ja-JP`) | launch | pseudo-localised text |
 | `GameData/Strings/ko_kr.json` | `strings.ko_kr` | Korean (`ko-KR`) | launch | pseudo-localised text |
-| `GameData/Strings/dev_en_gb.json` | `strings.dev_en_gb` | English (United Kingdom), development captions `ui.dev.*` only; in development editions only, never in a player edition | skirmish-first-playable | pseudo-localised text |
+| `GameData/Strings/dev_en_us.json` | `strings.dev_en_us` | English (United States), development captions `ui.dev.*` only; in development editions only, never in a player edition | skirmish-first-playable | pseudo-localised text |
 
 The language set is the reference set of nine; the design phase confirms it. Japanese and Korean need the companion fonts of §17, and every language beyond what the drawn faces cover, Russian among them, needs the DirectWrite upgrade of ADR-034 (O56).
 
 ### 18.1 String ids cited by the documents
 
-The reference documents and engine components cite 590 string ids and id patterns (such as `ui.input.key.<name>`). Each needs new en-GB text in `strings.en_gb` and a translation in every other table, except the development captions `ui.dev.*`, which live only in `strings.dev_en_gb`. The owning document defines each id and its meaning; this table sizes the writing by family (counted mechanically from the documents).
+The reference documents and engine components cite 590 string ids and id patterns (such as `ui.input.key.<name>`). Each needs new en-US text (O91) in `strings.en_us` and a translation in every other table, except the development captions `ui.dev.*`, which live only in `strings.dev_en_us`. The owning document defines each id and its meaning; this table sizes the writing by family (counted mechanically from the documents).
 
 | Family | Ids | Main owner |
 |---|---:|---|

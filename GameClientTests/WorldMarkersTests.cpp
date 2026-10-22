@@ -205,15 +205,15 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(RCtrl366TheBadgeCountsTheSelectedWorkers)
   {
-    // ADR-127: the count's cell starts at the right edge of the badge's shadow, level with the badge's centre, in physical
-    // pixels; none with no badge or no Worker.
+    // ADR-127, ADR-145: the count's line starts at the right edge of the badge's shadow, its middle level with the badge's
+    // centre, in physical pixels; none with no badge or no Worker.
     const std::vector<Neuron::OverlayQuad> badge = Species::CursorBadge(false, true, OWN, {100, 100}, TARGET, CommittedPresentation());
-    const std::optional<Neuron::OverlayLine> count = Species::BadgeCount(badge, 18);
+    const std::optional<Species::BadgeLabel> count = Species::BadgeCount(badge, 18);
     Assert::IsTrue(count.has_value(), L"a count");
-    const Neuron::OverlayLine line = count.value_or(Neuron::OverlayLine{});
-    Assert::IsTrue(line.text == "18" && line.corner == Neuron::OverlayCorner::PixelLeftMiddle, L"18, anchored");
-    Assert::AreEqual(badge[0].centerX + badge[0].halfSize, line.insetX, 1e-4f, L"at the shadow's right edge");
-    Assert::AreEqual(badge[0].centerY, line.insetY, 1e-4f, L"level with the badge");
+    const Species::BadgeLabel label = count.value_or(Species::BadgeLabel{});
+    Assert::IsTrue(label.text == "18", L"18");
+    Assert::AreEqual(badge[0].centerX + badge[0].halfSize, label.left, 1e-4f, L"at the shadow's right edge");
+    Assert::AreEqual(badge[0].centerY, label.middle, 1e-4f, L"level with the badge");
     Assert::IsFalse(Species::BadgeCount(badge, 0).has_value(), L"none for no Worker");
     Assert::IsFalse(Species::BadgeCount({}, 5).has_value(), L"none without a badge");
   }

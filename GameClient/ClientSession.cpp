@@ -58,6 +58,7 @@ ClientSession::ClientSession(Desc _desc)
       ReceiveTerrain(_terrain.seed, _terrain.digest);
     });
   m_dispatcher.Register<ServerStats>([this](const ServerStats& _stats) { m_serverStats = _stats; });
+  m_dispatcher.Register<SettlementNotice>([this](const SettlementNotice& _notice) { m_notices.push_back(_notice); });
   m_dispatcher.Register<CommandReport>(
     [this](const CommandReport& _report)
     {
@@ -75,6 +76,27 @@ ClientSession::ClientSession(Desc _desc)
 std::vector<CommandReport> ClientSession::TakeReports()
 {
   return std::exchange(m_reports, {});
+}
+
+std::vector<SettlementNotice> ClientSession::TakeNotices()
+{
+  return std::exchange(m_notices, {});
+}
+
+std::optional<ReplicatedSettlement> ClientSession::OwnSettlement() const
+{
+  if (!m_commandedTeam)
+  {
+    return std::nullopt;
+  }
+  for (const auto& [id, state] : m_replica.Latest())
+  {
+    if (const auto* settlement = std::get_if<ReplicatedSettlement>(&state); settlement != nullptr && settlement->team == *m_commandedTeam)
+    {
+      return *settlement;
+    }
+  }
+  return std::nullopt;
 }
 
 bool ClientSession::RequestSandboxRestart(bool _newSeed)
@@ -110,9 +132,13 @@ void ClientSession::Update()
   {
     return;
   }
-  std::string title = m_refused ? RefusedTitle(m_productName)
-                                : SessionTitle(m_productName, m_terrain ? std::optional<std::uint64_t>{m_terrain->seed} : std::nullopt,
-                                               ServerTick(), m_sideFigures, WaitingForServer());
+  // ADR-139: a client with a settlement of its own counts its Workers there, and the sandbox's sides otherwise.
+  const std::optional<ReplicatedSettlement> own = OwnSettlement();
+  std::string title =
+    m_refused
+      ? RefusedTitle(m_productName)
+      : SessionTitle(m_productName, m_terrain ? std::optional<std::uint64_t>{m_terrain->seed} : std::nullopt, ServerTick(),
+                     own ? std::span<const std::uint32_t>{} : std::span<const std::uint32_t>{m_sideFigures}, WaitingForServer(), own);
   if (title != m_shownTitle)
   {
     m_showTitle(title);
@@ -225,7 +251,7 @@ bool ClientSession::Connected() const
 }
 
 std::string SessionTitle(std::string_view _productName, std::optional<std::uint64_t> _worldSeed, std::optional<std::uint64_t> _serverTick,
-                         std::span<const std::uint32_t> _sideFigures, bool _waiting)
+                         std::span<const std::uint32_t> _sideFigures, bool _waiting, const std::optional<ReplicatedSettlement>& _settlement)
 {
   std::string title(_productName);
   if (_worldSeed)
@@ -239,6 +265,11 @@ std::string SessionTitle(std::string_view _productName, std::optional<std::uint6
   for (std::size_t side = 0; side < _sideFigures.size(); ++side)
   {
     title += std::format("{}{}", side == 0 ? " — figures " : " : ", _sideFigures[side]);
+  }
+  if (_settlement)
+  {
+    title += std::format(" — stores {} of {} — Workers {} of {}", _settlement->storesMilliRu / 1'000, _settlement->capacityMilliRu / 1'000,
+                         _settlement->population, _settlement->limit);
   }
   if (_waiting)
   {

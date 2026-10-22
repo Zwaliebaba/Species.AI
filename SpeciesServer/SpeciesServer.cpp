@@ -19,6 +19,7 @@
 #include "Tuning.h"
 #include "WorldServer.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -131,10 +132,17 @@ int Run(std::span<const std::wstring> _arguments)
       WorldServer::Desc worldDesc;
       worldDesc.tuning = *tuning;
       worldDesc.structures = std::move(*structures);
-      // M1 plan §6: the battle sandbox, from the seed of --seed or one the server draws (MVP-005).
+      // M1 plan §6: the battle sandbox, from the seed of --seed or one the server draws (MVP-005); a Debug build's --world
+      // starts a new world with the steward's settlement in its place (ADR-139).
       worldDesc.worldSeed = options.worldSeed;
-      worldDesc.sandbox = true;
-      worldDesc.watched = options.watch;                             // O77: a Debug build's --watch, both sides under the AI
+      worldDesc.sandbox = !options.world;
+      if (options.world)
+      {
+        worldDesc.stewardSite = static_cast<std::uint8_t>(std::clamp<std::int64_t>(tuning->mvp.sandbox.stewardSite, 0, 3));
+      }
+      // O77: a Debug build's --watch, both sides under the AI; with --world, the steward's settlement under the scripted
+      // steward (ADR-140).
+      worldDesc.watched = options.watch;
       worldDesc.calendar = [&clock] { return clock.CalendarUtc(); }; // ADR-137: the world record's wall times
       WorldServer world(worldDesc);
       Neuron::ServerHost::Desc hostDesc;

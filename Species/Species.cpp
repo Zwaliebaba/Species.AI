@@ -26,6 +26,7 @@
 #include "Tuning.h"
 #include "WorldPresentation.h"
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdint>
@@ -229,7 +230,7 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
     _session.Update();
     endStep(ClientStep::Session);
     _world.Update(_session);
-    const Neuron::FrameInputs inputs = _world.Frame(_session, _view, _renderer.FramesPerSecond());
+    const Neuron::FrameInputs inputs = _world.Frame(_session, _view, _renderer.FramesPerSecond(), _window.DpiScale());
     endStep(ClientStep::Presentation);
     const Neuron::FrameOutcome outcome = _renderer.RenderFrame(inputs);
     const Neuron::Nanoseconds waits = outcome == Neuron::FrameOutcome::Suspended ? Neuron::Nanoseconds{0} : _renderer.LastFrameWaits();
@@ -339,10 +340,17 @@ int Run()
     IntegratedServer::Desc serverDesc;
     serverDesc.clock = &clock;
     serverDesc.content = &*content;
-    // M1 plan §6: the battle sandbox, from the seed of --seed or one the server draws (MVP-005).
+    // M1 plan §6: the battle sandbox, from the seed of --seed or one the server draws (MVP-005); a Debug build's --world
+    // starts a new world with the steward's settlement in its place, until T18's front end starts worlds (ADR-139).
     serverDesc.worldSeed = options.worldSeed;
-    serverDesc.sandbox = true;
-    serverDesc.watched = options.watch; // O77: a Debug build's --watch, both sides under the AI
+    serverDesc.sandbox = !options.world;
+    // O77: a Debug build's --watch, both sides under the AI; with --world, the steward's settlement under the scripted
+    // steward (ADR-140).
+    serverDesc.watched = options.watch;
+    if (options.world)
+    {
+      serverDesc.stewardSite = static_cast<std::uint8_t>(std::clamp<std::int64_t>(clientTuning->mvp.sandbox.stewardSite, 0, 3));
+    }
     IntegratedServer server(serverDesc);
     if (const auto started = server.Start(); !started)
     {
@@ -360,6 +368,9 @@ int Run()
     worldDesc.presentation = &*presentationTuning;
     worldDesc.content = &*content;
     worldDesc.clock = &clock;
+#if ENGINE_DEVELOPMENT
+    worldDesc.uiTest = options.uiTest; // ADR-145: the UI's test page
+#endif
     WorldPresentation world(worldDesc);
     SettlementView::Desc viewDesc;
     viewDesc.tuning = &*clientTuning;

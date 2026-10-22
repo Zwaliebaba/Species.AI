@@ -4,9 +4,6 @@
     <Filter Include="Build">
       <UniqueIdentifier>{A3CB131B-5D9C-5A84-B4FC-A43B7DF6A71C}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Fonts">
-      <UniqueIdentifier>{502186B4-FB14-51A0-A1A5-23B565D2369B}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Manifest">
       <UniqueIdentifier>{2EE12BA3-0DFD-5D10-8858-B5B4A8DE207A}</UniqueIdentifier>
     </Filter>
@@ -15,6 +12,9 @@
     </Filter>
     <Filter Include="Records">
       <UniqueIdentifier>{E6F81244-D748-59AF-84FB-31965F2D4530}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Strings">
+      <UniqueIdentifier>{1D6862E1-17FF-5F9E-A809-5296080F6FFE}</UniqueIdentifier>
     </Filter>
     <Filter Include="Textures">
       <UniqueIdentifier>{E2C1214A-927D-56F6-9721-FD2FAF5AED3B}</UniqueIdentifier>
@@ -36,11 +36,14 @@
     <ClInclude Include="ContentBuild.h">
       <Filter>Build</Filter>
     </ClInclude>
-    <ClInclude Include="FontPacker.h">
-      <Filter>Fonts</Filter>
+    <ClInclude Include="FontCoverage.h">
+      <Filter>Strings</Filter>
     </ClInclude>
     <ClInclude Include="MeshCooker.h">
       <Filter>Meshes</Filter>
+    </ClInclude>
+    <ClInclude Include="PlaceholderTexture.h">
+      <Filter>Textures</Filter>
     </ClInclude>
     <ClInclude Include="RecordCooker.h">
       <Filter>Records</Filter>
@@ -51,8 +54,8 @@
     <ClInclude Include="SimulationRecordCooker.h">
       <Filter>Meshes</Filter>
     </ClInclude>
-    <ClInclude Include="TextGlyphTable.h">
-      <Filter>Fonts</Filter>
+    <ClInclude Include="StringTableCooker.h">
+      <Filter>Strings</Filter>
     </ClInclude>
     <ClInclude Include="TextureCheck.h">
       <Filter>Textures</Filter>
@@ -80,11 +83,14 @@
     <ClCompile Include="ContentBuild.cpp">
       <Filter>Build</Filter>
     </ClCompile>
-    <ClCompile Include="FontPacker.cpp">
-      <Filter>Fonts</Filter>
+    <ClCompile Include="FontCoverage.cpp">
+      <Filter>Strings</Filter>
     </ClCompile>
     <ClCompile Include="MeshCooker.cpp">
       <Filter>Meshes</Filter>
+    </ClCompile>
+    <ClCompile Include="PlaceholderTexture.cpp">
+      <Filter>Textures</Filter>
     </ClCompile>
     <ClCompile Include="RecordCooker.cpp">
       <Filter>Records</Filter>
@@ -97,6 +103,9 @@
     </ClCompile>
     <ClCompile Include="SpeciesContentBuild.cpp">
       <Filter>Build</Filter>
+    </ClCompile>
+    <ClCompile Include="StringTableCooker.cpp">
+      <Filter>Strings</Filter>
     </ClCompile>
     <ClCompile Include="TextureCheck.cpp">
       <Filter>Textures</Filter>
