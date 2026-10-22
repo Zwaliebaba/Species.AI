@@ -293,7 +293,7 @@ public:
     Species::WorldStart start;
     start.key = SETTLED_TEST_KEY;
     start.seed = ValleyTerrain()->seed;
-    start.stewardSite = 2;
+    start.stewardSite = std::uint8_t{2};
     const std::unique_ptr<Species::WorldSimulation> world = Species::StartWorld(start, ValleyTerrain(), steep, &TestRecords());
     Species::RegionSimulation& region = world->Region(0);
     const Neuron::Vec3 at = AroundWellspring(region, 150.0, 0.0);
@@ -428,7 +428,7 @@ public:
     std::uint32_t important = 0;
     for (std::uint32_t node = 0; node < region.Bots().Size(); ++node)
     {
-      bool near = false;
+      bool close = false;
       for (std::uint32_t slot = 0; slot < region.Structures().Capacity(); ++slot)
       {
         if (!region.Structures().Used(slot))
@@ -436,10 +436,10 @@ public:
           continue;
         }
         const Species::Structure& structure = region.Structures().At(slot);
-        near = near || (!structure.ports.empty() && Neuron::Length(structure.position - region.Bots().Position(node)) < 100.0);
+        close = close || (!structure.ports.empty() && Neuron::Length(structure.position - region.Bots().Position(node)) < 100.0);
       }
-      Assert::IsTrue(Species::Important(region, node) == near, L"important exactly when near");
-      important += near ? 1 : 0;
+      Assert::IsTrue(Species::Important(region, node) == close, L"important exactly when near");
+      important += close ? 1 : 0;
     }
     Assert::IsTrue(important > 0 && important < region.Bots().Size(), L"some nodes and not all");
   }

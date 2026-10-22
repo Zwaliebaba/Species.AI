@@ -325,9 +325,9 @@ public:
     Species::CommandJournal settled = journal;
     settled.start.sandbox = false;
     settled.start.watched = false;
-    settled.start.stewardSite = 2;
+    settled.start.stewardSite = std::uint8_t{2};
     const std::optional<Species::CommandJournal> settledBack = Species::ReadJournal(Species::WriteJournal(settled));
-    Assert::IsTrue(settledBack.has_value() && settledBack->start.stewardSite == std::optional<std::uint8_t>(2),
+    Assert::IsTrue(settledBack.has_value() && settledBack->start.stewardSite == std::optional<std::uint8_t>(std::uint8_t{2}),
                    L"a world's steward's site (MVP-012, ADR-130)");
 
     Assert::IsFalse(Species::ReadJournal(std::span(bytes).first(bytes.size() - 1)).has_value(), L"a short file does not read");
