@@ -22,6 +22,7 @@
 #include "ShaderLayouts.h"
 #include "TextLayout.h"
 #include "UploadRing.h"
+#include "UiRenderer.h"
 #include "WorldRenderer.h"
 
 // The compiled shaders (AGENTS.md §2, ADR-112): this file binds the pipeline states, and no other file includes them.
@@ -50,6 +51,10 @@
 #include "CompiledShader/SkyVS.h"
 #include "CompiledShader/TerrainPS.h"
 #include "CompiledShader/TerrainVS.h"
+#include "CompiledShader/UiGlyphsPS.h"
+#include "CompiledShader/UiImagePS.h"
+#include "CompiledShader/UiSolidPS.h"
+#include "CompiledShader/UiVS.h"
 #include "CompiledShader/UnlitTexturedCutoutPS.h"
 #include "CompiledShader/UnlitTexturedGlowFogPS.h"
 #include "CompiledShader/UnlitTexturedLevelZeroPS.h"
@@ -162,6 +167,7 @@ enum class WorldPass : std::uint8_t
   Resolve,
   Final,
   Markers,
+  Ui,
   Cursor,
   OverlayText,
   Present
@@ -177,7 +183,7 @@ struct RendererState
   std::unique_ptr<DeviceGpuResourceFactory> factory;
   std::unique_ptr<WorldRenderer> world;
   std::unique_ptr<OverlayRenderer> overlay;
-  std::unique_ptr<OverlayRenderer> badgeText; // ADR-127: the cursor's badge count, in its own face
+  std::unique_ptr<UiRenderer> ui; // ADR-145: the UI's face, images and batches
   std::unique_ptr<CursorRenderer> cursor;
   std::unique_ptr<QuadRenderer> quads;
   std::unique_ptr<MeshRenderer> meshes;
@@ -324,7 +330,7 @@ bool CreateSwapChain(RendererState& _state)
 }
 
 // The world frame's pipeline states (RND-061, ADR-113): the entries its passes use, and the final pass's.
-const std::array<PipelineEntry, 33> WORLD_PIPELINES{{
+const std::array<PipelineEntry, 40> WORLD_PIPELINES{{
   {"sky", g_SkyVS, g_SkyPS, VertexLayout::SkyInstance, BlendState::Additive, DepthState::None, CullState::Back, PipelineTarget::Scene},
   {"terrain", g_TerrainVS, g_TerrainPS, VertexLayout::Terrain, BlendState::Opaque, DepthState::TestWrite, CullState::Back,
    PipelineTarget::Scene},
@@ -404,6 +410,22 @@ const std::array<PipelineEntry, 33> WORLD_PIPELINES{{
    PipelineTarget::Scene},
   {"glow_additive_fog", g_UnlitTexturedVS, g_UnlitTexturedGlowFogPS, VertexLayout::QuadInstance, BlendState::Additive, DepthState::Test,
    CullState::None, PipelineTarget::Scene},
+  // M2 task T14 (ADR-145): the UI's quads over the back buffer in pass 19 and with the cursor in pass 20, by what they
+  // read and how they blend (UI-180, UI-184); the UI never tests or writes depth (UI-183).
+  {"ui_solid_alpha", g_UiVS, g_UiSolidPS, VertexLayout::TextGlyph, BlendState::Alpha, DepthState::None, CullState::None,
+   PipelineTarget::BackBuffer},
+  {"ui_solid_additive", g_UiVS, g_UiSolidPS, VertexLayout::TextGlyph, BlendState::Additive, DepthState::None, CullState::None,
+   PipelineTarget::BackBuffer},
+  {"ui_glyphs_alpha", g_UiVS, g_UiGlyphsPS, VertexLayout::TextGlyph, BlendState::Alpha, DepthState::None, CullState::None,
+   PipelineTarget::BackBuffer},
+  {"ui_glyphs_additive", g_UiVS, g_UiGlyphsPS, VertexLayout::TextGlyph, BlendState::Additive, DepthState::None, CullState::None,
+   PipelineTarget::BackBuffer},
+  {"ui_glyphs_ink", g_UiVS, g_UiGlyphsPS, VertexLayout::TextGlyph, BlendState::Ink, DepthState::None, CullState::None,
+   PipelineTarget::BackBuffer},
+  {"ui_image_alpha", g_UiVS, g_UiImagePS, VertexLayout::TextGlyph, BlendState::Alpha, DepthState::None, CullState::None,
+   PipelineTarget::BackBuffer},
+  {"ui_image_additive", g_UiVS, g_UiImagePS, VertexLayout::TextGlyph, BlendState::Additive, DepthState::None, CullState::None,
+   PipelineTarget::BackBuffer},
 }};
 
 // The world frame's targets, at these indices of its table (RND-063, ADR-113).
@@ -463,6 +485,7 @@ WorldFrameTable WorldFrame(bool _multisampled)
       {{_multisampled ? TARGET_SCENE_RESOLVED : TARGET_SCENE_COLOR, TargetAccess::ShaderRead},
        {TARGET_BACK_BUFFER, TargetAccess::RenderTarget}});
   add(WorldPass::Markers, "pass_16_world_markers", "overlay_additive", {{TARGET_BACK_BUFFER, TargetAccess::RenderTarget}});
+  add(WorldPass::Ui, "pass_19_ui", "ui_glyphs_additive", {{TARGET_BACK_BUFFER, TargetAccess::RenderTarget}});
   add(WorldPass::Cursor, "pass_20_world_cursor", "cursor_art", {{TARGET_BACK_BUFFER, TargetAccess::RenderTarget}});
   add(WorldPass::OverlayText, "pass_29_text_overlays", "development_text", {{TARGET_BACK_BUFFER, TargetAccess::RenderTarget}});
   add(WorldPass::Present, "pass_34_present", {}, {{TARGET_BACK_BUFFER, TargetAccess::Present}});
@@ -694,7 +717,7 @@ void Rebuild(RendererState& _state)
   _state.rebuilding = false;
   _state.world->UploadAgain(); // RND-034: the same surfaces, from the unchanged world
   _state.overlay->UploadAgain();
-  _state.badgeText->UploadAgain();
+  _state.ui->UploadAgain();
   _state.cursor->UploadAgain();
   _state.quads->UploadAgain();
   _state.meshes->UploadAgain();
@@ -940,13 +963,19 @@ void RecordWorldFrame(RendererState& _state, const FrameInputs& _inputs, ID3D12R
       _state.quads->RecordOverlay(commands, *_state.ring, *_state.catalog, _state.swapChainSize, _inputs.markers);
       break;
     }
+    case WorldPass::Ui:
+    {
+      // UI-008, UI-175 (ADR-145): the UI over the final image and the world's markers.
+      ENGINE_PROFILE_SCOPE("render.ui");
+      _state.ui->Record(commands, *_state.ring, *_state.catalog, _state.swapChainSize, _inputs.ui);
+      break;
+    }
     case WorldPass::Cursor:
     {
-      // R-CTRL-366: the badge near the pointer, its count (ADR-127), then the pointer over them.
+      // R-CTRL-366: the badge near the pointer, its count in the UI's batches (ADR-145), then the pointer over them.
       ENGINE_PROFILE_SCOPE("render.world_cursor");
       _state.quads->RecordOverlay(commands, *_state.ring, *_state.catalog, _state.swapChainSize, _inputs.cursorBadge);
-      _state.badgeText->RecordText(commands, *_state.ring, *_state.catalog, _state.swapChainSize, TextScaleFor(_state.window->DpiScale()),
-                                   _inputs.badgeText, {});
+      _state.ui->Record(commands, *_state.ring, *_state.catalog, _state.swapChainSize, _inputs.uiCursor);
       if (_inputs.cursor)
       {
         _state.cursor->Record(commands, *_state.ring, *_state.catalog, _state.swapChainSize, *_inputs.cursor);
@@ -979,7 +1008,7 @@ std::expected<std::unique_ptr<FrameRenderer>, StartupFailure> FrameRenderer::Cre
   state->factory = std::make_unique<DeviceGpuResourceFactory>(DeviceGpuResourceFactory::Desc{});
   state->world = std::make_unique<WorldRenderer>(*state->factory);
   state->overlay = std::make_unique<OverlayRenderer>(*state->factory);
-  state->badgeText = std::make_unique<OverlayRenderer>(*state->factory, "font.ui.primary");
+  state->ui = std::make_unique<UiRenderer>(*state->factory);
   state->cursor = std::make_unique<CursorRenderer>(*state->factory);
   state->quads = std::make_unique<QuadRenderer>(*state->factory);
   state->meshes = std::make_unique<MeshRenderer>(*state->factory);
@@ -1083,7 +1112,7 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
   state.world->Show(_inputs.world);
   state.world->ShowMask(_inputs.viewMask);
   state.overlay->Show(_inputs.overlayFont);
-  state.badgeText->Show(_inputs.badgeFont);
+  state.ui->Show(_inputs.uiFace, _inputs.uiImages);
   state.cursor->Show(_inputs.cursorImages);
   state.quads->Show(_inputs.sceneTextures);
   state.meshes->Show(_inputs.sceneMeshes);
@@ -1112,9 +1141,9 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
     const D3D12_RESOURCE_BARRIER toTarget = TransitionBarrier(backBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
     commands->ResourceBarrier(1, &toTarget);
     commands->ClearRenderTargetView(target, background.data(), 0, nullptr);
-    if (!_inputs.overlay.empty() || _inputs.cursor)
+    if (!_inputs.overlay.empty() || _inputs.cursor || !_inputs.ui.empty() || !_inputs.uiCursor.empty())
     {
-      // DBG-095 and O65: the frame-rate line and the game cursor are drawn without a world too.
+      // DBG-095, O65 and ADR-145: the UI, the frame-rate line and the game cursor are drawn without a world too.
       const D3D12_VIEWPORT viewport{
         0.0f, 0.0f, static_cast<float>(state.swapChainSize.width), static_cast<float>(state.swapChainSize.height), 0.0f, 1.0f};
       const D3D12_RECT scissor{0, 0, static_cast<LONG>(state.swapChainSize.width), static_cast<LONG>(state.swapChainSize.height)};
@@ -1123,6 +1152,8 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
       commands->RSSetScissorRects(1, &scissor);
       // Every root parameter holds a value before the draw, the frame's too, which the text does not read.
       commands->SetGraphicsRootConstantBufferView(ROOT_FRAME_CONSTANTS, state.ring->Write(FrameConstants{}));
+      state.ui->Record(commands, *state.ring, *state.catalog, state.swapChainSize, _inputs.ui);
+      state.ui->Record(commands, *state.ring, *state.catalog, state.swapChainSize, _inputs.uiCursor);
       if (_inputs.cursor)
       {
         state.cursor->Record(commands, *state.ring, *state.catalog, state.swapChainSize, *_inputs.cursor);

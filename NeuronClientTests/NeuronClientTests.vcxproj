@@ -177,6 +177,7 @@
     <ClCompile Include="PresentationTests.cpp" />
     <ClCompile Include="SceneQuadsTests.cpp" />
     <ClCompile Include="TextLayoutTests.cpp" />
+    <ClCompile Include="UiTextTests.cpp" />
     <ClCompile Include="WindowGeometryTests.cpp" />
     <ClCompile Include="WorldFrameTests.cpp" />
     <ClCompile Include="pch.cpp">

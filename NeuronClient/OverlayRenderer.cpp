@@ -172,11 +172,6 @@ void OverlayRenderer::RecordText(ID3D12GraphicsCommandList* _commands, UploadRin
       left = width - left - TextWidth(*m_font, line.text, _scale);
       top = height - top - cellHeight;
     }
-    else if (line.corner == OverlayCorner::PixelLeftMiddle)
-    {
-      left = std::round(line.insetX);
-      top = std::round(line.insetY - cellHeight * 0.5f);
-    }
     const Float4 color(line.color[0], line.color[1], line.color[2], line.color[3]);
     for (const GlyphQuad& quad : LayoutText(*m_font, line.text, _scale, left, top))
     {

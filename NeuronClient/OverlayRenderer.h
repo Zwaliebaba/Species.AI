@@ -16,8 +16,8 @@ namespace Neuron
 {
 
 /// The development overlay's drawing (DBG-004, DBG-095; M1 tasks T15a and T15b): its face's page on the GPU, its
-/// rectangles and lines in pass 29 over the final image, and the development dots in the scene. A second one draws the
-/// cursor's badge count in GameFont in pass 20 (ADR-127). Every call is made from the frame thread.
+/// rectangles and lines in pass 29 over the final image, and the development dots in the scene. Every call is made from
+/// the frame thread.
 class OverlayRenderer
 {
 public:

@@ -65,6 +65,9 @@
     <ClCompile Include="TestSupport.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
+    <ClCompile Include="UiLookTests.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
     <ClCompile Include="WorldMarkersTests.cpp">
       <Filter>View</Filter>
     </ClCompile>

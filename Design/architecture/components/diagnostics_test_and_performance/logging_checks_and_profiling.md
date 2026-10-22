@@ -47,6 +47,8 @@ The logging, check, black-box and profiling declarations are those of Listing 2.
 
 > **Amendment 2026-10-20 (M1 task T13; [ADR-113](../../../ADR/ADR-113-the-frame-at-m1.md), [ADR-115](../../../ADR/ADR-115-the-world-frame-at-m1.md)).** The world frame adds `render.camera` (pass 1), `render.frame_constants` (pass 0), `render.resolve` and `render.final`. Species draws the terrain's grid in the surface pass (ADR-011), so pass 4 is `render.terrain.surface` and `render.terrain.wire_overlay` has no pass. At M1 the waves are evaluated on the CPU: `render.sea.advance` is their evaluation and `render.sea.wave_build` the pass that draws them. `render.sky.advance` is the sky's instances for the frame.
 
+> **Amendment 2026-10-22 (M2 task T14; [ADR-145](../../../ADR/ADR-145-the-ui-pass-and-gamefont-text-at-m2.md)).** The UI windows pass (pass 19, UI-008) adds `render.ui`; the UI's batches drawn with the cursor are measured inside `render.world_cursor`.
+
 **DBG-046** (MUST NOT) The catalogue has no marker for campaign-only systems (DEC-052), for the pixelation, deform and reflection effects (DEC-059) or for the gesture and icon Power interfaces (DEC-055), which Species does not specify.
 
 ### 3.5 Black-box contents

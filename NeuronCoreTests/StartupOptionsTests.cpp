@@ -151,6 +151,22 @@ public:
     Assert::IsFalse(Parse({L"--seed", L"4"}).world, L"the sandbox unless asked");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Plt022TheUiTestOptionTakesNoValue)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-022")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-107")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Plt022TheUiTestOptionTakesNoValue)
+  {
+    // ADR-145: `--ui-test` stands alone and draws the UI's test page; a Release build knows no such option.
+    const Neuron::StartupOptions options = Parse({L"--ui-test", L"--world"});
+#if ENGINE_DEVELOPMENT
+    Assert::IsTrue(options.uiTest && options.world && options.ignoredArguments.empty(), L"the test page, with a world");
+#else
+    Assert::IsFalse(options.uiTest, L"no test page option in Release");
+#endif
+    Assert::IsFalse(Parse({L"--world"}).uiTest, L"no test page unless asked");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Ast105TheContentFolderIsBesideTheExecutableByDefault)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"AST-105")
   END_TEST_METHOD_ATTRIBUTE()

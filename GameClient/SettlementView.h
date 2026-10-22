@@ -121,10 +121,16 @@ public:
   {
     return m_badge;
   }
-  // ADR-127: the badge's text, the selected Workers' count, drawn in GameFont; none while no Worker is selected.
-  [[nodiscard]] const std::vector<Neuron::OverlayLine>& BadgeText() const noexcept
+  // ADR-127, ADR-145: the badge's count of the selected Workers, which the UI draws in GameFont; none while no Worker is
+  // selected.
+  [[nodiscard]] const std::optional<BadgeLabel>& BadgeCountLabel() const noexcept
   {
-    return m_badgeText;
+    return m_badgeCount;
+  }
+  // The client area of the last update, in pixels.
+  [[nodiscard]] Neuron::SizePx ViewSize() const noexcept
+  {
+    return m_viewSize;
   }
 
 private:
@@ -144,7 +150,8 @@ private:
   RoutePreview m_preview;
   WorldMarkers m_markers;
   std::vector<Neuron::OverlayQuad> m_badge;
-  std::vector<Neuron::OverlayLine> m_badgeText;
+  std::optional<BadgeLabel> m_badgeCount;
+  Neuron::SizePx m_viewSize;
   std::size_t m_selectedWorkers = 0; // the local team's living Workers under control in this frame's figures
   CursorKind m_cursor = CursorKind::World;
   std::optional<StableId> m_hovered;

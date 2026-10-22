@@ -23,6 +23,7 @@ constexpr std::wstring_view SEED_OPTION = L"--seed";
 constexpr std::wstring_view RENDER_CHECK_OPTION = L"--render-check";
 constexpr std::wstring_view WATCH_OPTION = L"--watch";
 constexpr std::wstring_view WORLD_OPTION = L"--world";
+constexpr std::wstring_view UI_TEST_OPTION = L"--ui-test";
 
 // A decimal number of digits only that fits 64 bits, or none.
 std::optional<std::uint64_t> DecimalOf(std::wstring_view _text) noexcept
@@ -98,6 +99,11 @@ StartupOptions ParseArguments(std::span<const std::wstring> _arguments)
     if (_arguments[i] == WORLD_OPTION)
     {
       options.world = true;
+      continue;
+    }
+    if (_arguments[i] == UI_TEST_OPTION)
+    {
+      options.uiTest = true;
       continue;
     }
     if (_arguments[i] == RENDER_CHECK_OPTION && i + 1 < _arguments.size())

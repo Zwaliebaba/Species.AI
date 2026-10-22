@@ -874,5 +874,32 @@
     "motion": {
       "order_marker_flare": 15
     }
+  },
+  "ui": {
+    "text": {
+      "default_size": 12,
+      "outline_offset": 1
+    },
+    "access": {
+      "min_text_1080p": 9,
+      "min_text_2160p": 19
+    },
+    "chrome": {
+      "body_repeat": 8
+    },
+    "palette": {
+      "window_body_tint": {
+        "r": 1,
+        "g": 1,
+        "b": 1,
+        "a": 0.96
+      },
+      "text_outline": {
+        "r": 1,
+        "g": 1,
+        "b": 1,
+        "a": 0
+      }
+    }
   }
 }

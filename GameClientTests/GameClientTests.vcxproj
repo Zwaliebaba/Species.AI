@@ -180,6 +180,7 @@
     <ClCompile Include="StructureLookTests.cpp" />
     <ClCompile Include="TerritoryLookTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />
+    <ClCompile Include="UiLookTests.cpp" />
     <ClCompile Include="WorldMarkersTests.cpp" />
     <ClCompile Include="WorldPresentationTests.cpp" />
     <ClCompile Include="pch.cpp">

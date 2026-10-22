@@ -2340,6 +2340,74 @@ struct TuningPresentation
     Motion motion;
   };
 
+  struct Ui
+  {
+    struct Text
+    {
+      // ui.text.default_size, in px
+      double defaultSize = 0.0;
+
+      // ui.text.outline_offset, in px times the DPI scale
+      std::int64_t outlineOffset = 0;
+    };
+
+    struct Access
+    {
+      // ui.access.min_text_1080p, in px at a client height of 1080
+      double minText1080p = 0.0;
+
+      // ui.access.min_text_2160p, in px at a client height of 2160
+      double minText2160p = 0.0;
+    };
+
+    struct Chrome
+    {
+      // ui.chrome.body_repeat, in repeats of the strip across the width
+      double bodyRepeat = 0.0;
+    };
+
+    struct Palette
+    {
+      struct WindowBodyTint
+      {
+        // ui.palette.window_body_tint.r, in 0 to 1
+        double r = 0.0;
+
+        // ui.palette.window_body_tint.g, in 0 to 1
+        double g = 0.0;
+
+        // ui.palette.window_body_tint.b, in 0 to 1
+        double b = 0.0;
+
+        // ui.palette.window_body_tint.a, in 0 to 1
+        double a = 0.0;
+      };
+
+      struct TextOutline
+      {
+        // ui.palette.text_outline.r, in 0 to 1
+        double r = 0.0;
+
+        // ui.palette.text_outline.g, in 0 to 1
+        double g = 0.0;
+
+        // ui.palette.text_outline.b, in 0 to 1
+        double b = 0.0;
+
+        // ui.palette.text_outline.a, in 0 to 1
+        double a = 0.0;
+      };
+
+      WindowBodyTint windowBodyTint;
+      TextOutline textOutline;
+    };
+
+    Text text;
+    Access access;
+    Chrome chrome;
+    Palette palette;
+  };
+
   Rnd rnd;
   Ter ter;
   Ref ref;
@@ -2347,6 +2415,7 @@ struct TuningPresentation
   Dbg dbg;
   Cam cam;
   Vfx vfx;
+  Ui ui;
 };
 
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Rnd::Frame::ClearColor& _out)
@@ -3956,6 +4025,60 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ui::Text& _out)
+{
+  _out.defaultSize = _reader.Decimal(_object, "default_size", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.outlineOffset = _reader.Integer(_object, "outline_offset", 0);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ui::Access& _out)
+{
+  _out.minText1080p = _reader.Decimal(_object, "min_text_1080p", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.minText2160p = _reader.Decimal(_object, "min_text_2160p", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ui::Chrome& _out)
+{
+  _out.bodyRepeat = _reader.Decimal(_object, "body_repeat", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ui::Palette::WindowBodyTint& _out)
+{
+  _out.r = _reader.Decimal(_object, "r", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.g = _reader.Decimal(_object, "g", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.b = _reader.Decimal(_object, "b", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.a = _reader.Decimal(_object, "a", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ui::Palette::TextOutline& _out)
+{
+  _out.r = _reader.Decimal(_object, "r", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.g = _reader.Decimal(_object, "g", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.b = _reader.Decimal(_object, "b", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.a = _reader.Decimal(_object, "a", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ui::Palette& _out)
+{
+  ReadFields(_reader, _reader.Object(_object, "window_body_tint"), _out.windowBodyTint);
+  ReadFields(_reader, _reader.Object(_object, "text_outline"), _out.textOutline);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ui& _out)
+{
+  ReadFields(_reader, _reader.Object(_object, "text"), _out.text);
+  ReadFields(_reader, _reader.Object(_object, "access"), _out.access);
+  ReadFields(_reader, _reader.Object(_object, "chrome"), _out.chrome);
+  ReadFields(_reader, _reader.Object(_object, "palette"), _out.palette);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "rnd"), _out.rnd);
@@ -3965,6 +4088,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "dbg"), _out.dbg);
   ReadFields(_reader, _reader.Object(_object, "cam"), _out.cam);
   ReadFields(_reader, _reader.Object(_object, "vfx"), _out.vfx);
+  ReadFields(_reader, _reader.Object(_object, "ui"), _out.ui);
   _reader.Close(_object);
 }
 
@@ -6765,6 +6889,100 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.motion);
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ui::Text& _in)
+{
+  _writer.F64(_in.defaultSize);
+  _writer.I64(_in.outlineOffset);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ui::Text& _out)
+{
+  _out.defaultSize = _reader.F64();
+  _out.outlineOffset = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ui::Access& _in)
+{
+  _writer.F64(_in.minText1080p);
+  _writer.F64(_in.minText2160p);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ui::Access& _out)
+{
+  _out.minText1080p = _reader.F64();
+  _out.minText2160p = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ui::Chrome& _in)
+{
+  _writer.F64(_in.bodyRepeat);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ui::Chrome& _out)
+{
+  _out.bodyRepeat = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ui::Palette::WindowBodyTint& _in)
+{
+  _writer.F64(_in.r);
+  _writer.F64(_in.g);
+  _writer.F64(_in.b);
+  _writer.F64(_in.a);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ui::Palette::WindowBodyTint& _out)
+{
+  _out.r = _reader.F64();
+  _out.g = _reader.F64();
+  _out.b = _reader.F64();
+  _out.a = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ui::Palette::TextOutline& _in)
+{
+  _writer.F64(_in.r);
+  _writer.F64(_in.g);
+  _writer.F64(_in.b);
+  _writer.F64(_in.a);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ui::Palette::TextOutline& _out)
+{
+  _out.r = _reader.F64();
+  _out.g = _reader.F64();
+  _out.b = _reader.F64();
+  _out.a = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ui::Palette& _in)
+{
+  CookFields(_writer, _in.windowBodyTint);
+  CookFields(_writer, _in.textOutline);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ui::Palette& _out)
+{
+  ReadCookedFields(_reader, _out.windowBodyTint);
+  ReadCookedFields(_reader, _out.textOutline);
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ui& _in)
+{
+  CookFields(_writer, _in.text);
+  CookFields(_writer, _in.access);
+  CookFields(_writer, _in.chrome);
+  CookFields(_writer, _in.palette);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ui& _out)
+{
+  ReadCookedFields(_reader, _out.text);
+  ReadCookedFields(_reader, _out.access);
+  ReadCookedFields(_reader, _out.chrome);
+  ReadCookedFields(_reader, _out.palette);
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation& _in)
 {
   CookFields(_writer, _in.rnd);
@@ -6774,6 +6992,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation& 
   CookFields(_writer, _in.dbg);
   CookFields(_writer, _in.cam);
   CookFields(_writer, _in.vfx);
+  CookFields(_writer, _in.ui);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation& _out)
@@ -6785,6 +7004,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation& 
   ReadCookedFields(_reader, _out.dbg);
   ReadCookedFields(_reader, _out.cam);
   ReadCookedFields(_reader, _out.vfx);
+  ReadCookedFields(_reader, _out.ui);
 }
 
 // Cooks a tuning.presentation record into the bytes of its entry (DAT-014): what the content build writes.

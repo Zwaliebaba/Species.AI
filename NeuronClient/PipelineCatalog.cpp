@@ -46,6 +46,10 @@ D3D12_RENDER_TARGET_BLEND_DESC TargetBlendOf(BlendState _blend) noexcept
     desc.SrcBlend = D3D12_BLEND_ZERO;
     desc.DestBlend = D3D12_BLEND_INV_SRC_COLOR;
     break;
+  case BlendState::Ink:
+    desc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+    desc.DestBlend = D3D12_BLEND_INV_SRC_COLOR;
+    break;
   }
   return desc;
 }

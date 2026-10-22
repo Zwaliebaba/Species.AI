@@ -158,6 +158,7 @@
     <ClInclude Include="StewardAreas.h" />
     <ClInclude Include="StructureLook.h" />
     <ClInclude Include="TerritoryLook.h" />
+    <ClInclude Include="UiLook.h" />
     <ClInclude Include="WorldMarkers.h" />
     <ClInclude Include="WorldPresentation.h" />
     <ClInclude Include="pch.h" />
@@ -177,6 +178,7 @@
     <ClCompile Include="StewardAreas.cpp" />
     <ClCompile Include="StructureLook.cpp" />
     <ClCompile Include="TerritoryLook.cpp" />
+    <ClCompile Include="UiLook.cpp" />
     <ClCompile Include="WorldMarkers.cpp" />
     <ClCompile Include="WorldPresentation.cpp" />
     <ClCompile Include="pch.cpp">

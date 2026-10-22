@@ -139,6 +139,13 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-136](ADR-136-settlement-commands-status-and-statistics-at-m2.md) | Settlement commands, status and statistics at M2 | Proposed | 2026-10-22 |
 | [ADR-137](ADR-137-saving-the-journal-cut-and-the-world-record-at-m2.md) | Saving, the journal cut and the world record at M2 | Proposed | 2026-10-22 |
 | [ADR-138](ADR-138-the-scripted-steward-and-the-growth-scene-at-m2.md) | The scripted steward and the growth scene at M2 | Proposed | 2026-10-22 |
+| [ADR-139](ADR-139-replicating-the-settlement-at-m2.md) | Replicating the settlement at M2 | Proposed | 2026-10-22 |
+| [ADR-140](ADR-140-structures-drawn-and-the-stand-ins-at-m2.md) | Structures drawn and the stand-ins at M2 | Proposed | 2026-10-22 |
+| [ADR-141](ADR-141-the-turrets-shots-drawn-at-m2.md) | The turret's shots drawn at M2 | Proposed | 2026-10-22 |
+| [ADR-142](ADR-142-the-camera-flies-along-the-view-within-the-stewards-areas.md) | The camera flies along the view, within the steward's areas | Proposed | 2026-10-22 |
+| [ADR-143](ADR-143-territory-lines-and-border-areas-drawn-at-m2.md) | Territory lines and border areas drawn at M2 | Proposed | 2026-10-22 |
+| [ADR-144](ADR-144-black-fog-outside-the-stewards-areas-at-m2.md) | Black fog outside the steward's areas at M2 | Proposed | 2026-10-22 |
+| [ADR-145](ADR-145-the-ui-pass-and-gamefont-text-at-m2.md) | The UI pass and GameFont's text at M2 | Proposed | 2026-10-22 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

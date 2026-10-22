@@ -87,10 +87,8 @@ struct WorldScene
 /// The corner of the target that an overlay line is anchored to (ADR-120).
 enum class OverlayCorner : std::uint8_t
 {
-  BottomRight,    // the line's cell ends there: right-aligned, as the frame-rate line is (DBG-095)
-  TopLeft,        // the line's cell starts there, as a page's lines do (DBG-096)
-  PixelLeftMiddle // ADR-127: the cell's left edge and vertical middle lie at the insets, physical pixels from the
-                  // target's top-left corner that do not scale with the text, as the cursor's badge count does
+  BottomRight, // the line's cell ends there: right-aligned, as the frame-rate line is (DBG-095)
+  TopLeft      // the line's cell starts there, as a page's lines do (DBG-096)
 };
 
 /// One line of the development overlay (DBG-095), drawn in EditorFont at the overlay's whole-number scale (O63) with
@@ -291,7 +289,6 @@ struct OverlayQuad
   std::array<float, 4> color{1.0f, 1.0f, 1.0f, 1.0f};
 };
 
-/// What one frame shows (RND-053's snapshot as M1 has it).
 /// A mask over the ground (ADR-144): a square raster of cells from its corner of least x and z, z outer and x inner, each
 /// 255 where the ground is clear and 0 where it lies under black fog of fogStrength, with the values between at the
 /// edge. The terrain and the sea read it; nothing else is fogged by it.
@@ -305,6 +302,61 @@ struct ViewMask
   float fogStrength = 1.0f; // 1: black
 };
 
+// UI-180: the UI's three blend states (ADR-145).
+enum class UiBlend : std::uint8_t
+{
+  Alpha,    // source alpha, one minus source alpha
+  Additive, // source alpha, one
+  Ink       // source alpha, one minus source colour
+};
+
+// What a UI batch's quads read (ADR-145).
+enum class UiSource : std::uint8_t
+{
+  Solid,  // nothing: the quad's colour
+  Glyphs, // the UI face's coverage page, with the point sampler (O63)
+  Image   // an image of the UI's set, its colour times the quad's, with the linear wrapping sampler (UI-054)
+};
+
+/// One quad of the UI (UI-184, ADR-145): its rectangle on the target in pixels from its top-left corner (left, top,
+/// right, bottom), its texture coordinates in the same order, and its colour.
+struct UiQuad
+{
+  std::array<float, 4> rectangle{};
+  std::array<float, 4> uv{0.0f, 0.0f, 1.0f, 1.0f};
+  std::array<float, 4> color{1.0f, 1.0f, 1.0f, 1.0f};
+};
+
+/// A scissor rectangle of the UI in whole pixels (UI-181), from its top-left corner to its bottom-right one.
+struct UiScissor
+{
+  std::int32_t left = 0;
+  std::int32_t top = 0;
+  std::int32_t right = 0;
+  std::int32_t bottom = 0;
+
+  friend constexpr bool operator==(const UiScissor& _a, const UiScissor& _b) noexcept = default;
+};
+
+/// One draw of the UI (UI-179, ADR-145): what its quads read and how they blend, the image they read when they read
+/// one, its scissor rectangle, and its quads in painter's order. Batches are drawn in their order.
+struct UiBatch
+{
+  UiSource source = UiSource::Solid;
+  UiBlend blend = UiBlend::Alpha;
+  std::uint16_t image = 0; // an index of UiImages::files
+  std::optional<UiScissor> scissor;
+  std::vector<UiQuad> quads;
+};
+
+/// The images the UI reads (ADR-145): each the bytes of a DDS file of the content, by the index a batch names. They are
+/// uploaded once and kept across device rebuilds (RND-035).
+struct UiImages
+{
+  std::vector<std::vector<std::byte>> files;
+};
+
+/// What one frame shows (RND-053's snapshot as M1 has it).
 struct FrameInputs
 {
   std::shared_ptr<const WorldScene> world;             // none: no world is drawn, and the frame is the background
@@ -329,9 +381,12 @@ struct FrameInputs
   // scene's textures in a world frame only.
   std::vector<OverlayQuad> markers;
   std::vector<OverlayQuad> cursorBadge;
-  // ADR-127: the badge's text over it in pass 20, in its face at the text scale: the selected Workers' count in GameFont.
-  std::shared_ptr<const FontAsset> badgeFont;
-  std::vector<OverlayLine> badgeText;
+  // The UI (ADR-145): its face, GameFont, and its images; its batches drawn in pass 19 over the world's markers, and
+  // those drawn in pass 20 with the cursor, the badge's count among them.
+  std::shared_ptr<const FontAsset> uiFace;
+  std::shared_ptr<const UiImages> uiImages;
+  std::vector<UiBatch> ui;
+  std::vector<UiBatch> uiCursor;
   // The game cursor (ADR-119): its art, and the quad of this frame; none draws no cursor.
   std::shared_ptr<const CursorImages> cursorImages;
   std::optional<CursorQuad> cursor;

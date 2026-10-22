@@ -191,6 +191,8 @@
     <ClInclude Include="ShaderLayouts.h" />
     <ClInclude Include="SkyLayers.h" />
     <ClInclude Include="TextLayout.h" />
+    <ClInclude Include="UiRenderer.h" />
+    <ClInclude Include="UiText.h" />
     <ClInclude Include="UploadRing.h" />
     <ClInclude Include="WindowGeometry.h" />
     <ClInclude Include="WorldRenderer.h" />
@@ -229,6 +231,8 @@
     <ClCompile Include="SceneTargets.cpp" />
     <ClCompile Include="SkyLayers.cpp" />
     <ClCompile Include="TextLayout.cpp" />
+    <ClCompile Include="UiRenderer.cpp" />
+    <ClCompile Include="UiText.cpp" />
     <ClCompile Include="UploadRing.cpp" />
     <ClCompile Include="WindowGeometry.cpp" />
     <ClCompile Include="WorldRenderer.cpp" />
@@ -312,6 +316,18 @@
     <FXCompile Include="Shader\TerrainVS.hlsl">
       <ShaderType>Vertex</ShaderType>
     </FXCompile>
+    <FXCompile Include="Shader\UiGlyphsPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\UiImagePS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\UiSolidPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\UiVS.hlsl">
+      <ShaderType>Vertex</ShaderType>
+    </FXCompile>
     <FXCompile Include="Shader\UnlitTexturedCutoutPS.hlsl">
       <ShaderType>Pixel</ShaderType>
     </FXCompile>
@@ -358,6 +374,7 @@
     <None Include="Shader\SeaWaves.hlsli" />
     <None Include="Shader\Sky.hlsli" />
     <None Include="Shader\Terrain.hlsli" />
+    <None Include="Shader\Ui.hlsli" />
     <None Include="Shader\UnlitTextured.hlsli" />
     <None Include="Shader\UnlitVertexColor.hlsli" />
     <None Include="packages.config" />

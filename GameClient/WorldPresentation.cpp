@@ -7,6 +7,7 @@
 #include "DevelopmentOverlay.h"
 #include "LeaderLook.h"
 #include "Log.h"
+#include "UiLook.h"
 #include "WorldPresentation.h"
 
 #include <algorithm>
@@ -31,7 +32,7 @@ constexpr std::string_view SEA_TILE_KEY = "textures/terrain/seatile01";
 constexpr std::string_view TERRAIN_GRID_KEY = "textures/fx/terraingrid";
 constexpr std::string_view SKY_CLOUD_KEY = "textures/fx/skycloud";
 constexpr std::string_view BEAM_SHORT_KEY = "textures/fx/beamshort";
-// ADR-127: GameFont, the player-facing face (MVP-100, O62), for the badge's count.
+// ADR-145: GameFont, the player-facing face (MVP-100, O62) and the UI's face.
 constexpr std::string_view GAME_FACE_KEY = "fonts/gamefont";
 
 // GameFont from the content: none when it is missing or damaged, which is logged.
@@ -251,6 +252,7 @@ WorldPresentation::WorldPresentation(Desc _desc)
   m_sceneMeshes = LoadSceneMeshes(*m_desc.content);
   m_effects.UseMeshes(m_sceneMeshes); // ADR-141: the turret barrel set places each shot's casing
   m_gameFace = LoadGameFace(*m_desc.content);
+  m_uiImages = LoadUiImages(*m_desc.content);
 #if ENGINE_DEVELOPMENT
   m_developmentFace = LoadDevelopmentFace(*m_desc.content);
 #endif
@@ -388,7 +390,8 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     // M2 task T13 (ADR-143): every settlement's territory line and the border areas' spots, in pass 10a.
     m_territories.Update(_session.Replica().Latest(), *m_terrain);
     m_territories.AppendBatches(inputs.quadBatches);
-    // M1 task T17b (ADR-125): the route preview in pass 12, the world markers in pass 16 and the badge in pass 20.
+    // M1 task T17b (ADR-125): the route preview in pass 12, the world markers in pass 16 and the badge in pass 20, its
+    // count in the UI's batches of pass 20 (ADR-145).
     if (crowd.localTeam.has_value())
     {
       _view.Preview().AppendBatches(crowd.camera, crowd.cameraFront, m_presentationClock.RealSeconds(), TeamColor(*crowd.localTeam),
@@ -396,8 +399,10 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     }
     inputs.markers = _view.Markers().Quads();
     inputs.cursorBadge = _view.Badge();
-    inputs.badgeFont = m_gameFace;
-    inputs.badgeText = _view.BadgeText();
+    if (const std::optional<BadgeLabel>& count = _view.BadgeCountLabel(); m_gameFace != nullptr && count.has_value())
+    {
+      AppendBadgeCount(*count, *m_gameFace, *m_desc.presentation, _view.ViewSize().height, inputs.uiCursor);
+    }
     if (displayTick.has_value())
     {
       // Passes 10a, 10b and 15, and the camera shake as an offset of the frame's view alone (VFX-232).
@@ -417,7 +422,14 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
       inputs.camera.rollRadians += effects.shakeRollRadians;
     }
   }
+  // ADR-145: the UI's face and images, which its batches read.
+  inputs.uiFace = m_gameFace;
+  inputs.uiImages = m_uiImages;
 #if ENGINE_DEVELOPMENT
+  if (m_desc.uiTest && m_gameFace != nullptr)
+  {
+    AppendUiTestPage(*m_gameFace, *m_desc.presentation, _view.ViewSize(), inputs.ui);
+  }
   // DBG-095, DBG-096, ADR-120: while the overlay is shown, the frame-rate line, whose objects are counted while a world
   // exists, and the frame page.
   if (m_developmentFace != nullptr && m_overlayShown)

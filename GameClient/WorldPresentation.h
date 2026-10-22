@@ -25,7 +25,8 @@ namespace Species
 /// The client's world frame (M1 task T13, ADR-115): the world's surfaces, built from the session's terrain with the
 /// client's presentation record and the content's textures once the terrain arrives, and each frame's inputs from the
 /// settlement view's camera and cursor (M1 task T14, ADR-119), the crowds (M1 task T16, ADR-121, ADR-122), the weapons'
-/// effects, particles and screen effects (ADR-123) and the structures (M2 task T12, ADR-140). In a Debug build,
+/// effects, particles and screen effects (ADR-123), the structures (M2 task T12, ADR-140) and the UI's batches (M2 task
+/// T14, ADR-145). In a Debug build,
 /// while the overlay is shown, each frame also carries a dot for each living figure (ADR-118) and the frame-rate line and
 /// frame page from the frame loop's profile (M1 task T15b, ADR-120).
 class WorldPresentation
@@ -37,6 +38,7 @@ public:
     const TuningPresentation* presentation = nullptr;
     const Neuron::LooseContent* content = nullptr;
     const Neuron::PlatformClock* clock = nullptr;
+    bool uiTest = false; // a Debug build's `--ui-test`: the UI's test page over every frame (ADR-145)
   };
 
   explicit WorldPresentation(Desc _desc);
@@ -81,7 +83,8 @@ private:
   Neuron::Nanoseconds m_start{};
   std::optional<double> m_firstDisplayTick;
   std::shared_ptr<const Neuron::FontAsset> m_developmentFace;   // a Debug build's overlay face; none in Release
-  std::shared_ptr<const Neuron::FontAsset> m_gameFace;          // ADR-127: GameFont, for the badge's count; none when missing
+  std::shared_ptr<const Neuron::FontAsset> m_gameFace;          // ADR-145: GameFont, the UI's face; none when missing
+  std::shared_ptr<const Neuron::UiImages> m_uiImages;           // ADR-145: the UI's images, each empty when missing
   std::shared_ptr<const Neuron::CursorImages> m_cursorImages;   // ADR-119; none when the content lacks one
   std::shared_ptr<const Neuron::SceneTextures> m_sceneTextures; // ADR-121; none when the content lacks one
   std::shared_ptr<const Neuron::SceneMeshes> m_sceneMeshes;     // ADR-122; none when the content lacks one

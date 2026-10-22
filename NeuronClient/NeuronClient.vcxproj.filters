@@ -126,6 +126,12 @@
     <ClInclude Include="TextLayout.h">
       <Filter>Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="UiRenderer.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="UiText.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
     <ClInclude Include="UploadRing.h">
       <Filter>Rendering</Filter>
     </ClInclude>
@@ -236,6 +242,12 @@
     <ClCompile Include="TextLayout.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="UiRenderer.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="UiText.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
     <ClCompile Include="UploadRing.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
@@ -330,6 +342,18 @@
     <FXCompile Include="Shader\TerrainVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
+    <FXCompile Include="Shader\UiGlyphsPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\UiImagePS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\UiSolidPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\UiVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
     <FXCompile Include="Shader\UnlitTexturedCutoutPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
@@ -396,6 +420,9 @@
       <Filter>Shader</Filter>
     </None>
     <None Include="Shader\Terrain.hlsli">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="Shader\Ui.hlsli">
       <Filter>Shader</Filter>
     </None>
     <None Include="Shader\UnlitTextured.hlsli">

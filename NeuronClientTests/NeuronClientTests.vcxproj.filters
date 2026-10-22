@@ -59,6 +59,9 @@
     <ClCompile Include="TextLayoutTests.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="UiTextTests.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
     <ClCompile Include="WindowGeometryTests.cpp">
       <Filter>Window</Filter>
     </ClCompile>

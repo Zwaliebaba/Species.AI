@@ -7103,6 +7103,218 @@
       "additionalProperties": false,
       "x-species-type": "object",
       "x-species-presence": "required"
+    },
+    "ui": {
+      "type": "object",
+      "description": "the ui.* keys",
+      "properties": {
+        "text": {
+          "type": "object",
+          "description": "the ui.text.* keys",
+          "properties": {
+            "default_size": {
+              "type": "number",
+              "description": "ui.text.default_size (UI-189)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "px",
+              "x-species-presence": "required"
+            },
+            "outline_offset": {
+              "type": "integer",
+              "description": "ui.text.outline_offset (UI-192)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "px times the DPI scale",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "default_size",
+            "outline_offset"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "access": {
+          "type": "object",
+          "description": "the ui.access.* keys",
+          "properties": {
+            "min_text_1080p": {
+              "type": "number",
+              "description": "ui.access.min_text_1080p (UI-171)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "px at a client height of 1080",
+              "x-species-presence": "required"
+            },
+            "min_text_2160p": {
+              "type": "number",
+              "description": "ui.access.min_text_2160p (UI-171)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "px at a client height of 2160",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "min_text_1080p",
+            "min_text_2160p"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "chrome": {
+          "type": "object",
+          "description": "the ui.chrome.* keys",
+          "properties": {
+            "body_repeat": {
+              "type": "number",
+              "description": "ui.chrome.body_repeat (UI-054)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "repeats of the strip across the width",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "body_repeat"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "palette": {
+          "type": "object",
+          "description": "the ui.palette.* keys",
+          "properties": {
+            "window_body_tint": {
+              "type": "object",
+              "description": "ui.palette.window_body_tint (UI-187, UI-054)",
+              "properties": {
+                "r": {
+                  "type": "number",
+                  "description": "ui.palette.window_body_tint.r",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "0 to 1",
+                  "x-species-presence": "required"
+                },
+                "g": {
+                  "type": "number",
+                  "description": "ui.palette.window_body_tint.g",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "0 to 1",
+                  "x-species-presence": "required"
+                },
+                "b": {
+                  "type": "number",
+                  "description": "ui.palette.window_body_tint.b",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "0 to 1",
+                  "x-species-presence": "required"
+                },
+                "a": {
+                  "type": "number",
+                  "description": "ui.palette.window_body_tint.a",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "0 to 1",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "r",
+                "g",
+                "b",
+                "a"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "text_outline": {
+              "type": "object",
+              "description": "ui.palette.text_outline (UI-187, UI-192)",
+              "properties": {
+                "r": {
+                  "type": "number",
+                  "description": "ui.palette.text_outline.r",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "0 to 1",
+                  "x-species-presence": "required"
+                },
+                "g": {
+                  "type": "number",
+                  "description": "ui.palette.text_outline.g",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "0 to 1",
+                  "x-species-presence": "required"
+                },
+                "b": {
+                  "type": "number",
+                  "description": "ui.palette.text_outline.b",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "0 to 1",
+                  "x-species-presence": "required"
+                },
+                "a": {
+                  "type": "number",
+                  "description": "ui.palette.text_outline.a",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "0 to 1",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "r",
+                "g",
+                "b",
+                "a"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "window_body_tint",
+            "text_outline"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        }
+      },
+      "required": [
+        "text",
+        "access",
+        "chrome",
+        "palette"
+      ],
+      "additionalProperties": false,
+      "x-species-type": "object",
+      "x-species-presence": "required"
     }
   },
   "required": [
@@ -7114,7 +7326,8 @@
     "mvp",
     "dbg",
     "cam",
-    "vfx"
+    "vfx",
+    "ui"
   ],
   "additionalProperties": false
 }

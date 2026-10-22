@@ -368,6 +368,9 @@ int Run()
     worldDesc.presentation = &*presentationTuning;
     worldDesc.content = &*content;
     worldDesc.clock = &clock;
+#if ENGINE_DEVELOPMENT
+    worldDesc.uiTest = options.uiTest; // ADR-145: the UI's test page
+#endif
     WorldPresentation world(worldDesc);
     SettlementView::Desc viewDesc;
     viewDesc.tuning = &*clientTuning;
