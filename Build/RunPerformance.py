@@ -21,15 +21,16 @@ stops and records nothing. A later run whose processor, memory or graphics adapt
 display differs for the rendered scenes, stops and records nothing, because a change of the hardware re-baselines every
 result (DBG-209); the driver and the OS build are recorded with each run and stop nothing. Once pinned, a figure above
 its budget fails the run (exit code 1); the run that pins only reports. The sandbox's battle drawn passes when the 99th
-percentile of its frame interval is at most 1000 ÷ mvp.client.fps_target + 1 ms (O75); its missed frames, the server's
-tick rate while drawn and the scene of mvp.client.figures_max figures are reported, as are a valley's generation and its
-land route graph, the route sweep and the log flood's detail (ADR-091, ADR-102, ADR-104). From M2 task T10 the growth
-scene of each seed is reported against M2's exit, with the snapshot of its settlement, and the settlement at work and the
-region with four scripted settlements are judged against the Worker's and the region's budgets (ADR-138); M2's run is
-recorded with --record playtests/M2.md. --quick runs every scene
-briefly to show that it runs, and records nothing. --self-test is CI's: it runs the given tool with --quick, and the
-bench too when one is given (--warp draws it on the WARP adapter), then proves the record's rules on fixtures in a
-temporary folder, and writes nothing into the checkout.
+percentile of its frame interval, from one frame's start to the next (ADR-148), is at most 1000 ÷ mvp.client.fps_target
++ 1 ms (O75); its missed frames, its GPU time, its waits, the refreshes that showed no new frame and its longest
+frames, the server's tick rate while drawn and the scene of mvp.client.figures_max figures are reported, as are a
+valley's generation and its land route graph, the route sweep and the log flood's detail (ADR-091, ADR-102, ADR-104).
+From M2 task T10 the growth scene of each seed is reported against M2's exit, with the snapshot of its settlement, and
+the settlement at work and the region with four scripted settlements are judged against the Worker's and the region's
+budgets (ADR-138); M2's run is recorded with --record playtests/M2.md. --quick runs every scene briefly to show that it
+runs, and records nothing. --self-test is CI's: it runs the given tool with --quick, and the bench too when one is
+given (--warp draws it on the WARP adapter), then proves the record's rules on fixtures in a temporary folder, and
+writes nothing into the checkout.
 """
 import argparse
 import datetime
@@ -270,6 +271,10 @@ def machine_table(config):
   return f'| Item | Value |\n|---|---|\n{rows}\n'
 
 
+# ADR-148: the longest frames the record lists with where their time went.
+LONGEST_REPORTED = 3
+
+
 def frame_budget_ms(frames):
   """O75: the sandbox's battle drawn passes at a 99th-percentile frame interval of 1000 ÷ mvp.client.fps_target + 1 ms."""
   return 1000.0 / max(frames['fps_target'], 1) + FRAME_TOLERANCE_MS
@@ -302,6 +307,7 @@ def rendered_rows(frames, tick_period_s=None):
        'reported'),
       (name, 'missed frames (O75)', f'{scene["missed_frames"]} of {scene["frames"]} ({scene["missed_frames"] / count:.2%})', '—',
        'reported'),
+    ] + pacing_rows(scene) + [
       (name, 'figures alive and on screen', f'{scene["figures_alive"]["max"]} alive at most; {scene["figures_on_screen"]["mean"]:.0f} '
        f'on screen on average, {scene["figures_on_screen"]["max"]} at most', '—', 'reported'),
     ]
@@ -310,6 +316,36 @@ def rendered_rows(frames, tick_period_s=None):
       rows.append((name, 'server ticks per second while drawn (MVP-085)', f'{scene["ticks"] / seconds:.2f}',
                    f'{1.0 / tick_period_s:g}' if tick_period_s else '—', 'reported'))
   return rows, above
+
+
+def pacing_rows(scene):
+  """ADR-148's rows of a rendered scene, which say where a long frame's time went: its time on the GPU, the waits at the
+  99th percentile, the refreshes on which the display showed no new frame by the swap chain's own statistics, and the
+  longest frames apart. A result from an older bench has none of them."""
+  name = scene['name']
+  rows = []
+  if 'gpu_ms' in scene:
+    gpu = scene['gpu_ms']
+    measured = f'{gpu["p99"]:.2f} ms, {gpu["max"]:.1f} ms' if scene.get('gpu_frames') else 'not read: no timestamp queries'
+    rows.append((name, "frame's time on the GPU, 99th percentile and longest", measured, '—', 'reported'))
+  if 'latency_wait_ms' in scene:
+    rows.append((name, 'waits at the 99th percentile: the frame-latency object and the cap, the fence, the present',
+                 f'{scene["latency_wait_ms"]["p99"]:.2f} ms, {scene["fence_wait_ms"]["p99"]:.2f} ms, {scene["present_ms"]["p99"]:.2f} ms',
+                 '—', 'reported'))
+  display = scene.get('display')
+  if display is not None:
+    refreshes = display['refreshes']
+    measured = (f'{display["held_refreshes"]} of {refreshes} ({display["held_refreshes"] / refreshes:.2%})'
+                if display['presents_shown'] and refreshes else 'no statistics from the swap chain')
+    rows.append((name, "refreshes that showed no new frame (the swap chain's frame statistics)", measured, '—', 'reported'))
+  longest = scene.get('longest') or []
+  if longest:
+    def gpu_of(frame):
+      return 'GPU —' if frame['gpu'] is None else f'GPU {frame["gpu"]:.1f}'
+    parts = [f'{f["interval"]:.1f} = work {f["work"]:.1f} + latency {f["latency_wait"]:.1f} + fence {f["fence_wait"]:.1f} + '
+             f'present {f["present"]:.1f}, {gpu_of(f)}' for f in longest[:LONGEST_REPORTED]]
+    rows.append((name, f'the {len(parts)} longest frames, in ms', '; '.join(parts), '—', 'reported'))
+  return rows
 
 
 def rendered_display(frames, config):
@@ -437,6 +473,13 @@ FRAMES_FIXTURE = {
               'window': {'width': 1920, 'height': 1080},
               'interval_ms': {'p50': 16.6, 'p95': 16.7, 'p99': 16.8, 'max': 33.4, 'mean': 16.7},
               'work_ms': {'p50': 6.0, 'p95': 7.0, 'p99': 8.0, 'max': 12.0, 'mean': 6.2}, 'missed_frames': 1,
+              'gpu_frames': 118, 'gpu_ms': {'p50': 9.0, 'p95': 10.0, 'p99': 11.0, 'max': 14.0, 'mean': 9.2},
+              'latency_wait_ms': {'p50': 9.0, 'p95': 10.0, 'p99': 10.5, 'max': 26.0, 'mean': 9.1},
+              'fence_wait_ms': {'p50': 0.0, 'p95': 0.1, 'p99': 0.2, 'max': 0.5, 'mean': 0.0},
+              'present_ms': {'p50': 0.2, 'p95': 0.3, 'p99': 0.4, 'max': 0.9, 'mean': 0.2},
+              'display': {'presents_shown': 118, 'refreshes': 119, 'held_refreshes': 1},
+              'longest': [{'interval': 33.4, 'work': 6.5, 'latency_wait': 26.0, 'fence_wait': 0.5, 'present': 0.4, 'gpu': 14.0},
+                          {'interval': 16.9, 'work': 7.0, 'latency_wait': 9.5, 'fence_wait': 0.1, 'present': 0.3, 'gpu': None}],
               'figures_alive': {'min': figures, 'max': figures}, 'figures_on_screen': {'mean': figures * 0.8, 'max': figures}}
              for name, figures in (('sandbox-drawn', 400), ('figures-max-drawn', 1500))],
 }
@@ -503,6 +546,8 @@ def self_test(tool, tuning_source, bench=None, warp=False):
        lambda: record(path, reference, within, slow, 'fixture', 'display') == 0 and
        pinned_display(open(path, encoding='utf-8').read()) == {'display': '1920 x 1080 at 60 Hz'}),
       ('a rendered run reports the server\'s tick rate', lambda: recorded('server ticks per second while drawn')),
+      ('a rendered run reports where its frames\' time went (ADR-148)',
+       lambda: recorded("frame's time on the GPU", 'waits at the 99th percentile', 'showed no new frame', 'longest frames')),
       ('a rendered run on another display stops',
        lambda: record(path, reference, within, frames_like(frames, 16.0, display=(1920, 1080, 144)), 'fixture', 'other display') == 2),
       ('a rendered run is judged by the display the bench drew on, not the machine\'s reading',

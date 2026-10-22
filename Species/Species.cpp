@@ -175,15 +175,20 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
   _renderer.OnDeviceRebuilt([] { Neuron::Log(Neuron::LogCategory::Render, Neuron::LogLevel::Info, "presentation resumed"); });
 
   // ADR-120: each root step's time joins the frame profile, the renderer's waits apart from its work, and every tenth
-  // roll-up period the frame page's figures go to the log.
+  // roll-up period the frame page's figures go to the log. ADR-148: a frame starts once the swap chain can take it, so
+  // its input, its camera step and its interval are all read at that start; an interval runs from one frame's start to
+  // the next and holds the earlier frame's work and render waits, and the later one's begin waits.
   Neuron::FrameProfile& profile = _world.Profile();
   const Neuron::Nanoseconds start = _clock.Now();
   Neuron::Nanoseconds previousFrame = start;
+  Neuron::Nanoseconds previousRenderWaits{0};
 #if ENGINE_DEVELOPMENT
   std::uint64_t loggedPeriods = 0;
 #endif
   while (true)
   {
+    const Neuron::FrameOutcome begun = _renderer.BeginFrame();
+    const Neuron::Nanoseconds beginWaits = begun == Neuron::FrameOutcome::Suspended ? Neuron::Nanoseconds{0} : _renderer.LastFrameWaits();
     Neuron::Nanoseconds stepStart = _clock.Now();
     const auto endStep = [&](ClientStep _step)
     {
@@ -221,10 +226,10 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
       static_cast<void>(_session.RequestSandboxRestart(newSeed));
     }
 #endif
-    // The camera's step is the real time since the previous frame (CAM-030), clamped by the camera.
-    const Neuron::Nanoseconds now = _clock.Now();
-    const Neuron::Nanoseconds frameTime = now - previousFrame;
-    previousFrame = now;
+    // The camera's step is the real time since the previous frame's start (CAM-030), clamped by the camera.
+    const Neuron::Nanoseconds frameStart = stepStart;
+    const Neuron::Nanoseconds frameTime = frameStart - previousFrame;
+    previousFrame = frameStart;
     _view.Update(_session, router, std::chrono::duration<double>(frameTime).count(), _window.ClientSize(), _window.HasFocus());
     endStep(ClientStep::Input);
     _session.Update();
@@ -232,18 +237,22 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
     _world.Update(_session);
     const Neuron::FrameInputs inputs = _world.Frame(_session, _view, _renderer.FramesPerSecond(), _window.DpiScale());
     endStep(ClientStep::Presentation);
-    const Neuron::FrameOutcome outcome = _renderer.RenderFrame(inputs);
-    const Neuron::Nanoseconds waits = outcome == Neuron::FrameOutcome::Suspended ? Neuron::Nanoseconds{0} : _renderer.LastFrameWaits();
-    profile.AddStep(static_cast<std::size_t>(ClientStep::Wait), waits);
-    stepStart += waits;
+    const Neuron::FrameOutcome outcome =
+      begun == Neuron::FrameOutcome::Suspended ? Neuron::FrameOutcome::Suspended : _renderer.RenderFrame(inputs);
+    const Neuron::Nanoseconds renderWaits =
+      outcome == Neuron::FrameOutcome::Suspended ? Neuron::Nanoseconds{0} : _renderer.LastFrameWaits() - beginWaits;
+    profile.AddStep(static_cast<std::size_t>(ClientStep::Wait), beginWaits + renderWaits);
+    stepStart += renderWaits;
     endStep(ClientStep::Render);
     if (outcome == Neuron::FrameOutcome::Suspended)
     {
+      previousRenderWaits = Neuron::Nanoseconds{0};
       _clock.WaitUntil(_clock.Now() + SUSPENDED_POLL_PERIOD);
       continue;
     }
     _clock.FrameBoundary();
-    profile.EndFrame(_clock.Now(), frameTime, waits);
+    profile.EndFrame(_clock.Now(), frameTime, previousRenderWaits + beginWaits);
+    previousRenderWaits = renderWaits;
 #if ENGINE_DEVELOPMENT
     if (profile.Periods() != loggedPeriods && profile.Periods() % STATISTICS_LOG_PERIODS == 0)
     {

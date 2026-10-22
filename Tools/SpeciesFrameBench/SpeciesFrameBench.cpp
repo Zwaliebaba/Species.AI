@@ -30,6 +30,7 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <exception>
@@ -51,7 +52,9 @@
 // The frame bench (M1 task T18, ADR-126, O79): a development tool that never ships. It composes the client and the
 // integrated server as Species.exe does, in a window of 1,920 x 1,080, and draws the rendered measurement scenes, each from
 // seed 1 with both sides under the AI and the camera fixed on the fight. After a warm-up it records each frame's
-// interval and work for a number of ticks, and writes them as JSON for Build/RunPerformance.py.
+// interval, from its start to the next frame's start (ADR-148), its work, its waits apart, its time on the GPU and the
+// refreshes the display took to show the frames, for a number of ticks, and writes them as JSON for
+// Build/RunPerformance.py.
 //
 //   SpeciesFrameBench.exe [--quick] [--scenes <name,...>] [--out <file.json>] [--warp]
 //
@@ -93,6 +96,8 @@ constexpr Neuron::Nanoseconds LOAD_LIMIT{120'000'000'000};
 // RND-032's low rate while the window is minimised or occluded (ADR-092).
 constexpr Neuron::Nanoseconds SUSPENDED_POLL_PERIOD{100'000'000};
 constexpr double NANOSECONDS_PER_MILLISECOND = 1.0e6;
+// ADR-148: the longest frames written with where their time went.
+constexpr std::size_t LONGEST_FRAMES = 10;
 
 // The pre-UI messages a failed start can show, as Species.exe has them (PLT-039); the bench runs unattended, so they are
 // logged rather than shown.
@@ -140,14 +145,28 @@ struct Summary
   double mean = 0.0;
 };
 
-/// What one rendered scene drew: every measured frame's interval and work, in milliseconds, and its figures.
+/// One measured frame, in milliseconds (ADR-148): its interval runs from its start, when the swap chain could take it, to
+/// the next frame's start, and holds its work, its fence and present, and the next frame's wait to begin.
+struct FrameRecord
+{
+  std::uint64_t frame = 0; // the renderer's number of the frame
+  double interval = 0.0;
+  double work = 0.0;         // the interval less every wait in it (ADR-120)
+  double latencyWait = 0.0;  // the next frame's wait for the frame-latency object, and for the cap
+  double fenceWait = 0.0;    // its wait for its slot's fence
+  double present = 0.0;      // its Present call
+  std::optional<double> gpu; // its command list's time on the GPU, read back two frames later
+};
+
+/// What one rendered scene drew: every measured frame, the display's refreshes over them, and its figures.
 struct SceneResult
 {
   std::string name;
-  std::uint32_t figures = 0;         // the battle's figures at its start
-  std::uint64_t ticks = 0;           // the server ticks measured
-  std::vector<double> intervals;     // from one frame boundary to the next
-  std::vector<double> works;         // each interval less the renderer's waits (ADR-120)
+  std::uint32_t figures = 0; // the battle's figures at its start
+  std::uint64_t ticks = 0;   // the server ticks measured
+  std::vector<FrameRecord> frames;
+  std::uint64_t presentsShown = 0;   // ADR-148: the display's statistics over the measured frames
+  std::uint64_t refreshesShown = 0;  // the refreshes over which it showed them
   std::uint64_t suspendedFrames = 0; // frames not presented, minimised or occluded
   std::uint32_t aliveMin = std::numeric_limits<std::uint32_t>::max();
   std::uint32_t aliveMax = 0;
@@ -184,15 +203,49 @@ Summary SummaryOf(const std::vector<double>& _values)
 }
 
 // O75: the display's refresh periods that frames missed: an interval of n periods, rounded, misses n − 1 of them.
-std::uint64_t MissedFrames(std::span<const double> _intervals, double _periodMs)
+std::uint64_t MissedFrames(std::span<const FrameRecord> _frames, double _periodMs)
 {
   std::uint64_t missed = 0;
-  for (const double interval : _intervals)
+  for (const FrameRecord& frame : _frames)
   {
-    const auto periods = static_cast<std::uint64_t>(std::max(std::llround(interval / _periodMs), 1LL));
+    const auto periods = static_cast<std::uint64_t>(std::max(std::llround(frame.interval / _periodMs), 1LL));
     missed += periods - 1;
   }
   return missed;
+}
+
+// One figure of every measured frame that has it.
+template <class Fn> std::vector<double> ValuesOf(std::span<const FrameRecord> _frames, Fn _figure)
+{
+  std::vector<double> values;
+  values.reserve(_frames.size());
+  for (const FrameRecord& frame : _frames)
+  {
+    if (const std::optional<double> value = _figure(frame); value.has_value())
+    {
+      values.push_back(*value);
+    }
+  }
+  return values;
+}
+
+double MillisecondsOf(Neuron::Nanoseconds _time) noexcept
+{
+  return static_cast<double>(_time.count()) / NANOSECONDS_PER_MILLISECOND;
+}
+
+// ADR-148: the GPU time read back this frame joins the measured frame it belongs to, if that frame was measured.
+void AttachGpuTime(std::vector<FrameRecord>& _frames, const Neuron::FrameTiming& _timing)
+{
+  if (_timing.gpuFrame == 0 || _frames.empty() || _timing.gpuFrame < _frames.front().frame)
+  {
+    return;
+  }
+  const auto index = static_cast<std::size_t>(_timing.gpuFrame - _frames.front().frame);
+  if (index < _frames.size() && _frames[index].frame == _timing.gpuFrame)
+  {
+    _frames[index].gpu = MillisecondsOf(_timing.gpuTime);
+  }
 }
 
 // The scene's fight (O79): the sandbox's sides meet between their sites, the synthetic battle stands about the
@@ -304,13 +357,28 @@ SceneEnd RunScene(const Scene& _scene, const Options& _options, const Bench& _be
   const Neuron::Nanoseconds warmUp = _options.quick ? WARM_UP_QUICK : WARM_UP;
   const std::uint64_t measuredTicks = _options.quick ? MEASURED_TICKS_QUICK : MEASURED_TICKS;
   const Neuron::Nanoseconds start = _bench.clock->Now();
-  Neuron::Nanoseconds boundary = start;
+  Neuron::Nanoseconds previousStart = start;
   bool aimed = false;
   std::optional<Neuron::Nanoseconds> warmStart;
   std::optional<std::uint64_t> firstTick;
+  std::optional<FrameRecord> pending; // the last frame presented while measuring, until the next frame's start ends it
   SceneEnd end = SceneEnd::Measured;
   while (true)
   {
+    // ADR-148: the frame starts once the swap chain can take it, and its start ends the last frame's interval.
+    const Neuron::FrameOutcome begun = _bench.renderer->BeginFrame();
+    const Neuron::FrameTiming begin = _bench.renderer->LastFrameTiming();
+    const Neuron::Nanoseconds frameStart = _bench.clock->Now();
+    if (pending.has_value() && begun == Neuron::FrameOutcome::Presented)
+    {
+      pending->interval = MillisecondsOf(frameStart - previousStart);
+      pending->latencyWait = MillisecondsOf(begin.latencyWait + begin.capWait);
+      pending->work = pending->interval - pending->latencyWait - pending->fenceWait - pending->present;
+      _result.frames.push_back(*pending);
+    }
+    pending.reset();
+    const double stepSeconds = std::chrono::duration<double>(frameStart - previousStart).count();
+    previousStart = frameStart;
     _bench.window->PumpMessages();
     _bench.router->AdvanceFrame({.windowFocused = _bench.window->HasFocus()}, _bench.window->ClientSize());
     if (_bench.keyboardMouse->TakeCloseRequest())
@@ -325,7 +393,7 @@ SceneEnd RunScene(const Scene& _scene, const Options& _options, const Bench& _be
     }
     const Neuron::SizePx size = _bench.window->ClientSize();
     // The camera never moves: the view is updated without focus, and aimed at the fight once the world is entered.
-    view.Update(session, *_bench.router, std::chrono::duration<double>(_bench.clock->Now() - boundary).count(), size, false);
+    view.Update(session, *_bench.router, stepSeconds, size, false);
     if (!aimed && view.InWorld() && session.Terrain() != nullptr)
     {
       view.EnterAt(FightOf(_scene.kind, *session.Terrain(), tuning));
@@ -335,23 +403,26 @@ SceneEnd RunScene(const Scene& _scene, const Options& _options, const Bench& _be
     world.Update(session);
     const Neuron::FrameInputs inputs = world.Frame(session, view, _bench.renderer->FramesPerSecond(), _bench.window->DpiScale());
     const std::uint64_t worldFrames = _bench.renderer->WorldFrames();
-    const Neuron::FrameOutcome outcome = _bench.renderer->RenderFrame(inputs);
+    const Neuron::FrameOutcome outcome =
+      begun == Neuron::FrameOutcome::Suspended ? Neuron::FrameOutcome::Suspended : _bench.renderer->RenderFrame(inputs);
     const bool measuring = firstTick.has_value();
     if (outcome == Neuron::FrameOutcome::Suspended)
     {
       _result.suspendedFrames += measuring ? 1 : 0;
       _bench.clock->WaitUntil(_bench.clock->Now() + SUSPENDED_POLL_PERIOD);
-      boundary = _bench.clock->Now();
       continue;
     }
     _bench.clock->FrameBoundary();
-    const Neuron::Nanoseconds now = _bench.clock->Now();
-    const double interval = static_cast<double>((now - boundary).count()) / NANOSECONDS_PER_MILLISECOND;
-    boundary = now;
     if (measuring)
     {
-      _result.intervals.push_back(interval);
-      _result.works.push_back(interval - static_cast<double>(_bench.renderer->LastFrameWaits().count()) / NANOSECONDS_PER_MILLISECOND);
+      const Neuron::FrameTiming& timing = _bench.renderer->LastFrameTiming();
+      AttachGpuTime(_result.frames, timing);
+      _result.presentsShown += timing.presentsShown;
+      _result.refreshesShown += timing.refreshesShown;
+      pending = FrameRecord{};
+      pending->frame = timing.frame;
+      pending->fenceWait = MillisecondsOf(timing.fenceWait);
+      pending->present = MillisecondsOf(timing.present);
       const auto [alive, onScreen] = FiguresOf(session.Replica(), view.Camera().View(size), size);
       _result.aliveMin = std::min(_result.aliveMin, alive);
       _result.aliveMax = std::max(_result.aliveMax, alive);
@@ -369,9 +440,9 @@ SceneEnd RunScene(const Scene& _scene, const Options& _options, const Bench& _be
       // The warm-up runs from the first world frame drawn after the camera was aimed.
       if (!warmStart.has_value())
       {
-        warmStart = now;
+        warmStart = frameStart;
       }
-      else if (now - *warmStart >= warmUp && session.ServerTick().has_value())
+      else if (frameStart - *warmStart >= warmUp && session.ServerTick().has_value())
       {
         firstTick = *session.ServerTick();
         Neuron::Log(Neuron::LogCategory::Diagnostics, Neuron::LogLevel::Info, "frame bench: {} measures from tick {} for {} ticks",
@@ -390,6 +461,31 @@ std::string JsonOf(const Summary& _summary)
                      _summary.p99, _summary.max, _summary.mean);
 }
 
+// ADR-148: the frames of the longest intervals, longest first, each with where its time went; a GPU time not read back
+// is null.
+std::string LongestJsonOf(std::span<const FrameRecord> _frames)
+{
+  std::vector<const FrameRecord*> longest;
+  longest.reserve(_frames.size());
+  for (const FrameRecord& frame : _frames)
+  {
+    longest.push_back(&frame);
+  }
+  const std::size_t count = std::min(longest.size(), LONGEST_FRAMES);
+  std::ranges::partial_sort(longest, longest.begin() + static_cast<std::ptrdiff_t>(count),
+                            [](const FrameRecord* _a, const FrameRecord* _b) { return _a->interval > _b->interval; });
+  std::string json;
+  for (std::size_t i = 0; i < count; ++i)
+  {
+    const FrameRecord& frame = *longest[i];
+    json += std::format(R"({}{{"interval": {:.4f}, "work": {:.4f}, "latency_wait": {:.4f}, "fence_wait": {:.4f}, "present": {:.4f}, )"
+                        R"("gpu": {}}})",
+                        json.empty() ? "" : ", ", frame.interval, frame.work, frame.latencyWait, frame.fenceWait, frame.present,
+                        frame.gpu.has_value() ? std::format("{:.4f}", *frame.gpu) : std::string("null"));
+  }
+  return "[" + json + "]";
+}
+
 std::string JsonOf(const std::vector<SceneResult>& _results, const Options& _options, const Species::TuningMvp& _tuning,
                    const Neuron::DesktopMode& _display)
 {
@@ -398,13 +494,24 @@ std::string JsonOf(const std::vector<SceneResult>& _results, const Options& _opt
   std::string scenes;
   for (const SceneResult& result : _results)
   {
-    const double frames = static_cast<double>(std::max<std::size_t>(result.intervals.size(), 1));
+    const std::span<const FrameRecord> records = result.frames;
+    const double frames = static_cast<double>(std::max<std::size_t>(records.size(), 1));
+    const std::vector<double> gpu = ValuesOf(records, [](const FrameRecord& _frame) { return _frame.gpu; });
+    const std::uint64_t held = result.refreshesShown > result.presentsShown ? result.refreshesShown - result.presentsShown : 0;
     scenes += std::format(R"({}    {{"name": "{}", "seed": {}, "figures": {}, "ticks": {}, "frames": {}, "suspended_frames": {}, )"
                           R"("window": {{"width": {}, "height": {}}}, "interval_ms": {}, "work_ms": {}, "missed_frames": {}, )"
+                          R"("gpu_frames": {}, "gpu_ms": {}, "latency_wait_ms": {}, "fence_wait_ms": {}, "present_ms": {}, )"
+                          R"("display": {{"presents_shown": {}, "refreshes": {}, "held_refreshes": {}}}, "longest": {}, )"
                           R"("figures_alive": {{"min": {}, "max": {}}}, "figures_on_screen": {{"mean": {:.1f}, "max": {}}}}})",
-                          scenes.empty() ? "" : ",\n", result.name, SCENE_SEED, result.figures, result.ticks, result.intervals.size(),
-                          result.suspendedFrames, result.window.width, result.window.height, JsonOf(SummaryOf(result.intervals)),
-                          JsonOf(SummaryOf(result.works)), MissedFrames(result.intervals, periodMs),
+                          scenes.empty() ? "" : ",\n", result.name, SCENE_SEED, result.figures, result.ticks, records.size(),
+                          result.suspendedFrames, result.window.width, result.window.height,
+                          JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.interval); }))),
+                          JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.work); }))),
+                          MissedFrames(records, periodMs), gpu.size(), JsonOf(SummaryOf(gpu)),
+                          JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.latencyWait); }))),
+                          JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.fenceWait); }))),
+                          JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.present); }))),
+                          result.presentsShown, result.refreshesShown, held, LongestJsonOf(records),
                           result.aliveMax == 0 ? 0U : result.aliveMin, result.aliveMax, result.onScreenSum / frames, result.onScreenMax);
   }
   return std::format("{{\n  \"tool\": \"{}\", \"configuration\": \"{}\", \"platform\": \"{}\", \"quick\": {}, \"fps_target\": {}, "
@@ -578,7 +685,7 @@ int Run(const Options& _options)
       code = end == SceneEnd::Closed ? 3 : 1;
       break;
     }
-    Print(stdout, std::format("{}: {} frames over {} ticks", scene.name, result.intervals.size(), result.ticks));
+    Print(stdout, std::format("{}: {} frames over {} ticks", scene.name, result.frames.size(), result.ticks));
     results.push_back(std::move(result));
   }
   router.ConfinePointer(false);

@@ -68,10 +68,14 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <deque>
 #include <exception>
 #include <format>
 #include <memory>
+#include <optional>
 #include <span>
 #include <utility>
 #include <vector>
@@ -95,6 +99,8 @@ constexpr std::uint32_t PREFERRED_SCENE_SAMPLES = 4;
 // GPU_CHECK_MILLISECONDS is checked for a removed device, and teardown waits at most TEARDOWN_WAIT_MILLISECONDS.
 constexpr DWORD GPU_CHECK_MILLISECONDS = 1000;
 constexpr DWORD TEARDOWN_WAIT_MILLISECONDS = 2000;
+// ADR-148: a frame's command list is timed on the GPU from its first command to its last.
+constexpr std::uint32_t TIMESTAMPS_PER_FRAME = 2;
 
 class ScopedHandle
 {
@@ -196,8 +202,17 @@ struct RendererState
   ComPtr<ID3D12DescriptorHeap> renderTargetHeap;
   UINT renderTargetStride = 0;
 
+  // ADR-148: two timestamps a frame slot, resolved into a buffer the CPU reads once the slot's fence has completed, and
+  // the frame each slot timed; none without timestamp queries.
+  ComPtr<ID3D12QueryHeap> timestamps;
+  ComPtr<ID3D12Resource> timestampReadback;
+  std::uint64_t timestampFrequency = 0;
+  std::array<std::uint64_t, FRAMES_IN_FLIGHT> timedFrames{};
+
   ComPtr<IDXGISwapChain3> swapChain;
   ScopedHandle frameLatencyWaitable;
+  bool latencyWaitHeld = false;                        // ADR-148: a wait taken for a frame not presented yet
+  std::optional<DXGI_FRAME_STATISTICS> lastStatistics; // ADR-148: when last read, within one sequence
   UINT swapChainFlags = 0;
   SizePx swapChainSize;
   std::array<ComPtr<ID3D12Resource>, BACK_BUFFER_COUNT> backBuffers;
@@ -219,7 +234,8 @@ struct RendererState
   bool occluded = false;
   bool rebuilding = false;
   std::optional<Nanoseconds> nextFrameStart;
-  Nanoseconds lastWaits{}; // ADR-120: the last frame's waits for the latency object, the cap, the fence and the present
+  bool frameBegun = false; // ADR-148: BeginFrame has run for the frame RenderFrame records next
+  FrameTiming timing;      // ADR-120, ADR-148: the last frame's waits, GPU time and display statistics
   std::vector<std::function<void()>> rebuiltListeners;
 };
 
@@ -320,6 +336,8 @@ bool CreateSwapChain(RendererState& _state)
   _state.device->Factory()->MakeWindowAssociation(window, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
   _state.swapChain->SetMaximumFrameLatency(MaximumFrameLatency(_state.config.lowLatency));
   _state.frameLatencyWaitable = ScopedHandle(_state.swapChain->GetFrameLatencyWaitableObject());
+  _state.latencyWaitHeld = false;
+  _state.lastStatistics.reset();
   _state.swapChainSize = {desc.Width, desc.Height};
   AcquireBackBuffers(_state);
   Log(LogCategory::Render, LogLevel::Info, "swap chain {}x{}, {} buffers, tearing {}", desc.Width, desc.Height, BACK_BUFFER_COUNT,
@@ -610,6 +628,34 @@ std::expected<void, StartupFailure> CreateFrameObjects(RendererState& _state)
   return {};
 }
 
+// ADR-148: the timestamp queries of every frame slot and the buffer they are resolved into. Without them, or without
+// the queue's timestamp frequency, the frames are not timed on the GPU and nothing else changes.
+void CreateTimestamps(RendererState& _state)
+{
+  ID3D12Device* d3d = _state.device->Device();
+  _state.timedFrames = {};
+  D3D12_QUERY_HEAP_DESC heapDesc{};
+  heapDesc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
+  heapDesc.Count = TIMESTAMPS_PER_FRAME * FRAMES_IN_FLIGHT;
+  const D3D12_HEAP_PROPERTIES readback = HeapProperties(D3D12_HEAP_TYPE_READBACK);
+  const D3D12_RESOURCE_DESC desc = BufferDescription(sizeof(std::uint64_t) * heapDesc.Count);
+  UINT64 frequency = 0;
+  if (FAILED(d3d->CreateQueryHeap(&heapDesc, IID_PPV_ARGS(&_state.timestamps))) ||
+      FAILED(d3d->CreateCommittedResource(&readback, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr,
+                                          IID_PPV_ARGS(&_state.timestampReadback))) ||
+      FAILED(_state.device->Queue()->GetTimestampFrequency(&frequency)) || frequency == 0)
+  {
+    Log(LogCategory::Render, LogLevel::Warning, "the frames are not timed on the GPU: its timestamp queries are not available");
+    _state.timestamps.Reset();
+    _state.timestampReadback.Reset();
+    _state.timestampFrequency = 0;
+    return;
+  }
+  _state.timestamps->SetName(L"Frame timestamps");
+  _state.timestampReadback->SetName(L"Frame timestamp readback");
+  _state.timestampFrequency = frequency;
+}
+
 std::expected<void, StartupFailure> CreateDeviceObjects(RendererState& _state)
 {
   std::expected<GraphicsDevice, StartupFailure> device = GraphicsDevice::Create(_state.config);
@@ -643,6 +689,7 @@ std::expected<void, StartupFailure> CreateDeviceObjects(RendererState& _state)
   }
   _state.commands->SetName(L"Frame commands");
   _state.commands->Close();
+  CreateTimestamps(_state);
 
   D3D12_DESCRIPTOR_HEAP_DESC heapDesc{};
   heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
@@ -682,9 +729,13 @@ void ReleaseDeviceObjects(RendererState& _state, std::optional<DWORD> _limit)
     buffer.Reset();
   }
   _state.frameLatencyWaitable = ScopedHandle();
+  _state.latencyWaitHeld = false;
   _state.swapChain.Reset();
   _state.renderTargetHeap.Reset();
   _state.commands.Reset();
+  _state.timestampReadback.Reset();
+  _state.timestamps.Reset();
+  _state.timestampFrequency = 0;
   for (ComPtr<ID3D12CommandAllocator>& allocator : _state.allocators)
   {
     allocator.Reset();
@@ -753,6 +804,79 @@ void ApplyResize(RendererState& _state, SizePx _client)
   {
     Log(LogCategory::Render, LogLevel::Error, "the scene targets were not created at {}x{}", _state.swapChainSize.width,
         _state.swapChainSize.height);
+  }
+}
+
+// ADR-012, ADR-148: the frame-latency object, waited for once for each frame presented, so a wait taken for a frame that
+// was then not presented stands for the next. False when the wait found the device removed and rebuilt it.
+bool WaitForLatency(RendererState& _state)
+{
+  if (_state.latencyWaitHeld)
+  {
+    return true;
+  }
+  const Nanoseconds waitStart = _state.clock->Now();
+  const DWORD waited = WaitForSingleObjectEx(_state.frameLatencyWaitable.Get(), GPU_CHECK_MILLISECONDS, TRUE);
+  _state.timing.latencyWait += _state.clock->Now() - waitStart;
+  if (waited == WAIT_TIMEOUT && _state.device->IsRemoved())
+  {
+    Rebuild(_state);
+    return false;
+  }
+  _state.latencyWaitHeld = true;
+  return true;
+}
+
+// ADR-148: the GPU time of the frame that last used _slot, whose fence has completed, from its two timestamps.
+void ReadGpuTime(RendererState& _state, std::size_t _slot)
+{
+  const std::uint64_t frame = std::exchange(_state.timedFrames[_slot], 0);
+  if (frame == 0 || _state.timestampReadback == nullptr || _state.timestampFrequency == 0)
+  {
+    return;
+  }
+  const std::size_t first = _slot * TIMESTAMPS_PER_FRAME * sizeof(std::uint64_t);
+  const D3D12_RANGE read{first, first + TIMESTAMPS_PER_FRAME * sizeof(std::uint64_t)};
+  void* mapped = nullptr;
+  if (FAILED(_state.timestampReadback->Map(0, &read, &mapped)))
+  {
+    return;
+  }
+  std::array<std::uint64_t, TIMESTAMPS_PER_FRAME> ticks{};
+  std::memcpy(ticks.data(), static_cast<const std::byte*>(mapped) + first, sizeof(ticks));
+  const D3D12_RANGE nothingWritten{0, 0};
+  _state.timestampReadback->Unmap(0, &nothingWritten);
+  if (ticks[1] < ticks[0])
+  {
+    return;
+  }
+  // Whole seconds and the remainder apart, so no frequency overflows the product (PLT-046's rule).
+  const std::uint64_t elapsed = ticks[1] - ticks[0];
+  const std::uint64_t frequency = _state.timestampFrequency;
+  const auto nanoseconds = (elapsed / frequency) * 1'000'000'000 + (elapsed % frequency) * 1'000'000'000 / frequency;
+  _state.timing.gpuFrame = frame;
+  _state.timing.gpuTime = Nanoseconds{static_cast<std::int64_t>(nanoseconds)};
+}
+
+// ADR-148: the swap chain's statistics since they were last read (DXGI flip model): the presents the display has shown
+// and the refreshes they took. A disjoint sequence, after a mode change or at the first read, starts again.
+void ReadDisplayStatistics(RendererState& _state)
+{
+  DXGI_FRAME_STATISTICS statistics{};
+  if (FAILED(_state.swapChain->GetFrameStatistics(&statistics)))
+  {
+    _state.lastStatistics.reset();
+    return;
+  }
+  if (_state.lastStatistics.has_value() && statistics.PresentCount != _state.lastStatistics->PresentCount &&
+      statistics.PresentRefreshCount >= _state.lastStatistics->PresentRefreshCount)
+  {
+    _state.timing.presentsShown = statistics.PresentCount - _state.lastStatistics->PresentCount;
+    _state.timing.refreshesShown = statistics.PresentRefreshCount - _state.lastStatistics->PresentRefreshCount;
+  }
+  if (!_state.lastStatistics.has_value() || statistics.PresentCount != _state.lastStatistics->PresentCount)
+  {
+    _state.lastStatistics = statistics;
   }
 }
 
@@ -1046,10 +1170,12 @@ void FrameRenderer::Reconfigure(const RenderConfig& _config)
   state.nextFrameStart.reset();
 }
 
-FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
+FrameOutcome FrameRenderer::BeginFrame()
 {
-  ENGINE_PROFILE_SCOPE("render.frame"); // the markers of the DBG-045 catalogue
   RendererState& state = *m_state;
+  state.timing = FrameTiming{};
+  state.timing.frame = state.frameNumber + 1;
+  state.frameBegun = false;
   if (state.window->IsMinimized())
   {
     return FrameOutcome::Suspended;
@@ -1069,12 +1195,9 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
     state.occluded = false;
   }
 
-  // ADR-012: the frame-latency object before recording, then the optional frame-rate cap.
-  const Nanoseconds waitsStart = state.clock->Now();
-  state.lastWaits = Nanoseconds{0};
-  if (WaitForSingleObjectEx(state.frameLatencyWaitable.Get(), GPU_CHECK_MILLISECONDS, TRUE) == WAIT_TIMEOUT && state.device->IsRemoved())
+  // ADR-012, ADR-148: the frame-latency object, then the optional frame-rate cap.
+  if (!WaitForLatency(state))
   {
-    Rebuild(state);
     return FrameOutcome::Suspended;
   }
   if (state.config.frameRateCap.has_value() && *state.config.frameRateCap > 0.0f)
@@ -1086,21 +1209,57 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
       state.clock->WaitUntil(*state.nextFrameStart);
     }
     state.nextFrameStart = std::max(now, state.nextFrameStart.value_or(now)) + period;
+    state.timing.capWait = state.clock->Now() - now;
+  }
+  state.frameBegun = true;
+  return FrameOutcome::Presented;
+}
+
+FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
+{
+  ENGINE_PROFILE_SCOPE("render.frame"); // the markers of the DBG-045 catalogue
+  RendererState& state = *m_state;
+  if (!state.frameBegun && BeginFrame() == FrameOutcome::Suspended)
+  {
+    return FrameOutcome::Suspended;
+  }
+  state.frameBegun = false;
+  // The window may have changed since BeginFrame, as its messages are pumped between the two.
+  if (state.window->IsMinimized())
+  {
+    return FrameOutcome::Suspended;
+  }
+  const SizePx client = state.window->ClientSize();
+  if (client.width != 0 && client.height != 0 && client != state.swapChainSize)
+  {
+    ApplyResize(state, client);
+  }
+  // A rebuild during the resize made a swap chain whose frame-latency object this frame has not waited for yet.
+  if (!WaitForLatency(state))
+  {
+    return FrameOutcome::Suspended;
   }
 
   const std::size_t slot = state.frameNumber % FRAMES_IN_FLIGHT;
+  const Nanoseconds fenceStart = state.clock->Now();
   if (!WaitForFence(state, state.frameFenceValues[slot]))
   {
     Rebuild(state);
     return FrameOutcome::Suspended;
   }
-  state.lastWaits = state.clock->Now() - waitsStart;
+  state.timing.fenceWait = state.clock->Now() - fenceStart;
+  ReadGpuTime(state, slot);
   ID3D12CommandAllocator* allocator = state.allocators[slot].Get();
   ID3D12GraphicsCommandList* commands = state.commands.Get();
   if (IsDeviceRemoval(allocator->Reset()) || IsDeviceRemoval(commands->Reset(allocator, nullptr)))
   {
     Rebuild(state);
     return FrameOutcome::Suspended;
+  }
+  const bool timed = state.timestamps != nullptr;
+  if (timed)
+  {
+    commands->EndQuery(state.timestamps.Get(), D3D12_QUERY_TYPE_TIMESTAMP, static_cast<UINT>(slot) * TIMESTAMPS_PER_FRAME);
   }
 
   // The frame's share of the factory, the heaps and the ring (ADR-008): frame ids start at 1, and every frame up to
@@ -1163,6 +1322,13 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
       TransitionBarrier(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
     commands->ResourceBarrier(1, &toPresent);
   }
+  if (timed)
+  {
+    const UINT first = static_cast<UINT>(slot) * TIMESTAMPS_PER_FRAME;
+    commands->EndQuery(state.timestamps.Get(), D3D12_QUERY_TYPE_TIMESTAMP, first + 1);
+    commands->ResolveQueryData(state.timestamps.Get(), D3D12_QUERY_TYPE_TIMESTAMP, first, TIMESTAMPS_PER_FRAME,
+                               state.timestampReadback.Get(), std::uint64_t{first} * sizeof(std::uint64_t));
+  }
   if (IsDeviceRemoval(commands->Close()))
   {
     Rebuild(state);
@@ -1177,8 +1343,11 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
     ENGINE_PROFILE_SCOPE("render.present");
     const Nanoseconds presentStart = state.clock->Now();
     presented = state.swapChain->Present(policy.syncInterval, policy.allowTearing ? DXGI_PRESENT_ALLOW_TEARING : 0);
-    state.lastWaits += state.clock->Now() - presentStart;
+    state.timing.present = state.clock->Now() - presentStart;
   }
+  state.latencyWaitHeld = false;
+  state.timedFrames[slot] = timed ? state.timing.frame : 0;
+  ReadDisplayStatistics(state);
   state.frameFenceValues[slot] = ++state.fenceValue;
   const HRESULT signalled = state.device->Queue()->Signal(state.fence.Get(), state.fenceValue);
   ++state.frameNumber;
@@ -1216,7 +1385,12 @@ std::uint64_t FrameRenderer::WorldFrames() const noexcept
 
 Nanoseconds FrameRenderer::LastFrameWaits() const noexcept
 {
-  return m_state->lastWaits;
+  return m_state->timing.Waits();
+}
+
+const FrameTiming& FrameRenderer::LastFrameTiming() const noexcept
+{
+  return m_state->timing;
 }
 
 double FrameRenderer::FramesPerSecond() const noexcept
