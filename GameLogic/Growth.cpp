@@ -4,6 +4,7 @@
 #include "EssenceOrb.h"
 #include "Growth.h"
 #include "RegionSimulation.h"
+#include "Upkeep.h"
 
 #include <algorithm>
 #include <cmath>
@@ -18,6 +19,7 @@ std::int32_t GrowthIntervalTicks(const TuningMvp& _tuning) noexcept
 
 void AdvanceSettlement(RegionSimulation& _region, Settlement& _settlement)
 {
+  PayUpkeep(_region, _settlement);
   const TuningMvp& tuning = _region.Tuning();
   const std::uint32_t population = Population(_region, _settlement);
   const auto above = std::max<std::int64_t>(0, std::int64_t{population} - tuning.mvp.settlement.startWorkers);

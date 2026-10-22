@@ -19,7 +19,8 @@ M2 task T7 builds these on the reference Worker's task search (R-UNIT-087 to R-U
 - what "approach the shares" computes;
 - how far a gatherer walks, and by what path;
 - where a load is put down;
-- what the idle reasons are, when guard duty always has somewhere to stand.
+- what the idle reasons are, when guard duty always has somewhere to stand;
+- how an upkeep of a few resource units an hour is paid in integer thousandths each tick, and what "until upkeep balances" turns (MVP-035).
 
 ## Decision Drivers
 
@@ -56,8 +57,16 @@ Chosen option: 1. Option 2 moves Workers the reference's task search would not, 
   - A carrier at a full store gives `StoreFull`.
 
   Guard duty always has work, and the shares of the tasks with work cover every Worker. So a reason other than `StoreFull` appears only when guard duty has no share and every task with a share has no work. `ShareMet` cannot arise from the rule as built; it stays for T8's status, should a later rule cap guard duty.
+* **Upkeep** (MVP-035). It is the first part of each settlement's step, before its growth (ADR-134).
+  - Each living figure accrues `mvp.upkeep.worker_ru_per_hour`, a Leader counting as the Worker it was, and so does each built, active structure of the settlement other than its Wellspring at `mvp.upkeep.structure_ru_per_hour`. A construction site pays none.
+  - The accrual is held in thousandths of a resource unit × ticks per hour, 36,000. Each tick the whole thousandths due are paid, and the rest carries, so an hour's upkeep is exact.
+  - Stores that fall short pay all they hold.
+* **Inactive structures.** While the stores are empty, every `mvp.upkeep.inactive_step_s` (300 ticks) the most recently completed active structure becomes inactive, a later slot counting as later on an equal tick. While the stores hold anything, every step the inactive structure completed earliest becomes active again, which reverses the order. Each structure records its tick of completion (`completedTick`, 0 for one the world placed).
+  - An inactive structure has no effect. A dwelling or storehouse does not count (ADR-132), a storehouse is no drop-off point, and a turret runs none of its own advance.
+  - "Until upkeep balances" is therefore the stores staying above zero.
+* **Strength** (MVP-038, for T8's statistics): the population at `mvp.strength.worker_ru` each, the stores, and each structure of the settlement at its cost, built or a site.
 * **The wire.** The replicated task widens to four bits for the state `Carrying` (ADR-111).
-* **State.** The Worker's task, idle reason, ticks at its port and load, and the settlement's shares are part of version 9 (ADR-099).
+* **State.** The Worker's task, idle reason, ticks at its port and load, the settlement's shares, its upkeep's carry and its inactive steps' timer, and each structure's tick of completion are part of version 9 (ADR-099).
 
 ### Consequences
 
@@ -77,6 +86,11 @@ GameLogicTests (`TaskTests`):
 - guards manning a turret's four ports and the rest gathered near the Wellspring;
 - constructors building the first queued site to completion;
 - a settlement at work hashing alike every tick at 0, 1, 2 and 8 worker threads.
+
+GameLogicTests (`UpkeepTests`):
+- 20 Workers paying exactly 12 ru in a tenth of an hour, and 15 ru with a dwelling;
+- with empty stores, three dwellings turned inactive newest first, one a step, the limit falling with them, then active again in reverse once the stores hold something;
+- a strength of 800 ru for 20 Workers, 100 ru of stores and a dwelling of 300 ru.
 
 ## Pros and Cons of the Options
 

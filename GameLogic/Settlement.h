@@ -71,6 +71,10 @@ struct Settlement
   // MVP-036 (ADR-135): its shares of gathering, construction and guard duty in percent, in WorkerTask's order from
   // Gather, summing to 100.
   std::array<std::uint8_t, 3> priorities{};
+  // MVP-035 (ADR-135): the upkeep accrued and not yet due, in thousandths of a resource unit × ticks per hour, and the
+  // ticks to its next step of inactive structures, one way or the other.
+  std::int64_t upkeepCarry = 0;
+  std::int32_t inactiveTicks = 0;
 };
 
 // MVP-030: a tuning amount of resource units in thousandths, rounded once to the nearest.

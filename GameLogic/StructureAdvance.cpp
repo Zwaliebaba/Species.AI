@@ -12,8 +12,9 @@ namespace Species
 
 bool AdvanceStructure(RegionSimulation& _region, Structure& _structure)
 {
-  // R-BLDG-410 steps 2 to 6: a built turret's own advance, before the base advance evaluates its ports.
-  if (_structure.kind == StructureKind::Turret && _structure.built)
+  // R-BLDG-410 steps 2 to 6: a built, active turret's own advance, before the base advance evaluates its ports; an
+  // inactive turret has no effect (MVP-035).
+  if (_structure.kind == StructureKind::Turret && _structure.built && _structure.active)
   {
     AdvanceTurret(_region, _structure);
   }
@@ -62,6 +63,7 @@ bool AdvanceStructure(RegionSimulation& _region, Structure& _structure)
       // MVP-033: built; its Workers find their ports no longer manned at their next advance, and become Idle, except at
       // a turret, whose ports they go on manning; a turret starts afresh (ADR-133).
       _structure.built = true;
+      _structure.completedTick = _region.Draws().Tick();
       if (_structure.kind == StructureKind::Turret)
       {
         _structure.turret = NewTurret(_structure, _region.Tuning());

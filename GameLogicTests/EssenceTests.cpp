@@ -89,7 +89,8 @@ public:
     for (std::uint64_t tick = 0; tick < 60 + 22 * static_cast<std::uint64_t>(interval); ++tick)
     {
       world->Step(tick, pool);
-      if (settlement.storesMilliRu < held)
+      // An orb's payment, beside the few thousandths of upkeep each tick takes (MVP-035).
+      if (held - settlement.storesMilliRu >= Species::MilliRuOf(CommittedTuning().mvp.essence.orbCostRu))
       {
         paid.push_back(tick);
       }
@@ -110,7 +111,10 @@ public:
       ExpectEqual(interval, static_cast<std::int64_t>(paid[step] - paid[step - 1]), L"an orb every interval");
       Assert::IsTrue(std::abs(static_cast<double>(grown[step] - grown[step - 1]) - interval) < interval / 10.0, L"a Worker every interval");
     }
-    ExpectEqual(stores - 20 * Species::MilliRuOf(CommittedTuning().mvp.essence.orbCostRu), settlement.storesMilliRu, L"20 orbs paid");
+    // 20 orbs' cost, and the upkeep of at most 40 Workers over the run.
+    const std::int64_t spent = stores - settlement.storesMilliRu;
+    const std::int64_t orbs = 20 * Species::MilliRuOf(CommittedTuning().mvp.essence.orbCostRu);
+    Assert::IsTrue(spent >= orbs && spent < orbs + Species::MilliRuOf(20.0), L"20 orbs paid");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp023AnOrbInTheTerritoryDriftsToItsWellspringAndBecomesAWorker)

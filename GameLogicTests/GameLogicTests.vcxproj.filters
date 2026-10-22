@@ -80,6 +80,9 @@
     <ClCompile Include="TurretTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="UpkeepTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="WeaponTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>

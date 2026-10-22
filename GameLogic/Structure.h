@@ -93,6 +93,7 @@ struct Structure
   std::int64_t costMilliRu = 0;
   bool active = true;
   std::optional<TurretState> turret; // a turret's, from M2 task T5 (ADR-133)
+  std::uint64_t completedTick = 0;   // MVP-035: the tick it was built; 0 for one the world placed (ADR-135)
 };
 
 // The places of the turret's head and gun barrel set among the structure records; the turret kind's own is its mount's.

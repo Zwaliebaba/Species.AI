@@ -7,7 +7,8 @@ namespace Species
 
 class RegionSimulation;
 
-// One tick of a settlement's own step, after its region's slices and AI (ADR-134):
+// One tick of a settlement's own step, after its region's slices and AI (ADR-134), after its upkeep (PayUpkeep,
+// ADR-135):
 // - MVP-026: its territory's radius is wld.territory.founding_radius plus mvp.territory.radius_per_worker for each of
 //   its population above mvp.settlement.start_workers, up to wld.territory.max_radius, and never shrinks; a radius that
 //   grows makes its territory again;

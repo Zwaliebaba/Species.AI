@@ -307,6 +307,7 @@ void WriteStructure(Neuron::BitWriter& _writer, const Structure& _structure)
   {
     WriteTurret(_writer, _structure.turret.value_or(TurretState{}));
   }
+  _writer.WriteBits(_structure.completedTick, 64);
 }
 
 bool ReadStructure(Neuron::BitReader& _reader, Structure& _structure)
@@ -349,6 +350,7 @@ bool ReadStructure(Neuron::BitReader& _reader, Structure& _structure)
     finite = ReadTurret(_reader, turret) && finite;
     _structure.turret = turret;
   }
+  _structure.completedTick = _reader.ReadBits(64);
   return !_reader.Failed() && finite && _structure.id != 0 && _structure.radius >= 0.0 && _structure.workTicks >= 0 &&
          _structure.costMilliRu >= 0;
 }
