@@ -166,3 +166,4 @@ Chosen options: 1 and 3.
   - GameLogic: `CommandJournal` (`StartWorld`, `ConnectSteward`) and `WorldServer`, for the watched world;
   - `Build/CheckWorldFrame.py`.
 * ADR-108, ADR-113 and ADR-122 are amended with this record.
+* **Amendment 2026-10-22 (M2 task T12's second step, [ADR-141](ADR-141-the-turrets-shots-drawn-at-m2.md)).** The turret's rounds, muzzle flashes, casings and hits are drawn as ADR-141 records; this record's turret draws its head and barrels as before.

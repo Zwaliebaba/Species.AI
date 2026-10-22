@@ -439,7 +439,9 @@
         "quads": 5,
         "shrink": 0.8,
         "alpha_factor": 0.75,
-        "depth_test_size": 50
+        "depth_test_size": 50,
+        "round_size": 60,
+        "round_life": 2
       },
       "thrown": {
         "color": {
@@ -466,6 +468,17 @@
         "flash_time": 0.1,
         "flash_range": 500,
         "billboard_time": 1
+      },
+      "turret_round": {
+        "tracer_factor": 0.05,
+        "tracer_alpha": 0.5
+      },
+      "shell_casing": {
+        "socket_offset": 2.5,
+        "speed_min": 20,
+        "speed_spread": 20,
+        "rest_force": 0.2,
+        "bounce_factor": 0.5
       }
     }
   },
@@ -670,6 +683,13 @@
       },
       "order_marker": {
         "size": 30
+      },
+      "round_hit": {
+        "structure_count": 3,
+        "terrain_count": 1
+      },
+      "laser_hit": {
+        "count": 1
       }
     },
     "thrown": {
@@ -774,6 +794,24 @@
             "r": 50,
             "g": 50,
             "b": 250
+          }
+        }
+      },
+      "spark": {
+        "life": 4.0,
+        "size": 15,
+        "gravity": 15.0,
+        "friction": 1.5,
+        "colors": {
+          "first": {
+            "r": 250,
+            "g": 200,
+            "b": 0
+          },
+          "second": {
+            "r": 250,
+            "g": 200,
+            "b": 50
           }
         }
       },

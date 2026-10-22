@@ -248,6 +248,7 @@ WorldPresentation::WorldPresentation(Desc _desc)
   m_cursorImages = LoadCursorImages(*m_desc.content);
   m_sceneTextures = LoadSceneTextures(*m_desc.content);
   m_sceneMeshes = LoadSceneMeshes(*m_desc.content);
+  m_effects.UseMeshes(m_sceneMeshes); // ADR-141: the turret barrel set places each shot's casing
   m_gameFace = LoadGameFace(*m_desc.content);
 #if ENGINE_DEVELOPMENT
   m_developmentFace = LoadDevelopmentFace(*m_desc.content);

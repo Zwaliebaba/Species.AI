@@ -3621,6 +3621,24 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "size",
                   "x-species-presence": "required"
+                },
+                "round_size": {
+                  "type": "number",
+                  "description": "ref.weapon.muzzle_flash.round_size (R-CRATE-405)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "size",
+                  "x-species-presence": "required"
+                },
+                "round_life": {
+                  "type": "number",
+                  "description": "ref.weapon.muzzle_flash.round_life (R-CRATE-405)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "tenths of a second",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
@@ -3633,7 +3651,9 @@
                 "quads",
                 "shrink",
                 "alpha_factor",
-                "depth_test_size"
+                "depth_test_size",
+                "round_size",
+                "round_life"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -3859,6 +3879,98 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "turret_round": {
+              "type": "object",
+              "description": "the ref.weapon.turret_round.* keys",
+              "properties": {
+                "tracer_factor": {
+                  "type": "number",
+                  "description": "ref.weapon.turret_round.tracer_factor (R-CRATE-453)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "s × velocity",
+                  "x-species-presence": "required"
+                },
+                "tracer_alpha": {
+                  "type": "number",
+                  "description": "ref.weapon.turret_round.tracer_alpha (R-CRATE-453)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "alpha",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "tracer_factor",
+                "tracer_alpha"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "shell_casing": {
+              "type": "object",
+              "description": "the ref.weapon.shell_casing.* keys",
+              "properties": {
+                "socket_offset": {
+                  "type": "number",
+                  "description": "ref.weapon.shell_casing.socket_offset (R-CRATE-456)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "speed_min": {
+                  "type": "number",
+                  "description": "ref.weapon.shell_casing.speed_min (R-CRATE-456)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "speed_spread": {
+                  "type": "number",
+                  "description": "ref.weapon.shell_casing.speed_spread (R-CRATE-456)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "rest_force": {
+                  "type": "number",
+                  "description": "ref.weapon.shell_casing.rest_force (R-CRATE-456)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "force",
+                  "x-species-presence": "required"
+                },
+                "bounce_factor": {
+                  "type": "number",
+                  "description": "ref.weapon.shell_casing.bounce_factor (R-CRATE-456)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "× force",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "socket_offset",
+                "speed_min",
+                "speed_spread",
+                "rest_force",
+                "bounce_factor"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
@@ -3866,7 +3978,9 @@
             "muzzle_flash",
             "thrown",
             "explosion",
-            "shockwave"
+            "shockwave",
+            "turret_round",
+            "shell_casing"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -5463,6 +5577,55 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "round_hit": {
+              "type": "object",
+              "description": "the vfx.emit.round_hit.* keys",
+              "properties": {
+                "structure_count": {
+                  "type": "integer",
+                  "description": "vfx.emit.round_hit.structure_count (VFX-219)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "particles",
+                  "x-species-presence": "required"
+                },
+                "terrain_count": {
+                  "type": "integer",
+                  "description": "vfx.emit.round_hit.terrain_count (VFX-219)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "particles",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "structure_count",
+                "terrain_count"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "laser_hit": {
+              "type": "object",
+              "description": "the vfx.emit.laser_hit.* keys",
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "description": "vfx.emit.laser_hit.count (VFX-219)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "particles",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "count"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
@@ -5471,7 +5634,9 @@
             "burning",
             "control",
             "order",
-            "order_marker"
+            "order_marker",
+            "round_hit",
+            "laser_hit"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -6300,6 +6465,146 @@
               "x-species-type": "object",
               "x-species-presence": "required"
             },
+            "spark": {
+              "type": "object",
+              "description": "the vfx.particle.spark.* keys",
+              "properties": {
+                "life": {
+                  "type": "number",
+                  "description": "vfx.particle.spark.life (VFX-207)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "s of scaled presentation time",
+                  "x-species-presence": "required"
+                },
+                "size": {
+                  "type": "number",
+                  "description": "vfx.particle.spark.size (VFX-207)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "particle size",
+                  "x-species-presence": "required"
+                },
+                "gravity": {
+                  "type": "number",
+                  "description": "vfx.particle.spark.gravity (VFX-207)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s², positive falling",
+                  "x-species-presence": "required"
+                },
+                "friction": {
+                  "type": "number",
+                  "description": "vfx.particle.spark.friction (VFX-207)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per s",
+                  "x-species-presence": "required"
+                },
+                "colors": {
+                  "type": "object",
+                  "description": "vfx.particle.spark.colors (VFX-207)",
+                  "properties": {
+                    "first": {
+                      "type": "object",
+                      "description": "vfx.particle.spark.colors.first",
+                      "properties": {
+                        "r": {
+                          "type": "number",
+                          "description": "vfx.particle.spark.colors.first.r",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "g": {
+                          "type": "number",
+                          "description": "vfx.particle.spark.colors.first.g",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "b": {
+                          "type": "number",
+                          "description": "vfx.particle.spark.colors.first.b",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "r",
+                        "g",
+                        "b"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    },
+                    "second": {
+                      "type": "object",
+                      "description": "vfx.particle.spark.colors.second",
+                      "properties": {
+                        "r": {
+                          "type": "number",
+                          "description": "vfx.particle.spark.colors.second.r",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "g": {
+                          "type": "number",
+                          "description": "vfx.particle.spark.colors.second.g",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "b": {
+                          "type": "number",
+                          "description": "vfx.particle.spark.colors.second.b",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "r",
+                        "g",
+                        "b"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "first",
+                    "second"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "life",
+                "size",
+                "gravity",
+                "friction",
+                "colors"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
             "missile_trail": {
               "type": "object",
               "description": "the vfx.particle.missile_trail.* keys",
@@ -6597,6 +6902,7 @@
             "explosion_debris",
             "muzzle_flash",
             "control_flash",
+            "spark",
             "missile_trail",
             "worker_fire"
           ],

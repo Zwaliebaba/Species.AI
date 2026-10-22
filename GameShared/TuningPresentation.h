@@ -1191,6 +1191,12 @@ struct TuningPresentation
 
         // ref.weapon.muzzle_flash.depth_test_size, in size
         double depthTestSize = 0.0;
+
+        // ref.weapon.muzzle_flash.round_size, in size
+        double roundSize = 0.0;
+
+        // ref.weapon.muzzle_flash.round_life, in tenths of a second
+        double roundLife = 0.0;
       };
 
       struct Thrown
@@ -1260,11 +1266,40 @@ struct TuningPresentation
         double billboardTime = 0.0;
       };
 
+      struct TurretRound
+      {
+        // ref.weapon.turret_round.tracer_factor, in s × velocity
+        double tracerFactor = 0.0;
+
+        // ref.weapon.turret_round.tracer_alpha, in alpha
+        double tracerAlpha = 0.0;
+      };
+
+      struct ShellCasing
+      {
+        // ref.weapon.shell_casing.socket_offset, in wu
+        double socketOffset = 0.0;
+
+        // ref.weapon.shell_casing.speed_min, in wu/s
+        double speedMin = 0.0;
+
+        // ref.weapon.shell_casing.speed_spread, in wu/s
+        double speedSpread = 0.0;
+
+        // ref.weapon.shell_casing.rest_force, in force
+        double restForce = 0.0;
+
+        // ref.weapon.shell_casing.bounce_factor, in × force
+        double bounceFactor = 0.0;
+      };
+
       Laser laser;
       MuzzleFlash muzzleFlash;
       Thrown thrown;
       Explosion explosion;
       Shockwave shockwave;
+      TurretRound turretRound;
+      ShellCasing shellCasing;
     };
 
     Sim sim;
@@ -1789,6 +1824,21 @@ struct TuningPresentation
         double size = 0.0;
       };
 
+      struct RoundHit
+      {
+        // vfx.emit.round_hit.structure_count, in particles
+        std::int64_t structureCount = 0;
+
+        // vfx.emit.round_hit.terrain_count, in particles
+        std::int64_t terrainCount = 0;
+      };
+
+      struct LaserHit
+      {
+        // vfx.emit.laser_hit.count, in particles
+        std::int64_t count = 0;
+      };
+
       // vfx.emit.step_rate, in steps per second of unscaled presentation time
       double stepRate = 0.0;
 
@@ -1797,6 +1847,8 @@ struct TuningPresentation
       Control control;
       Order order;
       OrderMarker orderMarker;
+      RoundHit roundHit;
+      LaserHit laserHit;
     };
 
     struct Thrown
@@ -2046,6 +2098,53 @@ struct TuningPresentation
         Colors colors;
       };
 
+      struct Spark
+      {
+        struct Colors
+        {
+          struct First
+          {
+            // vfx.particle.spark.colors.first.r, in RGB, 0 to 255
+            double r = 0.0;
+
+            // vfx.particle.spark.colors.first.g, in RGB, 0 to 255
+            double g = 0.0;
+
+            // vfx.particle.spark.colors.first.b, in RGB, 0 to 255
+            double b = 0.0;
+          };
+
+          struct Second
+          {
+            // vfx.particle.spark.colors.second.r, in RGB, 0 to 255
+            double r = 0.0;
+
+            // vfx.particle.spark.colors.second.g, in RGB, 0 to 255
+            double g = 0.0;
+
+            // vfx.particle.spark.colors.second.b, in RGB, 0 to 255
+            double b = 0.0;
+          };
+
+          First first;
+          Second second;
+        };
+
+        // vfx.particle.spark.life, in s of scaled presentation time
+        double life = 0.0;
+
+        // vfx.particle.spark.size, in particle size
+        double size = 0.0;
+
+        // vfx.particle.spark.gravity, in wu/s², positive falling
+        double gravity = 0.0;
+
+        // vfx.particle.spark.friction, in per s
+        double friction = 0.0;
+
+        Colors colors;
+      };
+
       struct MissileTrail
       {
         struct Colors
@@ -2171,6 +2270,7 @@ struct TuningPresentation
       ExplosionDebris explosionDebris;
       MuzzleFlash muzzleFlash;
       ControlFlash controlFlash;
+      Spark spark;
       MissileTrail missileTrail;
       WorkerFire workerFire;
     };
@@ -2954,6 +3054,8 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.shrink = _reader.Decimal(_object, "shrink", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.alphaFactor = _reader.Decimal(_object, "alpha_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.depthTestSize = _reader.Decimal(_object, "depth_test_size", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.roundSize = _reader.Decimal(_object, "round_size", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.roundLife = _reader.Decimal(_object, "round_life", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -2996,6 +3098,23 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ref::Weapon::TurretRound& _out)
+{
+  _out.tracerFactor = _reader.Decimal(_object, "tracer_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.tracerAlpha = _reader.Decimal(_object, "tracer_alpha", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ref::Weapon::ShellCasing& _out)
+{
+  _out.socketOffset = _reader.Decimal(_object, "socket_offset", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.speedMin = _reader.Decimal(_object, "speed_min", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.speedSpread = _reader.Decimal(_object, "speed_spread", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.restForce = _reader.Decimal(_object, "rest_force", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.bounceFactor = _reader.Decimal(_object, "bounce_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ref::Weapon& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "laser"), _out.laser);
@@ -3003,6 +3122,8 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "thrown"), _out.thrown);
   ReadFields(_reader, _reader.Object(_object, "explosion"), _out.explosion);
   ReadFields(_reader, _reader.Object(_object, "shockwave"), _out.shockwave);
+  ReadFields(_reader, _reader.Object(_object, "turret_round"), _out.turretRound);
+  ReadFields(_reader, _reader.Object(_object, "shell_casing"), _out.shellCasing);
   _reader.Close(_object);
 }
 
@@ -3391,6 +3512,19 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Vfx::Emit::RoundHit& _out)
+{
+  _out.structureCount = _reader.Integer(_object, "structure_count", 0);
+  _out.terrainCount = _reader.Integer(_object, "terrain_count", 0);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Vfx::Emit::LaserHit& _out)
+{
+  _out.count = _reader.Integer(_object, "count", 0);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Vfx::Emit& _out)
 {
   _out.stepRate = _reader.Decimal(_object, "step_rate", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
@@ -3399,6 +3533,8 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "control"), _out.control);
   ReadFields(_reader, _reader.Object(_object, "order"), _out.order);
   ReadFields(_reader, _reader.Object(_object, "order_marker"), _out.orderMarker);
+  ReadFields(_reader, _reader.Object(_object, "round_hit"), _out.roundHit);
+  ReadFields(_reader, _reader.Object(_object, "laser_hit"), _out.laserHit);
   _reader.Close(_object);
 }
 
@@ -3588,6 +3724,41 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 }
 
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object,
+                       TuningPresentation::Vfx::Particle::Spark::Colors::First& _out)
+{
+  _out.r = _reader.Decimal(_object, "r", {}, Neuron::SimPrecision::Binary64);
+  _out.g = _reader.Decimal(_object, "g", {}, Neuron::SimPrecision::Binary64);
+  _out.b = _reader.Decimal(_object, "b", {}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object,
+                       TuningPresentation::Vfx::Particle::Spark::Colors::Second& _out)
+{
+  _out.r = _reader.Decimal(_object, "r", {}, Neuron::SimPrecision::Binary64);
+  _out.g = _reader.Decimal(_object, "g", {}, Neuron::SimPrecision::Binary64);
+  _out.b = _reader.Decimal(_object, "b", {}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Vfx::Particle::Spark::Colors& _out)
+{
+  ReadFields(_reader, _reader.Object(_object, "first"), _out.first);
+  ReadFields(_reader, _reader.Object(_object, "second"), _out.second);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Vfx::Particle::Spark& _out)
+{
+  _out.life = _reader.Decimal(_object, "life", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.size = _reader.Decimal(_object, "size", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.gravity = _reader.Decimal(_object, "gravity", {}, Neuron::SimPrecision::Binary64);
+  _out.friction = _reader.Decimal(_object, "friction", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  ReadFields(_reader, _reader.Object(_object, "colors"), _out.colors);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object,
                        TuningPresentation::Vfx::Particle::MissileTrail::Colors::First& _out)
 {
   _out.r = _reader.Decimal(_object, "r", {}, Neuron::SimPrecision::Binary64);
@@ -3676,6 +3847,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "explosion_debris"), _out.explosionDebris);
   ReadFields(_reader, _reader.Object(_object, "muzzle_flash"), _out.muzzleFlash);
   ReadFields(_reader, _reader.Object(_object, "control_flash"), _out.controlFlash);
+  ReadFields(_reader, _reader.Object(_object, "spark"), _out.spark);
   ReadFields(_reader, _reader.Object(_object, "missile_trail"), _out.missileTrail);
   ReadFields(_reader, _reader.Object(_object, "worker_fire"), _out.workerFire);
   _reader.Close(_object);
@@ -5043,6 +5215,8 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::
   _writer.F64(_in.shrink);
   _writer.F64(_in.alphaFactor);
   _writer.F64(_in.depthTestSize);
+  _writer.F64(_in.roundSize);
+  _writer.F64(_in.roundLife);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref::Weapon::MuzzleFlash& _out)
@@ -5057,6 +5231,8 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.shrink = _reader.F64();
   _out.alphaFactor = _reader.F64();
   _out.depthTestSize = _reader.F64();
+  _out.roundSize = _reader.F64();
+  _out.roundLife = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Weapon::Thrown::Color& _in)
@@ -5129,6 +5305,36 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.billboardTime = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Weapon::TurretRound& _in)
+{
+  _writer.F64(_in.tracerFactor);
+  _writer.F64(_in.tracerAlpha);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref::Weapon::TurretRound& _out)
+{
+  _out.tracerFactor = _reader.F64();
+  _out.tracerAlpha = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Weapon::ShellCasing& _in)
+{
+  _writer.F64(_in.socketOffset);
+  _writer.F64(_in.speedMin);
+  _writer.F64(_in.speedSpread);
+  _writer.F64(_in.restForce);
+  _writer.F64(_in.bounceFactor);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref::Weapon::ShellCasing& _out)
+{
+  _out.socketOffset = _reader.F64();
+  _out.speedMin = _reader.F64();
+  _out.speedSpread = _reader.F64();
+  _out.restForce = _reader.F64();
+  _out.bounceFactor = _reader.F64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Weapon& _in)
 {
   CookFields(_writer, _in.laser);
@@ -5136,6 +5342,8 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::
   CookFields(_writer, _in.thrown);
   CookFields(_writer, _in.explosion);
   CookFields(_writer, _in.shockwave);
+  CookFields(_writer, _in.turretRound);
+  CookFields(_writer, _in.shellCasing);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref::Weapon& _out)
@@ -5145,6 +5353,8 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.thrown);
   ReadCookedFields(_reader, _out.explosion);
   ReadCookedFields(_reader, _out.shockwave);
+  ReadCookedFields(_reader, _out.turretRound);
+  ReadCookedFields(_reader, _out.shellCasing);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref& _in)
@@ -5811,6 +6021,28 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.size = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Vfx::Emit::RoundHit& _in)
+{
+  _writer.I64(_in.structureCount);
+  _writer.I64(_in.terrainCount);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Vfx::Emit::RoundHit& _out)
+{
+  _out.structureCount = _reader.I64();
+  _out.terrainCount = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Vfx::Emit::LaserHit& _in)
+{
+  _writer.I64(_in.count);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Vfx::Emit::LaserHit& _out)
+{
+  _out.count = _reader.I64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Vfx::Emit& _in)
 {
   _writer.F64(_in.stepRate);
@@ -5819,6 +6051,8 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::
   CookFields(_writer, _in.control);
   CookFields(_writer, _in.order);
   CookFields(_writer, _in.orderMarker);
+  CookFields(_writer, _in.roundHit);
+  CookFields(_writer, _in.laserHit);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Vfx::Emit& _out)
@@ -5829,6 +6063,8 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.control);
   ReadCookedFields(_reader, _out.order);
   ReadCookedFields(_reader, _out.orderMarker);
+  ReadCookedFields(_reader, _out.roundHit);
+  ReadCookedFields(_reader, _out.laserHit);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Vfx::Thrown& _in)
@@ -6131,6 +6367,64 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.colors);
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Vfx::Particle::Spark::Colors::First& _in)
+{
+  _writer.F64(_in.r);
+  _writer.F64(_in.g);
+  _writer.F64(_in.b);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Vfx::Particle::Spark::Colors::First& _out)
+{
+  _out.r = _reader.F64();
+  _out.g = _reader.F64();
+  _out.b = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Vfx::Particle::Spark::Colors::Second& _in)
+{
+  _writer.F64(_in.r);
+  _writer.F64(_in.g);
+  _writer.F64(_in.b);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Vfx::Particle::Spark::Colors::Second& _out)
+{
+  _out.r = _reader.F64();
+  _out.g = _reader.F64();
+  _out.b = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Vfx::Particle::Spark::Colors& _in)
+{
+  CookFields(_writer, _in.first);
+  CookFields(_writer, _in.second);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Vfx::Particle::Spark::Colors& _out)
+{
+  ReadCookedFields(_reader, _out.first);
+  ReadCookedFields(_reader, _out.second);
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Vfx::Particle::Spark& _in)
+{
+  _writer.F64(_in.life);
+  _writer.F64(_in.size);
+  _writer.F64(_in.gravity);
+  _writer.F64(_in.friction);
+  CookFields(_writer, _in.colors);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Vfx::Particle::Spark& _out)
+{
+  _out.life = _reader.F64();
+  _out.size = _reader.F64();
+  _out.gravity = _reader.F64();
+  _out.friction = _reader.F64();
+  ReadCookedFields(_reader, _out.colors);
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Vfx::Particle::MissileTrail::Colors::First& _in)
 {
   _writer.F64(_in.r);
@@ -6264,6 +6558,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::
   CookFields(_writer, _in.explosionDebris);
   CookFields(_writer, _in.muzzleFlash);
   CookFields(_writer, _in.controlFlash);
+  CookFields(_writer, _in.spark);
   CookFields(_writer, _in.missileTrail);
   CookFields(_writer, _in.workerFire);
 }
@@ -6285,6 +6580,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.explosionDebris);
   ReadCookedFields(_reader, _out.muzzleFlash);
   ReadCookedFields(_reader, _out.controlFlash);
+  ReadCookedFields(_reader, _out.spark);
   ReadCookedFields(_reader, _out.missileTrail);
   ReadCookedFields(_reader, _out.workerFire);
 }
