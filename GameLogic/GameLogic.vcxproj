@@ -183,6 +183,7 @@
     <ClInclude Include="Turret.h" />
     <ClInclude Include="Upkeep.h" />
     <ClInclude Include="Weapons.h" />
+    <ClInclude Include="WorldRecord.h" />
     <ClInclude Include="WorldServer.h" />
     <ClInclude Include="WorldSimulation.h" />
     <ClInclude Include="WorldSnapshot.h" />
@@ -225,6 +226,7 @@
     <ClCompile Include="Turret.cpp" />
     <ClCompile Include="Upkeep.cpp" />
     <ClCompile Include="Weapons.cpp" />
+    <ClCompile Include="WorldRecord.cpp" />
     <ClCompile Include="WorldServer.cpp" />
     <ClCompile Include="WorldSimulation.cpp" />
     <ClCompile Include="WorldSnapshot.cpp" />

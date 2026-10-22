@@ -132,6 +132,9 @@
     <ClInclude Include="Weapons.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="WorldRecord.h">
+      <Filter>Server</Filter>
+    </ClInclude>
     <ClInclude Include="WorldServer.h">
       <Filter>Server</Filter>
     </ClInclude>
@@ -253,6 +256,9 @@
     </ClCompile>
     <ClCompile Include="Weapons.cpp">
       <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldRecord.cpp">
+      <Filter>Server</Filter>
     </ClCompile>
     <ClCompile Include="WorldServer.cpp">
       <Filter>Server</Filter>

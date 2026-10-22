@@ -9,6 +9,7 @@
 #include "StructureRecords.h"
 #include "TuningMvp.h"
 #include "WorkerPool.h"
+#include "WorldRecord.h"
 
 #include <cstdint>
 #include <memory>
@@ -85,6 +86,15 @@ public:
   {
     return m_ids;
   }
+  // ADR-137: the world record, which no state hash covers and the snapshot holds.
+  [[nodiscard]] WorldRecord& Record() noexcept
+  {
+    return m_record;
+  }
+  [[nodiscard]] const WorldRecord& Record() const noexcept
+  {
+    return m_record;
+  }
 
 private:
   Neuron::SipHashKey m_key;
@@ -93,6 +103,7 @@ private:
   StableIdCounter m_ids;
   Neuron::CommandQueue m_commands;
   std::vector<std::unique_ptr<RegionSimulation>> m_regions;
+  WorldRecord m_record;
 };
 
 } // namespace Species

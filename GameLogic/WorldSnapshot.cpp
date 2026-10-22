@@ -18,6 +18,7 @@ Neuron::SnapshotContents SnapshotOf(const WorldSimulation& _world)
   {
     _world.Region(index).WriteState(state);
   }
+  WriteWorldRecord(state, _world.Record());
   return Neuron::SnapshotContents{WORLD_STATE_VERSION, _world.NextTick(), state.Take()};
 }
 
@@ -42,7 +43,9 @@ RestoreWorld(const Neuron::SnapshotContents& _snapshot, const TuningMvp& _tuning
     return std::unexpected(Neuron::SnapshotError::MalformedState);
   }
   auto world = std::make_unique<WorldSimulation>(desc);
-  if (!world->ReadState(reader, _snapshot.stateVersion) || !reader.Finish())
+  // The world record follows the regions from version 9, the first that is saved (ADR-137).
+  if (!world->ReadState(reader, _snapshot.stateVersion) ||
+      (_snapshot.stateVersion >= WORLD_STATE_FIRST_SAVED_VERSION && !ReadWorldRecord(reader, world->Record())) || !reader.Finish())
   {
     return std::unexpected(Neuron::SnapshotError::MalformedState);
   }

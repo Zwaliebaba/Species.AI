@@ -15,8 +15,12 @@ namespace Species
 // refused.
 inline constexpr std::uint32_t WORLD_STATE_VERSION = 9;
 inline constexpr std::uint32_t WORLD_STATE_OLDEST_VERSION = 1;
+// ADR-137: the first version a server saves, which holds the world record after the regions; no world of an earlier
+// version was ever saved, and their steps stay with their tests.
+inline constexpr std::uint32_t WORLD_STATE_FIRST_SAVED_VERSION = 9;
 
-// The world's whole state: its simulation key, its region count, the world owner's state and each region's.
+// The world's whole state: its simulation key, its region count, the world owner's state and each region's, then the
+// world record (ADR-137).
 [[nodiscard]] Neuron::SnapshotContents SnapshotOf(const WorldSimulation& _world);
 
 // The world a snapshot holds, migrated to WORLD_STATE_VERSION, or why it is refused; never a world in part. Version 2
@@ -31,7 +35,9 @@ inline constexpr std::uint32_t WORLD_STATE_OLDEST_VERSION = 1;
 // figure's formation flag (M1 task T7); an older region has no commander, and its figures no Leader and no order.
 // Version 8 added each region's AIs and its bot navigation nodes' counts, and each Worker's nearest node (M1 task T8);
 // an older region has no AI and makes its nodes as a new one does. Version 9 added each region's settlements and its
-// structures (M2 task T4), and each figure's port (M2 task T5); an older region has neither, and its figures no port. _tuning and _structures outlive the world.
+// structures (M2 task T4), and each figure's port (M2 task T5); an older region has neither, and its figures no port.
+// Version 9 is the first saved, and holds the world record after the regions (ADR-137). _tuning and _structures
+// outlive the world.
 [[nodiscard]] std::expected<std::unique_ptr<WorldSimulation>, Neuron::SnapshotError>
 RestoreWorld(const Neuron::SnapshotContents& _snapshot, const TuningMvp& _tuning, const StructureRecords* _structures = nullptr);
 

@@ -207,6 +207,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-076** (SHOULD) The server SHOULD write the commands it executes since the last snapshot to a command journal beside it, so that a defect is reproduced from the snapshot and the journal on the same build (ADR-081 Level 1, ADR-088's journal).
 
+> **Amendment 2026-10-22 (M2 task T9; [ADR-137](../ADR/ADR-137-saving-the-journal-cut-and-the-world-record-at-m2.md)).** The journal beside a snapshot is written when the next snapshot is saved, so after a crash the last snapshot has none. A stop is clean when the server left a marker naming the snapshot it opens. Freezes are kept in a world record that the snapshot holds and the state hash does not cover. Version 9 is the first saved; until M2's exit build, a version raise may refuse its predecessor instead of migrating it (MVP-095).
+
 ### 2.9 Look (O52)
 
 **MVP-080** (MUST) The MVP looks good from M1 on: it is drawn in the renderer's visual language (O9; PIL-014) with flat-shaded low-poly facets (RND-426, RND-427, ADR-020), additive glow on a black world with no post-process glow (RND-416 to RND-420), the darkening layer and black fog (RND-421, RND-424), and the terrain wire grid (RND-428). Placeholder dots, untextured cubes and debug colours appear only in development views.

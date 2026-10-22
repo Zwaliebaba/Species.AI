@@ -12,8 +12,10 @@
 #include "TuningMvp.h"
 #include "WorldSimulation.h"
 
+#include <chrono>
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
@@ -24,14 +26,16 @@ namespace Species
 
 /// The game's world as the server host runs it (ADR-083, ADR-095): it opens and freezes the world, turns each
 /// connection into a steward, passes their messages to the command queue of the owner they address, and publishes each
-/// tick to every connection. With a snapshot folder it opens the newest snapshot that validates and saves one when it
-/// freezes (MVP-075, ADR-099); without one, or with none that validates, the world opens new and empty. Opening builds
+/// tick to every connection. With a snapshot folder it opens the newest snapshot that validates, saves one every
+/// mvp.persist.snapshot_seconds and when it freezes, cuts its journal at each, and records an unclean stop and every
+/// stall that froze it in the world record (MVP-075, MVP-076, PIL-131, ADR-099, ADR-137); without one, or with none that
+/// validates, the world opens new. Opening builds
 /// the region's terrain from the world seed (MVP-011, ADR-102), outside every tick. Every connection is a steward; it
 /// receives the world's terrain once, the outcome of each command it sent (ADR-106), the status of a settlement it
 /// commands when it asks for it (MVP-098, ADR-136), and each tick the state of the
 /// whole battle against what it has acknowledged, with the tick's presentation events (ADR-111). A
 /// sandbox server makes each new world the M1 sandbox, gives its steward side to the latest steward, and restarts it on
-/// the development command (ADR-109). It journals a new world's connections and commands (MVP-076).
+/// the development command (ADR-109). It journals its connections and commands (MVP-076).
 class WorldServer final : public Neuron::ServerWorld
 {
 public:
@@ -47,10 +51,15 @@ public:
     bool watched = false;                    // O77: the sandbox's AI commands both sides, and its stewards none
     std::uint32_t syntheticFigures = 0;      // ADR-126: the sandbox's sides are a synthetic battle of this many figures, watched
     std::optional<std::uint8_t> stewardSite; // MVP-012: a new world that is no sandbox has the steward's settlement here
+    // The calendar time, for the world record alone (ADR-137, PLT-053); none: the record holds no wall times.
+    std::function<std::chrono::system_clock::time_point()> calendar;
   };
 
-  // The journal file a freezing world writes beside its snapshots (MVP-076).
-  static constexpr const wchar_t* JOURNAL_FILE_NAME = L"commands.journal";
+  // The marker a world that froze cleanly leaves beside its snapshots, naming its final snapshot's tick (ADR-137).
+  static constexpr const wchar_t* CLEAN_STOP_FILE_NAME = L"clean-stop.marker";
+
+  // MVP-076 (ADR-137): the journal file that replays from tick _tick, beside the snapshot of that tick.
+  [[nodiscard]] static std::filesystem::path JournalPath(const std::filesystem::path& _folder, std::uint64_t _tick);
 
   explicit WorldServer(const Desc& _desc);
 
@@ -87,7 +96,7 @@ public:
   {
     return m_terrain.get();
   }
-  // The journal of a world opened new or restarted in this run, which a restored world does not have (ADR-109).
+  // The journal since the world opened or since its last snapshot (ADR-109, ADR-137).
   [[nodiscard]] const std::optional<CommandJournal>& Journal() const noexcept
   {
     return m_journal;
@@ -95,6 +104,16 @@ public:
 
 private:
   [[nodiscard]] std::size_t SnapshotsKept() const noexcept;
+  // MVP-075: the snapshot period in ticks, mvp.persist.snapshot_seconds at the tick period; 0 saves only at a freeze.
+  [[nodiscard]] std::uint64_t SnapshotTicks() const noexcept;
+  // The calendar time in whole seconds since 1970, or none.
+  [[nodiscard]] std::optional<std::int64_t> CalendarSeconds() const;
+  // MVP-075, MVP-076 (ADR-137): a snapshot of the world as it stands; when it is saved, the journal since the last cut
+  // goes beside the snapshot it started from, a new journal starts from this one, and the journals of snapshots no longer
+  // kept are removed. False, logged, when the snapshot is not saved.
+  bool SaveCut();
+  // The journal that starts from the world as it stands, restored from its snapshot.
+  [[nodiscard]] CommandJournal RestoredJournal() const;
   // WLD-160 to WLD-163 from _seed; none, logged, when no seed that MVP-011's re-roll reaches passes every check.
   [[nodiscard]] std::shared_ptr<const RegionTerrain> BuildTerrain(std::uint64_t _seed) const;
   void Adopt(std::unique_ptr<WorldSimulation> _world, std::shared_ptr<const RegionTerrain> _terrain);

@@ -134,7 +134,8 @@ int Run(std::span<const std::wstring> _arguments)
       // M1 plan §6: the battle sandbox, from the seed of --seed or one the server draws (MVP-005).
       worldDesc.worldSeed = options.worldSeed;
       worldDesc.sandbox = true;
-      worldDesc.watched = options.watch; // O77: a Debug build's --watch, both sides under the AI
+      worldDesc.watched = options.watch;                             // O77: a Debug build's --watch, both sides under the AI
+      worldDesc.calendar = [&clock] { return clock.CalendarUtc(); }; // ADR-137: the world record's wall times
       WorldServer world(worldDesc);
       Neuron::ServerHost::Desc hostDesc;
       hostDesc.clock = &clock;

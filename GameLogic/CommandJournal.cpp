@@ -2,6 +2,7 @@
 
 #include "BitReader.h"
 #include "BitWriter.h"
+#include "Check.h"
 #include "CommandJournal.h"
 #include "MessageCodec.h"
 #include "Sandbox.h"
@@ -15,8 +16,9 @@ namespace
 {
 
 // The journal's file version, raised with every change of its layout.
-// 2: the watched sandbox (O77); 3: the synthetic battle's figures (ADR-126); 4: the steward's site (ADR-130).
-constexpr std::uint64_t JOURNAL_FORMAT = 4;
+// 2: the watched sandbox (O77); 3: the synthetic battle's figures (ADR-126); 4: the steward's site (ADR-130); 5: a
+// journal that starts from the snapshot of its first tick (ADR-137).
+constexpr std::uint64_t JOURNAL_FORMAT = 5;
 // A region's local sites are 0 to 3 (WLD-040).
 constexpr std::uint64_t LOCAL_SITE_MAX = 3;
 constexpr std::uint32_t JOURNAL_FORMAT_BITS = 32;
@@ -108,6 +110,7 @@ std::vector<std::byte> WriteJournal(const CommandJournal& _journal)
   {
     writer.WriteBounded(_journal.start.stewardSite.value_or(0), LOCAL_SITE_MAX);
   }
+  writer.WriteBool(_journal.restored);
   writer.WriteBounded(_journal.entries.size(), JOURNAL_ENTRIES_MAX);
   for (const JournalEntry& entry : _journal.entries)
   {
@@ -141,6 +144,7 @@ std::optional<CommandJournal> ReadJournal(std::span<const std::byte> _bytes)
   {
     journal.start.stewardSite = static_cast<std::uint8_t>(reader.ReadBounded(LOCAL_SITE_MAX));
   }
+  journal.restored = reader.ReadBool();
   const std::uint64_t entries = reader.ReadBounded(JOURNAL_ENTRIES_MAX);
   std::uint64_t previousTick = journal.start.firstTick;
   for (std::uint64_t index = 0; index < entries && !reader.Failed(); ++index)
@@ -172,7 +176,17 @@ std::unique_ptr<WorldSimulation> ReplayJournal(const CommandJournal& _journal, s
                                                const TuningMvp& _tuning, const StructureRecords* _structures, std::uint64_t _untilTick,
                                                Neuron::WorkerPool& _workers, const std::function<void(const WorldSimulation&)>& _afterTick)
 {
-  std::unique_ptr<WorldSimulation> world = StartWorld(_journal.start, std::move(_terrain), _tuning, _structures);
+  return ReplayJournalOnto(StartWorld(_journal.start, std::move(_terrain), _tuning, _structures), _journal, _untilTick, _workers,
+                           _afterTick);
+}
+
+std::unique_ptr<WorldSimulation> ReplayJournalOnto(std::unique_ptr<WorldSimulation> _world, const CommandJournal& _journal,
+                                                   std::uint64_t _untilTick, Neuron::WorkerPool& _workers,
+                                                   const std::function<void(const WorldSimulation&)>& _afterTick)
+{
+  ENGINE_CHECK(_world->NextTick() == _journal.start.firstTick, "a journal from tick {} replays onto a world at tick {}",
+               _journal.start.firstTick, _world->NextTick());
+  std::unique_ptr<WorldSimulation> world = std::move(_world);
   std::size_t next = 0;
   for (std::uint64_t tick = _journal.start.firstTick; tick < _untilTick; ++tick)
   {

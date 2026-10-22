@@ -56,6 +56,9 @@
     <ClCompile Include="SandboxTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="SavingTests.cpp">
+      <Filter>Persistence</Filter>
+    </ClCompile>
     <ClCompile Include="SettlementCommandTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>

@@ -61,12 +61,15 @@ struct JournalEntry
   friend bool operator==(const JournalEntry& _a, const JournalEntry& _b) = default;
 };
 
-/// The command journal in its first form (MVP-076, ADR-109): a new world's start and every connection and command from
-/// outside the simulation since, in the order they arrived. An AI's commands are not in it: the replayed simulation
-/// makes them again. Replayed on the same build, it gives the same world, tick by tick.
+/// The command journal (MVP-076, ADR-109): a world's start and every connection and command from outside the
+/// simulation since, in the order they arrived. An AI's commands are not in it: the replayed simulation makes them
+/// again. Replayed on the same build, it gives the same world, tick by tick. From ADR-137 it is cut at each snapshot: a
+/// restored journal starts from the snapshot of its start's first tick, beside it, and its start's other values only
+/// say how its connections were made.
 struct CommandJournal
 {
   WorldStart start;
+  bool restored = false;
   std::vector<JournalEntry> entries;
 };
 
@@ -82,6 +85,12 @@ struct CommandJournal
                                                              const TuningMvp& _tuning, const StructureRecords* _structures,
                                                              std::uint64_t _untilTick, Neuron::WorkerPool& _workers,
                                                              const std::function<void(const WorldSimulation&)>& _afterTick = {});
+
+// As ReplayJournal, onto _world: the world of a restored journal's snapshot, restored, with its terrain attached, whose
+// next tick is the journal's first.
+[[nodiscard]] std::unique_ptr<WorldSimulation> ReplayJournalOnto(std::unique_ptr<WorldSimulation> _world, const CommandJournal& _journal,
+                                                                 std::uint64_t _untilTick, Neuron::WorkerPool& _workers,
+                                                                 const std::function<void(const WorldSimulation&)>& _afterTick = {});
 
 // A steward's connection to _world (ADR-095, ADR-109): the next id of the world owner and, in the sandbox, the
 // steward's side to command; in a world that is no sandbox, the team of each settlement that a steward runs (ADR-130).

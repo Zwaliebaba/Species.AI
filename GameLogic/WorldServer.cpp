@@ -18,8 +18,14 @@
 #include <array>
 #include <bit>
 #include <cmath>
+#include <chrono>
 #include <cstddef>
+#include <format>
+#include <optional>
+#include <span>
 #include <stdexcept>
+#include <string>
+#include <string_view>
 #include <utility>
 
 namespace Species
@@ -61,6 +67,41 @@ CommandResult ResultOf(const Neuron::CommandOutcome& _outcome) noexcept
   return CommandResult::Duplicate;
 }
 
+// ADR-137: the tick of a file named world-<tick>.<suffix>, as the snapshots and journals are; none for another name.
+std::optional<std::uint64_t> TickOfFile(const std::filesystem::path& _path)
+{
+  const std::wstring stem = _path.stem().wstring();
+  constexpr std::wstring_view PREFIX = L"world-";
+  if (!stem.starts_with(PREFIX) || stem.size() == PREFIX.size() ||
+      !std::ranges::all_of(stem.substr(PREFIX.size()), [](wchar_t _c) { return _c >= L'0' && _c <= L'9'; }))
+  {
+    return std::nullopt;
+  }
+  std::uint64_t tick = 0;
+  for (const wchar_t digit : stem.substr(PREFIX.size()))
+  {
+    tick = tick * 10 + static_cast<std::uint64_t>(digit - L'0');
+  }
+  return tick;
+}
+
+// PIL-131: the tick that the marker of a clean stop names, or none when there is no marker or it names nothing.
+std::optional<std::uint64_t> CleanStopTick(const std::filesystem::path& _marker)
+{
+  const auto bytes = Neuron::ReadWholeFile(_marker);
+  if (!bytes || bytes->empty() || bytes->size() > 20 ||
+      !std::ranges::all_of(*bytes, [](std::byte _b) { return _b >= std::byte{'0'} && _b <= std::byte{'9'}; }))
+  {
+    return std::nullopt;
+  }
+  std::uint64_t tick = 0;
+  for (const std::byte digit : *bytes)
+  {
+    tick = tick * 10 + (std::to_integer<std::uint64_t>(digit) - '0');
+  }
+  return tick;
+}
+
 // A message the server answers itself rather than queueing (ADR-109, ADR-136): the checks of ADR-087 item 2 that need
 // no state, and the message decoded when they pass.
 template <Neuron::MessageCodec T>
@@ -95,6 +136,13 @@ std::uint64_t WorldServer::Open()
 {
   if (!m_desc.snapshotFolder.empty())
   {
+    // PIL-131 (ADR-137): a world that froze cleanly left a marker naming its final snapshot. It goes as the world opens,
+    // so that a stop that leaves none is unclean.
+    const std::optional<std::uint64_t> cleanTick = CleanStopTick(m_desc.snapshotFolder / CLEAN_STOP_FILE_NAME);
+    if (!Neuron::RemoveFile(m_desc.snapshotFolder / CLEAN_STOP_FILE_NAME))
+    {
+      Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Error, "the marker of a clean stop could not be removed");
+    }
     // MVP-075: the newest snapshot that validates; a refused one is logged and the next older one tried.
     const Neuron::SnapshotStore store(m_desc.snapshotFolder, SnapshotsKept());
     for (const std::filesystem::path& snapshot : store.Snapshots())
@@ -116,7 +164,18 @@ std::uint64_t WorldServer::Open()
         continue;
       }
       Adopt(std::move(*restored), std::move(terrain));
-      m_journal.reset(); // the journal of a restored world comes with saving at M2 (MVP-076)
+      // MVP-075, PIL-131: a world that did not freeze cleanly at this snapshot lost what it ran after it, a freeze of
+      // cause "unclean stop" from the snapshot's tick.
+      if (cleanTick != m_world->NextTick())
+      {
+        const std::optional<std::int64_t> now = CalendarSeconds();
+        const std::int64_t saved = m_world->Record().savedAtSeconds;
+        const std::uint64_t seconds = now && saved > 0 && *now > saved ? static_cast<std::uint64_t>(*now - saved) : 0;
+        m_world->Record().freezes.push_back({m_world->NextTick(), FreezeCause::UncleanStop, seconds});
+        Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning,
+                    "the world did not stop cleanly: a freeze of {} s from tick {}, cause unclean stop", seconds, m_world->NextTick());
+      }
+      m_journal = RestoredJournal(); // MVP-076: the journal from the snapshot it opened (ADR-137)
       Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Info, "the world opens from {} at tick {}",
                   snapshot.filename().string(), m_world->NextTick());
       return m_world->NextTick();
@@ -201,6 +260,85 @@ void WorldServer::Adopt(std::unique_ptr<WorldSimulation> _world, std::shared_ptr
   _world->Region(0).AttachTerrain(_terrain);
   m_world = std::move(_world);
   m_terrain = std::move(_terrain);
+}
+
+std::filesystem::path WorldServer::JournalPath(const std::filesystem::path& _folder, std::uint64_t _tick)
+{
+  return _folder / std::format(L"world-{:020}.journal", _tick);
+}
+
+std::uint64_t WorldServer::SnapshotTicks() const noexcept
+{
+  const double ticks = m_desc.tuning.mvp.persist.snapshotSeconds / m_desc.tuning.ref.sim.tickPeriod;
+  return ticks >= 1.0 ? static_cast<std::uint64_t>(std::llround(ticks)) : 0;
+}
+
+std::optional<std::int64_t> WorldServer::CalendarSeconds() const
+{
+  if (!m_desc.calendar)
+  {
+    return std::nullopt;
+  }
+  return std::chrono::duration_cast<std::chrono::seconds>(m_desc.calendar().time_since_epoch()).count();
+}
+
+CommandJournal WorldServer::RestoredJournal() const
+{
+  CommandJournal journal;
+  journal.start = WorldStart{m_world->SimulationKey(), m_world->WorldSeed(),
+                             m_world->NextTick(),      static_cast<std::uint16_t>(m_world->RegionCount()),
+                             m_desc.sandbox,           m_desc.sandbox && m_desc.watched,
+                             m_desc.syntheticFigures,  m_desc.stewardSite};
+  journal.restored = true;
+  return journal;
+}
+
+bool WorldServer::SaveCut()
+{
+  ENGINE_PROFILE_SCOPE("world.snapshot.save");
+  if (const std::optional<std::int64_t> now = CalendarSeconds())
+  {
+    m_world->Record().savedAtSeconds = *now;
+  }
+  Neuron::SnapshotStore store(m_desc.snapshotFolder, SnapshotsKept());
+  const auto saved = store.Save(SnapshotOf(*m_world));
+  if (!saved)
+  {
+    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Error, "the world could not be saved in {}",
+                m_desc.snapshotFolder.string());
+    return false;
+  }
+  Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Debug, "the world is saved in {}", saved->filename().string());
+  // MVP-076: the journal since the last cut goes beside the snapshot or the start it replays from, and a new one starts
+  // from this snapshot.
+  std::optional<std::uint64_t> written;
+  if (m_journal)
+  {
+    written = m_journal->start.firstTick;
+    if (!Neuron::ReplaceFileAtomically(JournalPath(m_desc.snapshotFolder, m_journal->start.firstTick), WriteJournal(*m_journal)))
+    {
+      Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Error, "the command journal from tick {} could not be written",
+                  m_journal->start.firstTick);
+    }
+  }
+  m_journal = RestoredJournal();
+  // The journals that start before the oldest snapshot kept go with the snapshots, but the one just written, which may
+  // start from the world's start.
+  const std::vector<std::filesystem::path> kept = store.Snapshots();
+  const std::optional<std::uint64_t> oldest = kept.empty() ? std::nullopt : TickOfFile(kept.back());
+  for (const std::filesystem::path& journal : Neuron::ListFiles(m_desc.snapshotFolder, ".journal"))
+  {
+    const std::optional<std::uint64_t> tick = TickOfFile(journal);
+    if (tick && oldest && *tick < *oldest && tick != written)
+    {
+      if (!Neuron::RemoveFile(journal))
+      {
+        Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "the journal {} could not be removed",
+                    journal.filename().string());
+      }
+    }
+  }
+  return true;
 }
 
 std::size_t WorldServer::SnapshotsKept() const noexcept
@@ -327,6 +465,11 @@ void WorldServer::Step(std::uint64_t _tick, Neuron::WorkerPool& _workers)
   m_statsTickStart = Neuron::MarkerClockNanoseconds();
 #endif
   m_world->Step(_tick, _workers);
+  // MVP-075: a snapshot after every mvp.persist.snapshot_seconds of world time.
+  if (const std::uint64_t period = SnapshotTicks(); !m_desc.snapshotFolder.empty() && period > 0 && m_world->NextTick() % period == 0)
+  {
+    static_cast<void>(SaveCut());
+  }
 #if ENGINE_DEVELOPMENT
   // Debug and test runs hash every tick (ADR-081 item 8); a Release server hashes at its saves.
   WorldHashes hashes = HashWorld(*m_world);
@@ -430,8 +573,14 @@ void WorldServer::Stalled(const Neuron::ScheduleStall& _stall)
 {
   if (_stall.freeze)
   {
-    // The world record that holds freezes comes with saving at M2 (PIL-131, MVP-075); the loop has logged it.
-    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "freeze before tick {}, cause server stall", _stall.tick);
+    // PIL-131 (ADR-137): the freeze in the world record, with the wall time the loop gave up.
+    const auto seconds = static_cast<std::uint64_t>(std::max<std::int64_t>(0, _stall.lost.count() / 1'000'000'000));
+    if (m_world != nullptr)
+    {
+      m_world->Record().freezes.push_back({_stall.tick, FreezeCause::ServerStall, seconds});
+    }
+    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "freeze of {} s before tick {}, cause server stall", seconds,
+                _stall.tick);
   }
 }
 
@@ -443,22 +592,20 @@ void WorldServer::Freeze(std::uint64_t _nextTick)
   {
     return;
   }
-  // Freezing writes a final snapshot and loses nothing (ADR-083 item 9; MVP-075's snapshot stands in for the cut).
-  Neuron::SnapshotStore store(m_desc.snapshotFolder, SnapshotsKept());
-  if (const auto saved = store.Save(SnapshotOf(*m_world)); saved)
+  // Freezing writes a final snapshot and loses nothing (ADR-083 item 9; MVP-075's snapshot stands in for the cut), cuts
+  // the journal there, and leaves the marker of a clean stop that names it (ADR-137).
+  if (!SaveCut())
   {
-    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Info, "the world is saved in {}", saved->filename().string());
+    return;
   }
-  else
+  const std::string tick = std::to_string(m_world->NextTick());
+  if (!Neuron::ReplaceFileAtomically(m_desc.snapshotFolder / CLEAN_STOP_FILE_NAME, std::as_bytes(std::span(tick))))
   {
-    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Error, "the world could not be saved in {}",
-                m_desc.snapshotFolder.string());
+    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Error, "the marker of a clean stop could not be written");
+    return;
   }
-  // MVP-076: the journal of a world opened new in this run, beside the snapshots.
-  if (m_journal && !Neuron::ReplaceFileAtomically(m_desc.snapshotFolder / JOURNAL_FILE_NAME, WriteJournal(*m_journal)))
-  {
-    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Error, "the command journal could not be written");
-  }
+  Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Info, "the world is saved in {} at tick {}",
+              m_desc.snapshotFolder.string(), m_world->NextTick());
 }
 
 } // namespace Species
