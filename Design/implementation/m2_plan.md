@@ -1,6 +1,6 @@
 # M2 plan
 
-> Status: Draft; written ahead of M2 (O80), with the owner's answers to its questions (O81, O84), and Final when M1 meets its exit criteria (MVP-002) · Related: [MVP scope](mvp_scope.md) §3 (M2) · [M1 plan](m1_plan.md) (how phase A and phase B work) · [M0 plan](m0_plan.md) §2 (how the work flows) · [MVP assets](mvp_assets.md) · [M3 plan](m3_plan.md) · [owner decisions](../decisions/owner_decisions.md) (O43, O70, O77, O80, O81, O84, O86, O87) · [ADR-080](../ADR/ADR-080-per-tick-budgets-and-population-caps.md) · [ADR-099](../ADR/ADR-099-world-snapshots.md) · [ADR-108](../ADR/ADR-108-content-build-loose-content-and-cooked-formats.md)
+> Status: Draft; written ahead of M2 (O80), with the owner's answers to its questions (O81, O84), and Final when M1 meets its exit criteria (MVP-002) · Related: [MVP scope](mvp_scope.md) §3 (M2) · [M1 plan](m1_plan.md) (how phase A and phase B work) · [M0 plan](m0_plan.md) §2 (how the work flows) · [MVP assets](mvp_assets.md) · [M3 plan](m3_plan.md) · [owner decisions](../decisions/owner_decisions.md) (O43, O70, O77, O80, O81, O84, O86, O87, O88) · [ADR-080](../ADR/ADR-080-per-tick-budgets-and-population-caps.md) · [ADR-099](../ADR/ADR-099-world-snapshots.md) · [ADR-108](../ADR/ADR-108-content-build-loose-content-and-cooked-formats.md)
 
 ## 1 Purpose
 
@@ -77,6 +77,8 @@ Three consequences follow for this plan. The tuning is a task of its own (T10), 
 T2 and T3 come first because the simulation reads the structures' ports and footprints from the cooked simulation data records (AST-043, AST-046), never from a render mesh (ADR-021); until they land, T4 and T5 test on records written by the tests. T14 and T15, the UI framework and the settings store, depend on nothing in phase A and may run beside it, as M1's content build did (O73), each pushed with its run checklist; the HUD, the verbs and the front end (T16 to T18) follow T10, so that the tuning settles the figures they show.
 
 **Phase A starts before M1's exit (O86).** Phase A's tasks land on M2's own pull request, stacked on M1's T17c, while M1's last exit evidence is still to come; phase B waits for M1's exit, and this plan stays a Draft until then. The recipes of T2 are drafted by the implementing session from the [MVP assets](mvp_assets.md) and approved or redesigned by the owner before T2 merges. The owner approved them as drafted on 2026-10-22, after the phase's pull request merged (O87, `playtests/M2.md`).
+
+**Phase B starts before M1's exit too (O88).** Phase B's tasks land on one pull request of their own, from T11 in the order of table 2, each pushed with its run checklist and not merged before the owner's answer. M1's frame interval, above O75's 17.7 ms at the 99th percentile on the owner's first rendered run while the frame's own work was 6.10 ms, is taken up at T19, whose rendered scene is judged against the same target. The M2 files the owner has not made yet are the content build's generated stand-ins ([GameAssets.md](../assets/GameAssets.md) §2.6) until the owner's files replace them.
 
 ## 5 The scripted steward and the growth measurement
 

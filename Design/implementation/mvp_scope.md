@@ -37,6 +37,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 > **Amendment 2026-10-21 (O86).** M2's phase A, the headless settlement (tasks T2 to T10 of the [M2 plan](m2_plan.md)), starts before M1 meets its exit criteria, on a pull request of its own stacked on M1's last. Its phase B, which makes the settlement visible and playable, still waits for M1's exit, and the M2 plan stays a Draft until then.
 
+> **Amendment 2026-10-22 (O88).** M2's phase B, which makes the settlement visible and playable (tasks T11 to T19 of the [M2 plan](m2_plan.md)), also starts before M1 meets its exit criteria. M1's criterion of a client at 60 frames per second, which the owner's first rendered run missed at the 99th percentile, stays open and is taken up at M2's T19; the M2 plan stays a Draft until M1 meets its exit criteria.
+
 **MVP-003** (MUST) Every number of an MVP rule is a tuning value with a stable key in data (MVP-099); the values of §4 are first guesses that the milestones and playtests retune, and a retuned value changes the data and the table, never code.
 
 **MVP-004** (MUST) The MVP follows the Final design wherever this document does not narrow it: the pillars (PIL-010 to PIL-016), the vocabulary (PIL-090, PIL-091), the world rules of A1 for one region, and the reference mechanics it names. Where it narrows a Final requirement, §5.2 says how and why.
