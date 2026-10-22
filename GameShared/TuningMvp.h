@@ -184,6 +184,36 @@ struct TuningMvp
       double gatherRadius = 0.0;
     };
 
+    struct Steward
+    {
+      // mvp.steward.think_s, in seconds
+      double thinkS = 0.0;
+
+      // mvp.steward.dwelling_margin, in Workers
+      std::int64_t dwellingMargin = 0;
+
+      // mvp.steward.ring_first, in wu from the Wellspring
+      double ringFirst = 0.0;
+
+      // mvp.steward.ring_step, in wu
+      double ringStep = 0.0;
+
+      // mvp.steward.rings_max, in rings
+      std::int64_t ringsMax = 0;
+
+      // mvp.steward.slot_spacing, in wu
+      double slotSpacing = 0.0;
+
+      // mvp.steward.lane_half_width, in wu
+      double laneHalfWidth = 0.0;
+
+      // mvp.steward.storehouse_search_step, in wu
+      double storehouseSearchStep = 0.0;
+
+      // mvp.steward.storehouse_search_rings, in rings
+      std::int64_t storehouseSearchRings = 0;
+    };
+
     struct Strength
     {
       // mvp.strength.worker_ru, in ru per Worker
@@ -454,6 +484,7 @@ struct TuningMvp
     Upkeep upkeep;
     Priority priority;
     Guard guard;
+    Steward steward;
     Strength strength;
     Expedition expedition;
     Conflict conflict;
@@ -1884,6 +1915,20 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Steward& _out)
+{
+  _out.thinkS = _reader.Decimal(_object, "think_s", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.dwellingMargin = _reader.Integer(_object, "dwelling_margin", 0);
+  _out.ringFirst = _reader.Decimal(_object, "ring_first", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.ringStep = _reader.Decimal(_object, "ring_step", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.ringsMax = _reader.Integer(_object, "rings_max", 0);
+  _out.slotSpacing = _reader.Decimal(_object, "slot_spacing", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.laneHalfWidth = _reader.Decimal(_object, "lane_half_width", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.storehouseSearchStep = _reader.Decimal(_object, "storehouse_search_step", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.storehouseSearchRings = _reader.Integer(_object, "storehouse_search_rings", 0);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Strength& _out)
 {
   _out.workerRu = _reader.Decimal(_object, "worker_ru", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
@@ -2074,6 +2119,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "upkeep"), _out.upkeep);
   ReadFields(_reader, _reader.Object(_object, "priority"), _out.priority);
   ReadFields(_reader, _reader.Object(_object, "guard"), _out.guard);
+  ReadFields(_reader, _reader.Object(_object, "steward"), _out.steward);
   ReadFields(_reader, _reader.Object(_object, "strength"), _out.strength);
   ReadFields(_reader, _reader.Object(_object, "expedition"), _out.expedition);
   ReadFields(_reader, _reader.Object(_object, "conflict"), _out.conflict);
@@ -3046,6 +3092,32 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Guar
   _out.gatherRadius = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Steward& _in)
+{
+  _writer.F64(_in.thinkS);
+  _writer.I64(_in.dwellingMargin);
+  _writer.F64(_in.ringFirst);
+  _writer.F64(_in.ringStep);
+  _writer.I64(_in.ringsMax);
+  _writer.F64(_in.slotSpacing);
+  _writer.F64(_in.laneHalfWidth);
+  _writer.F64(_in.storehouseSearchStep);
+  _writer.I64(_in.storehouseSearchRings);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Steward& _out)
+{
+  _out.thinkS = _reader.F64();
+  _out.dwellingMargin = _reader.I64();
+  _out.ringFirst = _reader.F64();
+  _out.ringStep = _reader.F64();
+  _out.ringsMax = _reader.I64();
+  _out.slotSpacing = _reader.F64();
+  _out.laneHalfWidth = _reader.F64();
+  _out.storehouseSearchStep = _reader.F64();
+  _out.storehouseSearchRings = _reader.I64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Strength& _in)
 {
   _writer.F64(_in.workerRu);
@@ -3365,6 +3437,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp& _in)
   CookFields(_writer, _in.upkeep);
   CookFields(_writer, _in.priority);
   CookFields(_writer, _in.guard);
+  CookFields(_writer, _in.steward);
   CookFields(_writer, _in.strength);
   CookFields(_writer, _in.expedition);
   CookFields(_writer, _in.conflict);
@@ -3406,6 +3479,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp& _out
   ReadCookedFields(_reader, _out.upkeep);
   ReadCookedFields(_reader, _out.priority);
   ReadCookedFields(_reader, _out.guard);
+  ReadCookedFields(_reader, _out.steward);
   ReadCookedFields(_reader, _out.strength);
   ReadCookedFields(_reader, _out.expedition);
   ReadCookedFields(_reader, _out.conflict);

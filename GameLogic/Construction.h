@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <expected>
+#include <optional>
 
 namespace Species
 {
@@ -23,6 +24,11 @@ class RegionSimulation;
 // structure as a construction site and queues it; returns its slot, or the first refusal.
 [[nodiscard]] std::expected<std::uint32_t, PlacementRefusal> PlaceStructure(RegionSimulation& _region, std::uint8_t _site,
                                                                             StructureKind _kind, double _x, double _z);
+
+// MVP-032: the refusal that PlaceStructure would give, checked in the same order, or none when it would place; it
+// changes nothing, so that a scripted steward chooses a place before it sends its command (ADR-138).
+[[nodiscard]] std::optional<PlacementRefusal> CheckPlacement(const RegionSimulation& _region, std::uint8_t _site, StructureKind _kind,
+                                                             double _x, double _z);
 
 // MVP-034 and ADR-133: the settlement at _site rebuilds the destroyed turret whose site holds _slot with stable id _id:
 // it pays the site's cost, mvp.cost.turret_rebuild_fraction of mvp.cost.turret_ru, and queues it. NotBuildable when

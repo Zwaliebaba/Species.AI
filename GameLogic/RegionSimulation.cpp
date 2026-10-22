@@ -8,6 +8,7 @@
 #include "Profile.h"
 #include "RegionCommands.h"
 #include "RegionSimulation.h"
+#include "ScriptedSteward.h"
 #include "SeenLayer.h"
 #include "SettlementCommands.h"
 #include "StateValues.h"
@@ -87,6 +88,8 @@ constexpr std::uint32_t STATE_VERSION_WITH_LEADERS = 7;
 constexpr std::uint32_t STATE_VERSION_WITH_BOTS = 8;
 // ... and the settlements and the structures (M2 task T4).
 constexpr std::uint32_t STATE_VERSION_WITH_SETTLEMENTS = 9;
+// ... and the scripted stewards (M2 task T10, ADR-138).
+constexpr std::uint32_t STATE_VERSION_WITH_SCRIPTED_STEWARDS = 10;
 // A region holds at most one settlement on each of its four sites (MVP-010).
 constexpr std::uint64_t SETTLEMENTS_MAX = std::tuple_size_v<decltype(RegionLayout::sites)>;
 // WLD-066: the territory events a region holds; the MVP records one contact for each valley border pair at most.
@@ -161,6 +164,16 @@ void RegionSimulation::EnsureBotNodes()
     const std::uint32_t slot = m_botNodes.Take(MakeBotNode(*this, node));
     ENGINE_ASSERT(slot == node);
   }
+}
+
+StableId RegionSimulation::AddScriptedSteward(std::uint8_t _team)
+{
+  ENGINE_CHECK(std::ranges::any_of(m_settlements, [_team](const Settlement& _settlement) { return _settlement.team == _team; }),
+               "a scripted steward of team {}, which is no settlement's", _team);
+  const StableId id = m_ids.Issue();
+  m_scripted.push_back({id, _team, 1, 0});
+  SetCommander(_team, id, true);
+  return id;
 }
 
 StableId RegionSimulation::AddAi(std::uint8_t _team)
@@ -720,6 +733,14 @@ void RegionSimulation::Step(std::uint64_t _tick)
     UpdateSeenLayers();
   }
   {
+    // ADR-138: each scripted steward looks at the tick's end, as the AIs do, and its commands execute at the next.
+    ENGINE_PROFILE_SCOPE("sim.stewards.step");
+    for (ScriptedSteward& steward : m_scripted)
+    {
+      StepScriptedSteward(*this, steward);
+    }
+  }
+  {
     ENGINE_PROFILE_SCOPE("sim.routes.free_unheld");
     FreeUnheldRoutes();
   }
@@ -890,6 +911,11 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
   {
     WriteStatisticEntry(_writer, entry);
   }
+  _writer.WriteBounded(m_scripted.size(), SETTLEMENTS_MAX);
+  for (const ScriptedSteward& steward : m_scripted)
+  {
+    WriteScriptedSteward(_writer, steward);
+  }
 }
 
 bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stateVersion)
@@ -1053,6 +1079,21 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
     for (StatisticEntry& entry : m_statistics)
     {
       if (!ReadStatisticEntry(_reader, entry) || SettlementAt(entry.site) == nullptr)
+      {
+        return false;
+      }
+    }
+  }
+  // A scripted steward commands, as an AI, the team of a settlement; a region of version 9 has none.
+  m_scripted.clear();
+  if (_stateVersion >= STATE_VERSION_WITH_SCRIPTED_STEWARDS)
+  {
+    m_scripted.resize(_reader.ReadBounded(SETTLEMENTS_MAX));
+    for (ScriptedSteward& steward : m_scripted)
+    {
+      if (!ReadScriptedSteward(_reader, steward) ||
+          std::ranges::find(m_settlements, steward.team, &Settlement::team) == m_settlements.end() ||
+          !MayCommand(steward.id, steward.team, true))
       {
         return false;
       }

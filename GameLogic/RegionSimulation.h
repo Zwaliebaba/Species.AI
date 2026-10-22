@@ -14,6 +14,7 @@
 #include "ObstacleGrid.h"
 #include "RegionTerrain.h"
 #include "RouteStore.h"
+#include "ScriptedSteward.h"
 #include "Settlement.h"
 #include "Statistics.h"
 #include "SlicedPool.h"
@@ -138,6 +139,13 @@ public:
   // ADR-107: an AI of the region's own makes and commands _team from now on; its sender id is a new stable id of the
   // region. Called between ticks.
   StableId AddAi(std::uint8_t _team);
+  // ADR-138: a scripted steward runs the settlement of _team from now on as its AI commander; its sender id is a new
+  // stable id of the region. Called between ticks.
+  StableId AddScriptedSteward(std::uint8_t _team);
+  [[nodiscard]] const std::vector<ScriptedSteward>& ScriptedStewards() const noexcept
+  {
+    return m_scripted;
+  }
   [[nodiscard]] const std::vector<AiController>& Ais() const noexcept
   {
     return m_ais;
@@ -432,6 +440,7 @@ private:
   std::uint64_t m_seenUpdates = 0;          // never state
   std::vector<ContactEvent> m_contacts;     // WLD-066, state from version 9
   std::vector<StatisticEntry> m_statistics; // MVP-064, state from version 9
+  std::vector<ScriptedSteward> m_scripted;  // ADR-138, state from version 10
   std::vector<EffectEvent> m_events;        // presentation, never state
 #if ENGINE_DEVELOPMENT
   AdvanceObserver m_advanceObserver;

@@ -15,6 +15,9 @@
     <ClInclude Include="GenerationScene.h">
       <Filter>Scenes</Filter>
     </ClInclude>
+    <ClInclude Include="GrowthScene.h">
+      <Filter>Scenes</Filter>
+    </ClInclude>
     <ClInclude Include="LogFloodScene.h">
       <Filter>Scenes</Filter>
     </ClInclude>
@@ -33,6 +36,9 @@
       <Filter>Build</Filter>
     </ClCompile>
     <ClCompile Include="GenerationScene.cpp">
+      <Filter>Scenes</Filter>
+    </ClCompile>
+    <ClCompile Include="GrowthScene.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
     <ClCompile Include="LogFloodScene.cpp">

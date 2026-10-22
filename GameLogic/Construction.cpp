@@ -44,6 +44,59 @@ bool Walkable(const Neuron::TerrainField& _field, const Neuron::Vec3& _point, co
          _field.Normal(_point.x, _point.z).y >= _tuning.ref.sim.walk.minNormalY;
 }
 
+// MVP-032 (ADR-132): the construction site a placement makes, with its cost, when every check but the stores' passes.
+std::expected<Structure, PlacementRefusal> Candidate(const RegionSimulation& _region, std::uint8_t _site, StructureKind _kind, double _x,
+                                                     double _z)
+{
+  const TuningMvp& tuning = _region.Tuning();
+  const auto found = std::ranges::find(_region.Settlements(), _site, &Settlement::site);
+  const bool kind = _kind == StructureKind::Dwelling || _kind == StructureKind::Storehouse || _kind == StructureKind::Turret;
+  if (found == _region.Settlements().end() || !kind || _region.Terrain() == nullptr || _region.Records() == nullptr)
+  {
+    return std::unexpected(PlacementRefusal::NotBuildable);
+  }
+  const Settlement& settlement = *found;
+  const Structure* wellspring = _region.ResolveStructure(settlement.wellspringSlot, settlement.wellspringId);
+  if (wellspring == nullptr)
+  {
+    return std::unexpected(PlacementRefusal::NotBuildable);
+  }
+  if (std::cmp_greater_equal(settlement.queue.size(), tuning.mvp.construction.queueMax))
+  {
+    return std::unexpected(PlacementRefusal::QueueFull);
+  }
+  const Neuron::TerrainField& field = _region.Terrain()->field;
+  const Neuron::Vec3 away{_x - wellspring->position.x, 0.0, _z - wellspring->position.z};
+  Structure candidate = MakeStructure(_kind, settlement.team, std::nullopt, _x, _z, away, RecordOf(*_region.Records(), _kind),
+                                      CollisionOf(*_region.Records(), _kind), field, tuning);
+  candidate.built = false;
+  candidate.costMilliRu = CostMilliRu(_region, settlement, _kind);
+  if (!InTerritory(_region, settlement, candidate.center, candidate.radius))
+  {
+    return std::unexpected(PlacementRefusal::OutsideTerritory);
+  }
+  if (Neuron::HorizontalDistance(candidate.center, wellspring->position) - candidate.radius < tuning.mvp.construction.centerRingRadius)
+  {
+    return std::unexpected(PlacementRefusal::InCenterRing);
+  }
+  const bool walkable =
+    Walkable(field, candidate.position, tuning) &&
+    std::ranges::all_of(candidate.ports, [&](const StructurePort& _port) { return Walkable(field, _port.position, tuning); });
+  if (!walkable)
+  {
+    return std::unexpected(PlacementRefusal::NotWalkable);
+  }
+  const SlicedPool<Structure>& structures = _region.Structures();
+  for (std::uint32_t slot = 0; slot < structures.Capacity(); ++slot)
+  {
+    if (structures.Used(slot) && Overlap(candidate, structures.At(slot), tuning.ref.bldg.port.radiusWu))
+    {
+      return std::unexpected(PlacementRefusal::Overlaps);
+    }
+  }
+  return candidate;
+}
+
 } // namespace
 
 std::int64_t CostMilliRu(const RegionSimulation& _region, const Settlement& _settlement, StructureKind _kind)
@@ -150,60 +203,36 @@ bool PortsMannable(const Structure& _structure) noexcept
   return _structure.built ? _structure.kind != StructureKind::Dwelling && _structure.kind != StructureKind::Storehouse : true;
 }
 
+std::optional<PlacementRefusal> CheckPlacement(const RegionSimulation& _region, std::uint8_t _site, StructureKind _kind, double _x,
+                                               double _z)
+{
+  const std::expected<Structure, PlacementRefusal> candidate = Candidate(_region, _site, _kind, _x, _z);
+  if (!candidate)
+  {
+    return candidate.error();
+  }
+  const auto found = std::ranges::find(_region.Settlements(), _site, &Settlement::site);
+  if (found == _region.Settlements().end() || found->storesMilliRu < candidate->costMilliRu)
+  {
+    return PlacementRefusal::CannotAfford;
+  }
+  return std::nullopt;
+}
+
 std::expected<std::uint32_t, PlacementRefusal> PlaceStructure(RegionSimulation& _region, std::uint8_t _site, StructureKind _kind, double _x,
                                                               double _z)
 {
-  const TuningMvp& tuning = _region.Tuning();
-  const auto found = std::ranges::find(_region.Settlements(), _site, &Settlement::site);
-  const bool kind = _kind == StructureKind::Dwelling || _kind == StructureKind::Storehouse || _kind == StructureKind::Turret;
-  if (found == _region.Settlements().end() || !kind || _region.Terrain() == nullptr || _region.Records() == nullptr)
+  std::expected<Structure, PlacementRefusal> candidate = Candidate(_region, _site, _kind, _x, _z);
+  if (!candidate)
   {
-    return std::unexpected(PlacementRefusal::NotBuildable);
+    return std::unexpected(candidate.error());
   }
-  Settlement& settlement = *found;
-  const Structure* wellspring = _region.ResolveStructure(settlement.wellspringSlot, settlement.wellspringId);
-  if (wellspring == nullptr)
-  {
-    return std::unexpected(PlacementRefusal::NotBuildable);
-  }
-  if (std::cmp_greater_equal(settlement.queue.size(), tuning.mvp.construction.queueMax))
-  {
-    return std::unexpected(PlacementRefusal::QueueFull);
-  }
-  const Neuron::TerrainField& field = _region.Terrain()->field;
-  const Neuron::Vec3 away{_x - wellspring->position.x, 0.0, _z - wellspring->position.z};
-  Structure candidate = MakeStructure(_kind, settlement.team, std::nullopt, _x, _z, away, RecordOf(*_region.Records(), _kind),
-                                      CollisionOf(*_region.Records(), _kind), field, tuning);
-  candidate.built = false;
-  candidate.costMilliRu = CostMilliRu(_region, settlement, _kind);
-  if (!InTerritory(_region, settlement, candidate.center, candidate.radius))
-  {
-    return std::unexpected(PlacementRefusal::OutsideTerritory);
-  }
-  if (Neuron::HorizontalDistance(candidate.center, wellspring->position) - candidate.radius < tuning.mvp.construction.centerRingRadius)
-  {
-    return std::unexpected(PlacementRefusal::InCenterRing);
-  }
-  const bool walkable =
-    Walkable(field, candidate.position, tuning) &&
-    std::ranges::all_of(candidate.ports, [&](const StructurePort& _port) { return Walkable(field, _port.position, tuning); });
-  if (!walkable)
-  {
-    return std::unexpected(PlacementRefusal::NotWalkable);
-  }
-  const SlicedPool<Structure>& structures = _region.Structures();
-  for (std::uint32_t slot = 0; slot < structures.Capacity(); ++slot)
-  {
-    if (structures.Used(slot) && Overlap(candidate, structures.At(slot), tuning.ref.bldg.port.radiusWu))
-    {
-      return std::unexpected(PlacementRefusal::Overlaps);
-    }
-  }
-  if (!Withdraw(settlement, candidate.costMilliRu))
+  Settlement& settlement = *std::ranges::find(_region.Settlements(), _site, &Settlement::site);
+  if (!Withdraw(settlement, candidate->costMilliRu))
   {
     return std::unexpected(PlacementRefusal::CannotAfford);
   }
-  const std::uint32_t slot = _region.InsertStructure(std::move(candidate));
+  const std::uint32_t slot = _region.InsertStructure(std::move(*candidate));
   settlement.queue.push_back({_region.Structures().At(slot).id, slot});
   return slot;
 }

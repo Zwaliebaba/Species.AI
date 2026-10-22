@@ -166,6 +166,7 @@
     <ClInclude Include="RegionSimulation.h" />
     <ClInclude Include="RouteStore.h" />
     <ClInclude Include="Sandbox.h" />
+    <ClInclude Include="ScriptedSteward.h" />
     <ClInclude Include="SeenLayer.h" />
     <ClInclude Include="Settlement.h" />
     <ClInclude Include="SettlementCommands.h" />
@@ -211,6 +212,7 @@
     <ClCompile Include="RegionSimulation.cpp" />
     <ClCompile Include="RouteStore.cpp" />
     <ClCompile Include="Sandbox.cpp" />
+    <ClCompile Include="ScriptedSteward.cpp" />
     <ClCompile Include="SeenLayer.cpp" />
     <ClCompile Include="Settlement.cpp" />
     <ClCompile Include="SettlementCommands.cpp" />

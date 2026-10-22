@@ -138,6 +138,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-135](ADR-135-settlement-tasks-gathering-and-upkeep-at-m2.md) | Settlement tasks, gathering and upkeep at M2 | Proposed | 2026-10-22 |
 | [ADR-136](ADR-136-settlement-commands-status-and-statistics-at-m2.md) | Settlement commands, status and statistics at M2 | Proposed | 2026-10-22 |
 | [ADR-137](ADR-137-saving-the-journal-cut-and-the-world-record-at-m2.md) | Saving, the journal cut and the world record at M2 | Proposed | 2026-10-22 |
+| [ADR-138](ADR-138-the-scripted-steward-and-the-growth-scene-at-m2.md) | The scripted steward and the growth scene at M2 | Proposed | 2026-10-22 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

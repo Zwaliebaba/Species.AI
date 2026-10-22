@@ -354,6 +354,15 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.priority.default_construct` | 30 | % | — | provisional | MVP-036 | — |
 | `mvp.priority.default_guard` | 20 | % | — | provisional | MVP-036 | — |
 | `mvp.guard.gather_radius` | 100 | wu from the Wellspring | — | provisional | MVP-036 | Guard duty with no turret port gathers here, near enough that the threat search of R-UNIT-098 covers the core |
+| `mvp.steward.think_s` | 2 | seconds | tick | provisional | MVP-056 | How often the scripted steward looks at its settlement (the [M2 plan](m2_plan.md) §5, ADR-138) |
+| `mvp.steward.dwelling_margin` | 5 | Workers | — | provisional | MVP-056 | A dwelling is placed once the population comes within this of its limit, as in the M2 economy model |
+| `mvp.steward.ring_first` | 140 | wu from the Wellspring | — | provisional | MVP-056 | The dwellings' first ring, outside the centre ring |
+| `mvp.steward.ring_step` | 70 | wu | — | provisional | MVP-056 | — |
+| `mvp.steward.rings_max` | 5 | rings | — | provisional | MVP-056 | Inside the founding territory |
+| `mvp.steward.slot_spacing` | 70 | wu | — | provisional | MVP-056 | Between neighbouring places on a ring, clear of a dwelling's ports |
+| `mvp.steward.lane_half_width` | 40 | wu | — | provisional | MVP-056 | No dwelling within this of the line from the Wellspring to a home resource site |
+| `mvp.steward.storehouse_search_step` | 20 | wu | — | provisional | MVP-056 | — |
+| `mvp.steward.storehouse_search_rings` | 5 | rings | — | provisional | MVP-056 | Around the midpoint of two neighbouring outer resource sites |
 | `mvp.strength.worker_ru` | 20 | ru per Worker | — | provisional | MVP-038 | Equal to the orb cost |
 | `mvp.expedition.size_max` | 200 | Workers | — | provisional | MVP-041 | With the defenders, a battle of 300 to 450 figures (PIL-021) |
 | `mvp.conflict.attack_cost_ru` | 300 | ru | — | provisional | MVP-042 | An attack must cost a dwelling's worth |

@@ -81,6 +81,9 @@
     <ClInclude Include="Sandbox.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="ScriptedSteward.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="SeenLayer.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -210,6 +213,9 @@
       <Filter>Space</Filter>
     </ClCompile>
     <ClCompile Include="Sandbox.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="ScriptedSteward.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="SeenLayer.cpp">

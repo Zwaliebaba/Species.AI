@@ -557,6 +557,104 @@
           "x-species-type": "object",
           "x-species-presence": "required"
         },
+        "steward": {
+          "type": "object",
+          "description": "the mvp.steward.* keys",
+          "properties": {
+            "think_s": {
+              "type": "number",
+              "description": "mvp.steward.think_s (MVP-056)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "seconds",
+              "x-species-presence": "required"
+            },
+            "dwelling_margin": {
+              "type": "integer",
+              "description": "mvp.steward.dwelling_margin (MVP-056)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "Workers",
+              "x-species-presence": "required"
+            },
+            "ring_first": {
+              "type": "number",
+              "description": "mvp.steward.ring_first (MVP-056)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu from the Wellspring",
+              "x-species-presence": "required"
+            },
+            "ring_step": {
+              "type": "number",
+              "description": "mvp.steward.ring_step (MVP-056)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "rings_max": {
+              "type": "integer",
+              "description": "mvp.steward.rings_max (MVP-056)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "rings",
+              "x-species-presence": "required"
+            },
+            "slot_spacing": {
+              "type": "number",
+              "description": "mvp.steward.slot_spacing (MVP-056)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "lane_half_width": {
+              "type": "number",
+              "description": "mvp.steward.lane_half_width (MVP-056)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "storehouse_search_step": {
+              "type": "number",
+              "description": "mvp.steward.storehouse_search_step (MVP-056)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "storehouse_search_rings": {
+              "type": "integer",
+              "description": "mvp.steward.storehouse_search_rings (MVP-056)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "rings",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "think_s",
+            "dwelling_margin",
+            "ring_first",
+            "ring_step",
+            "rings_max",
+            "slot_spacing",
+            "lane_half_width",
+            "storehouse_search_step",
+            "storehouse_search_rings"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
         "strength": {
           "type": "object",
           "description": "the mvp.strength.* keys",
@@ -1449,7 +1547,8 @@
         "nav",
         "sandbox",
         "perf",
-        "guard"
+        "guard",
+        "steward"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

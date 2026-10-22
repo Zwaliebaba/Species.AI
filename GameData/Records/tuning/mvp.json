@@ -71,6 +71,17 @@
     "guard": {
       "gather_radius": 100
     },
+    "steward": {
+      "think_s": 2,
+      "dwelling_margin": 5,
+      "ring_first": 140,
+      "ring_step": 70,
+      "rings_max": 5,
+      "slot_spacing": 70,
+      "lane_half_width": 40,
+      "storehouse_search_step": 20,
+      "storehouse_search_rings": 5
+    },
     "strength": {
       "worker_ru": 20
     },

@@ -41,6 +41,9 @@
     <ClCompile Include="FormationTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="GrowthSceneTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="MovementTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
@@ -58,6 +61,9 @@
     </ClCompile>
     <ClCompile Include="SavingTests.cpp">
       <Filter>Persistence</Filter>
+    </ClCompile>
+    <ClCompile Include="ScriptedStewardTests.cpp">
+      <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="SettlementCommandTests.cpp">
       <Filter>Simulation</Filter>
