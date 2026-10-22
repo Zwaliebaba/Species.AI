@@ -14,20 +14,24 @@ namespace Species
 /// A structure's hit volume as the obstacle grid and the pushes test it (ADR-103, ADR-131): its centre and the radius of
 /// its bounding sphere, which the pushes measure from (R-UNIT-114, R-SIM-380), and the triangles of its collision asset
 /// in the world, which its sphere and ray tests read (R-SIM-123). A shape with no triangles is the sphere itself, as a
-/// structure without a collision asset and the tests' shapes are. The structure's slot, for one that is a structure.
+/// structure without a collision asset and the tests' shapes are. The structure's slot, for one that is a structure; and
+/// a turret's ray sphere, which its ray test hits besides its triangles (R-BLDG-407), none at a radius of 0.
 struct ObstacleShape
 {
   Neuron::Vec3 position;
   double radius = 0.0;
   std::vector<std::array<Neuron::Vec3, 3>> triangles;
   std::optional<std::uint32_t> structure;
+  Neuron::Vec3 rayCenter;
+  double rayRadius = 0.0;
 };
 
 // The structure's sphere hit test: a sphere of _radius at _center overlaps the bounding sphere and, when the shape has
 // triangles, comes strictly within _radius of one of them.
 [[nodiscard]] bool SphereHits(const ObstacleShape& _shape, const Neuron::Vec3& _center, double _radius) noexcept;
 // The structure's ray hit test: the segment from _origin along the unit vector _direction for _length passes within
-// the bounding sphere and, when the shape has triangles, meets one of them.
+// the bounding sphere and then passes within its ray sphere or meets one of its triangles; a shape with neither is its
+// bounding sphere.
 [[nodiscard]] bool RayHits(const ObstacleShape& _shape, const Neuron::Vec3& _origin, const Neuron::Vec3& _direction,
                            double _length) noexcept;
 

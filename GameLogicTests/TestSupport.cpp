@@ -229,6 +229,21 @@ Species::StructureRecords TestStructureRecords()
   records.turretMount = TestRecord(4, false, false);
   records.turretHead = TestRecord(0, false, false);
   records.turretBarrel = TestRecord(0, false, false);
+  // The turret's barrels at the head's barrel mount, 10 wu up and 7.5 wu forward, with a muzzle for each port, 14.5 wu
+  // further forward (the drafted recipe's, ADR-128).
+  constexpr std::array<float, 16> IDENTITY{1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F};
+  Neuron::SimulationSocket mount{Neuron::SocketKind::BarrelMount, 0, 0, IDENTITY};
+  mount.transform[13] = 10.0F;
+  mount.transform[14] = 7.5F;
+  records.turretHead.sockets.push_back(mount);
+  for (std::uint32_t barrel = 0; barrel < 4; ++barrel)
+  {
+    Neuron::SimulationSocket muzzle{Neuron::SocketKind::Muzzle, barrel, 0, IDENTITY};
+    muzzle.transform[12] = barrel % 2 == 0 ? -2.0F : 2.0F;
+    muzzle.transform[13] = barrel < 2 ? 1.4F : -1.4F;
+    muzzle.transform[14] = 15.5F;
+    records.turretBarrel.sockets.push_back(muzzle);
+  }
   return records;
 }
 

@@ -100,6 +100,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 - **Storehouse**: holds `mvp.store.storehouse_capacity_ru` (1,500 ru) more and is a drop-off point; it costs `mvp.cost.storehouse_ru` (200 ru).
 - **Turret**: the reference turret (R-BLDG-405 to R-BLDG-423), whose ports Workers on guard duty man; it costs `mvp.cost.turret_ru` (400 ru). It is the only MVP structure that takes damage, and a destroyed turret leaves a construction site that its settlement may rebuild at half its cost.
 
+> **Amendment 2026-10-22 (M2 task T5; [ADR-133](../ADR/ADR-133-the-gun-turret-at-m2.md)).** The turret is the reference gun turret. It fires for the team that mans it (R-BLDG-408) while it remains its settlement's structure, so an enemy that mans it turns it. A turret under construction takes no damage. A destroyed turret's site is not queued and gains no work until its settlement rebuilds it for `mvp.cost.turret_rebuild_fraction` (0.5) of its cost, which queues it.
+
 **MVP-035** (MUST) Upkeep is paid from the stores continuously: `mvp.upkeep.worker_ru_per_hour` (6 ru) per Worker and `mvp.upkeep.structure_ru_per_hour` (30 ru) per structure other than the Wellspring. While the stores are empty, growth stops, and structures become inactive one at a time, the most recently completed first, every `mvp.upkeep.inactive_step_s` (30 s) until upkeep balances; an inactive structure has no effect and is shown as dark. Workers never die of an empty store.
 
 **MVP-036** (MUST) The steward's settlement priorities are three shares that sum to 100 %: gathering, construction and guard duty, by default `mvp.priority.default_gather` (50 %), `mvp.priority.default_construct` (30 %) and `mvp.priority.default_guard` (20 %) (PIL-052). The task search assigns tasks so that the shares of Workers that are not following a Leader approach the set shares; a task with no work (no free port, an empty queue) releases its share to the others. Guard duty mans turret ports and otherwise gathers Workers near the Wellspring, from where the threat search of R-UNIT-098 and R-UNIT-099 sends them to fight.
@@ -326,6 +328,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.cost.dwelling_escalation` | 1.15 | times per dwelling built | — | provisional | MVP-034 | The diminishing return that brings the plateau |
 | `mvp.cost.storehouse_ru` | 200 | ru | — | provisional | MVP-034 | — |
 | `mvp.cost.turret_ru` | 400 | ru | — | provisional | MVP-034 | — |
+| `mvp.cost.turret_rebuild_fraction` | 0.5 | of the turret's cost | — | provisional | MVP-034 | A destroyed turret's site is rebuilt at half its cost |
 | `mvp.upkeep.worker_ru_per_hour` | 6 | ru per Worker per hour | scaled | provisional | MVP-035 | With the ports, puts the plateau near 280 Workers on 11 units |
 | `mvp.upkeep.structure_ru_per_hour` | 30 | ru per structure per hour | scaled | provisional | MVP-035 | — |
 | `mvp.upkeep.inactive_step_s` | 30 | seconds | scaled | provisional | MVP-035 | Decline must be visible before it hurts (PIL-054) |

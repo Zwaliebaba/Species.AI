@@ -15,7 +15,7 @@ enum class EffectEventKind : std::uint8_t
 {
   LaserFired = 1,     // R-UNIT-052, R-CRATE-405: a bolt and its muzzle flash; position the muzzle, vector the bolt's velocity
   LaserRicochet = 2,  // R-CRATE-441 step 4: the bolt's first ground contact; position the contact, vector the new velocity
-  LaserKill = 3,      // R-CRATE-443: a bolt killed a Worker; position the victim
+  LaserKill = 3,      // R-CRATE-443, R-CRATE-451 step 2: a bolt or a turret round killed a Worker; position the victim
   GrenadeThrown = 4,  // R-CRATE-405: the grenade's spawn event and the throw's muzzle flash; vector the throw's velocity
   GrenadeBounced = 5, // R-CRATE-411: a thrown weapon's bounce sound
   Explosion = 6,      // R-CRATE-406 step 1: value the range r; vector.x the damage D
@@ -32,8 +32,14 @@ enum class EffectEventKind : std::uint8_t
   WorkerOrdered = 16,          // R-UNIT-096 step 3: worker.ordered, a Worker that took a Leader's order; subject the Worker
   WorkersOrderedByPlayer = 17, // R-UNIT-140 step 5: worker.ordered_by_player; position the target
   // From M2 task T5 (ADR-131):
-  LaserHitStructure = 18, // R-CRATE-441 step 6: the spark and laser_bolt.hit_structure; position where the bolt ended
-  StructureCompleted = 19 // MVP-033, MVP-083: a construction site is built; subject the structure (ADR-132)
+  LaserHitStructure = 18,  // R-CRATE-441 step 6: the spark and laser_bolt.hit_structure; position where the bolt ended
+  StructureCompleted = 19, // MVP-033, MVP-083: a construction site is built; subject the structure (ADR-132)
+  // From M2 task T5's turret (ADR-133):
+  TurretTargetSighted = 20, // R-BLDG-411: turret.target_sighted; subject the turret, position its new target's
+  TurretFired = 21,         // R-BLDG-418, R-BLDG-420: a round, its muzzle flash and casing; position the muzzle, vector the
+                            // round's velocity, value the barrel's index
+  TurretRoundHit = 22,      // R-CRATE-451 steps 4 and 5: the round's particles; position the hit, value 1 on a structure
+  TurretDestroyed = 23      // R-BLDG-423: the head and barrels shatter; subject the turret
 };
 
 /// One presentation event, in the order the region's rules emitted it within its tick (ADR-036's stable identity is the

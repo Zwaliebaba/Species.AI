@@ -111,15 +111,21 @@ bool SphereHits(const ObstacleShape& _shape, const Neuron::Vec3& _center, double
 
 bool RayHits(const ObstacleShape& _shape, const Neuron::Vec3& _origin, const Neuron::Vec3& _direction, double _length) noexcept
 {
-  // The nearest point of the segment to the sphere's centre, the parameter clamped to the segment.
-  const Neuron::Vec3 toCenter = _shape.position - _origin;
-  const double along = std::clamp(Neuron::Dot(toCenter, _direction), 0.0, std::max(_length, 0.0));
-  const Neuron::Vec3 nearest = _origin + _direction * along;
-  if (Neuron::LengthSquared(_shape.position - nearest) >= _shape.radius * _shape.radius)
+  // The nearest point of the segment to a sphere's centre, the parameter clamped to the segment.
+  const auto within = [&](const Neuron::Vec3& _center, double _radius)
+  {
+    const double along = std::clamp(Neuron::Dot(_center - _origin, _direction), 0.0, std::max(_length, 0.0));
+    return Neuron::LengthSquared(_center - (_origin + _direction * along)) < _radius * _radius;
+  };
+  if (!within(_shape.position, _shape.radius))
   {
     return false;
   }
-  return _shape.triangles.empty() ||
+  if (_shape.rayRadius > 0.0 && within(_shape.rayCenter, _shape.rayRadius))
+  {
+    return true;
+  }
+  return (_shape.triangles.empty() && _shape.rayRadius <= 0.0) ||
          std::ranges::any_of(_shape.triangles, [&](const std::array<Neuron::Vec3, 3>& _triangle)
                              { return SegmentMeetsTriangle(_origin, _direction, std::max(_length, 0.0), _triangle); });
 }

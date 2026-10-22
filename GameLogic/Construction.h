@@ -27,14 +27,25 @@ enum class PlacementRefusal : std::uint8_t
 };
 
 // MVP-034: a kind's cost in thousandths of a resource unit; a dwelling's grows by mvp.cost.dwelling_escalation for every
-// dwelling the settlement already has, built or queued.
+// dwelling the settlement already has, built or queued; a storehouse costs mvp.cost.storehouse_ru and a turret
+// mvp.cost.turret_ru.
 [[nodiscard]] std::int64_t CostMilliRu(const RegionSimulation& _region, const Settlement& _settlement, StructureKind _kind);
 
-// MVP-032 and MVP-033 (ADR-132): the steward's settlement at _site places a dwelling or a storehouse centred at (_x, _z),
-// facing away from its Wellspring. A placement that every check passes pays the cost from the stores, inserts the
+// MVP-032 and MVP-033 (ADR-132): the steward's settlement at _site places a dwelling, a storehouse or a turret (ADR-133)
+// centred at (_x, _z), facing away from its Wellspring. A placement that every check passes pays the cost from the stores, inserts the
 // structure as a construction site and queues it; returns its slot, or the first refusal.
 [[nodiscard]] std::expected<std::uint32_t, PlacementRefusal> PlaceStructure(RegionSimulation& _region, std::uint8_t _site,
                                                                             StructureKind _kind, double _x, double _z);
+
+// MVP-034 and ADR-133: the settlement at _site rebuilds the destroyed turret whose site holds _slot with stable id _id:
+// it pays the site's cost, mvp.cost.turret_rebuild_fraction of mvp.cost.turret_ru, and queues it. NotBuildable when
+// there is no settlement at the site or no turret site of its own there that is not queued, then QueueFull and
+// CannotAfford as for a placement.
+[[nodiscard]] std::expected<void, PlacementRefusal> RebuildTurret(RegionSimulation& _region, std::uint8_t _site, std::uint32_t _slot,
+                                                                  StableId _id);
+
+// A construction site is in its settlement's queue (MVP-032).
+[[nodiscard]] bool Queued(const RegionSimulation& _region, const Structure& _structure);
 
 // MVP-033: the Worker-ticks a construction site needs, mvp.construction.work_per_ru Worker-seconds for each resource
 // unit of its cost at ref.sim.tick_period, rounded once.
@@ -49,7 +60,7 @@ enum class PlacementRefusal : std::uint8_t
 [[nodiscard]] bool InTerritory(const RegionSimulation& _region, const Settlement& _settlement, const Neuron::Vec3& _point, double _radius);
 
 // A dwelling's and a storehouse's ports are construction ports, which a Worker mans only while it is a construction
-// site; the Wellspring's and the resource sites' are manned always (MVP-031, MVP-033).
+// site; the Wellspring's, the resource sites' and the turret's are manned always (MVP-031, MVP-033).
 [[nodiscard]] bool PortsMannable(const Structure& _structure) noexcept;
 
 } // namespace Species

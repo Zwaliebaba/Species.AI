@@ -100,8 +100,11 @@ std::optional<Neuron::AssetError> CheckStructureRecords(const StructureRecords& 
   const std::int64_t perUnit = _tuning.mvp.resource.portsPerUnit;
   const auto& construction = _tuning.mvp.construction;
   // By the records' places (STRUCTURE_RECORD_KEYS).
-  const std::array<std::pair<std::size_t, std::int64_t>, 4> ports{
-    {{1, construction.portsDwelling}, {2, construction.portsStorehouse}, {3, perUnit}, {4, perUnit * _tuning.wld.resource.centralFactor}}};
+  const std::array<std::pair<std::size_t, std::int64_t>, 5> ports{{{1, construction.portsDwelling},
+                                                                   {2, construction.portsStorehouse},
+                                                                   {3, perUnit},
+                                                                   {4, perUnit * _tuning.wld.resource.centralFactor},
+                                                                   {5, construction.portsTurret}}};
   for (const auto& [place, expected] : ports)
   {
     const auto found = static_cast<std::int64_t>(Neuron::SocketsOf(RecordAt(_records, place), Neuron::SocketKind::Port).size());
@@ -111,6 +114,20 @@ std::optional<Neuron::AssetError> CheckStructureRecords(const StructureRecords& 
         Neuron::AssetFault::Damaged, std::string(STRUCTURE_RECORD_KEYS[place]),
         std::format("the mesh has {} port sockets where the tuning gives it {} ports (MVP-030, MVP-033)", found, expected)};
     }
+  }
+  // R-BLDG-405: the turret's barrels sit at its head's barrel mount, and barrel i, which fires from muzzle i, belongs to
+  // port i.
+  if (Neuron::SocketsOf(_records.turretHead, Neuron::SocketKind::BarrelMount).empty())
+  {
+    return Neuron::AssetError{Neuron::AssetFault::Damaged, std::string(STRUCTURE_RECORD_KEYS[6]),
+                              "the turret's head has no barrel mount socket, where its barrels sit (R-BLDG-405)"};
+  }
+  const auto muzzles = static_cast<std::int64_t>(Neuron::SocketsOf(_records.turretBarrel, Neuron::SocketKind::Muzzle).size());
+  if (muzzles != construction.portsTurret)
+  {
+    return Neuron::AssetError{
+      Neuron::AssetFault::Damaged, std::string(STRUCTURE_RECORD_KEYS[7]),
+      std::format("the turret's barrels have {} muzzle sockets for its {} ports (R-BLDG-405)", muzzles, construction.portsTurret)};
   }
   return std::nullopt;
 }

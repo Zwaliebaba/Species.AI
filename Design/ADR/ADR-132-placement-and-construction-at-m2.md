@@ -36,7 +36,7 @@ The command that places a structure, with its outcome message, is T8's (MVP-094,
 Chosen option: 1. A site already has the ports its Workers man and the footprint that blocks, so option 2 would duplicate both and swap identities at completion, and option 3 would count work that the port evaluation already establishes (R-BLDG-021).
 
 * **The structure** gains whether it is built, the Worker-ticks given to it, its cost in thousandths of a resource unit and whether it is active (MVP-035, T7). A structure that the world places is built and costs nothing. The settlement gains its queue: the sites in the order they are built, by stable id and slot.
-* **Placement** (`PlaceStructure`) places a dwelling or a storehouse for the settlement at a site. The structure is centred at the point the steward gives and faces away from the Wellspring. The checks run in this order, and the first that fails is the refusal (`PlacementRefusal`):
+* **Placement** (`PlaceStructure`) places a dwelling, a storehouse or a turret ([ADR-133](ADR-133-the-gun-turret-at-m2.md)) for the settlement at a site. The structure is centred at the point the steward gives and faces away from the Wellspring. The checks run in this order, and the first that fails is the refusal (`PlacementRefusal`):
   1. no settlement at the site, or a kind the steward does not place;
   2. the queue is full;
   3. the structure does not lie wholly inside the territory: its footprint, the horizontal disc of its bounding sphere, inside the disc of the territory's radius about the Wellspring. T6 replaces the disc with the territory's bounds (WLD-060).
@@ -46,10 +46,10 @@ Chosen option: 1. A site already has the ports its Workers man and the footprint
   7. the stores do not hold the cost.
 
   A placement that passes pays the cost, inserts the structure as a site with the next stable id, rebuilds the obstacle grid (ADR-131) and queues the site.
-* **The cost** of a dwelling is `mvp.cost.dwelling_ru` × `mvp.cost.dwelling_escalation` to the power of the dwellings the settlement already has, built or queued, rounded once to a thousandth. A storehouse costs `mvp.cost.storehouse_ru`.
+* **The cost** of a dwelling is `mvp.cost.dwelling_ru` × `mvp.cost.dwelling_escalation` to the power of the dwellings the settlement already has, built or queued, rounded once to a thousandth. A storehouse costs `mvp.cost.storehouse_ru` and a turret `mvp.cost.turret_ru`.
 * **Construction.**
   - A site needs `mvp.construction.work_per_ru` Worker-seconds for each resource unit of its cost, in Worker-ticks at `ref.sim.tick_period`, rounded once: 3,000 for a dwelling of 300 ru.
-  - In the structure step, after its port evaluation, a site gains one Worker-tick for each occupied port.
+  - In the structure step, after its port evaluation, a site gains one Worker-tick for each occupied port while it is in its settlement's queue, so that a destroyed turret's site waits for its rebuild (ADR-133).
   - On the tick it has them it is built and leaves its settlement's queue. It raises the presentation event `StructureCompleted`, the completion flash of MVP-083 and the growth step of O81, which T8's statistics count.
 * **Construction ports.** A dwelling's and a storehouse's ports are construction ports: the port evaluation gives them no occupant once the structure is built. Their Workers then find they are no longer the occupant and become Idle (R-UNIT-070). The Wellspring's and the resource sites' ports are manned always. MVP-033 sets the turret's construction ports to be its manning ports, which stay manned (T5's turret).
 * **What counts.** `ActiveCount` counts a settlement's built, active structures of a kind. The population limit takes its dwellings (MVP-022), and the stores' capacity its storehouses (MVP-021, MVP-034).

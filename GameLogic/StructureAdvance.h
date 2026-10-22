@@ -15,9 +15,10 @@ class RegionSimulation;
 // R-BLDG-022): each port's occupant is the first Worker in actor-grid result order, of any team, that is Manning that
 // very port of this very structure and stands strictly within ref.bldg.port.radius_wu of it horizontally; an occupied
 // port's reservation counts are all 0 and an unoccupied port's fall by ref.bldg.port.reservation_decay_per_tick, never
-// below 0. A built dwelling's or storehouse's ports have no occupant (PortsMannable). Then a construction site gains a
-// Worker-tick for each occupied port, and completes when it has its RequiredWorkTicks: it is built, it leaves its
-// settlement's queue, and it raises StructureCompleted (MVP-033). True when the structure asks to be removed.
+// below 0. A built dwelling's or storehouse's ports have no occupant (PortsMannable). Then a queued construction site
+// gains a Worker-tick for each occupied port, and completes when it has its RequiredWorkTicks: it is built, it leaves its
+// settlement's queue, and it raises StructureCompleted (MVP-033). A built turret first runs its own advance
+// (AdvanceTurret). True when the structure asks to be removed.
 [[nodiscard]] bool AdvanceStructure(RegionSimulation& _region, Structure& _structure);
 
 // R-BLDG-023: a Worker of _team approaching the port adds 1 to its team's reservation count, up to

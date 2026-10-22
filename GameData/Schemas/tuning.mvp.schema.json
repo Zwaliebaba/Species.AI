@@ -412,13 +412,23 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "ru",
               "x-species-presence": "required"
+            },
+            "turret_rebuild_fraction": {
+              "type": "number",
+              "description": "mvp.cost.turret_rebuild_fraction (MVP-034)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "of the cost",
+              "x-species-presence": "required"
             }
           },
           "required": [
             "dwelling_ru",
             "dwelling_escalation",
             "storehouse_ru",
-            "turret_ru"
+            "turret_ru",
+            "turret_rebuild_fraction"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -2092,11 +2102,42 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "factor",
                   "x-species-presence": "required"
+                },
+                "structure_reach": {
+                  "type": "number",
+                  "description": "ref.sim.explosion.structure_reach (R-BLDG-035, R-SIM-388)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "× range",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
                 "actor_reach",
-                "actor_gain"
+                "actor_gain",
+                "structure_reach"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "ray": {
+              "type": "object",
+              "description": "the ref.sim.ray.* keys",
+              "properties": {
+                "sprite_radius": {
+                  "type": "number",
+                  "description": "ref.sim.ray.sprite_radius (R-SIM-387)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "sprite_radius"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -2160,7 +2201,8 @@
             "explosion",
             "command",
             "team",
-            "structure"
+            "structure",
+            "ray"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -3976,6 +4018,55 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "turret_round": {
+              "type": "object",
+              "description": "the ref.weapon.turret_round.* keys",
+              "properties": {
+                "life_ticks": {
+                  "type": "integer",
+                  "description": "ref.weapon.turret_round.life_ticks (R-CRATE-450, R-CRATE-451)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "damage": {
+                  "type": "integer",
+                  "description": "ref.weapon.turret_round.damage (R-CRATE-451)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "health",
+                  "x-species-presence": "required"
+                },
+                "push": {
+                  "type": "number",
+                  "description": "ref.weapon.turret_round.push (R-CRATE-451)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "push_jitter": {
+                  "type": "number",
+                  "description": "ref.weapon.turret_round.push_jitter (R-CRATE-451)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "life_ticks",
+                "damage",
+                "push",
+                "push_jitter"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
@@ -3983,7 +4074,8 @@
             "throwing",
             "thrown",
             "grenade",
-            "shockwave"
+            "shockwave",
+            "turret_round"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -4216,11 +4308,290 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "turret": {
+              "type": "object",
+              "description": "the ref.bldg.turret.* keys",
+              "properties": {
+                "radius": {
+                  "type": "number",
+                  "description": "ref.bldg.turret.radius (R-BLDG-407)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "ray_sphere_radius": {
+                  "type": "number",
+                  "description": "ref.bldg.turret.ray_sphere_radius (R-BLDG-407)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "ray_sphere_height": {
+                  "type": "number",
+                  "description": "ref.bldg.turret.ray_sphere_height (R-BLDG-407)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "recount_ticks": {
+                  "type": "integer",
+                  "description": "ref.bldg.turret.recount_ticks (R-BLDG-408, R-BLDG-411)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "sweep_distance_base": {
+                  "type": "number",
+                  "description": "ref.bldg.turret.sweep_distance_base (R-BLDG-412)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "sweep_distance_spread": {
+                  "type": "number",
+                  "description": "ref.bldg.turret.sweep_distance_spread (R-BLDG-412)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "sweep_height_first": {
+                  "type": "number",
+                  "description": "ref.bldg.turret.sweep_height_first (R-BLDG-412)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "sweep_turn": {
+                  "type": "number",
+                  "description": "ref.bldg.turret.sweep_turn (R-BLDG-412)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "rad",
+                  "x-species-presence": "required"
+                },
+                "sweep_height_change": {
+                  "type": "number",
+                  "description": "ref.bldg.turret.sweep_height_change (R-BLDG-412)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "los_step": {
+                  "type": "number",
+                  "description": "ref.bldg.turret.los_step (R-BLDG-413)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "wobble_xz": {
+                  "type": "number",
+                  "description": "ref.bldg.turret.wobble_xz (R-BLDG-414)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "wobble_y": {
+                  "type": "number",
+                  "description": "ref.bldg.turret.wobble_y (R-BLDG-414)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "wobble_rate_xz": {
+                  "type": "number",
+                  "description": "ref.bldg.turret.wobble_rate_xz (R-BLDG-414)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "rad/s",
+                  "x-species-presence": "required"
+                },
+                "wobble_rate_y": {
+                  "type": "number",
+                  "description": "ref.bldg.turret.wobble_rate_y (R-BLDG-414)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "rad/s",
+                  "x-species-presence": "required"
+                },
+                "fire_cone": {
+                  "type": "number",
+                  "description": "ref.bldg.turret.fire_cone (R-BLDG-415)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "rad",
+                  "x-species-presence": "required"
+                },
+                "hose_window_ticks": {
+                  "type": "integer",
+                  "description": "ref.bldg.turret.hose_window_ticks (R-BLDG-415)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "min_aim_distance": {
+                  "type": "number",
+                  "description": "ref.bldg.turret.min_aim_distance (R-BLDG-416)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "yaw_gain": {
+                  "type": "number",
+                  "description": "ref.bldg.turret.yaw_gain (R-BLDG-416)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per tick",
+                  "x-species-presence": "required"
+                },
+                "pitch_blend": {
+                  "type": "number",
+                  "description": "ref.bldg.turret.pitch_blend (R-BLDG-416)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per tick",
+                  "x-species-presence": "required"
+                },
+                "barrels_per_fire_step": {
+                  "type": "integer",
+                  "description": "ref.bldg.turret.barrels_per_fire_step (R-BLDG-406, R-BLDG-418)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "barrels",
+                  "x-species-presence": "required"
+                },
+                "health": {
+                  "type": "integer",
+                  "description": "ref.bldg.turret.health (R-BLDG-422)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "health",
+                  "x-species-presence": "required"
+                },
+                "gun": {
+                  "type": "object",
+                  "description": "the ref.bldg.turret.gun.* keys",
+                  "properties": {
+                    "reload_ticks": {
+                      "type": "integer",
+                      "description": "ref.bldg.turret.gun.reload_ticks (R-BLDG-406, R-BLDG-418)",
+                      "minimum": 0,
+                      "x-species-type": "count",
+                      "x-species-unit": "ticks",
+                      "x-species-presence": "required"
+                    },
+                    "min_range": {
+                      "type": "number",
+                      "description": "ref.bldg.turret.gun.min_range (R-BLDG-406, R-BLDG-411)",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "wu",
+                      "x-species-presence": "required"
+                    },
+                    "max_range": {
+                      "type": "number",
+                      "description": "ref.bldg.turret.gun.max_range (R-BLDG-406, R-BLDG-411)",
+                      "exclusiveMinimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "wu",
+                      "x-species-presence": "required"
+                    },
+                    "round_speed": {
+                      "type": "number",
+                      "description": "ref.bldg.turret.gun.round_speed (R-BLDG-420)",
+                      "exclusiveMinimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "wu/s",
+                      "x-species-presence": "required"
+                    },
+                    "start_back_fraction": {
+                      "type": "number",
+                      "description": "ref.bldg.turret.gun.start_back_fraction (R-BLDG-420)",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "ticks of travel",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "reload_ticks",
+                    "min_range",
+                    "max_range",
+                    "round_speed",
+                    "start_back_fraction"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "radius",
+                "ray_sphere_radius",
+                "ray_sphere_height",
+                "recount_ticks",
+                "sweep_distance_base",
+                "sweep_distance_spread",
+                "sweep_height_first",
+                "sweep_turn",
+                "sweep_height_change",
+                "los_step",
+                "wobble_xz",
+                "wobble_y",
+                "wobble_rate_xz",
+                "wobble_rate_y",
+                "fire_cone",
+                "hose_window_ticks",
+                "min_aim_distance",
+                "yaw_gain",
+                "pitch_blend",
+                "barrels_per_fire_step",
+                "health",
+                "gun"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
             "port",
-            "structure"
+            "structure",
+            "turret"
           ],
           "additionalProperties": false,
           "x-species-type": "object",

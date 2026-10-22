@@ -53,7 +53,8 @@
       "dwelling_ru": 300,
       "dwelling_escalation": 1.15,
       "storehouse_ru": 200,
-      "turret_ru": 400
+      "turret_ru": 400,
+      "turret_rebuild_fraction": 0.5
     },
     "upkeep": {
       "worker_ru_per_hour": 6,
@@ -256,7 +257,11 @@
       },
       "explosion": {
         "actor_reach": 2,
-        "actor_gain": 2
+        "actor_gain": 2,
+        "structure_reach": 3
+      },
+      "ray": {
+        "sprite_radius": 5
       },
       "command": {
         "leader_toggle_offset": 1
@@ -465,6 +470,12 @@
         "ignite_threshold": 0.1,
         "push_lift": 3,
         "push": 25
+      },
+      "turret_round": {
+        "life_ticks": 6,
+        "damage": 15,
+        "push": 20,
+        "push_jitter": 3
       }
     },
     "econ": {
@@ -495,6 +506,36 @@
       },
       "structure": {
         "push_step_wu": 2
+      },
+      "turret": {
+        "radius": 30,
+        "ray_sphere_radius": 12,
+        "ray_sphere_height": 10,
+        "recount_ticks": 11,
+        "sweep_distance_base": 200,
+        "sweep_distance_spread": 200,
+        "sweep_height_first": 100,
+        "sweep_turn": 1.5707963267948966,
+        "sweep_height_change": 50,
+        "los_step": 30,
+        "wobble_xz": 20,
+        "wobble_y": 10,
+        "wobble_rate_xz": 3,
+        "wobble_rate_y": 2,
+        "fire_cone": 0.3,
+        "hose_window_ticks": 10,
+        "min_aim_distance": 75,
+        "yaw_gain": 0.2,
+        "pitch_blend": 0.2,
+        "barrels_per_fire_step": 2,
+        "health": 60,
+        "gun": {
+          "reload_ticks": 1,
+          "min_range": 50,
+          "max_range": 225,
+          "round_speed": 500,
+          "start_back_fraction": 0.5
+        }
       }
     },
     "ctrl": {

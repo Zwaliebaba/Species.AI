@@ -174,6 +174,10 @@ public:
   {
     return m_obstacles;
   }
+  [[nodiscard]] const ObstacleGrid& Obstacles() const noexcept
+  {
+    return m_obstacles;
+  }
   // R-SIM-345 and R-SIM-352: a route over the region's land route graph, stored under the next handle (ADR-104). It
   // needs the region's terrain, and it is freed at the end of the next step that ends with no figure holding it.
   RouteHandle BuildRoute(const Neuron::Vec3& _from, const Neuron::Vec3& _to, bool _directRoute, bool _permitClimbing = true,

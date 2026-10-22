@@ -51,7 +51,7 @@ std::int64_t CostMilliRu(const RegionSimulation& _region, const Settlement& _set
   const auto& cost = _region.Tuning().mvp.cost;
   if (_kind != StructureKind::Dwelling)
   {
-    return MilliRuOf(_kind == StructureKind::Storehouse ? cost.storehouseRu : 0.0);
+    return MilliRuOf(_kind == StructureKind::Storehouse ? cost.storehouseRu : _kind == StructureKind::Turret ? cost.turretRu : 0.0);
   }
   std::int64_t dwellings = 0;
   const SlicedPool<Structure>& structures = _region.Structures();
@@ -97,6 +97,34 @@ bool InTerritory(const RegionSimulation& _region, const Settlement& _settlement,
   return wellspring != nullptr && Neuron::HorizontalDistance(_point, wellspring->position) + _radius <= _settlement.territoryRadius;
 }
 
+bool Queued(const RegionSimulation& _region, const Structure& _structure)
+{
+  return std::ranges::any_of(_region.Settlements(), [&](const Settlement& _settlement)
+                             { return std::ranges::find(_settlement.queue, _structure.id, &StructureRef::id) != _settlement.queue.end(); });
+}
+
+std::expected<void, PlacementRefusal> RebuildTurret(RegionSimulation& _region, std::uint8_t _site, std::uint32_t _slot, StableId _id)
+{
+  const auto found = std::ranges::find(_region.Settlements(), _site, &Settlement::site);
+  Structure* site = _region.ResolveStructure(_slot, _id);
+  if (found == _region.Settlements().end() || site == nullptr || site->kind != StructureKind::Turret || site->built ||
+      site->owner != std::optional<std::uint8_t>(found->team) || Queued(_region, *site))
+  {
+    return std::unexpected(PlacementRefusal::NotBuildable);
+  }
+  Settlement& settlement = *found;
+  if (std::cmp_greater_equal(settlement.queue.size(), _region.Tuning().mvp.construction.queueMax))
+  {
+    return std::unexpected(PlacementRefusal::QueueFull);
+  }
+  if (!Withdraw(settlement, site->costMilliRu))
+  {
+    return std::unexpected(PlacementRefusal::CannotAfford);
+  }
+  settlement.queue.push_back({_id, _slot});
+  return {};
+}
+
 bool PortsMannable(const Structure& _structure) noexcept
 {
   return _structure.built ? _structure.kind != StructureKind::Dwelling && _structure.kind != StructureKind::Storehouse : true;
@@ -107,7 +135,7 @@ std::expected<std::uint32_t, PlacementRefusal> PlaceStructure(RegionSimulation& 
 {
   const TuningMvp& tuning = _region.Tuning();
   const auto found = std::ranges::find(_region.Settlements(), _site, &Settlement::site);
-  const bool kind = _kind == StructureKind::Dwelling || _kind == StructureKind::Storehouse;
+  const bool kind = _kind == StructureKind::Dwelling || _kind == StructureKind::Storehouse || _kind == StructureKind::Turret;
   if (found == _region.Settlements().end() || !kind || _region.Terrain() == nullptr || _region.Records() == nullptr)
   {
     return std::unexpected(PlacementRefusal::NotBuildable);

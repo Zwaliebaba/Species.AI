@@ -46,6 +46,64 @@ std::optional<std::uint8_t> ReadOptionalTeam(Neuron::BitReader& _reader)
   return static_cast<std::uint8_t>(_reader.ReadBits(8));
 }
 
+void WriteOptionalActor(Neuron::BitWriter& _writer, const std::optional<ActorRef>& _actor)
+{
+  _writer.WriteBool(_actor.has_value());
+  if (_actor)
+  {
+    const ActorRef& actor = _actor.value_or(ActorRef{});
+    _writer.WriteBits(actor.id, 64);
+    _writer.WriteBits(actor.slot, 32);
+    _writer.WriteBits(actor.team, 8);
+  }
+}
+
+std::optional<ActorRef> ReadOptionalActor(Neuron::BitReader& _reader)
+{
+  if (!_reader.ReadBool())
+  {
+    return std::nullopt;
+  }
+  ActorRef actor;
+  actor.id = _reader.ReadBits(64);
+  actor.slot = static_cast<std::uint32_t>(_reader.ReadBits(32));
+  actor.team = static_cast<std::uint8_t>(_reader.ReadBits(8));
+  return actor;
+}
+
+void WriteTurret(Neuron::BitWriter& _writer, const TurretState& _turret)
+{
+  WriteOptionalTeam(_writer, _turret.team);
+  _writer.WriteSigned(_turret.health, 32);
+  _writer.WriteSigned(_turret.recountTicks, 32);
+  _writer.WriteSigned(_turret.searchTicks, 32);
+  _writer.WriteSigned(_turret.fireTicks, 32);
+  _writer.WriteSigned(_turret.hoseTicks, 32);
+  _writer.WriteBits(_turret.barrelCursor, 8);
+  WriteOptionalActor(_writer, _turret.target);
+  WriteVec3(_writer, _turret.aimPoint);
+  WriteVec3(_writer, _turret.headFront);
+  WriteVec3(_writer, _turret.barrelUp);
+  _writer.WriteBool(_turret.swept);
+}
+
+bool ReadTurret(Neuron::BitReader& _reader, TurretState& _turret)
+{
+  _turret.team = ReadOptionalTeam(_reader);
+  _turret.health = static_cast<std::int32_t>(_reader.ReadSigned(32));
+  _turret.recountTicks = static_cast<std::int32_t>(_reader.ReadSigned(32));
+  _turret.searchTicks = static_cast<std::int32_t>(_reader.ReadSigned(32));
+  _turret.fireTicks = static_cast<std::int32_t>(_reader.ReadSigned(32));
+  _turret.hoseTicks = static_cast<std::int32_t>(_reader.ReadSigned(32));
+  _turret.barrelCursor = static_cast<std::uint8_t>(_reader.ReadBits(8));
+  _turret.target = ReadOptionalActor(_reader);
+  bool finite = ReadVec3(_reader, _turret.aimPoint);
+  finite = ReadVec3(_reader, _turret.headFront) && finite;
+  finite = ReadVec3(_reader, _turret.barrelUp) && finite;
+  _turret.swept = _reader.ReadBool();
+  return finite;
+}
+
 } // namespace
 
 std::size_t RecordPlaceOf(StructureKind _kind) noexcept
@@ -60,6 +118,8 @@ std::size_t RecordPlaceOf(StructureKind _kind) noexcept
     return 1;
   case StructureKind::Storehouse:
     return 2;
+  case StructureKind::Turret:
+    return 5;
   case StructureKind::Wellspring:
     break;
   }
@@ -73,7 +133,8 @@ const Neuron::SimulationRecord& RecordOf(const StructureRecords& _records, Struc
 
 const Neuron::CollisionAsset* CollisionOf(const StructureRecords& _records, StructureKind _kind) noexcept
 {
-  const std::optional<Neuron::CollisionAsset>& collision = _records.collisions[RecordPlaceOf(_kind)];
+  const std::optional<Neuron::CollisionAsset>& collision =
+    _records.collisions[_kind == StructureKind::Turret ? TURRET_HEAD_PLACE : RecordPlaceOf(_kind)];
   return collision ? &*collision : nullptr;
 }
 
@@ -110,6 +171,12 @@ Structure MakeStructure(StructureKind _kind, std::optional<std::uint8_t> _owner,
     structure.center = structure.position;
     structure.radius = _tuning.ref.sim.structure.defaultRadius;
   }
+  if (_kind == StructureKind::Turret)
+  {
+    structure.center = structure.position;
+    structure.radius = _tuning.ref.bldg.turret.radius;
+    structure.turret = NewTurret(structure, _tuning);
+  }
   // R-BLDG-016 and R-BLDG-020: a port per port socket, in index order, pushed clear by the structure push of R-BLDG-033
   // (while the port's sphere hits the structure, a step directly away from its position) and set on the terrain.
   const ObstacleShape shape = ShapeOf(structure, _collision);
@@ -134,6 +201,16 @@ Structure MakeStructure(StructureKind _kind, std::optional<std::uint8_t> _owner,
   return structure;
 }
 
+TurretState NewTurret(const Structure& _structure, const TuningMvp& _tuning) noexcept
+{
+  TurretState turret;
+  turret.health = static_cast<std::int32_t>(_tuning.ref.bldg.turret.health);
+  turret.aimPoint = _structure.position + _structure.front * _tuning.ref.bldg.turret.sweepDistanceBase;
+  turret.headFront = _structure.front;
+  turret.barrelUp = _structure.front;
+  return turret;
+}
+
 ObstacleShape ShapeOf(const Structure& _structure, const Neuron::CollisionAsset* _collision)
 {
   ObstacleShape shape{_structure.center, _structure.radius, {}, std::nullopt};
@@ -151,6 +228,44 @@ ObstacleShape ShapeOf(const Structure& _structure, const Neuron::CollisionAsset*
         }
         shape.triangles.push_back(triangle);
       }
+    }
+  }
+  return shape;
+}
+
+ObstacleShape StructureShape(const Structure& _structure, const StructureRecords* _records, const TuningMvp& _tuning)
+{
+  ObstacleShape shape = ShapeOf(_structure, _records != nullptr ? CollisionOf(*_records, _structure.kind) : nullptr);
+  if (_structure.kind != StructureKind::Turret)
+  {
+    return shape;
+  }
+  const auto& turret = _tuning.ref.bldg.turret;
+  shape.rayCenter = _structure.position + Neuron::Vec3{0.0, turret.raySphereHeight, 0.0};
+  shape.rayRadius = turret.raySphereRadius;
+  if (_records == nullptr)
+  {
+    return shape;
+  }
+  const std::optional<Neuron::CollisionAsset>& barrel = _records->collisions[TURRET_BARREL_PLACE];
+  const std::vector<const Neuron::SimulationSocket*> mounts = Neuron::SocketsOf(_records->turretHead, Neuron::SocketKind::BarrelMount);
+  if (!barrel || mounts.empty())
+  {
+    return shape;
+  }
+  // The barrels at rest: the barrel set's own space carried to the head's barrel mount (ADR-133).
+  const std::array<double, 3> mount = Neuron::RestPositionOf(_records->turretHead, *mounts.front());
+  for (const Neuron::CollisionNode& node : barrel->nodes)
+  {
+    for (std::size_t corner = 0; corner + 2 < node.corners.size(); corner += 3)
+    {
+      std::array<Neuron::Vec3, 3> triangle;
+      for (std::size_t k = 0; k < 3; ++k)
+      {
+        const std::array<float, 3>& point = node.corners[corner + k];
+        triangle[k] = StructurePoint(_structure, {mount[0] + double{point[0]}, mount[1] + double{point[1]}, mount[2] + double{point[2]}});
+      }
+      shape.triangles.push_back(triangle);
     }
   }
   return shape;
@@ -174,14 +289,7 @@ void WriteStructure(Neuron::BitWriter& _writer, const Structure& _structure)
   for (const StructurePort& port : _structure.ports)
   {
     _writer.WriteBits(port.socket, 32);
-    _writer.WriteBool(port.occupant.has_value());
-    if (port.occupant)
-    {
-      const ActorRef& occupant = port.occupant.value_or(ActorRef{});
-      _writer.WriteBits(occupant.id, 64);
-      _writer.WriteBits(occupant.slot, 32);
-      _writer.WriteBits(occupant.team, 8);
-    }
+    WriteOptionalActor(_writer, port.occupant);
     WriteVec3(_writer, port.position);
     WriteVec3(_writer, port.front);
     _writer.WriteBounded(port.reservations.size(), RESERVATION_SLOTS_MAX);
@@ -194,6 +302,11 @@ void WriteStructure(Neuron::BitWriter& _writer, const Structure& _structure)
   _writer.WriteSigned(_structure.workTicks, 64);
   _writer.WriteSigned(_structure.costMilliRu, 64);
   _writer.WriteBool(_structure.active);
+  // A turret's own state, which only a turret has (ADR-133).
+  if (_structure.kind == StructureKind::Turret)
+  {
+    WriteTurret(_writer, _structure.turret.value_or(TurretState{}));
+  }
 }
 
 bool ReadStructure(Neuron::BitReader& _reader, Structure& _structure)
@@ -216,14 +329,7 @@ bool ReadStructure(Neuron::BitReader& _reader, Structure& _structure)
   {
     StructurePort& port = _structure.ports.emplace_back();
     port.socket = static_cast<std::uint32_t>(_reader.ReadBits(32));
-    if (_reader.ReadBool())
-    {
-      ActorRef occupant;
-      occupant.id = _reader.ReadBits(64);
-      occupant.slot = static_cast<std::uint32_t>(_reader.ReadBits(32));
-      occupant.team = static_cast<std::uint8_t>(_reader.ReadBits(8));
-      port.occupant = occupant;
-    }
+    port.occupant = ReadOptionalActor(_reader);
     finite = ReadVec3(_reader, port.position) && finite;
     finite = ReadVec3(_reader, port.front) && finite;
     port.reservations.resize(_reader.ReadBounded(RESERVATION_SLOTS_MAX));
@@ -236,6 +342,13 @@ bool ReadStructure(Neuron::BitReader& _reader, Structure& _structure)
   _structure.workTicks = _reader.ReadSigned(64);
   _structure.costMilliRu = _reader.ReadSigned(64);
   _structure.active = _reader.ReadBool();
+  _structure.turret.reset();
+  if (_structure.kind == StructureKind::Turret)
+  {
+    TurretState turret;
+    finite = ReadTurret(_reader, turret) && finite;
+    _structure.turret = turret;
+  }
   return !_reader.Failed() && finite && _structure.id != 0 && _structure.radius >= 0.0 && _structure.workTicks >= 0 &&
          _structure.costMilliRu >= 0;
 }

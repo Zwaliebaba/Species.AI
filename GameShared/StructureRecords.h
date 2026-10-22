@@ -47,9 +47,10 @@ struct StructureRecords
 
 // The records against the rules the simulation reads them by (ADR-130, ADR-132): the Wellspring's has a door socket
 // (R-ECON-043, MVP-021), a resource site's mvp.resource.ports_per_unit port sockets and the central resource site's that
-// many for each of its wld.resource.central_factor units (MVP-030), and the dwelling's and the storehouse's as many as
-// mvp.construction.ports_dwelling and ports_storehouse (MVP-033). None when they hold; otherwise the first record that
-// does not, as damaged.
+// many for each of its wld.resource.central_factor units (MVP-030), the dwelling's, the storehouse's and the turret
+// mount's as many as mvp.construction.ports_dwelling, ports_storehouse and ports_turret (MVP-033), the turret's head a
+// barrel mount and its barrels a muzzle for each of its ports (R-BLDG-405, ADR-133). None when they hold; otherwise the
+// first record that does not, as damaged.
 [[nodiscard]] std::optional<Neuron::AssetError> CheckStructureRecords(const StructureRecords& _records, const TuningMvp& _tuning);
 
 } // namespace Species

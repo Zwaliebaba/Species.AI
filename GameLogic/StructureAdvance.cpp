@@ -3,6 +3,7 @@
 #include "Construction.h"
 #include "RegionSimulation.h"
 #include "StructureAdvance.h"
+#include "Turret.h"
 
 #include <algorithm>
 
@@ -11,6 +12,11 @@ namespace Species
 
 bool AdvanceStructure(RegionSimulation& _region, Structure& _structure)
 {
+  // R-BLDG-410 steps 2 to 6: a built turret's own advance, before the base advance evaluates its ports.
+  if (_structure.kind == StructureKind::Turret && _structure.built)
+  {
+    AdvanceTurret(_region, _structure);
+  }
   const auto& port = _region.Tuning().ref.bldg.port;
   const bool mannable = PortsMannable(_structure);
   TeamMask everyTeam;
@@ -47,13 +53,19 @@ bool AdvanceStructure(RegionSimulation& _region, Structure& _structure)
       count = static_cast<std::uint8_t>(std::max<std::int64_t>(0, std::int64_t{count} - port.reservationDecayPerTick));
     }
   }
-  if (!_structure.built)
+  // MVP-033: a site gains work only while it is queued, so a destroyed turret's site waits for its rebuild (MVP-034).
+  if (!_structure.built && Queued(_region, _structure))
   {
     _structure.workTicks += occupied;
     if (_structure.workTicks >= RequiredWorkTicks(_structure, _region.Tuning()))
     {
-      // MVP-033: built; its Workers find their ports no longer manned at their next advance, and become Idle.
+      // MVP-033: built; its Workers find their ports no longer manned at their next advance, and become Idle, except at
+      // a turret, whose ports they go on manning; a turret starts afresh (ADR-133).
       _structure.built = true;
+      if (_structure.kind == StructureKind::Turret)
+      {
+        _structure.turret = NewTurret(_structure, _region.Tuning());
+      }
       for (Settlement& settlement : _region.Settlements())
       {
         std::erase_if(settlement.queue, [&](const StructureRef& _site) { return _site.id == _structure.id; });

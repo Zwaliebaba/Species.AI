@@ -493,7 +493,7 @@ void RegionSimulation::RebuildObstacles()
       continue;
     }
     const Structure& structure = m_structures.At(slot);
-    ObstacleShape shape = ShapeOf(structure, m_records != nullptr ? CollisionOf(*m_records, structure.kind) : nullptr);
+    ObstacleShape shape = StructureShape(structure, m_records, *m_tuning);
     shape.structure = slot;
     static_cast<void>(m_obstacles.Add(shape, height));
   }
