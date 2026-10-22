@@ -129,7 +129,8 @@
     },
     "ai": {
       "attack_min_share": 0.6,
-      "decision_ticks": 50
+      "decision_ticks": 50,
+      "muster_minutes": 2
     },
     "run": {
       "length_hours": 8,

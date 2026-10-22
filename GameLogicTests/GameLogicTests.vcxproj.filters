@@ -74,6 +74,9 @@
     <ClCompile Include="ScriptedStewardTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="SettlementAiTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="SettlementCommandTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>

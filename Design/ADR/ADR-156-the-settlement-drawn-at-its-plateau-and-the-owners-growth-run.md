@@ -125,3 +125,4 @@ Chosen options: 1 and 4.
   - `Build/RunPerformance.py`;
   - `GameLogic/CommandJournal` (`ConnectSteward`) and `RegionSimulation` (`RemoveScriptedStewards`).
 * **Amendment 2026-10-22 (M3 task T6, [ADR-161](ADR-161-expeditions-battles-the-loss-cap-and-the-respite-at-m3.md)).** A steward who connects also commands its settlement's expedition while one is out.
+* **Amendment 2026-10-22 (M3 task T7, [ADR-162](ADR-162-the-ai-settlements-decisions-at-m3.md)).** A steward who takes a settlement from its scripted steward stops that settlement's AI decisions with it.

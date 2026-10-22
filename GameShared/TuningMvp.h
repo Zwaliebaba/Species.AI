@@ -326,6 +326,9 @@ struct TuningMvp
 
       // mvp.ai.decision_ticks, in ticks
       std::int64_t decisionTicks = 0;
+
+      // mvp.ai.muster_minutes, in minutes of world time
+      double musterMinutes = 0.0;
     };
 
     struct Run
@@ -2047,6 +2050,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 {
   _out.attackMinShare = _reader.Decimal(_object, "attack_min_share", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.decisionTicks = _reader.Integer(_object, "decision_ticks", 0);
+  _out.musterMinutes = _reader.Decimal(_object, "muster_minutes", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -3327,12 +3331,14 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Ai& 
 {
   _writer.F64(_in.attackMinShare);
   _writer.I64(_in.decisionTicks);
+  _writer.F64(_in.musterMinutes);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Ai& _out)
 {
   _out.attackMinShare = _reader.F64();
   _out.decisionTicks = _reader.I64();
+  _out.musterMinutes = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Run& _in)

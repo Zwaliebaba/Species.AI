@@ -188,12 +188,20 @@ StableId RegionSimulation::AddScriptedSteward(std::uint8_t _team)
   const StableId id = m_ids.Issue();
   m_scripted.push_back({id, _team, 1, 0});
   SetCommander(_team, id, true);
+  // ADR-162: an AI settlement's decisions, sent as its steward.
+  const auto settlement = std::ranges::find(m_settlements, _team, &Settlement::team);
+  if (settlement->cladan.temperament != Temperament::None &&
+      std::ranges::find(m_settlementAis, _team, &SettlementAi::team) == m_settlementAis.end())
+  {
+    m_settlementAis.push_back(MakeSettlementAi(m_scripted.back(), ExpeditionTeamOf(settlement->site)));
+  }
   return id;
 }
 
 void RegionSimulation::RemoveScriptedStewards(std::uint8_t _team)
 {
   std::erase_if(m_scripted, [_team](const ScriptedSteward& _steward) { return _steward.team == _team; });
+  std::erase_if(m_settlementAis, [_team](const SettlementAi& _ai) { return _ai.team == _team; });
 }
 
 StableId RegionSimulation::AddAi(std::uint8_t _team)
@@ -810,6 +818,12 @@ void RegionSimulation::Step(std::uint64_t _tick)
     for (ScriptedSteward& steward : m_scripted)
     {
       StepScriptedSteward(*this, steward);
+      // ADR-162: then the AI settlement's decisions and battle cores, sent as the steward.
+      const auto ai = std::ranges::find(m_settlementAis, steward.team, &SettlementAi::team);
+      if (ai != m_settlementAis.end())
+      {
+        StepSettlementAi(*this, steward, *ai);
+      }
     }
   }
   {
@@ -1022,6 +1036,11 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
   for (const Respite& respite : m_respites)
   {
     WriteRespite(_writer, respite);
+  }
+  _writer.WriteBounded(m_settlementAis.size(), SETTLEMENTS_MAX);
+  for (const SettlementAi& ai : m_settlementAis)
+  {
+    WriteSettlementAi(_writer, ai);
   }
 }
 
@@ -1308,6 +1327,42 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
       if (!ReadRespite(_reader, respite) || SettlementAt(respite.site) == nullptr)
       {
         return false;
+      }
+    }
+  }
+  // An AI settlement's decisions are its scripted steward's, one for each, sent as it; a region before version 14 makes
+  // them afresh for each AI settlement's steward (ADR-162).
+  m_settlementAis.clear();
+  if (_stateVersion >= STATE_VERSION_WITH_SETTLEMENT_AI)
+  {
+    m_settlementAis.resize(_reader.ReadBounded(SETTLEMENTS_MAX));
+    for (std::size_t place = 0; place < m_settlementAis.size(); ++place)
+    {
+      const SettlementAi& ai = m_settlementAis[place];
+      if (!ReadSettlementAi(_reader, m_settlementAis[place]))
+      {
+        return false;
+      }
+      const auto steward = std::ranges::find(m_scripted, ai.team, &ScriptedSteward::team);
+      const auto settlement = std::ranges::find(m_settlements, ai.team, &Settlement::team);
+      if (steward == m_scripted.end() || settlement == m_settlements.end() || settlement->cladan.temperament == Temperament::None ||
+          ai.defense.id != steward->id || ai.attack.id != steward->id || ai.defense.team != ai.team ||
+          ai.attack.team != ExpeditionTeamOf(settlement->site) ||
+          std::any_of(m_settlementAis.begin(), m_settlementAis.begin() + static_cast<std::ptrdiff_t>(place),
+                      [&](const SettlementAi& _earlier) { return _earlier.team == ai.team; }))
+      {
+        return false;
+      }
+    }
+  }
+  else
+  {
+    for (const ScriptedSteward& steward : m_scripted)
+    {
+      const auto settlement = std::ranges::find(m_settlements, steward.team, &Settlement::team);
+      if (settlement->cladan.temperament != Temperament::None)
+      {
+        m_settlementAis.push_back(MakeSettlementAi(steward, ExpeditionTeamOf(settlement->site)));
       }
     }
   }

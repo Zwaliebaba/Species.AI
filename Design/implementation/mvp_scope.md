@@ -167,7 +167,9 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-054** (MUST) Easing (PIL-064): a steward eases a grievance that a Cladan holds against its settlement by tribute, sending stores that reduce the grievance's weight by one for every `mvp.relation.tribute_ru_per_weight` (10 ru), or by withdrawing a claim, which removes the claim's cause. Tribute is the reserved term of CONVENTIONS §8.15 used for this one rule; truce and alliance are not built.
 
-**MVP-055** (MUST) An AI settlement declares an attack only on a settlement against which its Cladan's anger is at least its temperament's threshold (MVP-057), or on an area it has claimed (PIL-025), and only when it can field an expedition of at least `mvp.ai.attack_min_share` (60 %) of the target's Workers that it can see. It chooses a raid or a claim battle by its temperament. Its choice of target never reads whether the target's steward is present (PIL-086 holds by construction).
+**MVP-055** (MUST) An AI settlement declares an attack only on a settlement against which its Cladan's anger is at least its temperament's threshold (MVP-057), or on an area it has claimed (PIL-025), and only when it can field an expedition of at least `mvp.ai.attack_min_share` (60 %) of the target's Workers that it can see. It chooses a raid or a claim battle by its temperament. Its choice of target never reads whether the target's steward is present (PIL-086 holds by construction). How it gathers its expedition and how large it makes it, and what each temperament claims (MVP-057), are built as DEC-1006 states until the owner decides.
+
+> **Amendment 2026-10-22 (M3 task T7; [ADR-162](../ADR/ADR-162-the-ai-settlements-decisions-at-m3.md)).** An AI settlement musters its expedition as the steward does (MVP-041): it promotes its Leaders near its Wellspring and declares once the Workers on guard duty have joined them, within `mvp.ai.muster_minutes`. How it chooses its claims, its target and its expedition's size is [DEC-1006](../decisions/species_design.md#dec-1006-how-the-ai-settlements-claim-and-raise-their-expeditions), Open.
 
 **MVP-056** (MUST) AI settlements run the settlement rules of this document as the steward does, through the same command path (MVP-094): priorities, construction placed from a layout that keeps its ports and paths clear, claims, attacks, tribute received and withdrawals. They hold grievances against each other and fight each other, so the valley lives beyond the steward's own settlement.
 
@@ -420,6 +422,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.temperament.wary_threshold` | 100 | anger | — | provisional | MVP-057 | — |
 | `mvp.ai.attack_min_share` | 0.60 | of the target's seen Workers | — | provisional | MVP-055 | — |
 | `mvp.ai.decision_ticks` | 50 | ticks | tick | provisional | MVP-058 | ADR-080 item 2's cadence |
+| `mvp.ai.muster_minutes` | 2 | minutes of world time | tick | provisional | MVP-055 | DEC-1006: how long an AI settlement gathers its expedition |
 | `mvp.run.length_hours` | 8 | hours of play | scaled | provisional | MVP-060 | 8 world days at the always-on pace; Playtest 1 judges the arc |
 | `mvp.run.quiet_minutes` | 15 | minutes | scaled | provisional | MVP-060 | — |
 | `mvp.renown.defense_held` | 3 | renown | — | provisional | MVP-061 | — |

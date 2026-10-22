@@ -14,6 +14,7 @@ This file records the decisions of the Species design and of the MVP built from 
 | [DEC-1003](#dec-1003-the-weight-and-width-of-the-text-in-bahnschrift) | The weight and width of the text in Bahnschrift | Open | UI, MVP |
 | [DEC-1004](#dec-1004-the-publishers-folder-of-the-user-data-root) | The publisher's folder of the user-data root | Open | PLT, MVP |
 | [DEC-1005](#dec-1005-the-provisional-layout-and-palette-of-the-settlement-hud) | The provisional layout and palette of the settlement HUD | Open | MVP, UI |
+| [DEC-1006](#dec-1006-how-the-ai-settlements-claim-and-raise-their-expeditions) | How the AI settlements claim and raise their expeditions | Open | MVP |
 
 ## 1 World and sites
 
@@ -112,3 +113,24 @@ This file records the decisions of the Species design and of the MVP built from 
   - C — the publisher's folder named `Species` until O49 is decided, giving `%LOCALAPPDATA%\Species\Species\`.
 - Recommendation: A. Only the owner's machines hold user data before an external build, and a folder named for nobody would need the same move as no folder.
 - Decide by: O49's publisher decision, before the first external build.
+
+## 4 Relations and conflict
+
+### DEC-1006 How the AI settlements claim and raise their expeditions
+- Status: Open
+- Affects: implementation/mvp_scope.md (MVP-041, MVP-055, MVP-057, and table 3's `mvp.ai.muster_minutes`); ADR-162
+- Specified behaviour: MVP-057 gives each temperament its claims in a few words, and MVP-055 says when an AI settlement may attack but not how it gathers its expedition or how large it makes it. Until the owner decides, the AI settlements build the following.
+  - **Claims**, one a decision at most, each only when its claim would not be refused:
+    - Bold claims the central resource site from its first decision, and again whenever it has no claim on it and does not hold it.
+    - Territorial claims each half of its border areas that a valley neighbour holds, as soon as the neighbour holds it.
+    - Wary claims nothing until it has been attacked: until its Cladan holds an attack's grievance, or it has defended a battle. It then claims the halves held by a settlement that attacked it.
+  - **The target**: among the settlements it may attack (MVP-055), the one its Cladan holds most anger against, the lower site on a tie. Bold raids when its anger allows; the others fight the claim battle when they hold a claim on what the target holds.
+  - **The size**: it may attack when the Workers it can field reach `mvp.ai.attack_min_share` of the target's Workers it sees, at least one. It can field its Workers beyond `mvp.protection.worker_floor`, at most `mvp.expedition.size_max`, and it means to send all of them.
+  - **The muster** (MVP-041): it promotes one Leader for each `ref.sim.team.formation_size_upgrade` Workers it means to send, at most three, from the Workers nearest its Wellspring, and forms them up there, so that the Workers on guard duty join them. It declares once all it means to send follow them, or after `mvp.ai.muster_minutes` (2) with at least the fewest it may send; otherwise it gives the attack up. It does not change its priorities to raise more guards.
+  - **After a battle**: its Leaders outside a muster are demoted, and their Workers go back to their tasks.
+- Options:
+  - A — as stated;
+  - B — as stated, with the expedition the fewest it may send rather than all it can field, so that the settlement's economy keeps more Workers;
+  - C — as stated, with the guard share raised for the muster's length, so that the expedition draws more Workers than those already on guard duty.
+- Recommendation: A for M3's headless phase. The valley run of M3 task T9 measures the battles' sizes and lengths against Playtest 1's lines, and the lever it changes then is this one or `muster_minutes`.
+- Decide by: the valley run of M3 task T9, before Playtest 1.

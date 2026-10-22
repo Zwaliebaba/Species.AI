@@ -161,6 +161,7 @@ public:
     // The world's own step runs the relations at each whole second.
     const std::unique_ptr<Species::WorldSimulation> stepped = ValleyWorld();
     const std::unique_ptr<Species::WorldSimulation> direct = ValleyWorld();
+    stepped->Region(0).SettlementAis().clear(); // the relations alone, with no AI settlement's claim (ADR-162)
     Reach(stepped->Region(0), {2, 3});
     Reach(direct->Region(0), {2, 3});
     Neuron::WorkerPool pool(0);
@@ -272,6 +273,7 @@ public:
     // grievances existed, reads with none, so the owner's M2 world continues (O98).
     const std::unique_ptr<Species::WorldSimulation> world = ValleyWorld();
     Species::RegionSimulation& region = world->Region(0);
+    region.SettlementAis().clear(); // the relations alone, with no AI settlement's claim (ADR-162)
     Reach(region, {2, 3});
     Species::AddGrievance(region, 0, 1, Species::GrievanceCause::Attack, 41, true);
     Neuron::WorkerPool pool(0);

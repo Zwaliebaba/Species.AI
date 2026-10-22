@@ -13,7 +13,7 @@ namespace Species
 // ADR-099, MVP-095: the version of the world's state as a snapshot holds it. A change to any owner's state layout
 // raises it, and adds the step that migrates the previous version; a version below the oldest that a step reaches is
 // refused.
-inline constexpr std::uint32_t WORLD_STATE_VERSION = 13;
+inline constexpr std::uint32_t WORLD_STATE_VERSION = 14;
 inline constexpr std::uint32_t WORLD_STATE_OLDEST_VERSION = 1;
 // ADR-137: the first version a server saves, which holds the world record after the regions; no world of an earlier
 // version was ever saved, and their steps stay with their tests.
@@ -41,7 +41,8 @@ inline constexpr std::uint32_t WORLD_STATE_FIRST_SAVED_VERSION = 9;
 // task T4, ADR-159); an older region has none, so the owner's M2 world continues (O98). Version 12 added each region's
 // claims and moved areas, and territory events of more than one kind (M3 task T5, ADR-160); an older region has
 // neither, and its events are contacts. Version 13 added each region's expeditions, battles, battle results and
-// respites (M3 task T6, ADR-161); an older region has none. _tuning and _structures outlive the world.
+// respites (M3 task T6, ADR-161); an older region has none. Version 14 added each region's AI settlements' decisions (M3
+// task T7, ADR-162); an older region makes them afresh. _tuning and _structures outlive the world.
 [[nodiscard]] std::expected<std::unique_ptr<WorldSimulation>, Neuron::SnapshotError>
 RestoreWorld(const Neuron::SnapshotContents& _snapshot, const TuningMvp& _tuning, const StructureRecords* _structures = nullptr);
 

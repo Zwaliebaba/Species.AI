@@ -269,7 +269,8 @@ std::unique_ptr<Species::WorldSimulation> SettledWorld(std::uint8_t _site)
 std::vector<std::byte> RegionStateOf(const Species::RegionSimulation& _region, std::uint32_t _version)
 {
   // The counts' bounds of the sections each version appended: version 11's grievances, version 12's claims and moved
-  // areas, version 13's expeditions, battles, battle results and respites.
+  // areas, version 13's expeditions, battles, battle results and respites. Version 14's AI settlements' decisions, the
+  // last section, go whole.
   constexpr std::array<std::pair<std::uint32_t, std::uint64_t>, 7> COUNTS{
     {{11, 65'535}, {12, 36}, {12, 9}, {13, 4}, {13, 4}, {13, 65'535}, {13, 4}}};
   Neuron::BitWriter current;
@@ -278,6 +279,16 @@ std::vector<std::byte> RegionStateOf(const Species::RegionSimulation& _region, s
   for (const auto& [version, bound] : COUNTS)
   {
     bits -= version > _version ? Neuron::BitsFor(bound) : 0;
+  }
+  if (_version < Species::STATE_VERSION_WITH_SETTLEMENT_AI)
+  {
+    Neuron::BitWriter decisions;
+    decisions.WriteBounded(_region.SettlementAis().size(), 4);
+    for (const Species::SettlementAi& ai : _region.SettlementAis())
+    {
+      Species::WriteSettlementAi(decisions, ai);
+    }
+    bits -= decisions.BitCount();
   }
   Neuron::BitReader whole(current.Bytes());
   Neuron::BitWriter older;

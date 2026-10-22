@@ -99,6 +99,9 @@
     <ClInclude Include="Settlement.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="SettlementAi.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="SettlementCommands.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -240,6 +243,9 @@
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="Settlement.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="SettlementAi.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="SettlementCommands.cpp">

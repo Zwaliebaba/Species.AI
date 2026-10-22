@@ -1033,11 +1033,21 @@
               "x-species-type": "ticks",
               "x-species-unit": "ticks",
               "x-species-presence": "required"
+            },
+            "muster_minutes": {
+              "type": "number",
+              "description": "mvp.ai.muster_minutes (MVP-055, ADR-162)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "minutes of world time",
+              "x-species-presence": "required"
             }
           },
           "required": [
             "attack_min_share",
-            "decision_ticks"
+            "decision_ticks",
+            "muster_minutes"
           ],
           "additionalProperties": false,
           "x-species-type": "object",

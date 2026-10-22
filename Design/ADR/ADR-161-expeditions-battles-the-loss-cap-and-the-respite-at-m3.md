@@ -150,3 +150,4 @@ GameSharedTests `RelationMessageTests`: the attack commands round-trip at their 
   - `GameLogic/Battles`;
   - `RegionSimulation` (`EnemiesOf`, `MoveFigure`, `Damage`, the state and the step), `ActorGridCache`, `Construction` (`Population`), `SeenLayer`, `SettlementTasks` (`StartCarrying`), `SettlementCommands`, `CommandJournal` (`ConnectSteward`), `WorldSnapshot`;
   - `GameLogicTests/BattleTests`, `StateHashTests`, `TestSupport` (`ValleyWorld`, `RegionStateOf`); `GameSharedTests/RelationMessageTests`.
+* **Amendment 2026-10-22 (M3 task T7, [ADR-162](ADR-162-the-ai-settlements-decisions-at-m3.md)).** An AI settlement's side of a battle is commanded by M1's battle core, which its scripted steward steps while the settlement defends and while its expedition fights, the expedition's walking to the battle's objective (MVP-049).

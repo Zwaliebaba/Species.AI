@@ -77,13 +77,14 @@ public:
     // scripted stewards (ADR-159), none here; the scripted stewards' count of M2 task T10 fit in the last byte's padding.
     // Changed by M3 task T5: each region writes its claims' and its moved areas' counts after its grievances (ADR-160),
     // none here. Changed by M3 task T6: each region writes its expeditions', battles', battle results' and respites'
-    // counts after its moved areas (ADR-161), none here.
+    // counts after its moved areas (ADR-161), none here. Changed by M3 task T7: each region writes its AI settlements'
+    // decisions' count after its respites (ADR-162), none here.
     const GoldenRun one = Run600Ticks(1, 0);
-    Assert::IsTrue(one.last == 0xf6d907d90f0a1947, L"the hash after 600 ticks of one region");
-    Assert::IsTrue(one.chain == 0x1ca5a14b0b852180, L"the chain of 600 tick hashes of one region");
+    Assert::IsTrue(one.last == 0xc82d4a31d6ffdf04, L"the hash after 600 ticks of one region");
+    Assert::IsTrue(one.chain == 0x10d9850a8eaf3db4, L"the chain of 600 tick hashes of one region");
     const GoldenRun three = Run600Ticks(3, 0);
-    Assert::IsTrue(three.last == 0xd9b596a2f85e6551, L"the hash after 600 ticks of three regions");
-    Assert::IsTrue(three.chain == 0x92ea0d2b695a17e1, L"the chain of 600 tick hashes of three regions");
+    Assert::IsTrue(three.last == 0x1fb44d513e801df2, L"the hash after 600 ticks of three regions");
+    Assert::IsTrue(three.chain == 0xa6785b974d409a8a, L"the chain of 600 tick hashes of three regions");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp093TheHashesAgreeAtAnyWorkerCount)

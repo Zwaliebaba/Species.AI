@@ -172,6 +172,7 @@
     <ClInclude Include="ScriptedSteward.h" />
     <ClInclude Include="SeenLayer.h" />
     <ClInclude Include="Settlement.h" />
+    <ClInclude Include="SettlementAi.h" />
     <ClInclude Include="SettlementCommands.h" />
     <ClInclude Include="SettlementTasks.h" />
     <ClInclude Include="SlicedPool.h" />
@@ -221,6 +222,7 @@
     <ClCompile Include="ScriptedSteward.cpp" />
     <ClCompile Include="SeenLayer.cpp" />
     <ClCompile Include="Settlement.cpp" />
+    <ClCompile Include="SettlementAi.cpp" />
     <ClCompile Include="SettlementCommands.cpp" />
     <ClCompile Include="SettlementTasks.cpp" />
     <ClCompile Include="StableIdCounter.cpp" />
