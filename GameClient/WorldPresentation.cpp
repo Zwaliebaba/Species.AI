@@ -229,7 +229,8 @@ WorldPresentation::WorldPresentation(Desc _desc)
     m_territories(*_desc.presentation, *_desc.tuning),
     m_profile(ProfileDescOf(*_desc.presentation)),
     m_presentationClock(_desc.presentation->ref.sim.frame.deltaClamp),
-    m_text(std::make_unique<Neuron::TextSystem>(TextSystemDesc(*_desc.presentation)))
+    m_text(std::make_unique<Neuron::TextSystem>(TextSystemDesc(*_desc.presentation))),
+    m_ui(std::make_unique<GameUi>(*_desc.presentation))
 {
   m_cursorImages = LoadCursorImages(*m_desc.content);
   m_sceneTextures = LoadSceneTextures(*m_desc.content);
@@ -240,6 +241,12 @@ WorldPresentation::WorldPresentation(Desc _desc)
   m_locale = std::make_unique<Neuron::MessageLocale>(UI_LANGUAGE);
   Neuron::Log(Neuron::LogCategory::Ui, Neuron::LogLevel::Info, "text is drawn in {}, the development overlay in {}",
               m_text->FaceFamily(Neuron::FontRole::Body), m_text->FaceFamily(Neuron::FontRole::Development));
+#if ENGINE_DEVELOPMENT
+  if (m_desc.uiTest)
+  {
+    m_ui->OpenTestScreen();
+  }
+#endif
 }
 
 void WorldPresentation::Update(const ClientSession& _session)
@@ -408,10 +415,12 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
       inputs.camera.rollRadians += effects.shakeRollRadians;
     }
   }
+  // ADR-149: the UI's windows in pass 19, over the world.
+  m_ui->Draw(*m_text, inputs.presentationSeconds, inputs.ui);
 #if ENGINE_DEVELOPMENT
-  if (m_desc.uiTest)
+  if (const std::optional<Neuron::UiRect> area = m_ui->TestSampleArea(); area.has_value())
   {
-    AppendUiTestPage(*m_text, *m_desc.presentation, *m_strings, *m_locale, _view.ViewSize(), _dpiScale, inputs.ui);
+    AppendUiTestPage(*m_text, *m_desc.presentation, *m_strings, *m_locale, *area, _dpiScale, inputs.ui);
   }
   // DBG-095, DBG-096, ADR-120: while the overlay is shown, the frame-rate line, whose objects are counted while a world
   // exists, and the frame page, its text in the development role (ADR-147).

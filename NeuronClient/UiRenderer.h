@@ -74,10 +74,11 @@ private:
   std::shared_ptr<const UiImages> m_images;
   std::vector<GlyphTexture> m_pages;           // by page index
   std::vector<GpuResourceId> m_imageResources; // by image index; GpuResourceId{} for one that could not be made
+  std::vector<bool> m_imageMasks;              // by image index: a mask of one channel (ADR-149)
   std::vector<Upload> m_uploads;               // every image's upload, for a rebuild
   std::vector<Upload> m_pending;
   std::uint64_t m_lastFence = 0;
-  std::vector<TextGlyphInstance> m_instances; // the batch's scratch
+  std::vector<UiQuadInstance> m_instances; // the batch's scratch
 };
 
 } // namespace Neuron

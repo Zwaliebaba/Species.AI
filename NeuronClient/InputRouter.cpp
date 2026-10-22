@@ -4,6 +4,8 @@
 #include "Log.h"
 
 #include <algorithm>
+#include <cstdint>
+#include <limits>
 #include <utility>
 
 namespace Neuron
@@ -96,7 +98,7 @@ InputRouter::InputRouter(std::span<const ActionBindings> _actions, DeviceBackEnd
   }
 }
 
-void InputRouter::AdvanceFrame(const FrameGates& _gates, SizePx _clientSize)
+void InputRouter::AdvanceFrame(const FrameGates& _gates, SizePx _clientSize, Nanoseconds _realTime)
 {
   std::ranges::fill(m_suppressed, false);
   for (ControlState& state : m_keys)
@@ -128,6 +130,29 @@ void InputRouter::AdvanceFrame(const FrameGates& _gates, SizePx _clientSize)
   {
     Apply(event);
   }
+  // INP-101 step 7, INP-133, INP-134: each control's repeat timer fires on the press, then at the press + the initial
+  // delay and every period after while it is held; its firings in the frame are the condition's value.
+  const auto advance = [this, _realTime](ControlState& _state)
+  {
+    _state.repeats = 0;
+    if (_state.presses > 0)
+    {
+      _state.repeats = 1;
+      _state.nextRepeat = _realTime + m_repeat.initialDelay;
+      return;
+    }
+    if (!_state.held || m_repeat.period <= Nanoseconds{0})
+    {
+      return;
+    }
+    while (_state.nextRepeat <= _realTime && _state.repeats < std::numeric_limits<std::uint16_t>::max())
+    {
+      ++_state.repeats;
+      _state.nextRepeat += m_repeat.period;
+    }
+  };
+  std::ranges::for_each(m_keys, advance);
+  std::ranges::for_each(m_buttons, advance);
 
   // INP-156: the pointer follows the mouse, clamped to the client area; a clamp moves the system pointer there too.
   const PointPx unclamped = m_pointer.positionPixels;
@@ -223,6 +248,9 @@ bool InputRouter::Evaluate(const InputLeaf& _leaf, ActionValue& _value) const
     return state->releases > 0;
   case Condition::Held:
     return state->held;
+  case Condition::Repeat:
+    _value = {ValueKind::Boolean, static_cast<float>(state->repeats), 0.0f};
+    return state->repeats > 0;
   case Condition::Move:
   case Condition::Read:
     return false;

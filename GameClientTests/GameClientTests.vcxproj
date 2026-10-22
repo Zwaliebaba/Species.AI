@@ -173,6 +173,7 @@
     <ClCompile Include="CrowdLookTests.cpp" />
     <ClCompile Include="DevelopmentOverlayTests.cpp" />
     <ClCompile Include="EffectsLookTests.cpp" />
+    <ClCompile Include="GameUiTests.cpp" />
     <ClCompile Include="LeaderLookTests.cpp" />
     <ClCompile Include="RoutePreviewTests.cpp" />
     <ClCompile Include="SettlementCameraTests.cpp" />

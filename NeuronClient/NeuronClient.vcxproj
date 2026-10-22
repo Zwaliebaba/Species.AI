@@ -195,6 +195,8 @@
     <ClInclude Include="SkyLayers.h" />
     <ClInclude Include="StringTable.h" />
     <ClInclude Include="TextSystem.h" />
+    <ClInclude Include="UiCore.h" />
+    <ClInclude Include="UiLayout.h" />
     <ClInclude Include="UiRenderer.h" />
     <ClInclude Include="UiText.h" />
     <ClInclude Include="UploadRing.h" />
@@ -239,6 +241,8 @@
     <ClCompile Include="SkyLayers.cpp" />
     <ClCompile Include="StringTable.cpp" />
     <ClCompile Include="TextSystem.cpp" />
+    <ClCompile Include="UiCore.cpp" />
+    <ClCompile Include="UiLayout.cpp" />
     <ClCompile Include="UiRenderer.cpp" />
     <ClCompile Include="UiText.cpp" />
     <ClCompile Include="UploadRing.cpp" />

@@ -3,6 +3,7 @@
 #include "InputRouter.h"
 #include "TestSupport.h"
 
+#include <chrono>
 #include <cstdint>
 #include <utility>
 #include <vector>
@@ -167,6 +168,37 @@ public:
     Assert::IsFalse(router.Query(FORWARD), L"suppressed for the rest of the frame");
     router.AdvanceFrame({}, CLIENT);
     Assert::IsTrue(router.Query(FORWARD), L"and back in the next");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Inp133ARepeatFiresOnThePressThenAfterTheDelayAndEveryPeriod)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-133")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Inp133ARepeatFiresOnThePressThenAfterTheDelayAndEveryPeriod)
+  {
+    using Ms = std::chrono::milliseconds;
+    ScriptedBackEnd keys;
+    const std::vector<Neuron::ActionBindings> actions{
+      {"action.menu.down", Neuron::ValueKind::Boolean, {Neuron::KeyBinding(Neuron::KeyCode::Down, Neuron::Condition::Repeat)}}};
+    const Neuron::ActionId down{0};
+    Neuron::InputRouter router(actions, keys, nullptr);
+    router.SetRepeatTiming({Ms(300), Ms(300)});
+    Neuron::ActionValue value;
+    keys.Key(Neuron::KeyCode::Down, true);
+    router.AdvanceFrame({}, CLIENT, Ms(1000));
+    Assert::IsTrue(router.Query(down, &value) && value.x == 1.0f, L"once on the press");
+    router.AdvanceFrame({}, CLIENT, Ms(1200));
+    Assert::IsFalse(router.Query(down), L"not before the initial delay");
+    router.AdvanceFrame({}, CLIENT, Ms(1300));
+    Assert::IsTrue(router.Query(down, &value) && value.x == 1.0f, L"at the press + the initial delay");
+    router.AdvanceFrame({}, CLIENT, Ms(1950));
+    Assert::IsTrue(router.Query(down, &value) && value.x == 2.0f, L"INP-134: the firings of a long frame are its value");
+    keys.Key(Neuron::KeyCode::Down, false);
+    router.AdvanceFrame({}, CLIENT, Ms(2500));
+    Assert::IsFalse(router.Query(down), L"the timer clears on the release");
+    keys.Key(Neuron::KeyCode::Down, true);
+    keys.Key(Neuron::KeyCode::Down, true, true); // the system's own auto-repeat presses nothing (INP-053)
+    router.AdvanceFrame({}, CLIENT, Ms(2600));
+    Assert::IsTrue(router.Query(down, &value) && value.x == 1.0f, L"a new press fires once");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Inp053AnAutoRepeatNeverPresses)

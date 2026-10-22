@@ -51,6 +51,15 @@ std::vector<Neuron::ActionBindings> DefaultBindings()
   bind(GameAction::OrderSpecial, "action.order.special", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Primary, Down)});
   bind(GameAction::OrderMoveModifier, "action.order.move_modifier", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Shift, Held)});
   bind(GameAction::OrderDemote, "action.order.demote", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::C, Down)});
+  // Table 3.6-B rows 1 to 5 and 7 (UI-204: the arrow keys with repeat, Enter and Esc), and table 3.6-A rows 60 and 61.
+  bind(GameAction::MenuLeft, "action.menu.left", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Left, Repeat)});
+  bind(GameAction::MenuRight, "action.menu.right", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Right, Repeat)});
+  bind(GameAction::MenuUp, "action.menu.up", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Up, Repeat)});
+  bind(GameAction::MenuDown, "action.menu.down", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Down, Repeat)});
+  bind(GameAction::MenuActivate, "action.menu.activate", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Enter, Down)});
+  bind(GameAction::MenuClose, "action.menu.close", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Escape, Down)});
+  bind(GameAction::UiPointerDown, "action.ui.pointer_down", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Primary, Down)});
+  bind(GameAction::UiPointerHeld, "action.ui.pointer_held", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Primary, Held)});
   bind(GameAction::WindowToggleMode, "action.window.toggle_mode", Neuron::ValueKind::Boolean,
        {Neuron::AllOf({KeyBinding(KeyCode::Alt, Held), KeyBinding(KeyCode::Enter, Down)})});
 #if ENGINE_DEVELOPMENT

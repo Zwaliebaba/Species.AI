@@ -180,6 +180,8 @@
     <ClCompile Include="SceneQuadsTests.cpp" />
     <ClCompile Include="StringTableTests.cpp" />
     <ClCompile Include="TextSystemTests.cpp" />
+    <ClCompile Include="UiCoreTests.cpp" />
+    <ClCompile Include="UiLayoutTests.cpp" />
     <ClCompile Include="UiTextTests.cpp" />
     <ClCompile Include="WindowGeometryTests.cpp" />
     <ClCompile Include="WorldFrameTests.cpp" />

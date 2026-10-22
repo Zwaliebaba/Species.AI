@@ -197,7 +197,7 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
       stepStart = now;
     };
     _window.PumpMessages();
-    router.AdvanceFrame({.windowFocused = _window.HasFocus()}, _window.ClientSize());
+    router.AdvanceFrame({.windowFocused = _window.HasFocus()}, _window.ClientSize(), _clock.Now());
     if (keyboardMouse.TakeCloseRequest())
     {
       break;
@@ -206,6 +206,8 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
     {
       break;
     }
+    // ADR-149: the UI before the camera and the verbs, so that a focused window's actions reach neither (UI-006).
+    _world.UpdateUi(router, _window.ClientSize(), _window.DpiScale(), _window.HasFocus());
     if (router.Query(ActionOf(GameAction::WindowToggleMode)))
     {
       const bool windowed = _window.Mode() == Neuron::WindowMode::Windowed;

@@ -68,6 +68,12 @@
     <ClCompile Include="TextSystemTests.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="UiCoreTests.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="UiLayoutTests.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
     <ClCompile Include="UiTextTests.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>

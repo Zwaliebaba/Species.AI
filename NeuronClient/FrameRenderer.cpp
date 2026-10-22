@@ -425,21 +425,23 @@ constexpr auto WORLD_PIPELINES = std::to_array<PipelineEntry>({
    PipelineTarget::Scene},
   {"glow_additive_fog", g_UnlitTexturedVS, g_UnlitTexturedGlowFogPS, VertexLayout::QuadInstance, BlendState::Additive, DepthState::Test,
    CullState::None, PipelineTarget::Scene},
-  // M2 task T14 (ADR-145): the UI's quads over the back buffer in pass 19 and with the cursor in pass 20, by what they
-  // read and how they blend (UI-180, UI-184); the UI never tests or writes depth (UI-183).
-  {"ui_solid_alpha", g_UiVS, g_UiSolidPS, VertexLayout::TextGlyph, BlendState::Alpha, DepthState::None, CullState::None,
+  // M2 task T14 (ADR-145, ADR-149): the UI's quads over the back buffer in pass 19 and with the cursor in pass 20, by
+  // what they read and how they blend (UI-180, UI-184); the UI never tests or writes depth (UI-183).
+  {"ui_solid_alpha", g_UiVS, g_UiSolidPS, VertexLayout::UiQuadInstance, BlendState::Alpha, DepthState::None, CullState::None,
    PipelineTarget::BackBuffer},
-  {"ui_solid_additive", g_UiVS, g_UiSolidPS, VertexLayout::TextGlyph, BlendState::Additive, DepthState::None, CullState::None,
+  {"ui_solid_additive", g_UiVS, g_UiSolidPS, VertexLayout::UiQuadInstance, BlendState::Additive, DepthState::None, CullState::None,
    PipelineTarget::BackBuffer},
-  {"ui_glyphs_alpha", g_UiVS, g_UiGlyphsPS, VertexLayout::TextGlyph, BlendState::Alpha, DepthState::None, CullState::None,
+  {"ui_solid_ink", g_UiVS, g_UiSolidPS, VertexLayout::UiQuadInstance, BlendState::Ink, DepthState::None, CullState::None,
+   PipelineTarget::BackBuffer}, // ADR-149: UI-115's darkening halo
+  {"ui_glyphs_alpha", g_UiVS, g_UiGlyphsPS, VertexLayout::UiQuadInstance, BlendState::Alpha, DepthState::None, CullState::None,
    PipelineTarget::BackBuffer},
-  {"ui_glyphs_additive", g_UiVS, g_UiGlyphsPS, VertexLayout::TextGlyph, BlendState::Additive, DepthState::None, CullState::None,
+  {"ui_glyphs_additive", g_UiVS, g_UiGlyphsPS, VertexLayout::UiQuadInstance, BlendState::Additive, DepthState::None, CullState::None,
    PipelineTarget::BackBuffer},
-  {"ui_glyphs_ink", g_UiVS, g_UiGlyphsPS, VertexLayout::TextGlyph, BlendState::Ink, DepthState::None, CullState::None,
+  {"ui_glyphs_ink", g_UiVS, g_UiGlyphsPS, VertexLayout::UiQuadInstance, BlendState::Ink, DepthState::None, CullState::None,
    PipelineTarget::BackBuffer},
-  {"ui_image_alpha", g_UiVS, g_UiImagePS, VertexLayout::TextGlyph, BlendState::Alpha, DepthState::None, CullState::None,
+  {"ui_image_alpha", g_UiVS, g_UiImagePS, VertexLayout::UiQuadInstance, BlendState::Alpha, DepthState::None, CullState::None,
    PipelineTarget::BackBuffer},
-  {"ui_image_additive", g_UiVS, g_UiImagePS, VertexLayout::TextGlyph, BlendState::Additive, DepthState::None, CullState::None,
+  {"ui_image_additive", g_UiVS, g_UiImagePS, VertexLayout::UiQuadInstance, BlendState::Additive, DepthState::None, CullState::None,
    PipelineTarget::BackBuffer},
 });
 

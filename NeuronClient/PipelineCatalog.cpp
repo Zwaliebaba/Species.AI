@@ -162,12 +162,20 @@ constexpr std::array<D3D12_INPUT_ELEMENT_DESC, 2> OVERLAY_QUAD_ELEMENTS{{
   {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
 }};
 
+constexpr std::array<D3D12_INPUT_ELEMENT_DESC, 5> UI_QUAD_ELEMENTS{{
+  {"RECTANGLE", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
+  {"TEXCOORD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
+  {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
+  {"COLOR", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 48, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
+  {"SHAPE", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0, 64, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
+}};
+
 } // namespace
 
 std::span<const D3D12_INPUT_ELEMENT_DESC> InputLayoutOf(VertexLayout _layout) noexcept
 {
   // In the order of VertexLayout.
-  const std::array<std::span<const D3D12_INPUT_ELEMENT_DESC>, 10> layouts{{{},
+  const std::array<std::span<const D3D12_INPUT_ELEMENT_DESC>, 11> layouts{{{},
                                                                            TERRAIN_ELEMENTS,
                                                                            SEA_ELEMENTS,
                                                                            SKY_ELEMENTS,
@@ -176,7 +184,8 @@ std::span<const D3D12_INPUT_ELEMENT_DESC> InputLayoutOf(VertexLayout _layout) no
                                                                            QUAD_ELEMENTS,
                                                                            MESH_ELEMENTS,
                                                                            TRIANGLE_ELEMENTS,
-                                                                           OVERLAY_QUAD_ELEMENTS}};
+                                                                           OVERLAY_QUAD_ELEMENTS,
+                                                                           UI_QUAD_ELEMENTS}};
   const auto index = static_cast<std::size_t>(_layout);
   return index < layouts.size() ? layouts[index] : std::span<const D3D12_INPUT_ELEMENT_DESC>{};
 }

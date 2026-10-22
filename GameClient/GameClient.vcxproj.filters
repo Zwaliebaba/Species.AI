@@ -39,6 +39,9 @@
     <ClInclude Include="EffectsLook.h">
       <Filter>View</Filter>
     </ClInclude>
+    <ClInclude Include="GameUi.h">
+      <Filter>View</Filter>
+    </ClInclude>
     <ClInclude Include="InputBindings.h">
       <Filter>Input</Filter>
     </ClInclude>
@@ -93,6 +96,9 @@
       <Filter>Diagnostics</Filter>
     </ClCompile>
     <ClCompile Include="EffectsLook.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="GameUi.cpp">
       <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="InputBindings.cpp">

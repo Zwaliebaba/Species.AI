@@ -50,7 +50,8 @@ enum class VertexLayout : std::uint8_t
   QuadInstance,
   MeshInstanced, // a cooked mesh's vertices in slot 0 and MeshInstance in slot 1
   TriangleVertex,
-  OverlayQuadInstance
+  OverlayQuadInstance,
+  UiQuadInstance // ADR-149: the UI's quads, with a vertical gradient
 };
 
 // The targets an entry draws into: the scene targets at their sample count with the depth buffer bound, or the back

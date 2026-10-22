@@ -74,7 +74,7 @@ public:
     std::vector<Neuron::UiBatch> batches;
     const Neuron::StringTable strings;
     const Neuron::MessageLocale locale("en-US");
-    Species::AppendUiTestPage(text, CommittedPresentation(), strings, locale, {1280, 720}, 1.0f, batches);
+    Species::AppendUiTestPage(text, CommittedPresentation(), strings, locale, {0.0f, 0.0f, 1280.0f, 720.0f}, 1.0f, batches);
     Assert::IsFalse(batches.empty(), L"a page");
     // The window body first: the accent strip, u to the repeat across and v once down, tinted and laid over.
     const Neuron::UiBatch& body = batches.front();

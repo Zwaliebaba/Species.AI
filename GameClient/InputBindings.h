@@ -38,6 +38,16 @@ enum class GameAction : std::uint16_t
   OrderSpecial,
   OrderMoveModifier,
   OrderDemote,
+  // M2 task T14 (ADR-149): the UI's navigation of table 3.6-B rows 1 to 4, 5 and 7 (UI-203, UI-204), and the pointer's
+  // press and hold of table 3.6-A rows 60 and 61, whose release is the hold's end (UI-035).
+  MenuLeft,
+  MenuRight,
+  MenuUp,
+  MenuDown,
+  MenuActivate,
+  MenuClose,
+  UiPointerDown,
+  UiPointerHeld,
   WindowToggleMode, // O65, O76: Alt+Enter until the screen options exist (RND-442)
 #if ENGINE_DEVELOPMENT
   DebugRemoveDevice,          // O65, O76: Ctrl+Shift+F11 until the debug-command window exists (DBG-117 row 16)

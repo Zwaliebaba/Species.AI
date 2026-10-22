@@ -4,6 +4,8 @@
 #include "DevelopmentOverlay.h"
 #include "EffectsLook.h"
 #include "FrameProfile.h"
+#include "GameUi.h"
+#include "InputRouter.h"
 #include "LeaderLook.h"
 #include "LooseContent.h"
 #include "MessageLocale.h"
@@ -41,13 +43,23 @@ public:
     const TuningPresentation* presentation = nullptr;
     const Neuron::LooseContent* content = nullptr;
     const Neuron::PlatformClock* clock = nullptr;
-    bool uiTest = false; // a Debug build's `--ui-test`: the UI's test page over every frame (ADR-145)
+    bool uiTest = false; // a Debug build's `--ui-test`: the UI's test screen (ADR-145, ADR-149)
   };
 
   explicit WorldPresentation(Desc _desc);
 
   // Once per frame, after the session's update: builds the world's surfaces when the session's terrain is new.
   void Update(const ClientSession& _session);
+  // ADR-149: once per frame, before the camera and the verbs read _router: the UI's update, which withholds from the
+  // world the actions that a focused window takes (UI-006).
+  void UpdateUi(Neuron::InputRouter& _router, Neuron::SizePx _client, float _dpiScale, bool _windowFocused)
+  {
+    m_ui->Update(_router, _client, _dpiScale, _windowFocused);
+  }
+  [[nodiscard]] const GameUi& Ui() const noexcept
+  {
+    return *m_ui;
+  }
   // The inputs of the frame drawn now, seen through _view; _framesPerSecond is the renderer's counter (R-SIM-576), which a
   // Debug build's development overlay shows (DBG-095, ADR-118), and _dpiScale the window's, which text sizes take
   // (UI-170, ADR-147). The frame takes the session's presentation events, which its effects play (ADR-123).
@@ -100,6 +112,7 @@ private:
   Neuron::FrameProfile m_profile;
   Neuron::PresentationClock m_presentationClock;
   std::unique_ptr<Neuron::TextSystem> m_text; // ADR-147: DirectWrite's layouts and the glyph atlas
+  std::unique_ptr<GameUi> m_ui;               // ADR-149: the UI core with the game's pages
   std::uint64_t m_frames = 0;
   bool m_overlayShown = false;
 };

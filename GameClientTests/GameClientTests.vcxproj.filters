@@ -44,6 +44,9 @@
     <ClCompile Include="EffectsLookTests.cpp">
       <Filter>View</Filter>
     </ClCompile>
+    <ClCompile Include="GameUiTests.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
     <ClCompile Include="LeaderLookTests.cpp">
       <Filter>View</Filter>
     </ClCompile>
