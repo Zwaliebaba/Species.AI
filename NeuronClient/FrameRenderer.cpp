@@ -327,8 +327,9 @@ bool CreateSwapChain(RendererState& _state)
   return true;
 }
 
-// The world frame's pipeline states (RND-061, ADR-113): the entries its passes use, and the final pass's.
-const std::array<PipelineEntry, 40> WORLD_PIPELINES{{
+// The world frame's pipeline states (RND-061, ADR-113): the entries its passes use, and the final pass's. The count is
+// deduced, so a removed entry leaves no unnamed one behind for the catalog to refuse.
+constexpr auto WORLD_PIPELINES = std::to_array<PipelineEntry>({
   {"sky", g_SkyVS, g_SkyPS, VertexLayout::SkyInstance, BlendState::Additive, DepthState::None, CullState::Back, PipelineTarget::Scene},
   {"terrain", g_TerrainVS, g_TerrainPS, VertexLayout::Terrain, BlendState::Opaque, DepthState::TestWrite, CullState::Back,
    PipelineTarget::Scene},
@@ -422,7 +423,7 @@ const std::array<PipelineEntry, 40> WORLD_PIPELINES{{
    PipelineTarget::BackBuffer},
   {"ui_image_additive", g_UiVS, g_UiImagePS, VertexLayout::TextGlyph, BlendState::Additive, DepthState::None, CullState::None,
    PipelineTarget::BackBuffer},
-}};
+});
 
 // The world frame's targets, at these indices of its table (RND-063, ADR-113).
 constexpr std::uint32_t TARGET_SCENE_COLOR = 0;
