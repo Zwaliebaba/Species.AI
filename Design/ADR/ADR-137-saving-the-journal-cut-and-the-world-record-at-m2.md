@@ -78,6 +78,7 @@ Chosen options: 1, 3 and 5.
   - Until the build that runs M2's exit (T19), a raise may refuse the version before it instead of migrating it: `WORLD_STATE_OLDEST_VERSION` rises with it, and a world saved during development opens new, with the refusal logged.
   - From the build of M2's exit, whose growth run the owner saves across sessions, every raise carries the step that migrates its predecessor.
   - A refused snapshot is logged with its reason, and the next older one is tried (ADR-099). The front end of T18 shows the steward the reason when a world cannot be continued.
+* **The saves folder.** The integrated server takes its snapshot folder in its description and passes it to the world server. The saves folder under the user-data root of PLT-016, with the start-up option `--user-data` (PLT-025), moves to T18: until its front end starts a world that is no sandbox, the programs start only the battle sandbox, which saves nothing, and the root would have no caller.
 * **The snapshot's cost** at a settlement's plateau is measured by T10's performance scenes, which run the growth scene to its plateau. It is recorded in `playtests/M2.md` beside the tick's budget (ADR-080).
 
 ### Consequences
@@ -95,6 +96,8 @@ GameLogicTests (`SavingTests`):
 - a world restored at tick 100, its steward connecting again, giving the hashes of the same world never stopped at 1, 2 and 8 worker threads;
 - a stall that froze the world and an unclean stop recorded with their ticks and seconds and saved, and no freeze for a clean stop;
 - a torn newest snapshot falling back to the one before with an unclean stop, a snapshot of a later version refused for the one before it, and a folder holding only that one opening a new world.
+
+GameLogicTests (`IntegratedServerTests`): an integrated server stopped on the real clock leaves the marker of a clean stop in its folder, and one started on the folder continues the world after the ticks it ran.
 
 GameLogicTests (`SandboxTests`): a freezing world's journal written under its starting tick and read back, a journal's `restored` flag read back, and a restored world journaling from its snapshot.
 

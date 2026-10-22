@@ -334,6 +334,42 @@ public:
     Assert::IsTrue(client->State() == Neuron::ConnectionState::Closed, L"stopping the server closes the connection");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp075TheIntegratedServerContinuesItsWorldFromItsFolder)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-075")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp075TheIntegratedServerContinuesItsWorldFromItsFolder)
+  {
+    // ADR-137: stopping the integrated server freezes its world into its folder with the marker of a clean stop, and a
+    // server started on the folder continues the world after the tick it froze before, where a new world starts at 0.
+    const TemporaryFolder folder;
+    const Neuron::LooseContent content = CookedContentWith(folder, "\"tick_period\": 0.1", "\"tick_period\": 0.01");
+    const Neuron::PlatformClock clock;
+    Species::IntegratedServer::Desc desc;
+    desc.clock = &clock;
+    desc.content = &content;
+    desc.snapshotFolder = folder.Path() / L"world";
+    const auto firstTicks = [&](std::uint64_t _atLeast)
+    {
+      Species::IntegratedServer server(desc);
+      std::unique_ptr<Neuron::Transport> client = server.Connect();
+      Assert::IsTrue(server.Start().has_value(), L"the server starts");
+      std::vector<std::uint64_t> ticks;
+      while (ticks.size() < _atLeast)
+      {
+        const Arrivals arrived = TakeArrivals(*client);
+        ticks.insert(ticks.end(), arrived.ticks.begin(), arrived.ticks.end());
+        clock.WaitUntil(clock.Now() + Neuron::Nanoseconds{2'000'000});
+      }
+      server.Stop();
+      return ticks;
+    };
+    const std::vector<std::uint64_t> before = firstTicks(5);
+    ExpectEqual(0, static_cast<std::int64_t>(before.front()), L"a new world starts at tick 0");
+    Assert::IsTrue(std::filesystem::exists(desc.snapshotFolder / Species::WorldServer::CLEAN_STOP_FILE_NAME), L"stopped cleanly");
+    const std::vector<std::uint64_t> after = firstTicks(1);
+    Assert::IsTrue(after.front() > before.back(), L"the world continues after the ticks it ran");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp099AServerWithoutItsTuningDoesNotStart)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-099")
   END_TEST_METHOD_ATTRIBUTE()
