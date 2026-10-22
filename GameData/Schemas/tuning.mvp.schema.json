@@ -87,10 +87,20 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "wu",
               "x-species-presence": "required"
+            },
+            "cell_size": {
+              "type": "number",
+              "description": "mvp.vision.cell_size (MVP-016, MVP-097)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
             }
           },
           "required": [
-            "unit_radius"
+            "unit_radius",
+            "cell_size"
           ],
           "additionalProperties": false,
           "x-species-type": "object",

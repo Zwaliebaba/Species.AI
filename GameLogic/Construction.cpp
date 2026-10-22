@@ -113,7 +113,7 @@ std::uint32_t PopulationLimitOf(const RegionSimulation& _region, const Settlemen
 
 bool InTerritory(const RegionSimulation& _region, const Settlement& _settlement, const Neuron::Vec3& _point, double _radius)
 {
-  const TerritoryMap* territory = _region.TerritoryOf(_settlement.site);
+  const CellRaster* territory = _region.TerritoryOf(_settlement.site);
   return territory != nullptr && territory->HoldsDisc(_point.x, _point.z, _radius);
 }
 

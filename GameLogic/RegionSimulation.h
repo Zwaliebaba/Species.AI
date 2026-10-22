@@ -244,9 +244,22 @@ public:
   // The settlement at local site _site, or null while the site is free.
   [[nodiscard]] const Settlement* SettlementAt(std::uint8_t _site) const noexcept;
   // MVP-026: the territory of the settlement at local site _site, or null while the site is free (ADR-134).
-  [[nodiscard]] const TerritoryMap* TerritoryOf(std::uint8_t _site) const noexcept;
+  [[nodiscard]] const CellRaster* TerritoryOf(std::uint8_t _site) const noexcept;
   // The territory of the settlement at _site made again from its radius, as when its radius grows (ADR-134).
   void RecomputeTerritory(std::uint8_t _site);
+  // MVP-016 and MVP-097: the seen layer of the settlement at _site as the last step made it, or null before the
+  // region's first step and while the site is free; and how many times the region has made its seen layers, once in
+  // every step (ADR-134).
+  [[nodiscard]] const CellRaster* SeenLayerOf(std::uint8_t _site) const noexcept;
+  [[nodiscard]] std::uint64_t SeenLayerUpdates() const noexcept
+  {
+    return m_seenUpdates;
+  }
+  // WLD-066: the region's territory events in the order they were recorded (MVP-027).
+  [[nodiscard]] const std::vector<ContactEvent>& ContactEvents() const noexcept
+  {
+    return m_contacts;
+  }
   // The structure in _slot while it still holds that slot with id _id, or null (R-SIM-325's rule for handles).
   [[nodiscard]] Structure* ResolveStructure(std::uint32_t _slot, StableId _id) noexcept;
   [[nodiscard]] const Structure* ResolveStructure(std::uint32_t _slot, StableId _id) const noexcept;
@@ -375,6 +388,11 @@ private:
   // ADR-134: every settlement's territory made again; derived data, made when a settlement is founded, when a restored
   // region's terrain is attached and after a snapshot is read.
   void RecomputeTerritories();
+  // MVP-027 and WLD-064: a contact event for each valley border pair whose two settlements both reach its halfway line
+  // and have no contact yet; contact never ends in the MVP.
+  void RecordContacts();
+  // MVP-097: every settlement's seen layer, made once per step.
+  void UpdateSeenLayers();
 
   std::uint16_t m_index;
   const TuningMvp* m_tuning;
@@ -401,8 +419,11 @@ private:
   const StructureRecords* m_records;
   SlicedPool<Structure> m_structures;
   std::vector<Settlement> m_settlements;
-  std::vector<TerritoryMap> m_territories; // by settlement, derived, never state
-  std::vector<EffectEvent> m_events;       // presentation, never state
+  std::vector<CellRaster> m_territories; // by settlement, derived, never state
+  std::vector<CellRaster> m_seen;        // by settlement, derived, never state
+  std::uint64_t m_seenUpdates = 0;       // never state
+  std::vector<ContactEvent> m_contacts;  // WLD-066, state from version 9
+  std::vector<EffectEvent> m_events;     // presentation, never state
 #if ENGINE_DEVELOPMENT
   AdvanceObserver m_advanceObserver;
 #endif

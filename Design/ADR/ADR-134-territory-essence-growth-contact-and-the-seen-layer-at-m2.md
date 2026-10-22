@@ -13,7 +13,7 @@ M2 task T6 builds a settlement's territory, its growth from Essence, its contact
 - The territory stays inside the bounds of WLD-060: the coast, the halfway line of each valley border area, the edge of the home cell, the clearances round the other sites' cores and the central resource sites. It is always one connected area.
 - The steward places structures wholly inside it (MVP-032). Until T6, ADR-132 measured that against the disc of the territory's radius.
 
-The requirements say where the territory stops, but not how the simulation holds an area that a disc, half-planes, circles and the terrain's shoreline cut. This record decides that first, then how orbs reach the Wellspring and the Wellspring grows (MVP-023 to MVP-025); T6's last part adds contact and the seen layer.
+The requirements say where the territory stops, but not how the simulation holds an area that a disc, half-planes, circles and the terrain's shoreline cut. This record decides that first, then how orbs reach the Wellspring and the Wellspring grows (MVP-023 to MVP-025), when two settlements are in contact (MVP-027) and what each sees (MVP-016).
 
 ## Decision Drivers
 
@@ -32,7 +32,7 @@ The requirements say where the territory stops, but not how the simulation holds
 
 Chosen option: 1. Option 2 cannot keep the territory connected: a point across a lake or past a neck of land would pass every test. Option 3 needs a robust clipper against the terrain's shoreline, which is not a polygon.
 
-* **The raster** (`TerritoryMap`) covers the region's square in cells of `mvp.territory.cell_size` (16 wu, a height-field cell's side, O83). A cell is held when its centre is. The territory is derived from the settlement's radius, the terrain and the region's structures. Neither the hash nor the snapshot holds it: it is made when a settlement is founded, when a restored region's terrain is attached, after a snapshot is read, and when the radius changes (`RecomputeTerritory`).
+* **The raster** (`CellRaster`) covers the region's square in cells of `mvp.territory.cell_size` (16 wu, a height-field cell's side, O83). A cell is held when its centre is. The territory is derived from the settlement's radius, the terrain and the region's structures. Neither the hash nor the snapshot holds it: it is made when a settlement is founded, when a restored region's terrain is attached, after a snapshot is read, and when the radius changes (`RecomputeTerritory`).
 * **The cells it holds** are those reached from the Wellspring's cell across their sides, breadth first, whose centre:
   1. lies within the settlement's radius of its Wellspring;
   2. lies inside the coast bands, `wld.region.coast_band` from the region's border (WLD-021, WLD-061);
@@ -57,7 +57,16 @@ Chosen option: 1. Option 2 cannot keep the territory connected: a point across a
   - counts its growth timer down while it is below its population limit and its stores hold `mvp.essence.orb_cost_ru`, and holds it otherwise. At 0 its Wellspring pays that cost for one orb at its centre, and the timer restarts at `mvp.essence.wellspring_interval_s`, 120 ticks (MVP-024). A founded settlement starts its timer there.
 
   The orb reaches the Wellspring once born, so each Worker follows its payment by the orb's birth, about 6 s, whose rise varies by a few ticks.
-* **State.** The orb's two states and its settlement, and the settlement's growth timer, are part of version 9 (ADR-099).
+* **Contact** (MVP-027, WLD-064, WLD-066).
+  - A territory reaches the halfway line of one of its valley border pairs when it holds a cell whose centre lies within a cell's side of the line, inside the lens of the two sites' discs of `wld.territory.max_radius` (`ReachesHalfwayLine`).
+  - After the settlements' step, a pair whose two sites are both settled and whose two territories both reach its line gets a contact event, unless it has one: its tick, its kind, its two sites and the pair.
+  - A territory never shrinks in the MVP, so contact never ends and a pair has one event at most. The events are the region's state, in the order recorded. Claims that move a border area and border areas that return to their side are B5's kinds of event (WLD-066).
+* **The seen layer** (MVP-016, MVP-097). After contact, every step makes each settlement's seen layer once, as a `CellRaster` in cells of `mvp.vision.cell_size` (64 wu). It holds:
+  - the cells whose centres the settlement's territory holds;
+  - every cell whose centre lies within `mvp.vision.unit_radius` of one of its living figures or of a structure it owns, built or not.
+
+  The layer is derived and never state, and a region has none before its first step. Its readers, the AI and the replication narrowed to it, are M3's (O81); T11 replicates it for the fog. The public layer of WLD-242 is the world's own data and needs nothing made.
+* **State.** The orb's two states and its settlement, the settlement's growth timer and the region's contact events are part of version 9 (ADR-099). The events change the golden hash of DBG-147's empty world, which now writes an empty list.
 
 ### Consequences
 
@@ -79,6 +88,10 @@ GameLogicTests (`EssenceTests`):
 - an orb 300 wu inside the territory closing on the Wellspring at the drift speed and becoming a Worker there, while an orb outside every territory does not drift;
 - at the limit, 20 of 21 arriving orbs waiting and the 21st ascending, and a waiting orb taking the room a death leaves;
 - a radius of 540 wu for 10 Workers above 20, which stays when five of them die.
+
+GameLogicTests (`TerritoryTests`), on a fixture of two settlements and on one:
+- no contact at the founding radius, then one contact event with its tick, its two sites and their pair once both territories reach their halfway line, none after, and the snapshot holding it;
+- a seen layer that holds the Wellspring and every cell of the territory, sees around a Worker sent 900 wu out from the next step, and is made once in every step.
 
 ## Pros and Cons of the Options
 

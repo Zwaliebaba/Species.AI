@@ -44,6 +44,9 @@ struct TuningMvp
     {
       // mvp.vision.unit_radius, in wu
       double unitRadius = 0.0;
+
+      // mvp.vision.cell_size, in wu
+      double cellSize = 0.0;
     };
 
     struct Settlement
@@ -1774,6 +1777,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Vision& _out)
 {
   _out.unitRadius = _reader.Decimal(_object, "unit_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.cellSize = _reader.Decimal(_object, "cell_size", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -2853,11 +2857,13 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Worl
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Vision& _in)
 {
   _writer.F64(_in.unitRadius);
+  _writer.F64(_in.cellSize);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Vision& _out)
 {
   _out.unitRadius = _reader.F64();
+  _out.cellSize = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Settlement& _in)

@@ -166,6 +166,7 @@
     <ClInclude Include="RegionSimulation.h" />
     <ClInclude Include="RouteStore.h" />
     <ClInclude Include="Sandbox.h" />
+    <ClInclude Include="SeenLayer.h" />
     <ClInclude Include="Settlement.h" />
     <ClInclude Include="SlicedPool.h" />
     <ClInclude Include="StableIdCounter.h" />
@@ -205,6 +206,7 @@
     <ClCompile Include="RegionSimulation.cpp" />
     <ClCompile Include="RouteStore.cpp" />
     <ClCompile Include="Sandbox.cpp" />
+    <ClCompile Include="SeenLayer.cpp" />
     <ClCompile Include="Settlement.cpp" />
     <ClCompile Include="StableIdCounter.cpp" />
     <ClCompile Include="StateHash.cpp" />

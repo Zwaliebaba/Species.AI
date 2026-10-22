@@ -39,7 +39,7 @@ Neuron::Vec3 HeldPointAhead(const Species::RegionSimulation& _region, double _di
 {
   const Species::Settlement& settlement = _region.Settlements().front();
   const Neuron::Vec3 wellspring = _region.Structures().At(settlement.wellspringSlot).position;
-  const Species::TerritoryMap& territory = *_region.TerritoryOf(SETTLED_SITE);
+  const Species::CellRaster& territory = *_region.TerritoryOf(SETTLED_SITE);
   for (int turn = 0; turn < 36; ++turn)
   {
     const double angle = turn * std::numbers::pi / 18.0;

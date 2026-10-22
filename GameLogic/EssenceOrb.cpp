@@ -29,7 +29,7 @@ Settlement* TerritoryHolder(RegionSimulation& _region, const Neuron::Vec3& _poin
 {
   for (Settlement& settlement : _region.Settlements())
   {
-    const TerritoryMap* territory = _region.TerritoryOf(settlement.site);
+    const CellRaster* territory = _region.TerritoryOf(settlement.site);
     if (territory != nullptr && territory->Holds(_point.x, _point.z))
     {
       return &settlement;

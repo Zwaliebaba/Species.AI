@@ -11,7 +11,8 @@
       "region_cell": 6
     },
     "vision": {
-      "unit_radius": 300
+      "unit_radius": 300,
+      "cell_size": 64
     },
     "settlement": {
       "start_workers": 20,

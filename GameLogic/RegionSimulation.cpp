@@ -8,6 +8,7 @@
 #include "Profile.h"
 #include "RegionCommands.h"
 #include "RegionSimulation.h"
+#include "SeenLayer.h"
 #include "StateValues.h"
 #include "StructureAdvance.h"
 #include "Weapons.h"
@@ -86,6 +87,8 @@ constexpr std::uint32_t STATE_VERSION_WITH_BOTS = 8;
 constexpr std::uint32_t STATE_VERSION_WITH_SETTLEMENTS = 9;
 // A region holds at most one settlement on each of its four sites (MVP-010).
 constexpr std::uint64_t SETTLEMENTS_MAX = std::tuple_size_v<decltype(RegionLayout::sites)>;
+// WLD-066: the territory events a region holds; the MVP records one contact for each valley border pair at most.
+constexpr std::uint64_t CONTACT_EVENTS_MAX = 4095;
 // The node pool is made whole once, with every node of the graph, and never grows (ADR-107).
 constexpr std::uint32_t BOT_NODE_POOL_STEP = 1;
 
@@ -468,7 +471,7 @@ RouteHandle RegionSimulation::BuildRoute(const Neuron::Vec3& _from, const Neuron
   return m_routes.Add(m_terrain->routes.BuildRoute(_from, _to, _directRoute, _permitClimbing, _noRounding, m_terrain->field, *m_tuning));
 }
 
-const TerritoryMap* RegionSimulation::TerritoryOf(std::uint8_t _site) const noexcept
+const CellRaster* RegionSimulation::TerritoryOf(std::uint8_t _site) const noexcept
 {
   for (std::size_t index = 0; index < m_settlements.size() && index < m_territories.size(); ++index)
   {
@@ -489,6 +492,50 @@ void RegionSimulation::RecomputeTerritory(std::uint8_t _site)
       m_territories[index] = ComputeTerritory(*this, m_settlements[index]);
     }
   }
+}
+
+const CellRaster* RegionSimulation::SeenLayerOf(std::uint8_t _site) const noexcept
+{
+  for (std::size_t index = 0; index < m_settlements.size() && index < m_seen.size(); ++index)
+  {
+    if (m_settlements[index].site == _site)
+    {
+      return &m_seen[index];
+    }
+  }
+  return nullptr;
+}
+
+void RegionSimulation::RecordContacts()
+{
+  for (std::size_t pair = 0; pair < VALLEY_PAIRS.size(); ++pair)
+  {
+    const std::uint8_t first = VALLEY_PAIRS[pair][0];
+    const std::uint8_t second = VALLEY_PAIRS[pair][1];
+    if (SettlementAt(first) == nullptr || SettlementAt(second) == nullptr ||
+        std::ranges::any_of(m_contacts, [&](const ContactEvent& _event) { return _event.pair == pair; }))
+    {
+      continue;
+    }
+    if (ReachesHalfwayLine(*this, first, pair) && ReachesHalfwayLine(*this, second, pair))
+    {
+      m_contacts.push_back({m_nextTick, ContactEventKind::Contact, first, second, static_cast<std::uint8_t>(pair)});
+    }
+  }
+}
+
+void RegionSimulation::UpdateSeenLayers()
+{
+  m_seen.clear();
+  if (m_terrain == nullptr)
+  {
+    return;
+  }
+  for (const Settlement& settlement : m_settlements)
+  {
+    m_seen.push_back(ComputeSeenLayer(*this, settlement));
+  }
+  ++m_seenUpdates;
 }
 
 void RegionSimulation::RecomputeTerritories()
@@ -646,6 +693,11 @@ void RegionSimulation::Step(std::uint64_t _tick)
     {
       AdvanceSettlement(*this, settlement);
     }
+    RecordContacts();
+  }
+  {
+    ENGINE_PROFILE_SCOPE("sim.settlements.seen");
+    UpdateSeenLayers();
   }
   {
     ENGINE_PROFILE_SCOPE("sim.routes.free_unheld");
@@ -808,6 +860,11 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
     WriteSettlement(_writer, settlement);
   }
   m_structures.WriteState(_writer, [](Neuron::BitWriter& _out, const Structure& _structure) { WriteStructure(_out, _structure); });
+  _writer.WriteBounded(m_contacts.size(), CONTACT_EVENTS_MAX);
+  for (const ContactEvent& event : m_contacts)
+  {
+    WriteContactEvent(_writer, event);
+  }
 }
 
 bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stateVersion)
@@ -952,6 +1009,16 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
       const std::uint32_t slot = settlement.wellspringSlot;
       if (!m_structures.Used(slot) || m_structures.At(slot).id != settlement.wellspringId ||
           m_structures.At(slot).kind != StructureKind::Wellspring)
+      {
+        return false;
+      }
+    }
+    // A contact event names two settled sites of its valley border pair.
+    m_contacts.resize(_reader.ReadBounded(CONTACT_EVENTS_MAX));
+    for (ContactEvent& event : m_contacts)
+    {
+      if (!ReadContactEvent(_reader, event) || VALLEY_PAIRS[event.pair][0] != event.first || VALLEY_PAIRS[event.pair][1] != event.second ||
+          SettlementAt(event.first) == nullptr || SettlementAt(event.second) == nullptr)
       {
         return false;
       }
