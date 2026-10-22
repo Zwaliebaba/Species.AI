@@ -224,7 +224,7 @@ public:
     // A placement is refused at a site with no settlement and for a kind the steward does not place; outside the
     // territory of 500 wu; inside the centre ring of 60 wu; on a footprint that meets a resource site's or a queued
     // site's; when the stores do not hold the cost; and when 8 sites are queued. A placement that passes pays 300 ru for
-    // the first dwelling, 345 for the second (× 1.15) and 200 for a storehouse, and queues a construction site.
+    // the first dwelling, 330 for the second (× 1.10) and 200 for a storehouse, and queues a construction site.
     const std::unique_ptr<Species::WorldSimulation> world = SettledWorld();
     Species::RegionSimulation& region = world->Region(0);
     Species::Settlement& settlement = region.Settlements().front();
@@ -268,10 +268,10 @@ public:
     Assert::IsTrue(refusal(2, StructureKind::Dwelling, good) == PlacementRefusal::Overlaps, L"on a queued site");
     const Neuron::Vec3 second = AroundWellspring(region, 150.0, 45.0);
     Assert::IsTrue(Species::PlaceStructure(region, 2, StructureKind::Dwelling, second.x, second.z).has_value(), L"the second");
-    ExpectEqual(10'000'000 - 300'000 - 345'000, settlement.storesMilliRu, L"for 345 ru");
+    ExpectEqual(10'000'000 - 300'000 - 330'000, settlement.storesMilliRu, L"for 330 ru");
     const Neuron::Vec3 store = AroundWellspring(region, 150.0, 90.0);
     Assert::IsTrue(Species::PlaceStructure(region, 2, StructureKind::Storehouse, store.x, store.z).has_value(), L"a storehouse");
-    ExpectEqual(10'000'000 - 845'000, settlement.storesMilliRu, L"for 200 ru");
+    ExpectEqual(10'000'000 - 830'000, settlement.storesMilliRu, L"for 200 ru");
     for (const double degrees : {135.0, 180.0, 225.0, 270.0, 315.0})
     {
       const Neuron::Vec3 at = AroundWellspring(region, 150.0, degrees);

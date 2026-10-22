@@ -62,9 +62,10 @@ public:
   TEST_METHOD(Mvp064TheFirstHourOfTheGrowthSceneStaysInsideItsBounds)
   {
     // The M2 plan §5's regression in CI (ADR-138): the growth scene's first hour of play on the tests' valley and
-    // records, at 2 worker threads, whose first five minutes hash alike at 0. In the hour: a growth step within the
-    // first 15 minutes and no gap of more than 20 minutes after it, a dwelling built by 45 minutes, and between 60 and
-    // 85 Workers at its end, where it had 70 at 0.9 hours when this was recorded.
+    // records, at 2 worker threads, whose first five minutes hash alike at 0. In the hour: no gap of more than 20
+    // minutes between growth steps from its start, a dwelling built by 50 minutes, and between 50 and 75 Workers at its
+    // end. On T10's tuning a scene of this valley took its first step at 15 minutes, built its first dwelling at 40 and
+    // had 60 Workers at the hour.
     std::vector<std::uint64_t> parallel;
     std::vector<std::uint64_t> serial;
     const std::unique_ptr<Species::WorldSimulation> world = Grown(60 * TICKS_PER_MINUTE, 2, 5 * TICKS_PER_MINUTE, parallel);
@@ -76,8 +77,7 @@ public:
     std::ranges::copy_if(region.Statistics(), std::back_inserter(steps),
                          [](const Species::StatisticEntry& _entry) { return Species::IsGrowthStep(_entry.kind); });
     Assert::IsFalse(steps.empty(), L"growth steps");
-    Assert::IsTrue(steps.front().tick <= 15 * TICKS_PER_MINUTE, L"the first within 15 minutes");
-    std::uint64_t previous = steps.front().tick;
+    std::uint64_t previous = 0;
     for (const Species::StatisticEntry& step : steps)
     {
       Assert::IsTrue(step.tick - previous <= 20 * TICKS_PER_MINUTE, L"no gap of more than 20 minutes");
@@ -89,11 +89,11 @@ public:
                                        {
                                          return _step.kind == Species::StatisticKind::StructureCompleted &&
                                                 _step.detail == static_cast<std::uint32_t>(Species::StructureKind::Dwelling) &&
-                                                _step.tick <= 45 * TICKS_PER_MINUTE;
+                                                _step.tick <= 50 * TICKS_PER_MINUTE;
                                        }),
-                   L"a dwelling built by 45 minutes");
+                   L"a dwelling built by 50 minutes");
     const std::uint32_t workers = Species::Population(region, region.Settlements().front());
-    Assert::IsTrue(workers >= 60 && workers <= 85, L"60 to 85 Workers after an hour");
+    Assert::IsTrue(workers >= 50 && workers <= 75, L"50 to 75 Workers after an hour");
   }
 };
 

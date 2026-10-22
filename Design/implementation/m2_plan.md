@@ -60,6 +60,14 @@ The scope's table 3 sets its first guesses against a plateau near 280 Workers pa
 
 Three consequences follow for this plan. The tuning is a task of its own (T10), run on the scripted steward with stated levers in a stated order before any presentation is built around a settlement of that shape (§9, question 2). M3 inherits the result: first contact between neighbours is timed by the same territory growth, so the M3 plan cannot be finished before T10 has run ([M3 plan](m3_plan.md) §3). And what yields when T10 cannot hold every target was the owner's to settle before T10 starts (§9.1, O84).
 
+> **Amendment 2026-10-22 (M2 task T10; [ADR-138](../ADR/ADR-138-the-scripted-steward-and-the-growth-scene-at-m2.md)).** The growth scene measured the game's own settlement under the scripted steward on seeds 1 to 8. On the first guesses it reaches its plateau in half the model's time: 3.8 hours, against the model's 280 Workers at 7.6 hours. Gatherers take a port in turn: while one carries its load, the next mans the port. The model has one gatherer for each port, so its ports bring about 80 ru an hour each and stand idle while their gatherers walk.
+> - On the first guesses, the largest gap was 17.3 to 17.8 minutes, the halfway line fell at 2.20 to 2.25 hours, and the plateau at `mvp.settlement.population_max` came at 3.81 to 3.85 hours, before the window. So the tuning started from the first guesses, not from the model's sweep.
+> - Lever 1: `mvp.territory.radius_per_worker` at 3.5 put the plateau at 4.15 hours and the halfway line at 2.77, and at 3 the halfway line at 3.17. It delays contact about as much as the plateau, so it stays at 4.
+> - Lever 2: `mvp.cost.dwelling_ru` at 350 or 400 made the largest gap 20 to 23 minutes. `mvp.cost.dwelling_escalation` below 1.15 shortens the last dwellings' waits, which are the largest gap, but brings the plateau earlier.
+> - Lever 3: `mvp.essence.orb_cost_ru` delays every step alike.
+> - The set taken, the escalation at 1.10 and the orb cost at 27, gives a largest gap of 14.9 to 15.4 minutes, a plateau at 4.27 to 4.32 hours and the halfway line at 2.65 to 2.67 hours. It keeps the widest margins on the step and the contact, which O84 holds before the plateau.
+> - The model's figures above stand as what was estimated before the scene existed.
+
 ## 4 The order of M2
 
 **The settlement comes first, headless and tuned, and the look follows.** As at M1, a measurement moves values that the later work is built around: here the shape of a settlement over a run, which sets the HUD's figures, how many structures the view draws and when contact arrives at M3. So the tasks fall in two phases, as M1's did:

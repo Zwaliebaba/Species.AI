@@ -23,7 +23,7 @@
       "population": 30
     },
     "essence": {
-      "orb_cost_ru": 20,
+      "orb_cost_ru": 27,
       "wellspring_interval_s": 12,
       "drift_speed": 30,
       "wait_max": 20
@@ -53,7 +53,7 @@
     },
     "cost": {
       "dwelling_ru": 300,
-      "dwelling_escalation": 1.15,
+      "dwelling_escalation": 1.1,
       "storehouse_ru": 200,
       "turret_ru": 400,
       "turret_rebuild_fraction": 0.5

@@ -73,7 +73,7 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-023** (MUST) Essence orbs are created by deaths as the reference states (R-UNIT-034 to R-UNIT-039, R-UNIT-301 to R-UNIT-329, R-ECON-066 to R-ECON-071). An orb inside a settlement's territory drifts to that settlement's Wellspring at `mvp.essence.drift_speed` (30 wu/s); an orb outside every territory follows the reference states and ascends. No Collector, Builder or Spawn Node delivery is involved (R-ECON-072 to R-ECON-081 are not used).
 
-**MVP-024** (MUST) Growth that needs no death (PIL-056): while the settlement is below its population limit and its stores hold at least `mvp.essence.orb_cost_ru` (20 ru), its Wellspring turns that cost into one orb every `mvp.essence.wellspring_interval_s` (12 s).
+**MVP-024** (MUST) Growth that needs no death (PIL-056): while the settlement is below its population limit and its stores hold at least `mvp.essence.orb_cost_ru` (27 ru), its Wellspring turns that cost into one orb every `mvp.essence.wellspring_interval_s` (12 s).
 
 **MVP-025** (MUST) An orb that reaches its Wellspring becomes a Worker at the Wellspring if the settlement is below its population limit; otherwise it waits there, glowing, up to `mvp.essence.wait_max` (20) waiting orbs, and an orb beyond that ascends. A waiting orb becomes a Worker as soon as there is room.
 
@@ -100,7 +100,7 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 **MVP-033** (MUST) Construction is a Worker task of the task search: a Worker whose priority is construction mans one of the ports of the first queued construction site (`mvp.construction.ports_dwelling` (6) on a dwelling, `mvp.construction.ports_storehouse` (4) on a storehouse, `mvp.construction.ports_turret` (4) on a turret), and the site completes when its Workers have given `mvp.construction.work_per_ru` (1 Worker-second per resource unit of its cost). The structure rises visibly as it progresses (MVP-083).
 
 **MVP-034** (MUST) The MVP has three structures besides the Wellspring:
-- **Dwelling**: raises the population limit (MVP-022). It costs `mvp.cost.dwelling_ru` (300 ru), multiplied by `mvp.cost.dwelling_escalation` (1.15) for every dwelling the settlement already has, so that growth has diminishing returns (PIL-053).
+- **Dwelling**: raises the population limit (MVP-022). It costs `mvp.cost.dwelling_ru` (300 ru), multiplied by `mvp.cost.dwelling_escalation` (1.10) for every dwelling the settlement already has, so that growth has diminishing returns (PIL-053).
 - **Storehouse**: holds `mvp.store.storehouse_capacity_ru` (1,500 ru) more and is a drop-off point; it costs `mvp.cost.storehouse_ru` (200 ru).
 - **Turret**: the reference turret (R-BLDG-405 to R-BLDG-423), whose ports Workers on guard duty man; it costs `mvp.cost.turret_ru` (400 ru). It is the only MVP structure that takes damage, and a destroyed turret leaves a construction site that its settlement may rebuild at half its cost.
 
@@ -325,7 +325,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.settlement.population_base` | 40 | Workers | — | provisional | MVP-022 | — |
 | `mvp.settlement.population_max` | 300 | Workers | — | provisional | MVP-022 | Inside O43's range; M1's cost measurement may raise it |
 | `mvp.dwelling.population` | 30 | Workers | — | provisional | MVP-022 | Tuned to M2's growth-step target |
-| `mvp.essence.orb_cost_ru` | 20 | ru | — | provisional | MVP-024 | Tuned to M2's plateau target |
+| `mvp.essence.orb_cost_ru` | 27 | ru | — | provisional | MVP-024 | M2 task T10 (ADR-138): 27 from 20, which the growth scene's plateau came before hour 4 with (3.81 to 3.85 hours on seeds 1 to 8); at 27, with the escalation at 1.10, the plateau comes at 4.27 to 4.32 hours, the largest gap is 14.9 to 15.4 minutes and the halfway line falls at 2.65 to 2.67 hours |
 | `mvp.essence.wellspring_interval_s` | 12 | seconds | scaled | provisional | MVP-024 | Caps peaceful growth at 300 Workers per hour of play |
 | `mvp.essence.drift_speed` | 30 | wu/s | tick | provisional | MVP-023 | Orbs drifting home should be seen, not missed |
 | `mvp.essence.wait_max` | 20 | orbs | — | provisional | MVP-025 | — |
@@ -343,7 +343,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.construction.ports_turret` | 4 | ports | — | provisional | MVP-033 | The turret's four manning ports (R-BLDG-405 to R-BLDG-423) |
 | `mvp.construction.work_per_ru` | 1 | Worker-seconds per ru | scaled | provisional | MVP-033 | A dwelling takes 6 Workers under a minute early on |
 | `mvp.cost.dwelling_ru` | 300 | ru | — | provisional | MVP-034 | Tuned to M2's growth-step target |
-| `mvp.cost.dwelling_escalation` | 1.15 | times per dwelling built | — | provisional | MVP-034 | The diminishing return that brings the plateau |
+| `mvp.cost.dwelling_escalation` | 1.10 | times per dwelling built | — | provisional | MVP-034 | M2 task T10 (ADR-138): 1.10 from 1.15, whose last dwellings' waits made the largest gap (17.3 to 17.8 minutes at an orb cost of 26); at 1.10 the largest gap is the first step's wait, about 15 minutes |
 | `mvp.cost.storehouse_ru` | 200 | ru | — | provisional | MVP-034 | — |
 | `mvp.cost.turret_ru` | 400 | ru | — | provisional | MVP-034 | — |
 | `mvp.cost.turret_rebuild_fraction` | 0.5 | of the turret's cost | — | provisional | MVP-034 | A destroyed turret's site is rebuilt at half its cost |
@@ -363,7 +363,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.steward.lane_half_width` | 40 | wu | — | provisional | MVP-056 | No dwelling within this of the line from the Wellspring to a home resource site |
 | `mvp.steward.storehouse_search_step` | 20 | wu | — | provisional | MVP-056 | — |
 | `mvp.steward.storehouse_search_rings` | 5 | rings | — | provisional | MVP-056 | Around the midpoint of two neighbouring outer resource sites |
-| `mvp.strength.worker_ru` | 20 | ru per Worker | — | provisional | MVP-038 | Equal to the orb cost |
+| `mvp.strength.worker_ru` | 20 | ru per Worker | — | provisional | MVP-038 | The orb cost's first guess; T10 leaves it, as it is no lever of the M2 plan's §9, question 2 |
 | `mvp.expedition.size_max` | 200 | Workers | — | provisional | MVP-041 | With the defenders, a battle of 300 to 450 figures (PIL-021) |
 | `mvp.conflict.attack_cost_ru` | 300 | ru | — | provisional | MVP-042 | An attack must cost a dwelling's worth |
 | `mvp.conflict.warning_minutes` | 5 | minutes of world time | tick | provisional | MVP-042 | Narrows WLD-102's 10; Playtest 2 checks it is enough when the deputy defends |

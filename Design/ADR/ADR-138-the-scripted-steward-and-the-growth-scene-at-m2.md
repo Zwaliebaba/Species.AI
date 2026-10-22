@@ -87,6 +87,21 @@ Chosen options: 1 and 3.
     - 60 to 85 Workers at its end.
   - Those bounds sit about the 70 Workers at 0.9 hours that it had when they were recorded.
 
+* **The tuning** (the M2 plan §9, question 2), measured by the growth scene on seeds 1 to 8 on the Linux harness's optimised build of the game's libraries. Its results are the same simulation that CI and the owner's machine run, though a compiler that contracts floating point differently may move them by a tick here and there.
+  - On the first guesses:
+    - the largest gap was 17.3 to 17.8 minutes, before the last dwellings;
+    - the halfway line fell at 2.20 to 2.25 hours;
+    - the plateau at `mvp.settlement.population_max` (300) came at 3.81 to 3.85 hours, before the window.
+  - Lever 1, `mvp.territory.radius_per_worker`, stays at 4. At 3.5 the plateau came at 4.15 hours and the halfway line at 2.77; at 3 the halfway line came at 3.17. It delays contact about as much as the plateau.
+  - Lever 2: `mvp.cost.dwelling_ru` at 350 and 400 made the largest gap 20.1 to 23.3 minutes, so it stays at 300. `mvp.cost.dwelling_escalation` goes from 1.15 to 1.10, which shortens the last dwellings' waits.
+  - Lever 3: `mvp.essence.orb_cost_ru` goes from 20 to 27, which delays every step alike.
+  - Of the sets that met all three targets on two seeds and then on all eight (orb cost 26 at 1.15, 27 at 1.10 and 28 at 1.10), the set taken has the widest margins on the step and the contact, which O84 holds before the plateau:
+    - the largest gap is 14.9 to 15.4 minutes, the wait for the first step;
+    - the plateau comes at 4.27 to 4.32 hours;
+    - the halfway line falls at 2.65 to 2.67 hours.
+  - The upkeep and `mvp.resource.ports_per_unit` are not moved. The owner accepted a plateau at the cap (O84), and the stores stay full there.
+  - The regression's bounds were recorded on these values.
+
 ### Consequences
 
 * Good, because the steward is the AI settlement's economy as M3 will run it: one command path, saved, replayed and hashed with the world.
@@ -103,7 +118,7 @@ GameLogicTests (`ScriptedStewardTests`):
 
 GameLogicTests (`GrowthSceneTests`): the first hour's regression.
 
-The growth scene on seeds 1 to 8.
+The growth scene on seeds 1 to 8, on the tuned values: every seed meets the gap and the plateau window, and reaches the halfway line in hour 2 to 3.
 
 ## Pros and Cons of the Options
 
