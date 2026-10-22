@@ -262,6 +262,16 @@ std::unique_ptr<Species::WorldSimulation> SettledWorld(std::uint8_t _site)
   return Species::StartWorld(start, ValleyTerrain(), CommittedTuning(), &TestRecords());
 }
 
+std::unique_ptr<Species::WorldSimulation> ValleyWorld(const Neuron::SipHashKey& _key)
+{
+  Species::WorldStart start;
+  start.key = _key;
+  start.seed = ValleyTerrain()->seed;
+  start.stewardSite = 2;
+  start.aiSettlements = 3;
+  return Species::StartWorld(start, ValleyTerrain(), CommittedTuning(), &TestRecords());
+}
+
 std::vector<Neuron::CookedEntry> StructureRecordEntries()
 {
   Species::StructureRecords records = TestStructureRecords();

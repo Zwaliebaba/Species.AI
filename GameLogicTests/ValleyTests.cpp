@@ -27,21 +27,11 @@ namespace GameLogicTests
 namespace
 {
 
+// The steward's site and the AI settlements of TestSupport's valley.
 constexpr std::uint8_t STEWARD_SITE = 2;
 constexpr std::uint8_t AI_SETTLEMENTS = 3;
 // A team that is no settlement's, as the sandbox's are.
 constexpr std::uint8_t WILD_TEAM = 7;
-
-// M3's valley (ADR-157): the steward's settlement at STEWARD_SITE and the three AI settlements at the other sites.
-std::unique_ptr<Species::WorldSimulation> ValleyWorld(const Neuron::SipHashKey& _key = SETTLED_TEST_KEY)
-{
-  Species::WorldStart start;
-  start.key = _key;
-  start.seed = ValleyTerrain()->seed;
-  start.stewardSite = STEWARD_SITE;
-  start.aiSettlements = AI_SETTLEMENTS;
-  return Species::StartWorld(start, ValleyTerrain(), CommittedTuning(), &TestRecords());
-}
 
 // The hurt and death events of _ticks steps of _world from _first.
 std::size_t HarmOver(Species::WorldSimulation& _world, std::uint64_t _first, std::uint64_t _ticks)

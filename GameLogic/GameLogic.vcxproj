@@ -164,6 +164,7 @@
     <ClInclude Include="OrderMarkers.h" />
     <ClInclude Include="RegionCommands.h" />
     <ClInclude Include="RegionSimulation.h" />
+    <ClInclude Include="Relations.h" />
     <ClInclude Include="RouteStore.h" />
     <ClInclude Include="Sandbox.h" />
     <ClInclude Include="ScriptedSteward.h" />
@@ -210,6 +211,7 @@
     <ClCompile Include="OrderMarkers.cpp" />
     <ClCompile Include="RegionCommands.cpp" />
     <ClCompile Include="RegionSimulation.cpp" />
+    <ClCompile Include="Relations.cpp" />
     <ClCompile Include="RouteStore.cpp" />
     <ClCompile Include="Sandbox.cpp" />
     <ClCompile Include="ScriptedSteward.cpp" />

@@ -109,3 +109,7 @@ GameLogicTests (`TerritoryTests`), on a fixture of two settlements and on one:
 
 * Good, because its edge is exact.
 * Bad, because the shoreline is a contour of the height field, which a polygon clipper does not take.
+
+## More Information
+
+* **Amendment 2026-10-22 (M3 task T4, [ADR-159](ADR-159-grievances-anger-and-their-fade-at-m3.md)).** Contact is territory pressure's cause (MVP-051). The relations read whether a pair is in contact now, both territories reaching their halfway line, and not the event recorded once, so that a border area a claim moves (M3 task T5) can end it.

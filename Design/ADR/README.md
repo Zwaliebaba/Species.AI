@@ -159,6 +159,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-156](ADR-156-the-settlement-drawn-at-its-plateau-and-the-owners-growth-run.md) | The settlement drawn at its plateau and the owner's growth run | Proposed | 2026-10-22 |
 | [ADR-157](ADR-157-the-four-settlements-and-their-peace-at-m3.md) | The four settlements and their peace at M3 | Proposed | 2026-10-22 |
 | [ADR-158](ADR-158-the-seen-layer-and-its-readers-at-m3.md) | The seen layer and its readers at M3 | Proposed | 2026-10-22 |
+| [ADR-159](ADR-159-grievances-anger-and-their-fade-at-m3.md) | Grievances, anger and their fade at M3 | Proposed | 2026-10-22 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

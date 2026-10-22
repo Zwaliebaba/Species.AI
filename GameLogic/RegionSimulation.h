@@ -13,6 +13,7 @@
 #include "Movement.h"
 #include "ObstacleGrid.h"
 #include "RegionTerrain.h"
+#include "Relations.h"
 #include "RouteStore.h"
 #include "ScriptedSteward.h"
 #include "Settlement.h"
@@ -273,6 +274,15 @@ public:
   {
     return m_contacts;
   }
+  // MVP-050 (ADR-159): the grievances of the region's Cladans, in their order.
+  [[nodiscard]] const std::vector<Grievance>& Grievances() const noexcept
+  {
+    return m_grievances;
+  }
+  [[nodiscard]] std::vector<Grievance>& Grievances() noexcept
+  {
+    return m_grievances;
+  }
   // MVP-064: the server's statistics of the region's settlements in the order they were recorded (ADR-136).
   [[nodiscard]] const std::vector<StatisticEntry>& Statistics() const noexcept
   {
@@ -409,7 +419,8 @@ private:
   // region's terrain is attached and after a snapshot is read.
   void RecomputeTerritories();
   // MVP-027 and WLD-064: a contact event for each valley border pair whose two settlements both reach its halfway line
-  // and have no contact yet; contact never ends in the MVP.
+  // and have no contact yet; the event is recorded once, and the relations read whether a pair is in contact now
+  // (ADR-159).
   void RecordContacts();
   // MVP-097: every settlement's seen layer, made once per step.
   void UpdateSeenLayers();
@@ -445,6 +456,7 @@ private:
   std::vector<ContactEvent> m_contacts;     // WLD-066, state from version 9
   std::vector<StatisticEntry> m_statistics; // MVP-064, state from version 9
   std::vector<ScriptedSteward> m_scripted;  // ADR-138, state from version 10
+  std::vector<Grievance> m_grievances;      // MVP-050 (ADR-159), state from version 11
   std::vector<EffectEvent> m_events;        // presentation, never state
 #if ENGINE_DEVELOPMENT
   AdvanceObserver m_advanceObserver;

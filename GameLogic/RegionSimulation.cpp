@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -90,6 +91,10 @@ constexpr std::uint32_t STATE_VERSION_WITH_BOTS = 8;
 constexpr std::uint32_t STATE_VERSION_WITH_SETTLEMENTS = 9;
 // ... and the scripted stewards (M2 task T10, ADR-138).
 constexpr std::uint32_t STATE_VERSION_WITH_SCRIPTED_STEWARDS = 10;
+// ... and the Cladans' grievances (M3 task T4, ADR-159).
+constexpr std::uint32_t STATE_VERSION_WITH_GRIEVANCES = 11;
+// The grievances a region holds: a bound for the reader, far above four Cladans' grievances against three neighbours.
+constexpr std::uint64_t GRIEVANCES_MAX = 65'535;
 // A region holds at most one settlement on each of its four sites (MVP-010).
 constexpr std::uint64_t SETTLEMENTS_MAX = std::tuple_size_v<decltype(RegionLayout::sites)>;
 // WLD-066: the territory events a region holds; the MVP records one contact for each valley border pair at most.
@@ -734,6 +739,7 @@ void RegionSimulation::Step(std::uint64_t _tick)
       AdvanceSettlement(*this, settlement);
     }
     RecordContacts();
+    AdvanceRelations(*this, _tick);
   }
   {
     ENGINE_PROFILE_SCOPE("sim.settlements.seen");
@@ -932,6 +938,11 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
   {
     WriteScriptedSteward(_writer, steward);
   }
+  _writer.WriteBounded(m_grievances.size(), GRIEVANCES_MAX);
+  for (const Grievance& grievance : m_grievances)
+  {
+    WriteGrievance(_writer, grievance);
+  }
 }
 
 bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stateVersion)
@@ -1110,6 +1121,25 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
       if (!ReadScriptedSteward(_reader, steward) ||
           std::ranges::find(m_settlements, steward.team, &Settlement::team) == m_settlements.end() ||
           !MayCommand(steward.id, steward.team, true))
+      {
+        return false;
+      }
+    }
+  }
+  // A grievance is held by one settlement against another, in the region's order, one for each cause and subject; a
+  // region before version 11 has none (MVP-095).
+  m_grievances.clear();
+  if (_stateVersion >= STATE_VERSION_WITH_GRIEVANCES)
+  {
+    m_grievances.resize(_reader.ReadBounded(GRIEVANCES_MAX));
+    for (std::size_t index = 0; index < m_grievances.size(); ++index)
+    {
+      const Grievance& grievance = m_grievances[index];
+      if (!ReadGrievance(_reader, m_grievances[index]) || SettlementAt(grievance.holder) == nullptr ||
+          SettlementAt(grievance.against) == nullptr ||
+          (index > 0 && std::tuple{m_grievances[index - 1].holder, m_grievances[index - 1].against, m_grievances[index - 1].cause,
+                                   m_grievances[index - 1].subject} >=
+                          std::tuple{grievance.holder, grievance.against, grievance.cause, grievance.subject}))
       {
         return false;
       }

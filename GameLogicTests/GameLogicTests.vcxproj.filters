@@ -50,6 +50,9 @@
     <ClCompile Include="RegionSimulationTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="RelationTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="ReplicationTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>

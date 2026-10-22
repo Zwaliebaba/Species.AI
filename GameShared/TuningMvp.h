@@ -1804,9 +1804,31 @@ struct TuningMvp
     Travel travel;
   };
 
+  struct Pil
+  {
+    struct Battle
+    {
+      // pil.battle.min_respite_minutes, in minutes from a battle's start
+      double minRespiteMinutes = 0.0;
+    };
+
+    struct Conflict
+    {
+      // pil.conflict.unprovoked_cost_factor, in times the attack cost
+      double unprovokedCostFactor = 0.0;
+
+      // pil.conflict.settled_fade_factor, in times the fading rate of a grievance whose cause remains
+      double settledFadeFactor = 0.0;
+    };
+
+    Battle battle;
+    Conflict conflict;
+  };
+
   Mvp mvp;
   Ref ref;
   Wld wld;
+  Pil pil;
 };
 
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Pace& _out)
@@ -2889,11 +2911,32 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Pil::Battle& _out)
+{
+  _out.minRespiteMinutes = _reader.Decimal(_object, "min_respite_minutes", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Pil::Conflict& _out)
+{
+  _out.unprovokedCostFactor = _reader.Decimal(_object, "unprovoked_cost_factor", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.settledFadeFactor = _reader.Decimal(_object, "settled_fade_factor", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Pil& _out)
+{
+  ReadFields(_reader, _reader.Object(_object, "battle"), _out.battle);
+  ReadFields(_reader, _reader.Object(_object, "conflict"), _out.conflict);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "mvp"), _out.mvp);
   ReadFields(_reader, _reader.Object(_object, "ref"), _out.ref);
   ReadFields(_reader, _reader.Object(_object, "wld"), _out.wld);
+  ReadFields(_reader, _reader.Object(_object, "pil"), _out.pil);
   _reader.Close(_object);
 }
 
@@ -4856,11 +4899,46 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld& _out
   ReadCookedFields(_reader, _out.travel);
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Pil::Battle& _in)
+{
+  _writer.F64(_in.minRespiteMinutes);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Pil::Battle& _out)
+{
+  _out.minRespiteMinutes = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Pil::Conflict& _in)
+{
+  _writer.F64(_in.unprovokedCostFactor);
+  _writer.F64(_in.settledFadeFactor);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Pil::Conflict& _out)
+{
+  _out.unprovokedCostFactor = _reader.F64();
+  _out.settledFadeFactor = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Pil& _in)
+{
+  CookFields(_writer, _in.battle);
+  CookFields(_writer, _in.conflict);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Pil& _out)
+{
+  ReadCookedFields(_reader, _out.battle);
+  ReadCookedFields(_reader, _out.conflict);
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp& _in)
 {
   CookFields(_writer, _in.mvp);
   CookFields(_writer, _in.ref);
   CookFields(_writer, _in.wld);
+  CookFields(_writer, _in.pil);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp& _out)
@@ -4868,6 +4946,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp& _out)
   ReadCookedFields(_reader, _out.mvp);
   ReadCookedFields(_reader, _out.ref);
   ReadCookedFields(_reader, _out.wld);
+  ReadCookedFields(_reader, _out.pil);
 }
 
 // Cooks a tuning.mvp record into the bytes of its entry (DAT-014): what the content build writes.

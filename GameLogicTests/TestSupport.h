@@ -69,6 +69,8 @@ private:
 // _site (MVP-012), on TestRecords.
 inline constexpr Neuron::SipHashKey SETTLED_TEST_KEY{0x5e771e5e771e5e77, 0x0a0b0c0d0e0f1011};
 [[nodiscard]] std::unique_ptr<Species::WorldSimulation> SettledWorld(std::uint8_t _site = 2);
+// M3's valley (ADR-157): the steward's settlement at site 2 and three AI settlements at the other sites.
+[[nodiscard]] std::unique_ptr<Species::WorldSimulation> ValleyWorld(const Neuron::SipHashKey& _key = SETTLED_TEST_KEY);
 
 // Runs each job on a thread of its own and returns once all have ended, so that a test's independent runs share the
 // runner's cores. A job asserts nothing: it computes, and the test asserts on what the jobs computed. An exception a

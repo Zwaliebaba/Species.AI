@@ -75,6 +75,9 @@
     <ClInclude Include="RegionSimulation.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="Relations.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="RouteStore.h">
       <Filter>Space</Filter>
     </ClInclude>
@@ -207,6 +210,9 @@
       <Filter>Server</Filter>
     </ClCompile>
     <ClCompile Include="RegionSimulation.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Relations.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="RouteStore.cpp">

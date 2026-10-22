@@ -5647,6 +5647,71 @@
       "additionalProperties": false,
       "x-species-type": "object",
       "x-species-presence": "required"
+    },
+    "pil": {
+      "type": "object",
+      "description": "the pil.* keys",
+      "properties": {
+        "battle": {
+          "type": "object",
+          "description": "the pil.battle.* keys",
+          "properties": {
+            "min_respite_minutes": {
+              "type": "number",
+              "description": "pil.battle.min_respite_minutes (PIL-087)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "minutes from a battle's start",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "min_respite_minutes"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "conflict": {
+          "type": "object",
+          "description": "the pil.conflict.* keys",
+          "properties": {
+            "unprovoked_cost_factor": {
+              "type": "number",
+              "description": "pil.conflict.unprovoked_cost_factor (PIL-063)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times the attack cost",
+              "x-species-presence": "required"
+            },
+            "settled_fade_factor": {
+              "type": "number",
+              "description": "pil.conflict.settled_fade_factor (PIL-122)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times the fading rate of a grievance whose cause remains",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "unprovoked_cost_factor",
+            "settled_fade_factor"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        }
+      },
+      "required": [
+        "battle",
+        "conflict"
+      ],
+      "additionalProperties": false,
+      "x-species-type": "object",
+      "x-species-presence": "required"
     }
   },
   "required": [
@@ -5654,7 +5719,8 @@
     "version",
     "mvp",
     "ref",
-    "wld"
+    "wld",
+    "pil"
   ],
   "additionalProperties": false
 }

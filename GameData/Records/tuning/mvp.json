@@ -1,7 +1,7 @@
 {
   "schema": "tuning.mvp",
   "version": "1.0",
-  "notes": "The MVP tuning values of Design/implementation/mvp_scope.md table 3, and the reference keys the simulation reads (ADR-079, MVP-099), each at its reference value. All provisional (MVP-003).",
+  "notes": "The MVP tuning values of Design/implementation/mvp_scope.md table 3, the reference keys the simulation reads (ADR-079, MVP-099), each at its reference value, and the pillar keys its rules cite. All provisional (MVP-003).",
   "mvp": {
     "pace": {
       "session_factor": 24
@@ -661,6 +661,15 @@
     },
     "travel": {
       "valley_path_factor": 1.05
+    }
+  },
+  "pil": {
+    "battle": {
+      "min_respite_minutes": 2
+    },
+    "conflict": {
+      "unprovoked_cost_factor": 2,
+      "settled_fade_factor": 4
     }
   }
 }
