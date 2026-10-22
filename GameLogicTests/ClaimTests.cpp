@@ -214,7 +214,8 @@ public:
     Assert::IsTrue(ClaimOf(region, id) != nullptr && !Species::MovedTo(region, Species::CLAIM_AREA_CENTRAL), L"not before its wait");
     const std::size_t heldBefore = Species::HeldResourceSites(region, *region.SettlementAt(0)).size();
     Species::AdvanceClaims(region, made + WaitTicks());
-    Assert::IsTrue(region.Claims().empty() && Species::HolderOf(region, Species::CLAIM_AREA_CENTRAL) == std::optional<std::uint8_t>(0),
+    Assert::IsTrue(region.Claims().empty() &&
+                     Species::HolderOf(region, Species::CLAIM_AREA_CENTRAL) == std::optional<std::uint8_t>(std::uint8_t{0}),
                    L"held after its wait");
     ExpectEqual(static_cast<std::int64_t>(heldBefore) + 1,
                 static_cast<std::int64_t>(Species::HeldResourceSites(region, *region.SettlementAt(0)).size()),
@@ -245,7 +246,7 @@ public:
     Assert::IsFalse(Species::WithdrawClaim(region, 1, second).has_value(), L"withdrawn");
     Assert::IsTrue(ClaimOf(region, first)->state == Species::ClaimState::Waiting, L"the other waits again");
     Species::AdvanceClaims(region, region.NextTick() + WaitTicks());
-    Assert::IsTrue(Species::HolderOf(region, Species::CLAIM_AREA_CENTRAL) == std::optional<std::uint8_t>(0), L"and holds it");
+    Assert::IsTrue(Species::HolderOf(region, Species::CLAIM_AREA_CENTRAL) == std::optional<std::uint8_t>(std::uint8_t{0}), L"and holds it");
 
     const std::unique_ptr<Species::WorldSimulation> battled = ValleyWorld();
     Species::RegionSimulation& other = battled->Region(0);
@@ -258,7 +259,8 @@ public:
     Assert::IsTrue(other.Claims().size() == 2 && other.Claims()[0].state == Species::ClaimState::Contested,
                    L"a lost battle ends its claim");
     Species::SettleClaim(other, bold, true);
-    Assert::IsTrue(other.Claims().empty() && Species::HolderOf(other, Species::CLAIM_AREA_CENTRAL) == std::optional<std::uint8_t>(0),
+    Assert::IsTrue(other.Claims().empty() &&
+                     Species::HolderOf(other, Species::CLAIM_AREA_CENTRAL) == std::optional<std::uint8_t>(std::uint8_t{0}),
                    L"a won battle settles every claim on it");
   }
 

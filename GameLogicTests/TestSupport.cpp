@@ -267,7 +267,7 @@ std::unique_ptr<Species::WorldSimulation> ValleyWorld(const Neuron::SipHashKey& 
   Species::WorldStart start;
   start.key = _key;
   start.seed = ValleyTerrain()->seed;
-  start.stewardSite = 2;
+  start.stewardSite = std::uint8_t{2};
   start.aiSettlements = 3;
   return Species::StartWorld(start, ValleyTerrain(), CommittedTuning(), &TestRecords());
 }

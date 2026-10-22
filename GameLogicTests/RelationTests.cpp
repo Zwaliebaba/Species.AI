@@ -133,7 +133,7 @@ public:
     const double gain = tuning.mvp.grievance.pressurePerHour / SECONDS_PER_HOUR;
     const double fade = 1.0 - std::pow(KeptOverAnHour(), 1.0 / SECONDS_PER_HOUR);
     const double expected = gain * (1.0 - fade) * (1.0 - KeptOverAnHour()) / fade;
-    for (const auto& [holder, against] : {std::pair<std::uint8_t, std::uint8_t>{2, 3}, std::pair<std::uint8_t, std::uint8_t>{3, 2}})
+    for (const auto& [holder, against] : {std::pair{std::uint8_t{2}, std::uint8_t{3}}, std::pair{std::uint8_t{3}, std::uint8_t{2}}})
     {
       const Species::Grievance* pressure = Find(region, holder, against, Species::GrievanceCause::Pressure);
       Assert::IsTrue(pressure != nullptr && !pressure->causeRemoved, L"a pressure grievance each way, its cause in place");
