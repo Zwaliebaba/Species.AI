@@ -128,7 +128,7 @@ Settlement* SettlementOfTeam(RegionSimulation& _region, std::uint8_t _team)
   return found == _region.Settlements().end() ? nullptr : &*found;
 }
 
-TaskCounts CountTasks(const RegionSimulation& _region, const Settlement& _settlement, StableId _except)
+TaskCounts CountTasks(const RegionSimulation& _region, const Settlement& _settlement, StableId _searching)
 {
   TaskCounts counts;
   if (_settlement.team >= _region.TeamCount())
@@ -143,7 +143,7 @@ TaskCounts CountTasks(const RegionSimulation& _region, const Settlement& _settle
       continue;
     }
     const Figure& figure = figures.At(slot);
-    if (figure.kind != FigureKind::Worker || figure.dead || figure.leaderId != 0 || figure.id == _except)
+    if (figure.kind != FigureKind::Worker || figure.dead || figure.leaderId != 0 || figure.id == _searching)
     {
       continue;
     }

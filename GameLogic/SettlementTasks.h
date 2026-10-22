@@ -24,7 +24,7 @@ struct TaskCounts
   std::uint32_t workers = 0;
 };
 
-[[nodiscard]] TaskCounts CountTasks(const RegionSimulation& _region, const Settlement& _settlement, StableId _except);
+[[nodiscard]] TaskCounts CountTasks(const RegionSimulation& _region, const Settlement& _settlement, StableId _searching);
 
 // MVP-031, MVP-033, MVP-036 and MVP-037 (ADR-135): the settlement's part of an idle Worker's task search, after its
 // orders and its Leader search. Each task that has work keeps its share, and the shares of those with none go to the
