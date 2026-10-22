@@ -1508,6 +1508,15 @@ struct TuningPresentation
       double alpha = 0.0;
     };
 
+    struct ViewFog
+    {
+      // mvp.view_fog.strength, in alpha
+      double strength = 0.0;
+
+      // mvp.view_fog.edge_width, in wu
+      double edgeWidth = 0.0;
+    };
+
     Light light;
     Cursor cursor;
     Selection selection;
@@ -1517,6 +1526,7 @@ struct TuningPresentation
     Worker worker;
     TerritoryLine territoryLine;
     BorderMark borderMark;
+    ViewFog viewFog;
   };
 
   struct Dbg
@@ -3318,6 +3328,13 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Mvp::ViewFog& _out)
+{
+  _out.strength = _reader.Decimal(_object, "strength", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.edgeWidth = _reader.Decimal(_object, "edge_width", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Mvp& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "light"), _out.light);
@@ -3329,6 +3346,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "worker"), _out.worker);
   ReadFields(_reader, _reader.Object(_object, "territory_line"), _out.territoryLine);
   ReadFields(_reader, _reader.Object(_object, "border_mark"), _out.borderMark);
+  ReadFields(_reader, _reader.Object(_object, "view_fog"), _out.viewFog);
   _reader.Close(_object);
 }
 
@@ -5689,6 +5707,18 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.alpha = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Mvp::ViewFog& _in)
+{
+  _writer.F64(_in.strength);
+  _writer.F64(_in.edgeWidth);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Mvp::ViewFog& _out)
+{
+  _out.strength = _reader.F64();
+  _out.edgeWidth = _reader.F64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Mvp& _in)
 {
   CookFields(_writer, _in.light);
@@ -5700,6 +5730,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::
   CookFields(_writer, _in.worker);
   CookFields(_writer, _in.territoryLine);
   CookFields(_writer, _in.borderMark);
+  CookFields(_writer, _in.viewFog);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Mvp& _out)
@@ -5713,6 +5744,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.worker);
   ReadCookedFields(_reader, _out.territoryLine);
   ReadCookedFields(_reader, _out.borderMark);
+  ReadCookedFields(_reader, _out.viewFog);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Dbg::Overlay::WarningRgb& _in)

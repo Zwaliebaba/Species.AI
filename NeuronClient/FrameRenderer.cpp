@@ -781,7 +781,8 @@ void RecordWorldFrame(RendererState& _state, const FrameInputs& _inputs, ID3D12R
   }
   {
     ENGINE_PROFILE_SCOPE("render.frame_constants");
-    const FrameConstants constants = MakeFrameConstants(frame, _inputs.camera, look, _inputs.presentationSeconds, size);
+    FrameConstants constants = MakeFrameConstants(frame, _inputs.camera, look, _inputs.presentationSeconds, size);
+    _state.world->MaskConstants(frame.camera, constants.viewMask, constants.viewMaskIndex); // ADR-144
     commands->SetGraphicsRootConstantBufferView(ROOT_FRAME_CONSTANTS, _state.ring->Write(constants));
     // Every root parameter holds a value before the first draw; the passes replace them as they need.
     commands->SetGraphicsRootConstantBufferView(ROOT_PASS_CONSTANTS, _state.ring->Write(PassConstants{}));
@@ -1080,6 +1081,7 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
   const std::uint64_t frameId = state.frameNumber + 1;
   const std::uint64_t completed = frameId > FRAMES_IN_FLIGHT ? frameId - FRAMES_IN_FLIGHT : 0;
   state.world->Show(_inputs.world);
+  state.world->ShowMask(_inputs.viewMask);
   state.overlay->Show(_inputs.overlayFont);
   state.badgeText->Show(_inputs.badgeFont);
   state.cursor->Show(_inputs.cursorImages);

@@ -292,9 +292,23 @@ struct OverlayQuad
 };
 
 /// What one frame shows (RND-053's snapshot as M1 has it).
+/// A mask over the ground (ADR-144): a square raster of cells from its corner of least x and z, z outer and x inner, each
+/// 255 where the ground is clear and 0 where it lies under black fog of fogStrength, with the values between at the
+/// edge. The terrain and the sea read it; nothing else is fogged by it.
+struct ViewMask
+{
+  double originX = 0.0;
+  double originZ = 0.0;
+  double cellSize = 1.0;
+  std::uint32_t side = 0;
+  std::vector<std::uint8_t> cells;
+  float fogStrength = 1.0f; // 1: black
+};
+
 struct FrameInputs
 {
   std::shared_ptr<const WorldScene> world;             // none: no world is drawn, and the frame is the background
+  std::shared_ptr<const ViewMask> viewMask;            // ADR-144: none, and the ground is clear everywhere
   std::array<float, 3> background{0.05f, 0.0f, 0.05f}; // rnd.frame.clear_color_no_match: the frame without a world
   CameraPose camera;
   double presentationSeconds = 0.0; // the smooth presentation time (R-SIM-570)

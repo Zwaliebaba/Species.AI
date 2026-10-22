@@ -268,6 +268,8 @@ void WorldPresentation::Update(const ClientSession& _session)
   m_effects.Clear();
   m_structures.Clear();
   m_territories.Clear();
+  m_viewMask.reset();
+  m_viewMaskRevision.reset();
   if (terrain == nullptr)
   {
     m_world.reset();
@@ -340,6 +342,16 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
       m_effects.ApplyRecoil(figures, effectsView);
     }
     inputs.sceneTextures = m_sceneTextures;
+    // M2 task T13 (WLD-244, ADR-144): the black fog outside the steward's areas, its mask built again when they change,
+    // and no Worker, Leader, orb or structure drawn outside them.
+    const StewardAreas& areas = _view.Areas();
+    if (m_viewMaskRevision != areas.Revision())
+    {
+      m_viewMask = BuildViewMask(areas, *m_desc.presentation);
+      m_viewMaskRevision = areas.Revision();
+    }
+    inputs.viewMask = m_viewMask;
+    EraseOutside(areas, figures, [](const InterpolatedFigure& _figure) { return _figure.position; });
     // ADR-127: the selection discs under the Worker layers of pass 7d.
     AppendSelectionDiscs(figures, m_terrain->field, crowd, *m_desc.presentation, inputs.quadBatches);
     AppendWorkerBatches(figures, m_terrain->field, crowd, *m_desc.presentation, *m_desc.tuning, inputs.quadBatches);
@@ -361,14 +373,18 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     {
       const StructureView structureView{*displayTick, m_desc.tuning->ref.sim.tickPeriod, m_presentationClock.RealSeconds()};
       StructureDraws structures;
-      m_structures.Draw(InterpolateStructures(_session.Replica(), fraction), *m_sceneMeshes, m_terrain->field, structureView, structures);
+      std::vector<InterpolatedStructure> shown = InterpolateStructures(_session.Replica(), fraction);
+      EraseOutside(areas, shown, [](const InterpolatedStructure& _structure) { return PositionOf(_structure.state.position); });
+      m_structures.Draw(shown, *m_sceneMeshes, m_terrain->field, structureView, structures);
       inputs.sceneMeshes = m_sceneMeshes;
       inputs.meshBatches.insert(inputs.meshBatches.end(), std::make_move_iterator(structures.meshes.begin()),
                                 std::make_move_iterator(structures.meshes.end()));
       inputs.quadBatches.insert(inputs.quadBatches.end(), std::make_move_iterator(structures.quads.begin()),
                                 std::make_move_iterator(structures.quads.end()));
     }
-    AppendOrbBatches(InterpolateOrbs(_session.Replica(), fraction), *m_desc.presentation, inputs.quadBatches);
+    std::vector<InterpolatedOrb> orbs = InterpolateOrbs(_session.Replica(), fraction);
+    EraseOutside(areas, orbs, [](const InterpolatedOrb& _orb) { return _orb.position; });
+    AppendOrbBatches(orbs, *m_desc.presentation, inputs.quadBatches);
     // M2 task T13 (ADR-143): every settlement's territory line and the border areas' spots, in pass 10a.
     m_territories.Update(_session.Replica().Latest(), *m_terrain);
     m_territories.AppendBatches(inputs.quadBatches);

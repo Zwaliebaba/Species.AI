@@ -265,4 +265,99 @@ std::optional<StewardAreas::Point> StewardAreas::Nearest(double _x, double _z) c
   return nearest;
 }
 
+std::shared_ptr<const Neuron::ViewMask> BuildViewMask(const StewardAreas& _areas, const TuningPresentation& _presentation)
+{
+  if (!_areas.Known())
+  {
+    return nullptr;
+  }
+  constexpr std::uint32_t LEVELS = 255;
+  auto mask = std::make_shared<Neuron::ViewMask>();
+  const StewardAreas::Point origin = _areas.Origin();
+  mask->originX = origin.x;
+  mask->originZ = origin.z;
+  mask->cellSize = _areas.CellSize();
+  const auto side = static_cast<std::size_t>(_areas.CellsPerAxis());
+  mask->side = static_cast<std::uint32_t>(side);
+  mask->fogStrength = static_cast<float>(_presentation.mvp.viewFog.strength);
+  mask->cells.assign(side * side, 0);
+  // The box of the areas' cells; nothing beyond it, widened by the blur, is clear.
+  const std::vector<std::uint8_t>& inside = _areas.InsideCells();
+  std::size_t minX = side;
+  std::size_t minZ = side;
+  std::size_t maxX = 0;
+  std::size_t maxZ = 0;
+  for (std::size_t z = 0; z < side; ++z)
+  {
+    for (std::size_t x = 0; x < side; ++x)
+    {
+      if (inside[z * side + x] != 0)
+      {
+        minX = std::min(minX, x);
+        maxX = std::max(maxX, x);
+        minZ = std::min(minZ, z);
+        maxZ = std::max(maxZ, z);
+      }
+    }
+  }
+  if (minX > maxX)
+  {
+    return mask;
+  }
+  // A box blur of the edge width, the count of cells in the areas along each row's box and then along each column's,
+  // so the fog's edge is a ramp centred on the areas' edge rather than a cell's step.
+  const auto radius = static_cast<std::size_t>(std::max(0.0, std::round(_presentation.mvp.viewFog.edgeWidth / (2.0 * mask->cellSize))));
+  const std::size_t width = 2 * radius + 1;
+  const std::size_t firstX = minX > radius ? minX - radius : 0;
+  const std::size_t lastX = std::min(maxX + radius, side - 1);
+  const std::size_t firstZ = minZ > radius ? minZ - radius : 0;
+  const std::size_t lastZ = std::min(maxZ + radius, side - 1);
+  const auto count = [&](std::size_t _from, std::size_t _to, std::size_t _k, const auto& _at)
+  {
+    std::uint32_t sum = 0;
+    for (std::size_t j = (_k > _from + radius ? _k - radius : _from); j <= std::min(_k + radius, _to); ++j)
+    {
+      sum += _at(j);
+    }
+    return sum;
+  };
+  std::vector<std::uint32_t> rows(side * side, 0);
+  for (std::size_t z = minZ; z <= maxZ; ++z)
+  {
+    const auto at = [&](std::size_t _x) { return std::uint32_t{inside[z * side + _x]}; };
+    std::uint32_t sum = count(firstX, lastX, firstX, at);
+    for (std::size_t x = firstX; x <= lastX; ++x)
+    {
+      rows[z * side + x] = sum;
+      if (x + radius + 1 <= lastX)
+      {
+        sum += at(x + radius + 1);
+      }
+      if (x >= firstX + radius)
+      {
+        sum -= at(x - radius);
+      }
+    }
+  }
+  const std::uint32_t area = static_cast<std::uint32_t>(width * width);
+  for (std::size_t x = firstX; x <= lastX; ++x)
+  {
+    const auto at = [&](std::size_t _z) { return rows[_z * side + x]; };
+    std::uint32_t sum = count(firstZ, lastZ, firstZ, at);
+    for (std::size_t z = firstZ; z <= lastZ; ++z)
+    {
+      mask->cells[z * side + x] = static_cast<std::uint8_t>((sum * LEVELS + area / 2) / area);
+      if (z + radius + 1 <= lastZ)
+      {
+        sum += at(z + radius + 1);
+      }
+      if (z >= firstZ + radius)
+      {
+        sum -= at(z - radius);
+      }
+    }
+  }
+  return mask;
+}
+
 } // namespace Species

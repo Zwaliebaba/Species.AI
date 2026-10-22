@@ -16,5 +16,6 @@ SeaFlatVertex main(SeaInput _input)
   vertex.tile = across * g_pass.values[0].x + g_frame.time.x * g_pass.values[0].y;
   vertex.mask = float2(across.x, 1.0 - across.y);
   vertex.depth = dot(position, g_frame.cameraFront.xyz);
+  vertex.ground = position.xz;
   return vertex;
 }

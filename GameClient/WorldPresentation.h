@@ -89,6 +89,8 @@ private:
   EffectsLook m_effects;
   StructureLook m_structures;
   TerritoryLook m_territories;
+  std::shared_ptr<const Neuron::ViewMask> m_viewMask; // ADR-144: the fog's mask of the steward's areas
+  std::optional<std::uint64_t> m_viewMaskRevision;    // the areas' revision it was built from
   Neuron::FrameProfile m_profile;
   Neuron::PresentationClock m_presentationClock;
   bool m_overlayShown = false;

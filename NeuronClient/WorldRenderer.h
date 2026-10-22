@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace Neuron
@@ -15,8 +16,8 @@ namespace Neuron
 
 /// The world frame's surfaces on the GPU (RND-130 to RND-155, ADR-011, ADR-115): the terrain's chunks, the sea's flat
 /// layer and shore mask, the textures the passes read, and each frame's wave mesh and sky instances in the upload ring.
-/// It keeps the world it shows, so that after a device rebuild the same surfaces are uploaded again (RND-034). Every
-/// call is made from the frame thread.
+/// It keeps the world it shows, so that after a device rebuild the same surfaces are uploaded again (RND-034). It also
+/// holds the view mask the terrain and the sea read (ADR-144). Every call is made from the frame thread.
 class WorldRenderer
 {
 public:
@@ -33,6 +34,12 @@ public:
   void UploadAgain();
   // A world is shown and every upload of it has completed.
   [[nodiscard]] bool Ready() const;
+
+  // ADR-144: before the factory's frame, the view mask _mask, uploaded once into a texture of its own. The mask shown
+  // stays until the new one's upload completes, so a frame never waits for it; none clears it at once.
+  void ShowMask(const std::shared_ptr<const ViewMask>& _mask);
+  // The mask shown as the frame constants place it (FrameConstants::viewMask, viewMaskIndex), about the camera _camera.
+  void MaskConstants(const Vec3& _camera, Float4& _place, Uint4& _index) const;
 
   struct PassContext
   {
@@ -62,8 +69,18 @@ private:
     std::vector<GpuSubresourceData> data;
   };
 
+  /// A view mask in its texture, and the fence after which the texture holds it; none while its upload waits.
+  struct MaskTexture
+  {
+    std::shared_ptr<const ViewMask> mask;
+    std::optional<GpuResourceId> texture;
+    std::optional<std::uint64_t> fence;
+  };
+
   void Release();
   void Create();
+  void ReleaseMask(MaskTexture& _mask);
+  void PumpMask();
   void Schedule(GpuResourceId _resource, std::vector<GpuSubresourceData> _data);
   void Pump();
   [[nodiscard]] D3D12_VERTEX_BUFFER_VIEW BufferView(GpuResourceId _resource, std::uint64_t _bytes, std::uint32_t _stride) const;
@@ -85,6 +102,9 @@ private:
   bool m_failed = false; // a surface could not be created: the world is never drawn
   std::vector<SeaVertex> m_waves;
   std::uint32_t m_drawnChunks = 0;
+  MaskTexture m_shownMask;                       // the mask the frames read
+  MaskTexture m_nextMask;                        // the mask wanted, until its upload completes
+  std::shared_ptr<const ViewMask> m_refusedMask; // a mask whose texture the factory refused, which is not asked again
 };
 
 } // namespace Neuron

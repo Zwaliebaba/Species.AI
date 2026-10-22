@@ -229,7 +229,7 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-084** (MUST) A settlement's territory is drawn as a glowing line on the terrain in its Cladan's colour (`fx.beam_long`), border areas and claims are marked on it, and the area outside the steward's areas lies under black fog with the public layer drawn on it (WLD-244). How wide and bright the line is and how the border areas are marked is DEC-1002.
 
-> **Amendment 2026-10-22 (O90; M2 task T13, [ADR-143](../ADR/ADR-143-territory-lines-and-border-areas-drawn-at-m2.md); DEC-1002, Open).** Every settlement's territory line runs halfway between the cells it holds and the cells it does not, as the replica holds them, at a lift over the terrain. Each valley border area's halfway line and edge are marked with spots of `fx.particle_dot`, in a neutral colour while no holder is replicated (WLD-063); the holders and the claims are marked with M3's claims (MVP-053). The line's width, lift and alpha and the spots' size, spacing and colour are the provisional presentation keys of table 3, which the owner tunes after T13's run (DEC-1002).
+> **Amendment 2026-10-22 (O90; M2 task T13, [ADR-143](../ADR/ADR-143-territory-lines-and-border-areas-drawn-at-m2.md); DEC-1002, Open).** Every settlement's territory line runs halfway between the cells it holds and the cells it does not, as the replica holds them, at a lift over the terrain. Each valley border area's halfway line and edge are marked with spots of `fx.particle_dot`, in a neutral colour while no holder is replicated (WLD-063); the holders and the claims are marked with M3's claims (MVP-053). Outside the steward's areas the terrain and the sea are darkened towards black by a mask of the areas, and no Worker, Leader, orb or structure is drawn there ([ADR-144](../ADR/ADR-144-black-fog-outside-the-stewards-areas-at-m2.md)); the lines and spots lie over the fog. The line's width, lift and alpha, the spots' size, spacing and colour and the fog's strength and edge are the provisional presentation keys of table 3, which the owner tunes after T13's run (DEC-1002).
 
 **MVP-085** (MUST) The client draws at `mvp.client.fps_target` (60 frames per second) at 1,920 × 1,080 with up to `mvp.client.figures_max` (1,500) figures on screen on the reference test machine (DBG-209), which is the owner's PC, pinned at M1 (O58), and draws the replica one tick behind with interpolation (ADR-084).
 
@@ -443,6 +443,8 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.border_mark.spacing` | 24 | wu between spots | — | provisional | MVP-084 | — |
 | `mvp.border_mark.color` | 0.55, 0.55, 0.55 | linear RGB | — | provisional | MVP-084 | Neutral while no holder is replicated (WLD-063) |
 | `mvp.border_mark.alpha` | 0.6 | alpha, 0 to 1 | — | provisional | MVP-084 | — |
+| `mvp.view_fog.strength` | 0.85 | share darkened, 0 to 1 | — | provisional | MVP-084 | The black fog outside the steward's areas (WLD-244, ADR-144); the terrain and the sea keep the rest of their colour |
+| `mvp.view_fog.edge_width` | 64 | wu | — | provisional | MVP-084 | The fog's edge, a ramp centred on the areas' edge |
 
 *Table 3 — The tuning values of the MVP.*
 

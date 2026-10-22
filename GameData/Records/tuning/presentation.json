@@ -561,6 +561,10 @@
         "b": 0.55
       },
       "alpha": 0.6
+    },
+    "view_fog": {
+      "strength": 0.85,
+      "edge_width": 64
     }
   },
   "dbg": {

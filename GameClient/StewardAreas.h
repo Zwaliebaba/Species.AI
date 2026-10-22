@@ -4,8 +4,11 @@
 #include "ReplicatedState.h"
 #include "StateReplica.h"
 #include "TuningMvp.h"
+#include "TuningPresentation.h"
+#include "WorldScene.h"
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <vector>
 
@@ -68,6 +71,11 @@ public:
   {
     return m_cellsPerAxis;
   }
+  // The cells of the areas, z outer and x inner: 1 for a cell in them.
+  [[nodiscard]] const std::vector<std::uint8_t>& InsideCells() const noexcept
+  {
+    return m_inside;
+  }
 
 private:
   [[nodiscard]] std::int32_t CellOf(double _coordinate, double _origin) const noexcept;
@@ -85,5 +93,24 @@ private:
   std::int32_t m_padCells = 0; // the cells the raster reaches beyond the region's square on each side
   std::uint64_t m_revision = 0;
 };
+
+// ADR-144: the view mask of the areas for the terrain and the sea, 255 in them and 0 outside, its edge softened over
+// mvp.view_fog.edge_width, at the fog's strength mvp.view_fog.strength; none while they are unknown.
+[[nodiscard]] std::shared_ptr<const Neuron::ViewMask> BuildViewMask(const StewardAreas& _areas, const TuningPresentation& _presentation);
+
+// WLD-244 (ADR-144): leaves out of _objects each one whose place, _placeOf(object), lies outside the areas, which draw no
+// Worker or structure; nothing while the areas are unknown.
+template <class T, class PlaceOf> void EraseOutside(const StewardAreas& _areas, std::vector<T>& _objects, PlaceOf _placeOf)
+{
+  if (_areas.Known())
+  {
+    std::erase_if(_objects,
+                  [&](const T& _object)
+                  {
+                    const Neuron::Vec3 place = _placeOf(_object);
+                    return !_areas.Contains(place.x, place.z);
+                  });
+  }
+}
 
 } // namespace Species

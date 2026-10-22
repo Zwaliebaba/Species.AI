@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "ReplicaTiming.h"
 #include "StewardAreas.h"
 #include "TestSupport.h"
 
@@ -171,6 +172,53 @@ public:
     Assert::IsTrue(nearest.has_value());
     Assert::AreEqual(x + MARGIN, nearest.value_or(Species::StewardAreas::Point{}).x, 1e-9, L"the cell 50 cells along x");
     Assert::AreEqual(z, nearest.value_or(Species::StewardAreas::Point{}).z, 1e-9);
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr144TheViewMaskIsTheAreasWithASoftEdge)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"WLD-244")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr144TheViewMaskIsTheAreasWithASoftEdge)
+  {
+    Species::StewardAreas areas;
+    Assert::IsTrue(Species::BuildViewMask(areas, CommittedPresentation()) == nullptr, L"no mask while the areas are unknown");
+    areas.Update(Replica(TEAM, {{100, 120}}), TEAM, Layout(), CommittedTuning());
+    const auto mask = Species::BuildViewMask(areas, CommittedPresentation());
+    Assert::IsTrue(mask != nullptr);
+    if (mask == nullptr)
+    {
+      return;
+    }
+    Assert::AreEqual(static_cast<std::uint32_t>(areas.CellsPerAxis()), mask->side);
+    Assert::AreEqual(areas.Origin().x, mask->originX);
+    Assert::AreEqual(CELL, mask->cellSize);
+    Assert::AreEqual(static_cast<float>(CommittedPresentation().mvp.viewFog.strength), mask->fogStrength);
+    // The territory cell is at (100 + 50, 120 + 50) of the widened raster; the areas end 50 cells from it along x.
+    const auto side = static_cast<std::size_t>(areas.CellsPerAxis());
+    const auto at = [&](std::size_t _x, std::size_t _z) { return mask->cells[(120 + 50 + _z) * side + 100 + 50 + _x]; };
+    Assert::AreEqual(255, static_cast<int>(at(0, 0)), L"clear inside");
+    Assert::AreEqual(0, static_cast<int>(at(55, 0)), L"black outside");
+    // mvp.view_fog.edge_width of 64 wu is a box of 5 cells: the areas' last cell along x holds 11 of its 25.
+    Assert::AreEqual(112, static_cast<int>(at(50, 0)), L"the edge is a ramp");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Wld244NoWorkerIsDrawnOutsideTheAreas)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"WLD-244")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Wld244NoWorkerIsDrawnOutsideTheAreas)
+  {
+    std::vector<Species::InterpolatedFigure> figures(3);
+    figures[0].position = {CenterX(100), 0.0, CenterZ(120)};
+    figures[1].position = {CenterX(100) + 2 * MARGIN, 0.0, CenterZ(120)};
+    figures[2].position = {CenterX(100) - MARGIN / 2.0, 0.0, CenterZ(120)};
+    const auto placeOf = [](const Species::InterpolatedFigure& _figure) { return _figure.position; };
+    Species::StewardAreas areas;
+    std::vector<Species::InterpolatedFigure> all = figures;
+    Species::EraseOutside(areas, all, placeOf);
+    Assert::AreEqual(std::size_t{3}, all.size(), L"unknown areas, as in the sandbox, keep every figure");
+    areas.Update(Replica(TEAM, {{100, 120}}), TEAM, Layout(), CommittedTuning());
+    Species::EraseOutside(areas, figures, placeOf);
+    Assert::AreEqual(std::size_t{2}, figures.size());
+    Assert::AreEqual(CenterX(100) - MARGIN / 2.0, figures.back().position.x, 1e-9, L"the one outside went");
   }
 };
 

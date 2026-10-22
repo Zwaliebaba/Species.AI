@@ -60,6 +60,10 @@ struct FrameConstants
   Float4 fillColor;
   Float4 time;     // x: the smooth presentation time in seconds (R-SIM-570)
   Float4 viewport; // x, y: the render size in pixels; z, w: their reciprocals
+  // ADR-144: the view mask over the ground. x, y: its corner of least x and z relative to the camera, in wu; z: 1 ÷ its
+  // side in wu; w: the black fog's strength where the mask is 0, and 0 with no mask, when the ground is clear everywhere.
+  Float4 viewMask;
+  Uint4 viewMaskIndex; // x: the mask's heap index, DEFAULT_RESOURCE_INDEX with none
 };
 
 // ADR-006: the per-pass constants, register b1, which a pass fills as it needs.
@@ -166,7 +170,7 @@ LAYOUT_CONSTANT QUAD_BLEND_LEFT = 1;
 LAYOUT_CONSTANT TRIANGLE_SCREEN_SPACE = 1;
 
 #if !defined(__HLSL_VERSION)
-static_assert(sizeof(FrameConstants) == 3 * sizeof(Float4x4) + 9 * sizeof(Float4));
+static_assert(sizeof(FrameConstants) == 3 * sizeof(Float4x4) + 10 * sizeof(Float4) + sizeof(Uint4));
 static_assert(sizeof(PassConstants) == 8 * sizeof(Float4));
 static_assert(sizeof(DrawConstants) == sizeof(Float3x4) + sizeof(Float4) + sizeof(Uint4));
 static_assert(sizeof(SkyLayerInstance) == 4 * sizeof(Float4) + sizeof(Uint4));
