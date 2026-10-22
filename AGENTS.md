@@ -4,17 +4,17 @@ Operating instructions for every agent (and human) writing code in this reposito
 
 This repository is a greenfield C++23 game and a hobby project with one developer: a Direct3D 12 game built on Windows with MSVC. This file is about **how code is written here** — naming, layout, build settings and the standing rules of the codebase. It is not the design: what the game *is* belongs in `Design/` and `vision/` (see "What is authoritative" below).
 
-**There is little code yet.** This repository holds this file, the root configuration files, `.gitignore`, `.github/`, the design material, the owner's first content in `GameData/` and the code of the MVP's milestone M0 in the projects of ADR-090:
+**There is little code yet.** This repository holds this file, the root configuration files, `.gitignore`, `.github/`, the design material, the owner's first content in `GameData/` and the code of the MVP's milestones M0 and M1 and of M2 so far, in the projects of ADR-090:
 - NeuronCore: the platform basics and diagnostics (clock, threads, files, the fatal path, logging, checks and PIX markers), the transport and message codec, the keyed draws, the authoring parser and record reader, the cooked formats and the loose-content mount, the start-up options, and the console stop;
-- NeuronClient: the window, the Direct3D 12 device and the swap chain, with the GPU resource factory's interface;
+- NeuronClient: the window, the Direct3D 12 device and the swap chain, the GPU resource factory, the frame renderer and its passes, the text system, the UI core and the input router;
 - NeuronServer: the server host, its tick loop, command queue and workers, and the snapshot store;
-- GameShared, GameLogic and GameClient: the game's first message, the world's owners, the world server, the integrated server, the state hash, the world snapshot and the client session;
+- GameShared, GameLogic and GameClient: the game's messages and records, the world's owners with the battle and the settlement, the world server and its saving, the integrated server, the state hash, the world snapshot, the client session, the world's presentation, the HUD, the verbs and the front end;
 - `Species` and `SpeciesServer`: the client's and the headless server's composition roots;
 - a test project for each library, and the schema generator, the content build, the mesh kit, the performance tool and the frame bench under `Tools/`.
 
 Nothing below is a target to migrate towards; it describes the code as it must be written from the first line. There is no legacy here and nothing is grandfathered, so a whole-tree run of any code checker comes back clean by conformance.
 
-**What the tree holds today (2026-10-20):**
+**What the tree holds today (2026-10-22):**
 
 | Path | What it is |
 |---|---|

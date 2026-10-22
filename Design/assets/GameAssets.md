@@ -1101,6 +1101,8 @@ Species draws its text from **bitmap faces drawn for Species** (O56), and since 
 
 **Amendment 2026-10-22 (owner decision O92, [ADR-147](../ADR/ADR-147-the-directwrite-text-system-at-m2.md)).** GameFont and EditorFont are retired. DirectWrite draws all of Species' text in Windows fonts, so no font file is delivered and no license is needed. The game's text is in Bahnschrift, with Segoe UI for what Bahnschrift lacks, and the development tools' text is in Cascadia Mono, or Consolas where that is not installed. Text is rasterized in grayscale at its exact final size. The table above lists the rows as they now stand. The glyph sheet, the glyph table, the coverage of the glyph tables and the whole-number sizes that the paragraphs above describe all lapse, together with the naming rule of §2.2 for a face's sheet and table, the drawn-face format of §2.4 and the placeholder kind "generated block font" of §2.6. The coverage is now the chain's, which the content build checks against the en-US table, and the sizes are those of UI-171.
 
+**Amendment 2026-10-22 (owner decision O97).** The likeness review of PIL-027 still covers the game face: at M2's end it judges the game's text as Bahnschrift sets it, at the weight and width DEC-1003 holds, against the reference game's lettering.
+
 ## 18 String table
 
 All player-facing text is new, written in plain functional English and keyed by Species string ids (`ui.lobby.ready`, `mode.flag_chain.objective`). No reference text is copied. The first table sizes the work from the reference text categories, without the six display-option and six sound-option entries of settings that Species does not offer (R-META-414, R-META-429); §18.1 lists the string ids that the documents cite.

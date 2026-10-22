@@ -218,7 +218,7 @@ MVP-087, from M3: one sample group per sound, the smallest that suits it. The wa
 **What the owner approves:**
 
 - **The generated glyph tables** of the two faces (§6), and **the recipes of the generated assets**: the panel palette, the mesh-kit silhouettes of the Wellspring, the dwelling, the storehouse, the resource sites and the turret (approved as drafted, O87), and the synthesiser patches.
-- **The likeness review** of PIL-027, by the owner or counsel outside the clean room: the Worker and Leader silhouettes at the end of M1, the game face, the structure silhouettes and the HUD layout at the end of M2 (O70), and the HUD's additions at the end of M3, each result recorded in the manifest.
+- **The likeness review** of PIL-027, by the owner or counsel outside the clean room: the Worker and Leader silhouettes at the end of M1, the game face (the game's text in Bahnschrift since O92, O97), the structure silhouettes and the HUD layout at the end of M2 (O70), and the HUD's additions at the end of M3, each result recorded in the manifest.
 - **Each asset before it replaces its placeholder**, as the art lead signs off a new Species design ([art and audio briefs](../assets/art_and_audio_briefs.md) §2.8).
 - **Each third-party package that a tool project uses**, recorded in an ADR with its licence (`AGENTS.md` §2).
 

@@ -1,6 +1,6 @@
 # M2 plan
 
-> Status: Draft; written ahead of M2 (O80), with the owner's answers to its questions (O81, O84), and Final when M1 meets its exit criteria (MVP-002) · Related: [MVP scope](mvp_scope.md) §3 (M2) · [M1 plan](m1_plan.md) (how phase A and phase B work) · [M0 plan](m0_plan.md) §2 (how the work flows) · [MVP assets](mvp_assets.md) · [M3 plan](m3_plan.md) · [owner decisions](../decisions/owner_decisions.md) (O43, O70, O77, O80, O81, O84, O86, O87, O88) · [ADR-080](../ADR/ADR-080-per-tick-budgets-and-population-caps.md) · [ADR-099](../ADR/ADR-099-world-snapshots.md) · [ADR-108](../ADR/ADR-108-content-build-loose-content-and-cooked-formats.md)
+> Status: Draft; written ahead of M2 (O80), with the owner's answers to its questions (O81, O84), and Final when M1 meets its exit criteria (MVP-002) · Related: [MVP scope](mvp_scope.md) §3 (M2) · [M1 plan](m1_plan.md) (how phase A and phase B work) · [M0 plan](m0_plan.md) §2 (how the work flows) · [MVP assets](mvp_assets.md) · [M3 plan](m3_plan.md) · [owner decisions](../decisions/owner_decisions.md) (O43, O70, O77, O80, O81, O84, O86, O87, O88, O93 to O97) · [ADR-080](../ADR/ADR-080-per-tick-budgets-and-population-caps.md) · [ADR-099](../ADR/ADR-099-world-snapshots.md) · [ADR-108](../ADR/ADR-108-content-build-loose-content-and-cooked-formats.md)
 
 ## 1 Purpose
 
@@ -37,7 +37,7 @@ Besides the scope's row, the ADRs and M1 put these items at M2. M2 builds what e
 | [ADR-029](../ADR/ADR-029-input-event-model-and-binding-contract.md), [ADR-119](../ADR/ADR-119-input-camera-picking-and-cursor-at-m1.md) | the rest of the input router, which comes with the menus and the settings store: the name table, its parser and writer, the layout and user layers, repeat, latch and the other binding operators, the input mode and idle time | T15 |
 | [ADR-116](../ADR/ADR-116-presentation-tuning-record.md), [ADR-123](../ADR/ADR-123-weapons-effects-and-particles-at-m1.md) | the display options read from the settings store instead of named constants, and DEC-964's reduced-motion and reduced-flash scales applied | T15 |
 | [ADR-034](../ADR/ADR-034-text-rendering-and-glyph-cache.md) | the first text of DirectWrite, in the HUD and the front end, in Windows fonts at the final size (O92, [ADR-147](../ADR/ADR-147-the-directwrite-text-system-at-m2.md)); the ADR is confirmed at M3 | T14 |
-| PIL-027 | the likeness review of the game face, the structure silhouettes and the HUD layout (O70, [MVP assets](mvp_assets.md) §4) | T19 |
+| PIL-027 | the likeness review of the game face (its text in Bahnschrift, O97), the structure silhouettes and the HUD layout (O70, [MVP assets](mvp_assets.md) §4) | T19 |
 
 *Table 1 — What the ADRs and M1 put at M2, and the task that produces each.*
 
@@ -96,6 +96,8 @@ It runs on a corpus of seeds, because every site has the same distances (WLD-042
 
 **The owner's confirmation** is the owner's own play from 20 Workers to the plateau, across sessions that save and continue (MVP-075), with the same statistics recorded by the server and compared with the scene's.
 
+> **Amendment 2026-10-22 (M2 task T19; [ADR-156](../ADR/ADR-156-the-settlement-drawn-at-its-plateau-and-the-owners-growth-run.md)).** `Build\RunPerformance.py --saved-world <world folder>` reads the owner's world's statistics from its newest snapshot and judges them with the growth scene's own code, into `playtests/M2.md`. A gap still open less than an hour after a step that brought the settlement within 95 % of its largest Worker count is reported as open, since it may be the plateau's quiet hour. A saved world does not record when its territory reached a halfway line, so the owner's run does not judge M3's contact hour. The performance script's rendered scene grows seed 1's settlement to `mvp.settlement.population_max` and draws it with the HUD (`settlement-drawn`).
+
 ## 6 Tasks
 
 The tasks land in this order on M2's pull request, as M1's did (O71), each as one or more changes that cite the requirements they implement. A task that adds a tuning value adds its key to the MVP scope's table 3 and to the tuning record in the same change (MVP-003, MVP-099); a task that makes an engineering decision records it as an ADR, numbered on from the highest existing id, in the same change (`AGENTS.md` §6).
@@ -137,6 +139,7 @@ M2's world is the MVP's valley with one settlement in it: the steward's, at the 
 - **Saved versions.** M1 never saves, so no M1 world needs migrating. T9's ADR states the first saved version, whether a version raised during M2's development may refuse its predecessors with a message, and from which build every raise carries its migration (MVP-095).
 - **The camera's keys.** At M1's T17 run the owner found the settlement view's camera unlike the design, which has W move it forward, S back, the mouse tilt and bank it and Shift speed it up, and left it for later (2026-10-21). ADR-119 binds those keys as table 2.1-A states them (R-CTRL-031: `action.camera.pan_forward`, `pan_back`, `fast_pan` and `aim`), so what differs is what the camera does with them, not the bindings. T13, which bounds the camera by the steward's areas, starts by reproducing what the owner saw and records the answer before it changes the camera. *Amendment 2026-10-22 (O90, [ADR-142](../ADR/ADR-142-the-camera-flies-along-the-view-within-the-stewards-areas.md)): the owner answered that the forward and back keys fly the camera along its view while the side keys pan it level, and that the pointer stays free with the view turning towards it, as R-CTRL-471 step 8 has it; T13's first step builds that.*
 - **The pointer over the HUD.** T17's row names `cursor.pointer` for it, but UI-465 and the asset's manifest row make that art the arrows of HUD lists and scroll bars, and the pointer over the HUD `cursor.world`. T17 follows UI-465 and draws the priorities' arrows with `cursor.pointer` ([ADR-153](../ADR/ADR-153-the-settlement-verbs-at-m2.md)).
+- **Leaving a world.** At M2 the client has the front end and the world, and returns to the front end only by quitting and starting again; ADR-083's Leaving state and a loading page wait ([ADR-155](../ADR/ADR-155-the-front-end-and-saved-worlds-at-m2.md)).
 - **No demolition.** MVP-101 gives the steward no demolish verb, although MVP-073 names demolition among the deputy's refusals; M2 builds none.
 - **Numerics.** Simulation state stays binary64 (ADR-081) and the cooked records' binary32 socket transforms are widened on load; one build reproduces a run, and an ARM64 and an x64 build give different hashes, as at M1.
 - **CI builds `Debug|x64` only** (`AGENTS.md` §6). The `Release|ARM64` runs of T10 and T19 are the owner's, as is a Release build of any change that could break only under optimisation.
@@ -165,5 +168,5 @@ The model of §3 raised four more questions. The owner took this plan's recommen
 - **Draws the M2 hand-made files** ([MVP assets](mvp_assets.md) §4): the carried-load overlay, the placement cursor and its shadow, the pointer arrow, the turret icon, the check-box tick and the M2 HUD icons; and **writes the en-US strings** (O91) that the HUD and the front end use.
 - **Runs the checklists** of T2 and T11 to T19 on Debug builds, and the performance script at T10 and T19 on `Release|ARM64` with the 1,920 × 1,080, 60 Hz display (O69, O75).
 - **Plays the growth run** of §5 to the plateau and the ten minutes of watching at T19, and writes the session log's three lines in `playtests/M2.md` after each session, in the format of the playtest README.
-- **Reviews the likeness** of the game face, the structure silhouettes and the HUD layout (PIL-027, O70), with the result recorded in the manifest.
+- **Reviews the likeness** of the game face (its text in Bahnschrift, O97), the structure silhouettes and the HUD layout (PIL-027, O70), with the result recorded in the manifest.
 - **Prepares M3:** the nine relations and run icons, the Worker death group (recorded, or a synthesised stand-in), the synthesiser patches of the first sound set, and the answers the [M3 plan](m3_plan.md) §7 asks for at M2's exit.
