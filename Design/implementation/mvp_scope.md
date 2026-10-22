@@ -130,6 +130,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-041** (MUST) An expedition is a Leader, the Workers following it (R-UNIT-096) and up to `mvp.expedition.size_max` (200) Workers in all. The steward forms one by promoting a Worker (R-UNIT-152) and drawing Workers from guard duty to it, and sends it by declaring an attack on a target: a raid on a settlement, or a claim battle at a claimed area (MVP-053).
 
+> **Amendment 2026-10-22 (O98).** An expedition is up to three Leaders, each with the Workers following it and its reference formation of `ref.sim.team.formation_size_upgrade` (90, R-UNIT-162), and up to `mvp.expedition.size_max` (200) Workers in all. The steward promotes each Leader and draws Workers from guard duty to them, and orders and declares the three as one; an AI settlement fields its expeditions the same way.
+
 **MVP-042** (MUST) Declaring an attack pays `mvp.conflict.attack_cost_ru` (300 ru), or `pil.conflict.unprovoked_cost_factor` (2) times as much for an unprovoked attack (PIL-063), warns the target at once, and holds the expedition at the target's territory edge until `mvp.conflict.warning_minutes` (5 minutes of world time) have passed since the warning (WLD-102, with the duration narrowed). No attack may be declared on a settlement under a respite (MVP-047).
 
 **MVP-043** (MUST) A battle starts when a hostile expedition, released by the warning hold, enters the target's territory or the claimed area (PIL-041). The battlefield is the target's territory and `wld.view.settlement_margin` (800 wu) around it, or the claimed area and the same margin.
@@ -527,6 +529,7 @@ The first guesses were set against two targets, which M2 and Playtest 1 check. O
 | PIL-125 | Renown and the epilogue in the MVP | O53 |
 | PIL-068, WLD-004, WLD-120 to WLD-127 | One region, three AI settlements, no free site | One steward, no late joiner |
 | PIL-110 (Table 10, stage 1) | The MVP is stage 1's smallest world game in one region, with renown and a lifetime added | O50, O53 |
+| WLD-244 | An expedition outside a battle is followed by markers of its Leaders over the fog and at the screen's edge, not in the strategic view; no figure is drawn and the settlement view is not widened | The MVP builds no strategic view (§5.1); O98 |
 | O42 | Versioned snapshots instead of the journaled store | A solo world loses at most a minute; the store follows when worlds are shared |
 
 *Table 4 — The Final requirements that the MVP narrows.*
