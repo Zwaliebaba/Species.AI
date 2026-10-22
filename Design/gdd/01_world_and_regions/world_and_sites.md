@@ -173,6 +173,8 @@ The world serves pillar 3 through geography: every conflict has a place on the m
 
 > **Amendment 2026-10-21 (M2 task T4; DEC-1000, Open; [ADR-130](../../ADR/ADR-130-settlements-structures-and-resource-sites-at-m2.md)).** On M1's terrain the ninth home resource site's place on the diagonal lies in the sea or on a slope on 93 of seeds 1 to 100, where the island falls towards the region's corner, so it does not lie in the home cell as this requirement states. Until DEC-1000 is decided it stands at the same `wld.resource.extra_radius` at the bearing `wld.resource.extra_bearing` (+84°) from the outward diagonal, where every site of those seeds is walkable and at least 200 wu from every other resource site, its border areas and the sea. The rings' bearings are 180° divided by their counts, symmetric about the diagonal, as stated above.
 
+> **Amendment 2026-10-22 (O87; DEC-1000 resolved).** The owner chose the place at +84°: at a site without a crossing the ninth home resource site stands at `wld.resource.extra_radius` at the bearing `wld.resource.extra_bearing` from the outward diagonal, not on it, and `wld.resource.extra_bearing` is final. The other ten keep their places, and every site keeps the same gathering distances.
+
 **WLD-083** (MUST) A central resource site stands on a level area of radius 120 wu at the centre of its valley, 1,471 wu from each of the valley's four site centres, and every territory stops `wld.resource.wild_clearance` (150 wu) short of it (WLD-060), so it is always wilderness: land that no settlement's territory covers. Each of the valley's four settlements reaches it in 1.4 minutes at 20 wu/s; B2 and B5 say how a settlement gathers there and claims it, within WLD-086.
 
 **WLD-084** (MUST) Resource sites are world data: they keep their places for the life of the world. B2 may let a resource site deplete and renew in place; no rule of the world game creates, moves or removes a resource site during play, so that the equality of WLD-081 and WLD-085 holds at every point of a world's life, for late joiners as for the first stewards (PIL-015).
@@ -381,7 +383,7 @@ Values that this file cites and does not own keep their owners' keys: `pil.world
 | `wld.resource.inner_radius` | 350 | wu from the site centre | provisional | WLD-082 | — | B2's economy model; gathering trips in a settlement's first hour |
 | `wld.resource.outer_radius` | 800 | wu from the site centre | provisional | WLD-082 | — | B2's economy model |
 | `wld.resource.extra_radius` | 1,050 | wu from the site centre, for a site without a crossing | provisional | WLD-082 | — | B2's economy model |
-| `wld.resource.extra_bearing` | 84 | degrees from the outward diagonal, for the ninth home resource site | provisional | WLD-082 | DEC-1000 | Seeds 1 to 100 on M1's terrain (DEC-1000); the owner decides the place |
+| `wld.resource.extra_bearing` | 84 | degrees from the outward diagonal, for the ninth home resource site | final | WLD-082 | DEC-1000 | — |
 | `wld.resource.home_yield_tolerance` | 5 | % between the home yields of two sites | provisional | WLD-081 | — | B2's weights; the leader model of PIL-028 |
 | `wld.resource.border_factor` | 1 | × a home resource site of the same kind | provisional | WLD-081 | — | B2 and B5: whether border areas are worth a claim |
 | `wld.resource.crossing_factor` | 1 | × a home resource site of the same kind | provisional | WLD-081 | — | B2 and B5: whether crossings are worth a claim |

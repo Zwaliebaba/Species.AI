@@ -4,7 +4,7 @@
 
 Entries live in the files listed below; add a decision to the file of its area, in the format of [CONVENTIONS](../CONVENTIONS.md) §7, and add its row to the index of that file and to the index below. **Open** decisions state the behaviour the documents specify now (the reference default), so implementation never blocks on them. **Resolved** decisions state the fixed rule. **Dropped** entries record out-of-scope items and what Species does instead. Decisions marked "Decide by: design phase" are answered by the Species design phase.
 
-Totals: **303** decisions: 117 Open, 158 Resolved, 28 Dropped.
+Totals: **303** decisions: 116 Open, 159 Resolved, 28 Dropped.
 
 The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner_decisions.md](owner_decisions.md).
 
@@ -343,4 +343,4 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 | DEC-970 | [System summary and crash-context records](engine_gap_rules.md#dec-970-system-summary-and-crash-context-records) | Resolved | engine_gap_rules.md |
 | DEC-971 | [Reference test machine and minimum-specification hardware](engine_gap_rules.md#dec-971-reference-test-machine-and-minimum-specification-hardware) | Resolved | engine_gap_rules.md |
 | DEC-972 | [What the cheats-used marker suppresses](engine_gap_rules.md#dec-972-what-the-cheats-used-marker-suppresses) | Open | engine_gap_rules.md |
-| DEC-1000 | [The place of the ninth home resource site on the MVP's terrain](species_design.md#dec-1000-the-place-of-the-ninth-home-resource-site-on-the-mvps-terrain) | Open | species_design.md |
+| DEC-1000 | [The place of the ninth home resource site on the MVP's terrain](species_design.md#dec-1000-the-place-of-the-ninth-home-resource-site-on-the-mvps-terrain) | Resolved | species_design.md |

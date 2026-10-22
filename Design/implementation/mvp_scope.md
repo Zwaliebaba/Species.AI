@@ -49,6 +49,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 > **Amendment 2026-10-21 (M2 task T4; DEC-1000, Open).** M1's terrain puts the ninth home resource site's place on WLD-082's diagonal in the sea or on a slope on 93 of seeds 1 to 100; until the owner decides DEC-1000, it stands at the same distance at +84° from the diagonal, and every site keeps its 11 units.
 
+> **Amendment 2026-10-22 (O87; DEC-1000 resolved).** The owner chose the place at +84° from the diagonal: every site keeps its 11 units at the same distances, and every seed's valley stays as M1 measured it.
+
 **MVP-011** (MUST) Terrain is generated at world creation by the hybrid generator of WLD-160 with one world template, one biome (WLD-180) and one lighting preset, with no set pieces and no bridges, and is immutable for the life of the world. Of the region checks of WLD-163, the checks that apply to one region without a crossing are run, and a failed check re-rolls the seed. The server and the client generate the terrain from the seed with the same terrain library (TER-009) and compare a terrain hash at connection; a client whose hash differs refuses the world with a message.
 
 **MVP-012** (MUST) Settlement sites follow WLD-040 to WLD-044 as written: each is a levelled plateau with its core of radius `wld.site.core_radius` (400 wu) around its centre (WLD-041) and its home cell (WLD-061). The steward's settlement takes the site the steward picks at world creation, and the AI settlements take the other three.

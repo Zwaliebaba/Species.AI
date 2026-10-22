@@ -1,6 +1,6 @@
 # M2 plan
 
-> Status: Draft; written ahead of M2 (O80), with the owner's answers to its questions (O81, O84), and Final when M1 meets its exit criteria (MVP-002) · Related: [MVP scope](mvp_scope.md) §3 (M2) · [M1 plan](m1_plan.md) (how phase A and phase B work) · [M0 plan](m0_plan.md) §2 (how the work flows) · [MVP assets](mvp_assets.md) · [M3 plan](m3_plan.md) · [owner decisions](../decisions/owner_decisions.md) (O43, O70, O77, O80, O81, O84, O86) · [ADR-080](../ADR/ADR-080-per-tick-budgets-and-population-caps.md) · [ADR-099](../ADR/ADR-099-world-snapshots.md) · [ADR-108](../ADR/ADR-108-content-build-loose-content-and-cooked-formats.md)
+> Status: Draft; written ahead of M2 (O80), with the owner's answers to its questions (O81, O84), and Final when M1 meets its exit criteria (MVP-002) · Related: [MVP scope](mvp_scope.md) §3 (M2) · [M1 plan](m1_plan.md) (how phase A and phase B work) · [M0 plan](m0_plan.md) §2 (how the work flows) · [MVP assets](mvp_assets.md) · [M3 plan](m3_plan.md) · [owner decisions](../decisions/owner_decisions.md) (O43, O70, O77, O80, O81, O84, O86, O87) · [ADR-080](../ADR/ADR-080-per-tick-budgets-and-population-caps.md) · [ADR-099](../ADR/ADR-099-world-snapshots.md) · [ADR-108](../ADR/ADR-108-content-build-loose-content-and-cooked-formats.md)
 
 ## 1 Purpose
 
@@ -71,12 +71,12 @@ Three consequences follow for this plan. The tuning is a task of its own (T10), 
 ## 4 The order of M2
 
 **The settlement comes first, headless and tuned, and the look follows.** As at M1, a measurement moves values that the later work is built around: here the shape of a settlement over a run, which sets the HUD's figures, how many structures the view draws and when contact arrives at M3. So the tasks fall in two phases, as M1's did:
-- **Phase A, T2 to T10**, builds the settlement as a headless simulation. CI tests every task, and none needs a run checklist except T2, whose silhouettes the owner approves. It ends with T10, the scripted steward's growth scene and the tuning, and with the owner's run of the performance script on `Release|ARM64`.
+- **Phase A, T2 to T10**, builds the settlement as a headless simulation. CI tests every task, and none needs a run checklist except T2, whose silhouettes the owner approves (approved as drafted, O87). It ends with T10, the scripted steward's growth scene and the tuning, and with the owner's run of the performance script on `Release|ARM64`.
 - **Phase B, T11 to T19**, makes the settlement visible and playable. Every task states a run checklist (M0 plan §2) and is not merged before the owner's answer.
 
 T2 and T3 come first because the simulation reads the structures' ports and footprints from the cooked simulation data records (AST-043, AST-046), never from a render mesh (ADR-021); until they land, T4 and T5 test on records written by the tests. T14 and T15, the UI framework and the settings store, depend on nothing in phase A and may run beside it, as M1's content build did (O73), each pushed with its run checklist; the HUD, the verbs and the front end (T16 to T18) follow T10, so that the tuning settles the figures they show.
 
-**Phase A starts before M1's exit (O86).** Phase A's tasks land on M2's own pull request, stacked on M1's T17c, while M1's last exit evidence is still to come; phase B waits for M1's exit, and this plan stays a Draft until then. The recipes of T2 are drafted by the implementing session from the [MVP assets](mvp_assets.md) and approved or redesigned by the owner before T2 merges.
+**Phase A starts before M1's exit (O86).** Phase A's tasks land on M2's own pull request, stacked on M1's T17c, while M1's last exit evidence is still to come; phase B waits for M1's exit, and this plan stays a Draft until then. The recipes of T2 are drafted by the implementing session from the [MVP assets](mvp_assets.md) and approved or redesigned by the owner before T2 merges. The owner approved them as drafted on 2026-10-22, after the phase's pull request merged (O87, `playtests/M2.md`).
 
 ## 5 The scripted steward and the growth measurement
 
@@ -158,7 +158,7 @@ The model of §3 raised four more questions. The owner took this plan's recommen
 
 ## 10 What the owner does during M2
 
-- **Approves or redesigns the structures' drafted recipes and their silhouettes** at T2 (§9, question 3; O86), and chooses the panel palette for T16 (RND-403).
+- **Approves or redesigns the structures' drafted recipes and their silhouettes** at T2 (§9, question 3; O86), which the owner approved as drafted (O87), and chooses the panel palette for T16 (RND-403).
 - **Draws the M2 hand-made files** ([MVP assets](mvp_assets.md) §4): the carried-load overlay, the placement cursor and its shadow, the pointer arrow, the turret icon, the check-box tick and the M2 HUD icons; and **writes the en-GB strings** that the HUD and the front end use.
 - **Runs the checklists** of T2 and T11 to T19 on Debug builds, and the performance script at T10 and T19 on `Release|ARM64` with the 1,920 × 1,080, 60 Hz display (O69, O75).
 - **Plays the growth run** of §5 to the plateau and the ten minutes of watching at T19, and writes the session log's three lines in `playtests/M2.md` after each session, in the format of the playtest README.
