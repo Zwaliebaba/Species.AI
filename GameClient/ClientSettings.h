@@ -1,7 +1,5 @@
 #pragma once
 
-#include "AppWindow.h"
-#include "FrameRenderer.h"
 #include "SettingsStore.h"
 #include "WindowGeometry.h"
 
@@ -62,12 +60,21 @@ struct DisplayOptions
 };
 
 [[nodiscard]] DisplayOptions DisplayOptionsOf(const Neuron::SettingsStore& _store);
-// The renderer's settings of RND-442 in _config: the present mode, the frame-rate cap, low latency and anti-aliasing.
-void ApplyRenderSettings(const Neuron::SettingsStore& _store, Neuron::RenderConfig& _config);
-[[nodiscard]] Neuron::WindowMode WindowModeOf(const Neuron::SettingsStore& _store);
-// RND-021: the stored render size, or {0, 0} while none is stored, which takes the desktop size (PLT-112).
-[[nodiscard]] Neuron::SizePx RenderSizeOf(const Neuron::SettingsStore& _store);
+
+/// The window's and the renderer's settings of RND-442, which the composition root gives the window and the renderer's
+/// `RenderConfig`. Plain values, so that the game's library includes no window header (ADR-075, ADR-150).
+struct RenderSettings
+{
+  bool windowed = false;                   // render.window_mode
+  Neuron::SizePx renderSize;               // RND-021: {0, 0} while none is stored, which takes the desktop size (PLT-112)
+  bool uncapped = false;                   // render.present_mode
+  std::optional<float> frameRateCap;       // render.frame_rate_cap, frames per second; none for 0
+  bool lowLatency = false;                 // render.low_latency
+  std::uint32_t sceneSamplesPreferred = 4; // render.anti_aliasing: 1, 2 or 4
+};
+
+[[nodiscard]] RenderSettings RenderSettingsOf(const Neuron::SettingsStore& _store);
 // PLT-080, R-META-424: the renderer's start-up writes the display settings it started with back to the store.
-void WriteBackDisplay(Neuron::SettingsStore& _store, Neuron::WindowMode _mode, Neuron::SizePx _renderSize);
+void WriteBackDisplay(Neuron::SettingsStore& _store, bool _windowed, Neuron::SizePx _renderSize);
 
 } // namespace Species

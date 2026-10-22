@@ -362,15 +362,20 @@ int Run()
   }
   // PLT-030: the one settings store, before the window, the renderer and every reader, and destroyed after them.
   Neuron::SettingsStore settings(ClientSettingSpecs(), settingsFile);
-  ApplyRenderSettings(settings, renderConfig);
+  const RenderSettings stored = RenderSettingsOf(settings);
+  renderConfig.presentMode = stored.uncapped ? Neuron::PresentMode::Uncapped : Neuron::PresentMode::VerticalSync;
+  renderConfig.frameRateCap = stored.frameRateCap;
+  renderConfig.lowLatency = stored.lowLatency;
+  renderConfig.sceneSamplesPreferred = stored.sceneSamplesPreferred;
+  const Neuron::WindowMode storedMode = stored.windowed ? Neuron::WindowMode::Windowed : Neuron::WindowMode::BorderlessFullScreen;
 
   bool checkPassed = true;
   {
-    Presentation presentation = CreatePresentation(clock, renderConfig, WindowModeOf(settings), RenderSizeOf(settings));
+    Presentation presentation = CreatePresentation(clock, renderConfig, storedMode, stored.renderSize);
     // PLT-080, R-META-424: the renderer's start-up writes the display settings it started with back, and saves them on a
     // first run or when they changed.
-    const bool displayChanged = WindowModeOf(settings) != presentation.used.mode || RenderSizeOf(settings) != presentation.used.renderSize;
-    WriteBackDisplay(settings, presentation.used.mode, presentation.used.renderSize);
+    const bool displayChanged = storedMode != presentation.used.mode || stored.renderSize != presentation.used.renderSize;
+    WriteBackDisplay(settings, presentation.used.mode == Neuron::WindowMode::Windowed, presentation.used.renderSize);
     if (!settings.LoadedFromFile() || displayChanged)
     {
       // A failed save keeps the previous file and is logged by the store (PLT-081); R-META-407's dialog waits for the UI's

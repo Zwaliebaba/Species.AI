@@ -31,16 +31,13 @@ public:
     }
     // RND-442's defaults, read back as the renderer and the presentation take them.
     const Neuron::SettingsStore store(specs, std::nullopt);
-    Neuron::RenderConfig config;
-    config.sceneSamplesPreferred = 0;
-    config.lowLatency = true;
-    Species::ApplyRenderSettings(store, config);
-    Assert::IsTrue(config.presentMode == Neuron::PresentMode::VerticalSync, L"vertical sync");
-    Assert::IsFalse(config.frameRateCap.has_value(), L"no frame-rate cap");
-    Assert::IsFalse(config.lowLatency, L"low latency off");
-    ExpectEqual(4, config.sceneSamplesPreferred, L"4x anti-aliasing");
-    Assert::IsTrue(Species::WindowModeOf(store) == Neuron::WindowMode::BorderlessFullScreen, L"borderless full screen");
-    Assert::IsTrue(Species::RenderSizeOf(store) == Neuron::SizePx{}, L"no render size until the first start writes one");
+    const Species::RenderSettings render = Species::RenderSettingsOf(store);
+    Assert::IsFalse(render.uncapped, L"vertical sync");
+    Assert::IsFalse(render.frameRateCap.has_value(), L"no frame-rate cap");
+    Assert::IsFalse(render.lowLatency, L"low latency off");
+    ExpectEqual(4, render.sceneSamplesPreferred, L"4x anti-aliasing");
+    Assert::IsFalse(render.windowed, L"borderless full screen");
+    Assert::IsTrue(render.renderSize == Neuron::SizePx{}, L"no render size until the first start writes one");
     const Species::DisplayOptions display = Species::DisplayOptionsOf(store);
     ExpectEqual(1, display.seaDetail, L"sea detail 1");
     ExpectEqual(1, display.entityDetail, L"entity detail 1");
@@ -57,9 +54,9 @@ public:
   TEST_METHOD(Plt080TheStartWritesTheDisplaySettingsBack)
   {
     Neuron::SettingsStore store(Species::ClientSettingSpecs(), std::nullopt);
-    Species::WriteBackDisplay(store, Neuron::WindowMode::Windowed, {1600, 900});
-    Assert::IsTrue(Species::WindowModeOf(store) == Neuron::WindowMode::Windowed, L"the mode it started in");
-    Assert::IsTrue((Species::RenderSizeOf(store) == Neuron::SizePx{1600, 900}), L"and its render size");
+    Species::WriteBackDisplay(store, true, {1600, 900});
+    Assert::IsTrue(Species::RenderSettingsOf(store).windowed, L"the mode it started in");
+    Assert::IsTrue((Species::RenderSettingsOf(store).renderSize == Neuron::SizePx{1600, 900}), L"and its render size");
 
     // Each option the renderer reads, set as the options page will set it.
     Assert::IsTrue(store.Set(Species::SETTING_ANTI_ALIASING, std::string(Species::ANTI_ALIASING_OFF)), L"anti-aliasing off");
@@ -67,11 +64,10 @@ public:
     Assert::IsTrue(store.Set(Species::SETTING_PRESENT_MODE, std::string(Species::PRESENT_MODE_UNCAPPED)), L"uncapped");
     Assert::IsTrue(store.Set(Species::SETTING_REDUCED_MOTION, true), L"reduced motion");
     Assert::IsFalse(store.Set(Species::SETTING_ENTITY_DETAIL, std::int64_t{4}), L"no entity detail above 3");
-    Neuron::RenderConfig config;
-    Species::ApplyRenderSettings(store, config);
-    ExpectEqual(1, config.sceneSamplesPreferred, L"one scene sample");
-    Assert::IsTrue(config.frameRateCap == 90.0f, L"the cap");
-    Assert::IsTrue(config.presentMode == Neuron::PresentMode::Uncapped, L"the present mode");
+    const Species::RenderSettings render = Species::RenderSettingsOf(store);
+    ExpectEqual(1, render.sceneSamplesPreferred, L"one scene sample");
+    Assert::IsTrue(render.frameRateCap == 90.0f, L"the cap");
+    Assert::IsTrue(render.uncapped, L"the present mode");
     Assert::IsTrue(Species::DisplayOptionsOf(store).reducedMotion, L"the presentation's option");
   }
 };

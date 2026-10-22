@@ -94,39 +94,30 @@ DisplayOptions DisplayOptionsOf(const Neuron::SettingsStore& _store)
   return options;
 }
 
-void ApplyRenderSettings(const Neuron::SettingsStore& _store, Neuron::RenderConfig& _config)
+RenderSettings RenderSettingsOf(const Neuron::SettingsStore& _store)
 {
-  _config.presentMode =
-    _store.GetText(SETTING_PRESENT_MODE) == PRESENT_MODE_UNCAPPED ? Neuron::PresentMode::Uncapped : Neuron::PresentMode::VerticalSync;
-  const std::int64_t cap = _store.GetInteger(SETTING_FRAME_RATE_CAP);
-  _config.frameRateCap = cap > 0 ? std::optional<float>(static_cast<float>(cap)) : std::nullopt;
-  _config.lowLatency = _store.GetBool(SETTING_LOW_LATENCY);
-  const std::string antiAliasing = _store.GetText(SETTING_ANTI_ALIASING);
-  _config.sceneSamplesPreferred = antiAliasing == ANTI_ALIASING_OFF ? 1u : antiAliasing == ANTI_ALIASING_2X ? 2u : 4u;
-}
-
-Neuron::WindowMode WindowModeOf(const Neuron::SettingsStore& _store)
-{
-  return _store.GetText(SETTING_WINDOW_MODE) == WINDOW_MODE_WINDOWED ? Neuron::WindowMode::Windowed
-                                                                     : Neuron::WindowMode::BorderlessFullScreen;
-}
-
-Neuron::SizePx RenderSizeOf(const Neuron::SettingsStore& _store)
-{
+  RenderSettings settings;
+  settings.windowed = _store.GetText(SETTING_WINDOW_MODE) == WINDOW_MODE_WINDOWED;
   const std::optional<Neuron::SettingValue> width = _store.Get(SETTING_RENDER_WIDTH);
   const std::optional<Neuron::SettingValue> height = _store.Get(SETTING_RENDER_HEIGHT);
   const auto* widthPixels = width.has_value() ? std::get_if<std::int64_t>(&*width) : nullptr;
   const auto* heightPixels = height.has_value() ? std::get_if<std::int64_t>(&*height) : nullptr;
-  if (widthPixels == nullptr || heightPixels == nullptr)
+  if (widthPixels != nullptr && heightPixels != nullptr)
   {
-    return {};
+    settings.renderSize = {static_cast<std::uint32_t>(*widthPixels), static_cast<std::uint32_t>(*heightPixels)};
   }
-  return {static_cast<std::uint32_t>(*widthPixels), static_cast<std::uint32_t>(*heightPixels)};
+  settings.uncapped = _store.GetText(SETTING_PRESENT_MODE) == PRESENT_MODE_UNCAPPED;
+  const std::int64_t cap = _store.GetInteger(SETTING_FRAME_RATE_CAP);
+  settings.frameRateCap = cap > 0 ? std::optional<float>(static_cast<float>(cap)) : std::nullopt;
+  settings.lowLatency = _store.GetBool(SETTING_LOW_LATENCY);
+  const std::string antiAliasing = _store.GetText(SETTING_ANTI_ALIASING);
+  settings.sceneSamplesPreferred = antiAliasing == ANTI_ALIASING_OFF ? 1u : antiAliasing == ANTI_ALIASING_2X ? 2u : 4u;
+  return settings;
 }
 
-void WriteBackDisplay(Neuron::SettingsStore& _store, Neuron::WindowMode _mode, Neuron::SizePx _renderSize)
+void WriteBackDisplay(Neuron::SettingsStore& _store, bool _windowed, Neuron::SizePx _renderSize)
 {
-  _store.Set(SETTING_WINDOW_MODE, std::string(_mode == Neuron::WindowMode::Windowed ? WINDOW_MODE_WINDOWED : WINDOW_MODE_BORDERLESS));
+  _store.Set(SETTING_WINDOW_MODE, std::string(_windowed ? WINDOW_MODE_WINDOWED : WINDOW_MODE_BORDERLESS));
   if (_renderSize.width > 0 && _renderSize.height > 0)
   {
     _store.Set(SETTING_RENDER_WIDTH, static_cast<std::int64_t>(_renderSize.width));

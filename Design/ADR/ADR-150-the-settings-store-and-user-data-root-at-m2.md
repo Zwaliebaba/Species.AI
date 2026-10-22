@@ -86,7 +86,7 @@ Chosen option: 1.
   The enumerators' spellings are this ADR's too, since table 3.1-A names the values but not their text.
 * **The readers** at the start:
   - **The window.** The stored mode and render size feed PLT-112's display attempts.
-  - **The renderer.** `ApplyRenderSettings` fills the present mode, the cap, low latency and the preferred scene samples of `RenderConfig`. The samples are read when the device objects are created, so a change of anti-aliasing applies at the next start.
+  - **The renderer.** `RenderSettingsOf` gives the window mode, the render size, the present mode, the cap, low latency and the preferred scene samples as plain values, which the composition root sets in the window's attempts and `RenderConfig`, so that GameClient includes no window header. The samples are read when the device objects are created, so a change of anti-aliasing applies at the next start.
   - **The presentation.** `DisplayOptions` carries the rest:
     - the sea detail, when a world's surfaces are built;
     - the entity detail and the Worker distance scale factor, in the crowd view, the Leaders' figures and banners, and the Leaders' picking spheres;
@@ -135,7 +135,7 @@ Chosen option: 1.
 ### 1 — the store in NeuronCore with the defaults table in the game
 
 * Good, because the platform service sits with the platform layer, and the game decides its settings.
-* Bad, because each engine reader needs a mapping in the game, as `ApplyRenderSettings` is.
+* Bad, because each engine reader needs a mapping, as the composition root maps `RenderSettings`.
 
 ### 2 — the store and its table in GameClient
 
