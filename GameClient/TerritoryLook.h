@@ -49,8 +49,8 @@ public:
     return m_spots;
   }
 
-  // Pass 10a: a segment of fx.beam_long for each piece of each line, in its Cladan's colour at the line's alpha, and a
-  // camera-facing spot of fx.particle_dot for each border spot.
+  // Pass 10a: a segment of fx.beam_long for each piece of each line, in its Cladan's colour at the line's alpha, and,
+  // while the replica holds a settlement, a camera-facing spot of fx.particle_dot for each border spot.
   void AppendBatches(std::vector<Neuron::QuadBatch>& _batches) const;
 
 private:

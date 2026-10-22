@@ -56,7 +56,7 @@ Chosen options: 1 and 4.
   - **Where.** For each valley pair, the halfway line runs between the two circles' meetings. The edge is each circle's arc inside the other disc. Spots are spaced evenly along each, no further apart than `mvp.border_mark.spacing` (24 wu). A spot inside a coast band is left out.
   - **Drawing.** In pass 10a, with `effect_additive`: a camera-facing spot of `fx.particle_dot` of half-size `mvp.border_mark.spot_size` (4 wu), lifted by its size over the terrain, added.
   - **Colour.** `mvp.border_mark.color` (0.55, 0.55, 0.55) at alpha `mvp.border_mark.alpha` (0.6), the same for every half. The holders and the claims are marked with M3's claims (MVP-053), when the server sends them.
-  - **When.** The spots are placed once per terrain.
+  - **When.** The spots are placed once per terrain, and drawn while the replica holds a settlement. The sandbox has none, so M1's scenes and the frame bench's measurement of them (ADR-126) are unchanged.
 * **The valley pairs.** `VALLEY_PAIRS` moves from GameLogic's `Territory.h` to GameShared's `RegionTerrain.h`, beside the layout whose sites it pairs, so that the client reads the same pairs. Nothing else in it changes.
 * **The texture.** `fx.beam_long` joins the scene's textures (`SceneTexture::BeamLong`, `textures/fx/beamlong`), the owner's file packed as authored.
 * **The cost**, measured on a Linux build at `-O2` of the look, on the development container's Xeon at 2.8 GHz, best of 20 runs, for a territory disc of 1,400 wu on seed 1:
@@ -81,7 +81,7 @@ Chosen options: 1 and 4.
   - one cell's line is four pieces half a cell about it, at the lift over the terrain;
   - a square of 5 by 5 cells with a free centre gives two closed lines of the expected length;
   - the line is pass 10a's depth-tested segments of `fx.beam_long` in the Cladan's colour at the line's width and alpha;
-  - a line is built again for new chunks, takes its settlement's colour, and goes with its settlement, while the border spots stay;
+  - a line is built again for new chunks, takes its settlement's colour, and goes with its settlement; the border spots stay placed, and with no settlement nothing is drawn;
   - every border spot of seed 1 lies outside the coast bands at its height, on a valley pair's halfway line inside both discs or on one circle inside the other disc, and the spots are pass 10a's depth-tested dots in the mark's size and colour.
 * The owner's run on `Debug|ARM64`, in T13's checklist.
 

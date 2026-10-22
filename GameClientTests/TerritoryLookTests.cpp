@@ -198,6 +198,9 @@ public:
     look.Update({}, SeedOne());
     Assert::IsTrue(look.Lines().empty(), L"a settlement gone takes its line");
     Assert::IsFalse(look.BorderSpots().empty(), L"the border areas stay");
+    std::vector<Neuron::QuadBatch> batches;
+    look.AppendBatches(batches);
+    Assert::IsTrue(batches.empty(), L"with no settlement, as in the sandbox, nothing is drawn");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Wld062TheBorderAreasSpotsMarkTheirLensesAndHalfwayLines)
@@ -209,7 +212,7 @@ public:
     // Every spot lies outside the coast bands, at the spot's size over the terrain, and on a valley pair's halfway line
     // inside both discs, or on one disc's circle inside the other.
     Species::TerritoryLook look(CommittedPresentation(), CommittedTuning());
-    look.Update({}, SeedOne());
+    look.Update(Replica(SITE, Square(1)), SeedOne());
     const Species::RegionLayout& layout = SeedOne().layout;
     const double radius = CommittedTuning().wld.territory.maxRadius;
     const double band = CommittedTuning().wld.region.coastBand;

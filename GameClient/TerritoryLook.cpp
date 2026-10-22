@@ -280,6 +280,12 @@ void TerritoryLook::AppendBatches(std::vector<Neuron::QuadBatch>& _batches) cons
   {
     _batches.push_back(std::move(lines));
   }
+  // The border areas are marked on the territories (MVP-084): a world with no settlement, the sandbox, draws none, so
+  // M1's scenes stay as they were measured.
+  if (m_lines.empty())
+  {
+    return;
+  }
   const TuningPresentation::Mvp::BorderMark& mark = m_presentation->mvp.borderMark;
   Neuron::QuadBatch spots{Neuron::ScenePass::Effects,
                           EFFECT_ADDITIVE,
