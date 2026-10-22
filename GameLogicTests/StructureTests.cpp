@@ -39,7 +39,6 @@ std::uint32_t FirstOf(const Species::RegionSimulation& _region, Species::Structu
     }
   }
   Assert::Fail(L"the region holds a structure of the kind");
-  return 0;
 }
 
 // The settlement's Workers' slots, in slot order.

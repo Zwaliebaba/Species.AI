@@ -403,6 +403,7 @@ public:
     std::vector<Run> runs(3);
     const std::vector<std::size_t> workerCounts{0, 1, 8};
     std::vector<std::function<void()>> jobs;
+    jobs.reserve(runs.size());
     static_cast<void>(ValleyTerrain());
     for (std::size_t index = 0; index < runs.size(); ++index)
     {
