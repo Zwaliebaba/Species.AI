@@ -18,11 +18,12 @@ Neuron::SnapshotContents SnapshotOf(const WorldSimulation& _world)
   {
     _world.Region(index).WriteState(state);
   }
+  WriteWorldRecord(state, _world.Record());
   return Neuron::SnapshotContents{WORLD_STATE_VERSION, _world.NextTick(), state.Take()};
 }
 
-std::expected<std::unique_ptr<WorldSimulation>, Neuron::SnapshotError> RestoreWorld(const Neuron::SnapshotContents& _snapshot,
-                                                                                    const TuningMvp& _tuning)
+std::expected<std::unique_ptr<WorldSimulation>, Neuron::SnapshotError>
+RestoreWorld(const Neuron::SnapshotContents& _snapshot, const TuningMvp& _tuning, const StructureRecords* _structures)
 {
   // MVP-095: each older version migrates here to the current one; the regions read their own older layout.
   if (_snapshot.stateVersion < WORLD_STATE_OLDEST_VERSION || _snapshot.stateVersion > WORLD_STATE_VERSION)
@@ -36,12 +37,15 @@ std::expected<std::unique_ptr<WorldSimulation>, Neuron::SnapshotError> RestoreWo
   desc.regionCount = static_cast<std::uint16_t>(reader.ReadBits(16));
   desc.nextTick = _snapshot.tick;
   desc.tuning = &_tuning;
+  desc.structures = _structures;
   if (reader.Failed() || desc.regionCount == 0)
   {
     return std::unexpected(Neuron::SnapshotError::MalformedState);
   }
   auto world = std::make_unique<WorldSimulation>(desc);
-  if (!world->ReadState(reader, _snapshot.stateVersion) || !reader.Finish())
+  // The world record follows the regions from version 9, the first that is saved (ADR-137).
+  if (!world->ReadState(reader, _snapshot.stateVersion) ||
+      (_snapshot.stateVersion >= WORLD_STATE_FIRST_SAVED_VERSION && !ReadWorldRecord(reader, world->Record())) || !reader.Finish())
   {
     return std::unexpected(Neuron::SnapshotError::MalformedState);
   }

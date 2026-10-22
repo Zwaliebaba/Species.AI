@@ -1,0 +1,64 @@
+#pragma once
+
+#include "Settlement.h"
+#include "Structure.h"
+#include "TuningMvp.h"
+#include "Vec3.h"
+
+#include <cstdint>
+#include <expected>
+#include <optional>
+
+namespace Species
+{
+
+class RegionSimulation;
+
+// MVP-034: a kind's cost in thousandths of a resource unit; a dwelling's grows by mvp.cost.dwelling_escalation for every
+// dwelling the settlement already has, built or queued; a storehouse costs mvp.cost.storehouse_ru and a turret
+// mvp.cost.turret_ru.
+[[nodiscard]] std::int64_t CostMilliRu(const RegionSimulation& _region, const Settlement& _settlement, StructureKind _kind);
+
+// MVP-032 and MVP-033 (ADR-132): the steward's settlement at _site places a dwelling, a storehouse or a turret (ADR-133)
+// centred at (_x, _z), facing away from its Wellspring. A placement that every check passes pays the cost from the stores, inserts the
+// structure as a construction site and queues it; returns its slot, or the first refusal.
+[[nodiscard]] std::expected<std::uint32_t, PlacementRefusal> PlaceStructure(RegionSimulation& _region, std::uint8_t _site,
+                                                                            StructureKind _kind, double _x, double _z);
+
+// MVP-032: the refusal that PlaceStructure would give, checked in the same order, or none when it would place; it
+// changes nothing, so that a scripted steward chooses a place before it sends its command (ADR-138).
+[[nodiscard]] std::optional<PlacementRefusal> CheckPlacement(const RegionSimulation& _region, std::uint8_t _site, StructureKind _kind,
+                                                             double _x, double _z);
+
+// MVP-034 and ADR-133: the settlement at _site rebuilds the destroyed turret whose site holds _slot with stable id _id:
+// it pays the site's cost, mvp.cost.turret_rebuild_fraction of mvp.cost.turret_ru, and queues it. NotBuildable when
+// there is no settlement at the site or no turret site of its own there that is not queued, then QueueFull and
+// CannotAfford as for a placement.
+[[nodiscard]] std::expected<void, PlacementRefusal> RebuildTurret(RegionSimulation& _region, std::uint8_t _site, std::uint32_t _slot,
+                                                                  StableId _id);
+
+// A construction site is in its settlement's queue (MVP-032).
+[[nodiscard]] bool Queued(const RegionSimulation& _region, const Structure& _structure);
+
+// MVP-033: the Worker-ticks a construction site needs, mvp.construction.work_per_ru Worker-seconds for each resource
+// unit of its cost at ref.sim.tick_period, rounded once.
+[[nodiscard]] std::int64_t RequiredWorkTicks(const Structure& _structure, const TuningMvp& _tuning) noexcept;
+
+// The built, active structures of _kind that belong to _team: the dwellings that raise the population limit and the
+// storehouses that add to the stores' capacity (MVP-022, MVP-034).
+[[nodiscard]] std::uint32_t ActiveCount(const RegionSimulation& _region, std::uint8_t _team, StructureKind _kind);
+
+// MVP-022: the settlement's population, its team's living figures, a Leader counting as the Worker it was, and its
+// population limit from its active dwellings.
+[[nodiscard]] std::uint32_t Population(const RegionSimulation& _region, const Settlement& _settlement);
+[[nodiscard]] std::uint32_t PopulationLimitOf(const RegionSimulation& _region, const Settlement& _settlement);
+
+// MVP-032: a disc of _radius at _point lies wholly inside the settlement's territory, its centre's cell and every cell
+// whose centre it covers held (ADR-134).
+[[nodiscard]] bool InTerritory(const RegionSimulation& _region, const Settlement& _settlement, const Neuron::Vec3& _point, double _radius);
+
+// A dwelling's and a storehouse's ports are construction ports, which a Worker mans only while it is a construction
+// site; the Wellspring's, the resource sites' and the turret's are manned always (MVP-031, MVP-033).
+[[nodiscard]] bool PortsMannable(const Structure& _structure) noexcept;
+
+} // namespace Species

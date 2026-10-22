@@ -35,6 +35,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-002** (MUST) The MVP is built in four steps whose content and exit criteria §3 states: M0 foundations, M1 battle sandbox, M2 settlement, M3 neighbours and the run (Playtest 1), and M4 away play (Playtest 2). Each milestone ends with a build the steward can run and play, and no milestone starts before the previous one meets its exit criteria.
 
+> **Amendment 2026-10-21 (O86).** M2's phase A, the headless settlement (tasks T2 to T10 of the [M2 plan](m2_plan.md)), starts before M1 meets its exit criteria, on a pull request of its own stacked on M1's last. Its phase B, which makes the settlement visible and playable, still waits for M1's exit, and the M2 plan stays a Draft until then.
+
 **MVP-003** (MUST) Every number of an MVP rule is a tuning value with a stable key in data (MVP-099); the values of §4 are first guesses that the milestones and playtests retune, and a retuned value changes the data and the table, never code.
 
 **MVP-004** (MUST) The MVP follows the Final design wherever this document does not narrow it: the pillars (PIL-010 to PIL-016), the vocabulary (PIL-090, PIL-091), the world rules of A1 for one region, and the reference mechanics it names. Where it narrows a Final requirement, §5.2 says how and why.
@@ -43,7 +45,9 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 ### 2.2 World
 
-**MVP-010** (MUST) A world is exactly one region of A1 (WLD-020 to WLD-022): a valley of side `wld.region.side` (5,120 wu) holding four settlement sites in the two-by-two pattern, its central resource site and its eight valley border areas, ringed by black-lit sea on every side. The sizing formula of WLD-004 is not used. The region has no crossing (WLD-024 needs two regions), so every site has the ninth home resource site of WLD-042 and WLD-082, and holds 11 resource units of its own (WLD-085) and at most 16 with claims (WLD-086 without the crossing border area).
+**MVP-010** (MUST) A world is exactly one region of A1 (WLD-020 to WLD-022): a valley of side `wld.region.side` (5,120 wu) holding four settlement sites in the two-by-two pattern, its central resource site and its eight valley border areas, ringed by black-lit sea on every side. The sizing formula of WLD-004 is not used. The region has no crossing (WLD-024 needs two regions), so every site has the ninth home resource site of WLD-042 and WLD-082, and holds 11 resource units of its own (WLD-085) and at most 16 with claims (WLD-086 without the crossing border area). Where that ninth home resource site stands on the MVP's terrain is DEC-1000.
+
+> **Amendment 2026-10-21 (M2 task T4; DEC-1000, Open).** M1's terrain puts the ninth home resource site's place on WLD-082's diagonal in the sea or on a slope on 93 of seeds 1 to 100; until the owner decides DEC-1000, it stands at the same distance at +84° from the diagonal, and every site keeps its 11 units.
 
 **MVP-011** (MUST) Terrain is generated at world creation by the hybrid generator of WLD-160 with one world template, one biome (WLD-180) and one lighting preset, with no set pieces and no bridges, and is immutable for the life of the world. Of the region checks of WLD-163, the checks that apply to one region without a crossing are run, and a failed check re-rolls the seed. The server and the client generate the terrain from the seed with the same terrain library (TER-009) and compare a terrain hash at connection; a client whose hash differs refuses the world with a message.
 
@@ -69,11 +73,13 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-023** (MUST) Essence orbs are created by deaths as the reference states (R-UNIT-034 to R-UNIT-039, R-UNIT-301 to R-UNIT-329, R-ECON-066 to R-ECON-071). An orb inside a settlement's territory drifts to that settlement's Wellspring at `mvp.essence.drift_speed` (30 wu/s); an orb outside every territory follows the reference states and ascends. No Collector, Builder or Spawn Node delivery is involved (R-ECON-072 to R-ECON-081 are not used).
 
-**MVP-024** (MUST) Growth that needs no death (PIL-056): while the settlement is below its population limit and its stores hold at least `mvp.essence.orb_cost_ru` (20 ru), its Wellspring turns that cost into one orb every `mvp.essence.wellspring_interval_s` (12 s).
+**MVP-024** (MUST) Growth that needs no death (PIL-056): while the settlement is below its population limit and its stores hold at least `mvp.essence.orb_cost_ru` (27 ru), its Wellspring turns that cost into one orb every `mvp.essence.wellspring_interval_s` (12 s).
 
 **MVP-025** (MUST) An orb that reaches its Wellspring becomes a Worker at the Wellspring if the settlement is below its population limit; otherwise it waits there, glowing, up to `mvp.essence.wait_max` (20) waiting orbs, and an orb beyond that ascends. A waiting orb becomes a Worker as soon as there is room.
 
 **MVP-026** (MUST) The territory radius is `wld.territory.founding_radius` plus `mvp.territory.radius_per_worker` (4 wu) for each Worker above the starting count, up to `wld.territory.max_radius` (1,400 wu), and grows inside the bounds of WLD-060: it stops at the coast, at the halfway line of each valley border area (WLD-062, WLD-063) and at the edge of the home cell. Territory never shrinks in the MVP, except that a border area lost by a claim leaves it (WLD-086).
+
+> **Amendment 2026-10-22 (M2 task T6; [ADR-134](../ADR/ADR-134-territory-essence-growth-contact-and-the-seen-layer-at-m2.md)).** The territory is held as a raster of cells of `mvp.territory.cell_size` (16 wu): the cells within its radius of the Wellspring and inside the bounds, joined to the Wellspring's cell. The bounds are the coast bands, the halfway lines of the valley border areas, the edge of the home cell, `wld.territory.site_clearance` outside every other site's core, `wld.resource.wild_clearance` outside the central resource site and dry ground. A structure lies inside it when the cells its footprint covers are held (MVP-032), so it may overhang the edge by less than a cell.
 
 **MVP-027** (MUST) Two settlements are in contact while their territories touch at a valley border area's halfway line; the server records each contact event as WLD-066 states, and contact is the territory-pressure cause of MVP-051.
 
@@ -85,20 +91,32 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 > **Amendment 2026-10-21 (O84).** The gathering search is not bounded by `ref.unit.worker.port_search_range`: a gathering Worker takes the nearest free gathering port anywhere in its territory, or at the central resource site while its settlement holds it, because the nearest resource sites lie 350 wu from the Wellspring (WLD-082). The 100 wu stays the range of the idle Worker's port search (R-UNIT-090).
 
+> **Amendment 2026-10-22 (M2 task T7; [ADR-135](../ADR/ADR-135-settlement-tasks-gathering-and-upkeep-at-m2.md)).** A gatherer walks to its port and to its drop-off point along routes of the land route graph. It puts its load down at the Wellspring's door or a built, active storehouse's entrance, whichever is nearest. The central resource site is gathered only while its settlement holds it by a claim, so not at M2.
+
 **MVP-032** (MUST) The steward places a structure in its territory, outside the core's centre ring that keeps the Wellspring's ports clear, on ground whose slope the walkability rules allow (R-SIM-335 to R-SIM-338), not overlapping another structure, a resource site or a port. Placing pays its cost from the stores at once and queues a construction site; the queue holds at most `mvp.construction.queue_max` (8) sites, which are built in order.
+
+> **Amendment 2026-10-21 (M2 task T5; [ADR-132](../ADR/ADR-132-placement-and-construction-at-m2.md)).** The core's centre ring has the radius `mvp.construction.center_ring_radius` (60 wu) about the Wellspring: a structure lies wholly outside it. Until T6 builds the territory's bounds (WLD-060), a structure lies wholly inside the disc of the territory's radius about the Wellspring; ground is walkable where the terrain is above the shore height and its normal's y component is at least `ref.sim.walk.min_normal_y` at the structure's position and at every one of its ports; and two structures overlap when their bounding spheres' footprints do, or when a port lies within its 5 wu radius of a footprint.
 
 **MVP-033** (MUST) Construction is a Worker task of the task search: a Worker whose priority is construction mans one of the ports of the first queued construction site (`mvp.construction.ports_dwelling` (6) on a dwelling, `mvp.construction.ports_storehouse` (4) on a storehouse, `mvp.construction.ports_turret` (4) on a turret), and the site completes when its Workers have given `mvp.construction.work_per_ru` (1 Worker-second per resource unit of its cost). The structure rises visibly as it progresses (MVP-083).
 
 **MVP-034** (MUST) The MVP has three structures besides the Wellspring:
-- **Dwelling**: raises the population limit (MVP-022). It costs `mvp.cost.dwelling_ru` (300 ru), multiplied by `mvp.cost.dwelling_escalation` (1.15) for every dwelling the settlement already has, so that growth has diminishing returns (PIL-053).
+- **Dwelling**: raises the population limit (MVP-022). It costs `mvp.cost.dwelling_ru` (300 ru), multiplied by `mvp.cost.dwelling_escalation` (1.10) for every dwelling the settlement already has, so that growth has diminishing returns (PIL-053).
 - **Storehouse**: holds `mvp.store.storehouse_capacity_ru` (1,500 ru) more and is a drop-off point; it costs `mvp.cost.storehouse_ru` (200 ru).
 - **Turret**: the reference turret (R-BLDG-405 to R-BLDG-423), whose ports Workers on guard duty man; it costs `mvp.cost.turret_ru` (400 ru). It is the only MVP structure that takes damage, and a destroyed turret leaves a construction site that its settlement may rebuild at half its cost.
 
+> **Amendment 2026-10-22 (M2 task T5; [ADR-133](../ADR/ADR-133-the-gun-turret-at-m2.md)).** The turret is the reference gun turret. It fires for the team that mans it (R-BLDG-408) while it remains its settlement's structure, so an enemy that mans it turns it. A turret under construction takes no damage. A destroyed turret's site is not queued and gains no work until its settlement rebuilds it for `mvp.cost.turret_rebuild_fraction` (0.5) of its cost, which queues it.
+
 **MVP-035** (MUST) Upkeep is paid from the stores continuously: `mvp.upkeep.worker_ru_per_hour` (6 ru) per Worker and `mvp.upkeep.structure_ru_per_hour` (30 ru) per structure other than the Wellspring. While the stores are empty, growth stops, and structures become inactive one at a time, the most recently completed first, every `mvp.upkeep.inactive_step_s` (30 s) until upkeep balances; an inactive structure has no effect and is shown as dark. Workers never die of an empty store.
+
+> **Amendment 2026-10-22 (M2 task T7; [ADR-135](../ADR/ADR-135-settlement-tasks-gathering-and-upkeep-at-m2.md)).** Upkeep accrues in integer thousandths of a resource unit, exact over an hour. A Leader pays as the Worker it was, and a construction site pays none. Stores that fall short pay all they hold. While they are empty, a structure becomes inactive every `mvp.upkeep.inactive_step_s`, the most recently completed first; while they hold anything, the inactive ones become active again in reverse order. An inactive turret does not fire, and an inactive storehouse is no drop-off point.
 
 **MVP-036** (MUST) The steward's settlement priorities are three shares that sum to 100 %: gathering, construction and guard duty, by default `mvp.priority.default_gather` (50 %), `mvp.priority.default_construct` (30 %) and `mvp.priority.default_guard` (20 %) (PIL-052). The task search assigns tasks so that the shares of Workers that are not following a Leader approach the set shares; a task with no work (no free port, an empty queue) releases its share to the others. Guard duty mans turret ports and otherwise gathers Workers near the Wellspring, from where the threat search of R-UNIT-098 and R-UNIT-099 sends them to fight.
 
+> **Amendment 2026-10-22 (M2 task T7; [ADR-135](../ADR/ADR-135-settlement-tasks-gathering-and-upkeep-at-m2.md)).** Each Worker holds its task. An idle Worker that follows no Leader takes, at its own task search, the task with work furthest below its share of the settlement's Workers, once the tasks with no work have released their shares in proportion. Guard duty always has work: with no free turret port, a guard stands within `mvp.guard.gather_radius` (100 wu) of the Wellspring.
+
 **MVP-037** (MUST) A Worker with no task wanders as the reference Worker does (R-UNIT-087 to R-UNIT-097), so that a settlement never stands still on screen. The settlement panel shows, for every Worker that is idle, why: no free port, the queue is empty, the store is full, or its share is met (PIL-054, PIL-020).
+
+> **Amendment 2026-10-22 (M2 task T7; [ADR-135](../ADR/ADR-135-settlement-tasks-gathering-and-upkeep-at-m2.md)).** As guard duty always has work, a Worker has no task only when guard duty has no share and every task with a share has no work. It then gives that task's reason: the queue is empty for construction, otherwise no free port. A carrier at a full store gives "the store is full". "Its share is met" cannot arise from MVP-036's rule as built.
 
 **MVP-038** (MUST) A settlement's strength (PIL-058) for the MVP's statistics is its Workers at `mvp.strength.worker_ru` (20 ru) each, plus its stores, plus each structure at its cost.
 
@@ -171,6 +189,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-064** (MUST) The server records, for every settlement, its strength (MVP-038) and its Worker count every `mvp.stats.sample_minutes` (5 minutes), and every growth step, battle, claim and grievance, so that the epilogue and the playtest measures of §6 come from the run itself.
 
+> **Amendment 2026-10-22 (M2 task T8; [ADR-136](../ADR/ADR-136-settlement-commands-status-and-statistics-at-m2.md)).** The statistics are part of the world's state, saved and replayed with it. A growth step is a structure of the settlement built, its population reaching a new multiple of `mvp.stats.population_step` (10 Workers), or its territory taking in a resource site (the [M2 plan](m2_plan.md) §9, question 1). Each entry records the tick, the Worker count and the strength. Samples fall on the world ticks that are multiples of the sample period.
+
 ### 2.8 World clock, presence and the deputy (O54)
 
 **MVP-070** (MUST) In M0 to M3 the world runs at the session pace (PIL-100, PIL-104) while the client runs it, on the integrated server in the client's process behind the in-process transport (O10, ADR-084, ADR-088 item 1); closing the client saves the world (MVP-075) and freezes it (O4). The session factor is `mvp.pace.session_factor` (24), so one hour of play is one world day of the economy, relations and protection timers (PIL-101 and WLD-200 narrowed from 12).
@@ -186,6 +206,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 **MVP-075** (MUST) The server saves the world as a versioned snapshot every `mvp.persist.snapshot_seconds` (60 seconds of world time) and when it stops cleanly: it writes a temporary file, flushes it and replaces the previous snapshot by an atomic rename through the platform layer, keeping the last `mvp.persist.snapshots_kept` (3). At start it loads the newest snapshot that validates and records the time since that snapshot as a freeze of cause "unclean stop" when the previous stop was not clean (PIL-131). Saving starts at M2, because a session-paced world is continued across sessions. The journaled record store of O42 is deferred (§5.2).
 
 **MVP-076** (SHOULD) The server SHOULD write the commands it executes since the last snapshot to a command journal beside it, so that a defect is reproduced from the snapshot and the journal on the same build (ADR-081 Level 1, ADR-088's journal).
+
+> **Amendment 2026-10-22 (M2 task T9; [ADR-137](../ADR/ADR-137-saving-the-journal-cut-and-the-world-record-at-m2.md)).** The journal beside a snapshot is written when the next snapshot is saved, so after a crash the last snapshot has none. A stop is clean when the server left a marker naming the snapshot it opens. Freezes are kept in a world record that the snapshot holds and the state hash does not cover. Version 9 is the first saved; until M2's exit build, a version raise may refuse its predecessor instead of migrating it (MVP-095).
 
 ### 2.9 Look (O52)
 
@@ -228,6 +250,8 @@ The MVP builds only one region and one steward, but it keeps the seams that are 
 **MVP-097** (MUST) The server computes each settlement's seen layer (MVP-016) once per update, and the AI, the deputy and the replication to the client all read that one seen layer (ADR-086 item 1); the client receives no state outside it (PIL-084).
 
 **MVP-098** (MUST) The away report, the settlement status and the default orders are server data, read and written through server messages (O6; PIL-075).
+
+> **Amendment 2026-10-22 (M2 task T8; [ADR-136](../ADR/ADR-136-settlement-commands-status-and-statistics-at-m2.md)).** The settlement status is read by a request that the server answers itself, for a steward who commands the settlement. Its outcome comes at once, and the status of the next tick follows. The status holds the stores and their capacity, the population and its limit, the growth state and its cause, the priorities and the task counts, the idle Workers by reason, the inactive structures, the upkeep, the strength and the construction queue with its progress. A placement or rebuild that a check refuses reports the refusal as its outcome's reason (MVP-032, MVP-101).
 
 **MVP-099** (MUST) Every tuning value lives in data with its stable key and is loaded at server start, never written as a literal in code (CONVENTIONS §4); the records follow the authoring syntax and schemas of ADR-062. The data model of a Cladan has a place for the modifiers that later stages add (PIL-007, O7, O11), empty in the MVP.
 
@@ -289,6 +313,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.terrain.hill_inset` | 300 | wu | — | provisional | MVP-011 | WLD-162's distance of a hill tile inside the region border; see the WLD-162 amendment |
 | `mvp.unit.leader_mesh_radius` | 6.7252 | wu | — | provisional | MVP-040 | The bounding radius `LeaderFigure.cmo` records; the actor grid uses twice it (R-UNIT-159) until the cooked mesh gives it (M1 plan T11, ADR-103) |
 | `mvp.vision.unit_radius` | 300 | wu | — | provisional | MVP-016 | Raise if AI settlements miss obvious threats; lower if the fog never hides anything |
+| `mvp.vision.cell_size` | 64 | wu | — | provisional | MVP-016, MVP-097 | The seen layer's raster: fine enough for the fog's edge, coarse enough to make every update |
 | `mvp.nav.node_spacing` | 320 | wu | — | provisional | MVP-017 | About 200 lattice nodes on the valley's land; lower it if routes miss narrow passes, raise it if the next-hop tables cost too much |
 | `mvp.sandbox.side_workers` | 200 | Workers | — | provisional | MVP-005 | Each side of M1's battle sandbox at its start (M1 plan §6, ADR-109); a side of 200 needs at least three formations |
 | `mvp.sandbox.side_spread` | 60 | wu | — | provisional | MVP-005 | The radius each sandbox side spawns in around its site's centre |
@@ -300,32 +325,45 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.settlement.population_base` | 40 | Workers | — | provisional | MVP-022 | — |
 | `mvp.settlement.population_max` | 300 | Workers | — | provisional | MVP-022 | Inside O43's range; M1's cost measurement may raise it |
 | `mvp.dwelling.population` | 30 | Workers | — | provisional | MVP-022 | Tuned to M2's growth-step target |
-| `mvp.essence.orb_cost_ru` | 20 | ru | — | provisional | MVP-024 | Tuned to M2's plateau target |
+| `mvp.essence.orb_cost_ru` | 27 | ru | — | provisional | MVP-024 | M2 task T10 (ADR-138): 27 from 20, which the growth scene's plateau came before hour 4 with (3.81 to 3.85 hours on seeds 1 to 8); at 27, with the escalation at 1.10, the plateau comes at 4.27 to 4.32 hours, the largest gap is 14.9 to 15.4 minutes and the halfway line falls at 2.65 to 2.67 hours |
 | `mvp.essence.wellspring_interval_s` | 12 | seconds | scaled | provisional | MVP-024 | Caps peaceful growth at 300 Workers per hour of play |
 | `mvp.essence.drift_speed` | 30 | wu/s | tick | provisional | MVP-023 | Orbs drifting home should be seen, not missed |
 | `mvp.essence.wait_max` | 20 | orbs | — | provisional | MVP-025 | — |
 | `mvp.territory.radius_per_worker` | 4 | wu per Worker | — | provisional | MVP-026 | Contact between neighbours at about 150 Workers, in hour 2 to 3 of a run |
+| `mvp.territory.cell_size` | 16 | wu | — | provisional | MVP-026 | The territory's raster: a height-field cell's side (O83), fine enough that a structure's footprint test reads its edge |
 | `mvp.resource.ports_per_unit` | 4 | ports | — | provisional | MVP-030 | 44 gatherers at full territory; sets the plateau with the upkeep |
 | `mvp.gather.port_ticks` | 100 | ticks | tick | provisional | MVP-031 | — |
 | `mvp.gather.load_ru` | 1 | ru per load | scaled | provisional | MVP-031 | About 60 ru per gatherer per hour of play |
 | `mvp.store.wellspring_capacity_ru` | 1500 | ru | — | provisional | MVP-021 | — |
 | `mvp.store.storehouse_capacity_ru` | 1500 | ru | — | provisional | MVP-034 | — |
 | `mvp.construction.queue_max` | 8 | construction sites | — | provisional | MVP-032 | — |
+| `mvp.construction.center_ring_radius` | 60 | wu from the Wellspring | — | provisional | MVP-032 | Clears the Wellspring's ports at 38 wu and their 5 wu radius, with room to stand |
 | `mvp.construction.ports_dwelling` | 6 | ports | — | provisional | MVP-033 | Matches the dwelling mesh |
 | `mvp.construction.ports_storehouse` | 4 | ports | — | provisional | MVP-033 | Matches the storehouse mesh |
 | `mvp.construction.ports_turret` | 4 | ports | — | provisional | MVP-033 | The turret's four manning ports (R-BLDG-405 to R-BLDG-423) |
 | `mvp.construction.work_per_ru` | 1 | Worker-seconds per ru | scaled | provisional | MVP-033 | A dwelling takes 6 Workers under a minute early on |
 | `mvp.cost.dwelling_ru` | 300 | ru | — | provisional | MVP-034 | Tuned to M2's growth-step target |
-| `mvp.cost.dwelling_escalation` | 1.15 | times per dwelling built | — | provisional | MVP-034 | The diminishing return that brings the plateau |
+| `mvp.cost.dwelling_escalation` | 1.10 | times per dwelling built | — | provisional | MVP-034 | M2 task T10 (ADR-138): 1.10 from 1.15, whose last dwellings' waits made the largest gap (17.3 to 17.8 minutes at an orb cost of 26); at 1.10 the largest gap is the first step's wait, about 15 minutes |
 | `mvp.cost.storehouse_ru` | 200 | ru | — | provisional | MVP-034 | — |
 | `mvp.cost.turret_ru` | 400 | ru | — | provisional | MVP-034 | — |
+| `mvp.cost.turret_rebuild_fraction` | 0.5 | of the turret's cost | — | provisional | MVP-034 | A destroyed turret's site is rebuilt at half its cost |
 | `mvp.upkeep.worker_ru_per_hour` | 6 | ru per Worker per hour | scaled | provisional | MVP-035 | With the ports, puts the plateau near 280 Workers on 11 units |
 | `mvp.upkeep.structure_ru_per_hour` | 30 | ru per structure per hour | scaled | provisional | MVP-035 | — |
 | `mvp.upkeep.inactive_step_s` | 30 | seconds | scaled | provisional | MVP-035 | Decline must be visible before it hurts (PIL-054) |
 | `mvp.priority.default_gather` | 50 | % | — | provisional | MVP-036 | — |
 | `mvp.priority.default_construct` | 30 | % | — | provisional | MVP-036 | — |
 | `mvp.priority.default_guard` | 20 | % | — | provisional | MVP-036 | — |
-| `mvp.strength.worker_ru` | 20 | ru per Worker | — | provisional | MVP-038 | Equal to the orb cost |
+| `mvp.guard.gather_radius` | 100 | wu from the Wellspring | — | provisional | MVP-036 | Guard duty with no turret port gathers here, near enough that the threat search of R-UNIT-098 covers the core |
+| `mvp.steward.think_s` | 2 | seconds | tick | provisional | MVP-056 | How often the scripted steward looks at its settlement (the [M2 plan](m2_plan.md) §5, ADR-138) |
+| `mvp.steward.dwelling_margin` | 5 | Workers | — | provisional | MVP-056 | A dwelling is placed once the population comes within this of its limit, as in the M2 economy model |
+| `mvp.steward.ring_first` | 140 | wu from the Wellspring | — | provisional | MVP-056 | The dwellings' first ring, outside the centre ring |
+| `mvp.steward.ring_step` | 70 | wu | — | provisional | MVP-056 | — |
+| `mvp.steward.rings_max` | 5 | rings | — | provisional | MVP-056 | Inside the founding territory |
+| `mvp.steward.slot_spacing` | 70 | wu | — | provisional | MVP-056 | Between neighbouring places on a ring, clear of a dwelling's ports |
+| `mvp.steward.lane_half_width` | 40 | wu | — | provisional | MVP-056 | No dwelling within this of the line from the Wellspring to a home resource site |
+| `mvp.steward.storehouse_search_step` | 20 | wu | — | provisional | MVP-056 | — |
+| `mvp.steward.storehouse_search_rings` | 5 | rings | — | provisional | MVP-056 | Around the midpoint of two neighbouring outer resource sites |
+| `mvp.strength.worker_ru` | 20 | ru per Worker | — | provisional | MVP-038 | The orb cost's first guess; T10 leaves it, as it is no lever of the M2 plan's §9, question 2 |
 | `mvp.expedition.size_max` | 200 | Workers | — | provisional | MVP-041 | With the defenders, a battle of 300 to 450 figures (PIL-021) |
 | `mvp.conflict.attack_cost_ru` | 300 | ru | — | provisional | MVP-042 | An attack must cost a dwelling's worth |
 | `mvp.conflict.warning_minutes` | 5 | minutes of world time | tick | provisional | MVP-042 | Narrows WLD-102's 10; Playtest 2 checks it is enough when the deputy defends |
@@ -359,6 +397,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.renown.grievance_eased` | 1 | renown per 20 weight | — | provisional | MVP-061 | Watch for tribute bought only for renown |
 | `mvp.renown.structure_per_100ru` | 1 | renown per 100 ru | — | provisional | MVP-061 | — |
 | `mvp.stats.sample_minutes` | 5 | minutes | scaled | provisional | MVP-064 | — |
+| `mvp.stats.population_step` | 10 | Workers | — | provisional | MVP-064 | A growth step at each new multiple (M2 plan §9, question 1); fixed before T10 and not one of its levers |
 | `mvp.presence.idle_minutes` | 5 | minutes | tick | provisional | MVP-072 | — |
 | `mvp.persist.snapshot_seconds` | 60 | seconds of world time | tick | provisional | MVP-075 | At most a minute lost on a crash |
 | `mvp.persist.snapshots_kept` | 3 | snapshots | — | provisional | MVP-075 | — |

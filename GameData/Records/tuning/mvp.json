@@ -11,7 +11,8 @@
       "region_cell": 6
     },
     "vision": {
-      "unit_radius": 300
+      "unit_radius": 300,
+      "cell_size": 64
     },
     "settlement": {
       "start_workers": 20,
@@ -22,13 +23,14 @@
       "population": 30
     },
     "essence": {
-      "orb_cost_ru": 20,
+      "orb_cost_ru": 27,
       "wellspring_interval_s": 12,
       "drift_speed": 30,
       "wait_max": 20
     },
     "territory": {
-      "radius_per_worker": 4
+      "radius_per_worker": 4,
+      "cell_size": 16
     },
     "resource": {
       "ports_per_unit": 4
@@ -46,13 +48,15 @@
       "ports_dwelling": 6,
       "ports_storehouse": 4,
       "ports_turret": 4,
-      "work_per_ru": 1
+      "work_per_ru": 1,
+      "center_ring_radius": 60
     },
     "cost": {
       "dwelling_ru": 300,
-      "dwelling_escalation": 1.15,
+      "dwelling_escalation": 1.1,
       "storehouse_ru": 200,
-      "turret_ru": 400
+      "turret_ru": 400,
+      "turret_rebuild_fraction": 0.5
     },
     "upkeep": {
       "worker_ru_per_hour": 6,
@@ -63,6 +67,20 @@
       "default_gather": 50,
       "default_construct": 30,
       "default_guard": 20
+    },
+    "guard": {
+      "gather_radius": 100
+    },
+    "steward": {
+      "think_s": 2,
+      "dwelling_margin": 5,
+      "ring_first": 140,
+      "ring_step": 70,
+      "rings_max": 5,
+      "slot_spacing": 70,
+      "lane_half_width": 40,
+      "storehouse_search_step": 20,
+      "storehouse_search_rings": 5
     },
     "strength": {
       "worker_ru": 20
@@ -124,7 +142,8 @@
       "structure_per_100ru": 1
     },
     "stats": {
-      "sample_minutes": 5
+      "sample_minutes": 5,
+      "population_step": 10
     },
     "presence": {
       "idle_minutes": 5
@@ -180,7 +199,11 @@
         "laser_bolt_step": 100,
         "effect_step": 100,
         "orb_presize": 100,
-        "orb_step": 100
+        "orb_step": 100,
+        "structure_step": 10
+      },
+      "structure": {
+        "default_radius": 13
       },
       "spawn": {
         "default_front": {
@@ -251,7 +274,11 @@
       },
       "explosion": {
         "actor_reach": 2,
-        "actor_gain": 2
+        "actor_gain": 2,
+        "structure_reach": 3
+      },
+      "ray": {
+        "sprite_radius": 5
       },
       "command": {
         "leader_toggle_offset": 1
@@ -460,6 +487,12 @@
         "ignite_threshold": 0.1,
         "push_lift": 3,
         "push": 25
+      },
+      "turret_round": {
+        "life_ticks": 6,
+        "damage": 15,
+        "push": 20,
+        "push_jitter": 3
       }
     },
     "econ": {
@@ -474,6 +507,52 @@
         "ascent_ticks": 901,
         "wobble_rate_range": 2,
         "wobble_offset_range": 1
+      },
+      "spawn_node": {
+        "door_speed": 10,
+        "door_jitter": 0.5
+      }
+    },
+    "bldg": {
+      "port": {
+        "clearance_wu": 5,
+        "radius_wu": 5,
+        "reservation_limit": 1,
+        "reservation_cap": 50,
+        "reservation_decay_per_tick": 4
+      },
+      "structure": {
+        "push_step_wu": 2
+      },
+      "turret": {
+        "radius": 30,
+        "ray_sphere_radius": 12,
+        "ray_sphere_height": 10,
+        "recount_ticks": 11,
+        "sweep_distance_base": 200,
+        "sweep_distance_spread": 200,
+        "sweep_height_first": 100,
+        "sweep_turn": 1.5707963267948966,
+        "sweep_height_change": 50,
+        "los_step": 30,
+        "wobble_xz": 20,
+        "wobble_y": 10,
+        "wobble_rate_xz": 3,
+        "wobble_rate_y": 2,
+        "fire_cone": 0.3,
+        "hose_window_ticks": 10,
+        "min_aim_distance": 75,
+        "yaw_gain": 0.2,
+        "pitch_blend": 0.2,
+        "barrels_per_fire_step": 2,
+        "health": 60,
+        "gun": {
+          "reload_ticks": 1,
+          "min_range": 50,
+          "max_range": 225,
+          "round_speed": 500,
+          "start_back_fraction": 0.5
+        }
       }
     },
     "ctrl": {
@@ -491,7 +570,8 @@
         "recount_phase": 20,
         "range": 200,
         "defend_enemy_threshold": 30,
-        "defend_leader_radius": 300
+        "defend_leader_radius": 300,
+        "important_radius": 100
       },
       "cycle": {
         "period_easy": 200,
@@ -528,7 +608,8 @@
   "wld": {
     "region": {
       "side": 5120,
-      "channel_width": 256
+      "channel_width": 256,
+      "coast_band": 320
     },
     "site": {
       "spacing": 2080,
@@ -559,7 +640,21 @@
       "max_attempts": 8
     },
     "territory": {
-      "max_radius": 1400
+      "max_radius": 1400,
+      "founding_radius": 500,
+      "site_clearance": 200
+    },
+    "resource": {
+      "home_inner": 3,
+      "home_outer": 5,
+      "inner_radius": 350,
+      "outer_radius": 800,
+      "extra_radius": 1050,
+      "extra_bearing": 84,
+      "home_yield_tolerance": 5,
+      "border_factor": 1,
+      "central_factor": 3,
+      "wild_clearance": 150
     },
     "travel": {
       "valley_path_factor": 1.05

@@ -35,7 +35,13 @@
     <ClCompile Include="CommandTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="EssenceTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="FormationTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="GrowthSceneTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="MovementTests.cpp">
@@ -53,14 +59,44 @@
     <ClCompile Include="SandboxTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="SavingTests.cpp">
+      <Filter>Persistence</Filter>
+    </ClCompile>
+    <ClCompile Include="ScriptedStewardTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="SettlementCommandTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="SettlementTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="SlicedPoolTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="StateHashTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="StatisticsTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="StructureTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="TaskTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="TerritoryTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="TestSupport.cpp">
       <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="TurretTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="UpkeepTests.cpp">
+      <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="WeaponTests.cpp">
       <Filter>Simulation</Filter>

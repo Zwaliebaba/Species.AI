@@ -47,6 +47,14 @@ enum class CommandEffect : std::uint8_t
   NoEffect
 };
 
+/// What an executed command did, and the reason the game gives for one that did nothing (ADR-136): a value of the
+/// game's own that the engine reports unread, 0 for none.
+struct CommandExecution
+{
+  CommandEffect effect = CommandEffect::NoEffect;
+  std::uint8_t reason = 0;
+};
+
 /// One command's outcome, reported to its sender (ADR-087 item 4).
 struct CommandOutcome
 {
@@ -55,6 +63,7 @@ struct CommandOutcome
   std::uint64_t tick = 0;                    // the tick that executed it, or the next tick when it was refused
   std::optional<CommandRejection> rejection; // empty when it executed
   CommandEffect effect = CommandEffect::NoEffect;
+  std::uint8_t reason = 0; // the game's reason for an executed command that did nothing (ADR-136)
 };
 
 struct CommandRejectionCounts
@@ -88,10 +97,14 @@ public:
   }
 
   // _permitted is the arrival check of the sender's right and the phase; an empty one permits every sender.
-  // _execute applies the command at the start of its tick and says whether it had an effect.
+  // _execute applies the command at the start of its tick and says whether it had an effect, and in the second form
+  // why it had none (ADR-136).
   template <MessageCodec T>
   void Register(std::function<bool(SenderId, const T&)> _permitted,
                 std::function<CommandEffect(SenderId, const T&, std::uint64_t)> _execute);
+  template <MessageCodec T>
+  void Register(std::function<bool(SenderId, const T&)> _permitted,
+                std::function<CommandExecution(SenderId, const T&, std::uint64_t)> _execute);
 
   // A command arrives: true when it is queued for the next tick; otherwise its rejection is counted and reported.
   bool Submit(SenderId _sender, std::uint64_t _sequence, std::span<const std::byte> _message);
@@ -127,7 +140,7 @@ private:
     std::uint8_t version = 0;
     std::size_t maxBytes = 0;
     std::function<std::optional<CommandRejection>(SenderId, BitReader&)> check;
-    std::function<CommandEffect(SenderId, BitReader&, std::uint64_t)> execute;
+    std::function<CommandExecution(SenderId, BitReader&, std::uint64_t)> execute;
   };
 
   struct Queued
@@ -152,6 +165,15 @@ private:
 template <MessageCodec T>
 void CommandQueue::Register(std::function<bool(SenderId, const T&)> _permitted,
                             std::function<CommandEffect(SenderId, const T&, std::uint64_t)> _execute)
+{
+  Register<T>(std::move(_permitted), std::function<CommandExecution(SenderId, const T&, std::uint64_t)>(
+                                       [execute = std::move(_execute)](SenderId _sender, const T& _command, std::uint64_t _tick)
+                                       { return CommandExecution{execute(_sender, _command, _tick), 0}; }));
+}
+
+template <MessageCodec T>
+void CommandQueue::Register(std::function<bool(SenderId, const T&)> _permitted,
+                            std::function<CommandExecution(SenderId, const T&, std::uint64_t)> _execute)
 {
   // The bytes are kept and decoded again when the command executes, so a decoded field never refers to a buffer
   // that has gone; the second decoding of bytes that decoded once cannot fail.

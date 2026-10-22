@@ -54,7 +54,13 @@
     <ClInclude Include="ReplicatedState.h">
       <Filter>Replication</Filter>
     </ClInclude>
+    <ClInclude Include="ResourceSites.h">
+      <Filter>World</Filter>
+    </ClInclude>
     <ClInclude Include="ServerStats.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
+    <ClInclude Include="SettlementMessages.h">
       <Filter>Messages</Filter>
     </ClInclude>
     <ClInclude Include="StableId.h">
@@ -65,6 +71,12 @@
     </ClInclude>
     <ClInclude Include="StateUpdate.h">
       <Filter>Replication</Filter>
+    </ClInclude>
+    <ClInclude Include="StructureKind.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="StructureRecords.h">
+      <Filter>Records</Filter>
     </ClInclude>
     <ClInclude Include="Tuning.h">
       <Filter>Records</Filter>
@@ -98,7 +110,13 @@
     <ClCompile Include="ReplicatedState.cpp">
       <Filter>Replication</Filter>
     </ClCompile>
+    <ClCompile Include="ResourceSites.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
     <ClCompile Include="ServerStats.cpp">
+      <Filter>Messages</Filter>
+    </ClCompile>
+    <ClCompile Include="SettlementMessages.cpp">
       <Filter>Messages</Filter>
     </ClCompile>
     <ClCompile Include="StateReplica.cpp">
@@ -106,6 +124,9 @@
     </ClCompile>
     <ClCompile Include="StateUpdate.cpp">
       <Filter>Replication</Filter>
+    </ClCompile>
+    <ClCompile Include="StructureRecords.cpp">
+      <Filter>Records</Filter>
     </ClCompile>
     <ClCompile Include="Tuning.cpp">
       <Filter>Records</Filter>

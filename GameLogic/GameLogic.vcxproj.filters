@@ -33,6 +33,9 @@
     <ClInclude Include="CommandJournal.h">
       <Filter>Server</Filter>
     </ClInclude>
+    <ClInclude Include="Construction.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="DrawPurpose.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -46,6 +49,9 @@
       <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="Formation.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Growth.h">
       <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="IntegratedServer.h">
@@ -75,6 +81,21 @@
     <ClInclude Include="Sandbox.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="ScriptedSteward.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="SeenLayer.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Settlement.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="SettlementCommands.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="SettlementTasks.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="SlicedPool.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -90,11 +111,32 @@
     <ClInclude Include="StateValues.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="Statistics.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Structure.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="StructureAdvance.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Territory.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="TickDraws.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Turret.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Upkeep.h">
       <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="Weapons.h">
       <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldRecord.h">
+      <Filter>Server</Filter>
     </ClInclude>
     <ClInclude Include="WorldServer.h">
       <Filter>Server</Filter>
@@ -128,6 +170,9 @@
     <ClCompile Include="CommandJournal.cpp">
       <Filter>Server</Filter>
     </ClCompile>
+    <ClCompile Include="Construction.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="EssenceOrb.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
@@ -138,6 +183,9 @@
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="Formation.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Growth.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="IntegratedServer.cpp">
@@ -167,6 +215,21 @@
     <ClCompile Include="Sandbox.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="ScriptedSteward.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="SeenLayer.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Settlement.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="SettlementCommands.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="SettlementTasks.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="StableIdCounter.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
@@ -176,11 +239,32 @@
     <ClCompile Include="StateSender.cpp">
       <Filter>Server</Filter>
     </ClCompile>
+    <ClCompile Include="Statistics.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Structure.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="StructureAdvance.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Territory.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="TickDraws.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Turret.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Upkeep.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="Weapons.cpp">
       <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldRecord.cpp">
+      <Filter>Server</Filter>
     </ClCompile>
     <ClCompile Include="WorldServer.cpp">
       <Filter>Server</Filter>

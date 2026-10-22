@@ -128,6 +128,17 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-125](ADR-125-battle-marks-route-preview-and-world-markers-at-m1.md) | The battle marks, the route preview and the world markers at M1 | Proposed | 2026-10-21 |
 | [ADR-126](ADR-126-frame-bench-and-rendered-scenes.md) | The frame bench and the rendered performance scenes | Proposed | 2026-10-21 |
 | [ADR-127](ADR-127-left-button-verbs-and-order-feedback-at-m1.md) | The left-button verbs and the order feedback at M1 | Proposed | 2026-10-21 |
+| [ADR-128](ADR-128-mesh-kit-and-drafted-structure-recipes.md) | The mesh kit and the drafted structure recipes | Proposed | 2026-10-21 |
+| [ADR-129](ADR-129-simulation-data-records-and-collision-cooker.md) | The simulation data records and the collision cooker | Proposed | 2026-10-21 |
+| [ADR-130](ADR-130-settlements-structures-and-resource-sites-at-m2.md) | Settlements, structures and resource sites at M2 | Proposed | 2026-10-21 |
+| [ADR-131](ADR-131-structure-step-collision-shapes-and-ports-at-m2.md) | The structure step, collision shapes and manned ports at M2 | Proposed | 2026-10-21 |
+| [ADR-132](ADR-132-placement-and-construction-at-m2.md) | Placement and construction at M2 | Proposed | 2026-10-21 |
+| [ADR-133](ADR-133-the-gun-turret-at-m2.md) | The gun turret at M2 | Proposed | 2026-10-22 |
+| [ADR-134](ADR-134-territory-essence-growth-contact-and-the-seen-layer-at-m2.md) | Territory, Essence growth, contact and the seen layer at M2 | Proposed | 2026-10-22 |
+| [ADR-135](ADR-135-settlement-tasks-gathering-and-upkeep-at-m2.md) | Settlement tasks, gathering and upkeep at M2 | Proposed | 2026-10-22 |
+| [ADR-136](ADR-136-settlement-commands-status-and-statistics-at-m2.md) | Settlement commands, status and statistics at M2 | Proposed | 2026-10-22 |
+| [ADR-137](ADR-137-saving-the-journal-cut-and-the-world-record-at-m2.md) | Saving, the journal cut and the world record at M2 | Proposed | 2026-10-22 |
+| [ADR-138](ADR-138-the-scripted-steward-and-the-growth-scene-at-m2.md) | The scripted steward and the growth scene at M2 | Proposed | 2026-10-22 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

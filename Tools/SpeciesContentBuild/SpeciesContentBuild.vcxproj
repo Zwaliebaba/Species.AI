@@ -175,11 +175,13 @@
     <ClInclude Include="AssetManifest.h" />
     <ClInclude Include="BuildReport.h" />
     <ClInclude Include="CmoFile.h" />
+    <ClInclude Include="CollisionCooker.h" />
     <ClInclude Include="ContentBuild.h" />
     <ClInclude Include="FontPacker.h" />
     <ClInclude Include="MeshCooker.h" />
     <ClInclude Include="RecordCooker.h" />
     <ClInclude Include="RowSpec.h" />
+    <ClInclude Include="SimulationRecordCooker.h" />
     <ClInclude Include="TextGlyphTable.h" />
     <ClInclude Include="TextureCheck.h" />
     <ClInclude Include="pch.h" />
@@ -191,11 +193,13 @@
     <ClCompile Include="AssetManifest.cpp" />
     <ClCompile Include="BuildReport.cpp" />
     <ClCompile Include="CmoFile.cpp" />
+    <ClCompile Include="CollisionCooker.cpp" />
     <ClCompile Include="ContentBuild.cpp" />
     <ClCompile Include="FontPacker.cpp" />
     <ClCompile Include="MeshCooker.cpp" />
     <ClCompile Include="RecordCooker.cpp" />
     <ClCompile Include="RowSpec.cpp" />
+    <ClCompile Include="SimulationRecordCooker.cpp" />
     <ClCompile Include="SpeciesContentBuild.cpp" />
     <ClCompile Include="TextureCheck.cpp" />
   </ItemGroup>

@@ -14,9 +14,15 @@
 #include "ObstacleGrid.h"
 #include "RegionTerrain.h"
 #include "RouteStore.h"
+#include "ScriptedSteward.h"
+#include "Settlement.h"
+#include "Statistics.h"
 #include "SlicedPool.h"
 #include "StableId.h"
 #include "StableIdCounter.h"
+#include "Structure.h"
+#include "StructureRecords.h"
+#include "Territory.h"
 #include "TickDraws.h"
 #include "TuningMvp.h"
 #include "Vec3.h"
@@ -36,7 +42,7 @@ namespace Species
 /// The owner of one region (ADR-083 item 4, ADR-085 item 1): every mutable value inside the region's square. It steps
 /// as one region job and reads no other owner's state (ADR-085 item 2). It holds its teams with their figures, its
 /// command queue, its id counter, its tick, and the actor grid, its cache and the obstacle grid over its square
-/// (ADR-103); the settlements, structures and battles of M2 and M3 move in here (MVP-096).
+/// (ADR-103); its settlements and its structures (MVP-096, ADR-130), and the battles of M3.
 class RegionSimulation
 {
 public:
@@ -65,15 +71,17 @@ public:
   // A region's state as a snapshot of WORLD_STATE_VERSION 1 holds it, before its teams existed (ADR-099).
   static constexpr std::uint32_t STATE_VERSION_WITHOUT_TEAMS = 1;
 
-  // _terrain may follow later through AttachTerrain. A region is never copied or moved: its owner holds it in place.
+  // _terrain may follow later through AttachTerrain. _structures, which outlive the region, are the records it builds
+  // structures from (ADR-130); a region made without them founds no settlement and places no resource site. A region is
+  // never copied or moved: its owner holds it in place.
   RegionSimulation(std::uint16_t _index, const Neuron::SipHashKey& _simulationKey, std::uint64_t _nextTick, const TuningMvp& _tuning,
-                   std::shared_ptr<const RegionTerrain> _terrain = nullptr);
+                   std::shared_ptr<const RegionTerrain> _terrain = nullptr, const StructureRecords* _structures = nullptr);
   RegionSimulation(const RegionSimulation&) = delete;
   RegionSimulation& operator=(const RegionSimulation&) = delete;
 
   // One region job of tick _tick (R-SIM-510): its commands, then the update slices 0 to ref.sim.update_slices - 1
   // (R-SIM-511, R-SIM-218), each running the region's teams in index order (R-SIM-221), then its laser bolts, its
-  // effects, its bot navigation nodes, the only structures before M2, and its Essence orbs (R-SIM-218 steps 3 to 5);
+  // effects, its structures and then its bot navigation nodes, and its Essence orbs (R-SIM-218 steps 3 to 5);
   // then each AI, whose commands execute at the next tick (ADR-107).
   void Step(std::uint64_t _tick);
 
@@ -131,6 +139,13 @@ public:
   // ADR-107: an AI of the region's own makes and commands _team from now on; its sender id is a new stable id of the
   // region. Called between ticks.
   StableId AddAi(std::uint8_t _team);
+  // ADR-138: a scripted steward runs the settlement of _team from now on as its AI commander; its sender id is a new
+  // stable id of the region. Called between ticks.
+  StableId AddScriptedSteward(std::uint8_t _team);
+  [[nodiscard]] const std::vector<ScriptedSteward>& ScriptedStewards() const noexcept
+  {
+    return m_scripted;
+  }
   [[nodiscard]] const std::vector<AiController>& Ais() const noexcept
   {
     return m_ais;
@@ -166,6 +181,10 @@ public:
     return m_cache;
   }
   [[nodiscard]] ObstacleGrid& Obstacles() noexcept
+  {
+    return m_obstacles;
+  }
+  [[nodiscard]] const ObstacleGrid& Obstacles() const noexcept
   {
     return m_obstacles;
   }
@@ -213,6 +232,80 @@ public:
   {
     return m_ids.Issue();
   }
+  // The region's structures (R-SIM-218 step 4), in slot order, and its settlements in the order they were founded
+  // (MVP-096, ADR-130).
+  [[nodiscard]] const SlicedPool<Structure>& Structures() const noexcept
+  {
+    return m_structures;
+  }
+  [[nodiscard]] SlicedPool<Structure>& Structures() noexcept
+  {
+    return m_structures;
+  }
+  [[nodiscard]] const std::vector<Settlement>& Settlements() const noexcept
+  {
+    return m_settlements;
+  }
+  [[nodiscard]] std::vector<Settlement>& Settlements() noexcept
+  {
+    return m_settlements;
+  }
+  // The settlement at local site _site, or null while the site is free.
+  [[nodiscard]] const Settlement* SettlementAt(std::uint8_t _site) const noexcept;
+  // MVP-026: the territory of the settlement at local site _site, or null while the site is free (ADR-134).
+  [[nodiscard]] const CellRaster* TerritoryOf(std::uint8_t _site) const noexcept;
+  // The territory of the settlement at _site made again from its radius, as when its radius grows (ADR-134).
+  void RecomputeTerritory(std::uint8_t _site);
+  // MVP-016 and MVP-097: the seen layer of the settlement at _site as the last step made it, or null before the
+  // region's first step and while the site is free; and how many times the region has made its seen layers, once in
+  // every step (ADR-134).
+  [[nodiscard]] const CellRaster* SeenLayerOf(std::uint8_t _site) const noexcept;
+  [[nodiscard]] std::uint64_t SeenLayerUpdates() const noexcept
+  {
+    return m_seenUpdates;
+  }
+  // WLD-066: the region's territory events in the order they were recorded (MVP-027).
+  [[nodiscard]] const std::vector<ContactEvent>& ContactEvents() const noexcept
+  {
+    return m_contacts;
+  }
+  // MVP-064: the server's statistics of the region's settlements in the order they were recorded (ADR-136).
+  [[nodiscard]] const std::vector<StatisticEntry>& Statistics() const noexcept
+  {
+    return m_statistics;
+  }
+  // An entry appended to the statistics while they hold fewer than STATISTICS_MAX; a full record takes no more.
+  void RecordStatistic(const StatisticEntry& _entry);
+  // The structure in _slot while it still holds that slot with id _id, or null (R-SIM-325's rule for handles).
+  [[nodiscard]] Structure* ResolveStructure(std::uint32_t _slot, StableId _id) noexcept;
+  [[nodiscard]] const Structure* ResolveStructure(std::uint32_t _slot, StableId _id) const noexcept;
+  // The records the region builds structures from, or null (ADR-130).
+  [[nodiscard]] const StructureRecords* Records() const noexcept
+  {
+    return m_records;
+  }
+  // R-BLDG-029 and R-BLDG-030 for a structure that a rule creates: made at (_x, _z) facing _front from its kind's record
+  // and collision asset on the region's terrain (MakeStructure), given the next stable id of the region, inserted into
+  // the structure pool and added to the obstacle grid; returns its slot. It needs the terrain and the records.
+  std::uint32_t AddStructure(StructureKind _kind, std::optional<std::uint8_t> _owner, std::optional<std::uint32_t> _resourceSite, double _x,
+                             double _z, const Neuron::Vec3& _front);
+  // R-BLDG-030 for a structure already made: the next stable id of the region, the structure pool and the obstacle grid;
+  // returns its slot.
+  std::uint32_t InsertStructure(Structure _structure);
+  // WLD-080 to WLD-085: a structure for each resource site of the region's terrain, in its order, belonging to no
+  // settlement (WLD-084).
+  void PlaceResourceSites();
+  // MVP-012, MVP-013 and MVP-020: a settlement at the free local site _site, run by a steward or an AI. Its team slot is
+  // its site and its Cladan's colour too; its Wellspring stands at the site's centre facing out along the site's
+  // outward diagonal; its stores are empty, its territory has the founding radius, and its first
+  // mvp.settlement.start_workers Workers leave the Wellspring's door one after another (R-ECON-043). Its draws are the
+  // next tick's. It needs the terrain and the records.
+  const Settlement& FoundSettlement(std::uint8_t _site, bool _stewarded);
+  // R-ECON-043 for a Wellspring (MVP-021): one Worker of the settlement appears at its Wellspring's door socket with no
+  // position spread and the velocity (door front + j) × ref.econ.spawn_node.door_speed, each component of j drawn from
+  // U[-ref.econ.spawn_node.door_jitter, +ref.econ.spawn_node.door_jitter), and airborne. Returns its slot.
+  std::uint32_t SpawnAtDoor(const Settlement& _settlement);
+
   // The draws of the tick being stepped (ADR-103).
   [[nodiscard]] TickDraws& Draws() noexcept
   {
@@ -304,6 +397,18 @@ private:
   void FreeUnheldRoutes();
   // ADR-107: the node states of the bot navigation graph, each with its phase draw, when the region holds none.
   void EnsureBotNodes();
+  // R-SIM-321, DEC-095, ADR-131: the obstacle grid made again from every structure in slot order, its shape its collision
+  // asset's triangles at its transform; derived data, so made whenever a structure is added or removed and when a
+  // restored region's terrain is attached.
+  void RebuildObstacles();
+  // ADR-134: every settlement's territory made again; derived data, made when a settlement is founded, when a restored
+  // region's terrain is attached and after a snapshot is read.
+  void RecomputeTerritories();
+  // MVP-027 and WLD-064: a contact event for each valley border pair whose two settlements both reach its halfway line
+  // and have no contact yet; contact never ends in the MVP.
+  void RecordContacts();
+  // MVP-097: every settlement's seen layer, made once per step.
+  void UpdateSeenLayers();
 
   std::uint16_t m_index;
   const TuningMvp* m_tuning;
@@ -327,7 +432,16 @@ private:
   BotGraph m_bots; // derived from the terrain, never state
   SlicedPool<BotNode> m_botNodes;
   std::vector<AiController> m_ais;
-  std::vector<EffectEvent> m_events; // presentation, never state
+  const StructureRecords* m_records;
+  SlicedPool<Structure> m_structures;
+  std::vector<Settlement> m_settlements;
+  std::vector<CellRaster> m_territories;    // by settlement, derived, never state
+  std::vector<CellRaster> m_seen;           // by settlement, derived, never state
+  std::uint64_t m_seenUpdates = 0;          // never state
+  std::vector<ContactEvent> m_contacts;     // WLD-066, state from version 9
+  std::vector<StatisticEntry> m_statistics; // MVP-064, state from version 9
+  std::vector<ScriptedSteward> m_scripted;  // ADR-138, state from version 10
+  std::vector<EffectEvent> m_events;        // presentation, never state
 #if ENGINE_DEVELOPMENT
   AdvanceObserver m_advanceObserver;
 #endif

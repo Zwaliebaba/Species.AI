@@ -82,7 +82,7 @@ public:
     Assert::IsTrue(values.mvp.pace.sessionFactor == 24.0, L"mvp.pace.session_factor");
     ExpectEqual(3, values.mvp.world.aiCount, L"mvp.world.ai_count");
     ExpectEqual(100, values.mvp.gather.portTicks, L"mvp.gather.port_ticks");
-    Assert::IsTrue(values.mvp.cost.dwellingEscalation == 1.15, L"mvp.cost.dwelling_escalation");
+    Assert::IsTrue(values.mvp.cost.dwellingEscalation == 1.1, L"mvp.cost.dwelling_escalation");
     ExpectEqual(3, values.mvp.persist.snapshotsKept, L"mvp.persist.snapshots_kept");
     Assert::IsTrue(values.ref.sim.tickPeriod == 0.1, L"ref.sim.tick_period");
     ExpectEqual(100'000'000, Species::TickPeriodOf(values).count(), L"10 ticks per second (MVP-092)");

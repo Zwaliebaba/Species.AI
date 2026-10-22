@@ -20,8 +20,9 @@ struct BuildResult
 
 // The content build of ADR-108: reads the asset manifest and every source under the repository's GameData/ in name
 // order, and cooks each by its row or folder: a texture checked and packed as authored, a face packed by the font
-// packer, a CMO mesh cooked, a data record cooked. A file that belongs to no row and is no record is a stray (AST-013).
-// It writes nothing; every fault is in the report.
+// packer, a CMO mesh or collision asset cooked, a data record cooked. A file that belongs to no row and is no record is
+// a stray (AST-013). The pairing pass then checks each collidable mesh against its collision asset and writes the
+// simulation data records (ADR-129). It writes nothing; every fault is in the report.
 [[nodiscard]] BuildResult CookContent(const std::filesystem::path& _root, BuildReport& _report);
 
 } // namespace ContentBuild

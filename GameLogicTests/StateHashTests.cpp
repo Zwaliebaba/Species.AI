@@ -70,12 +70,16 @@ public:
     // two empty pools and the orb pool's 100 free slots, advanced to its last slot. Changed by M1 task T7: each region
     // writes its commanders before its commands (ADR-106), none here. Changed by M1 task T8: each region writes its AIs
     // after its commanders and its bot navigation nodes after its orbs (ADR-107), none in a region with no terrain.
+    // Changed by M2 task T4: each region writes its settlements and its structure pool after its bot nodes (ADR-130):
+    // none, and an empty pool, in this world. Changed by M2 task T6: each region writes its territory events after its
+    // structures (ADR-134), none here. Changed by M2 task T8: each region writes its statistics after its territory
+    // events (ADR-136), none here.
     const GoldenRun one = Run600Ticks(1, 0);
-    Assert::IsTrue(one.last == 0xd755be6df2de34d4, L"the hash after 600 ticks of one region");
-    Assert::IsTrue(one.chain == 0x8966dc238fe21c8e, L"the chain of 600 tick hashes of one region");
+    Assert::IsTrue(one.last == 0x2cec33f81fa63998, L"the hash after 600 ticks of one region");
+    Assert::IsTrue(one.chain == 0x9ddfcceff2a3515a, L"the chain of 600 tick hashes of one region");
     const GoldenRun three = Run600Ticks(3, 0);
-    Assert::IsTrue(three.last == 0xdc9f1feb7af26c72, L"the hash after 600 ticks of three regions");
-    Assert::IsTrue(three.chain == 0x33c8c8092e8a99ee, L"the chain of 600 tick hashes of three regions");
+    Assert::IsTrue(three.last == 0x6bb2813bf9c6c6de, L"the hash after 600 ticks of three regions");
+    Assert::IsTrue(three.chain == 0x24b3b5312be719b7, L"the chain of 600 tick hashes of three regions");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp093TheHashesAgreeAtAnyWorkerCount)

@@ -321,6 +321,16 @@ public:
                      back.start.syntheticFigures == 1'500,
                    L"its start, watched (O77), with the synthetic battle's figures (ADR-126)");
     Assert::IsTrue(back.entries == journal.entries, L"its entries");
+    Assert::IsFalse(back.start.stewardSite.has_value(), L"no steward's site in the sandbox");
+    Species::CommandJournal settled = journal;
+    settled.start.sandbox = false;
+    settled.start.watched = false;
+    settled.start.stewardSite = std::uint8_t{2};
+    settled.restored = true;
+    const std::optional<Species::CommandJournal> settledBack = Species::ReadJournal(Species::WriteJournal(settled));
+    Assert::IsTrue(settledBack.has_value() && settledBack->start.stewardSite == std::optional<std::uint8_t>(std::uint8_t{2}),
+                   L"a world's steward's site (MVP-012, ADR-130)");
+    Assert::IsTrue(settledBack.has_value() && settledBack->restored && !back.restored, L"whether it starts from a snapshot (ADR-137)");
 
     Assert::IsFalse(Species::ReadJournal(std::span(bytes).first(bytes.size() - 1)).has_value(), L"a short file does not read");
     std::vector<std::byte> otherFormat = bytes;
@@ -395,7 +405,7 @@ public:
       std::make_shared<const Species::RegionTerrain>(*Species::GenerateRegionTerrain(back.start.seed, CommittedTuning()));
     std::vector<std::uint64_t> replayed;
     const std::unique_ptr<Species::WorldSimulation> replay =
-      Species::ReplayJournal(back, terrain, CommittedTuning(), first + 300, pool,
+      Species::ReplayJournal(back, terrain, CommittedTuning(), nullptr, first + 300, pool,
                              [&replayed](const Species::WorldSimulation& _world) { replayed.push_back(Species::HashWorld(_world).world); });
     Assert::IsTrue(replayed == hashes, L"the same hash on every tick");
     Assert::IsTrue(replay->NextTick() == server.Simulation()->NextTick(), L"to the same tick");
@@ -406,8 +416,8 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp076AFreezingWorldWritesItsJournalBesideItsSnapshots)
   {
-    // The journal of a world opened new is written when it freezes, beside its snapshot, and reads back whole; a world
-    // restored from that snapshot has no journal until saving arrives (ADR-109).
+    // The journal of a world opened new is written when it freezes, under the tick it starts from, beside the
+    // snapshots, and reads back whole; a world restored from the final snapshot journals from it (ADR-109, ADR-137).
     const TemporaryFolder folder;
     Species::WorldServer::Desc desc;
     desc.tuning = CommittedTuning();
@@ -429,17 +439,20 @@ public:
       server.Step(tick, pool);
       server.Publish(tick, sender);
     }
+    const Species::CommandJournal written = server.Journal().value_or(Species::CommandJournal{});
     server.Freeze(first + 10);
-    const auto bytes = Neuron::ReadWholeFile(desc.snapshotFolder / Species::WorldServer::JOURNAL_FILE_NAME);
+    const auto bytes = Neuron::ReadWholeFile(Species::WorldServer::JournalPath(desc.snapshotFolder, first));
     Assert::IsTrue(bytes.has_value(), L"the journal file is there");
     const std::optional<Species::CommandJournal> read = Species::ReadJournal(bytes.value_or(std::vector<std::byte>{}));
-    const Species::CommandJournal written = server.Journal().value_or(Species::CommandJournal{});
     Assert::IsTrue(read.has_value() && read.value_or(Species::CommandJournal{}).entries == written.entries && written.entries.size() == 2,
                    L"the connection and the command, read back");
+    Assert::IsFalse(read.value_or(Species::CommandJournal{}).restored, L"from the world's start");
 
     Species::WorldServer restored(desc);
     ExpectEqual(static_cast<std::int64_t>(first + 10), static_cast<std::int64_t>(restored.Open()), L"restored where it froze");
-    Assert::IsFalse(restored.Journal().has_value(), L"a restored world has no journal");
+    const Species::CommandJournal from = restored.Journal().value_or(Species::CommandJournal{});
+    Assert::IsTrue(restored.Journal().has_value() && from.restored && from.start.firstTick == first + 10 && from.entries.empty(),
+                   L"a restored world journals from its snapshot");
   }
 
 #if ENGINE_DEVELOPMENT

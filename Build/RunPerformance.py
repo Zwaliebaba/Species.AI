@@ -23,7 +23,10 @@ result (DBG-209); the driver and the OS build are recorded with each run and sto
 its budget fails the run (exit code 1); the run that pins only reports. The sandbox's battle drawn passes when the 99th
 percentile of its frame interval is at most 1000 ÷ mvp.client.fps_target + 1 ms (O75); its missed frames, the server's
 tick rate while drawn and the scene of mvp.client.figures_max figures are reported, as are a valley's generation and its
-land route graph, the route sweep and the log flood's detail (ADR-091, ADR-102, ADR-104). --quick runs every scene
+land route graph, the route sweep and the log flood's detail (ADR-091, ADR-102, ADR-104). From M2 task T10 the growth
+scene of each seed is reported against M2's exit, with the snapshot of its settlement, and the settlement at work and the
+region with four scripted settlements are judged against the Worker's and the region's budgets (ADR-138); M2's run is
+recorded with --record playtests/M2.md. --quick runs every scene
 briefly to show that it runs, and records nothing. --self-test is CI's: it runs the given tool with --quick, and the
 bench too when one is given (--warp draws it on the WARP adapter), then proves the record's rules on fixtures in a
 temporary folder, and writes nothing into the checkout.
@@ -65,7 +68,7 @@ SECTION = '## Performance'
 # factor of WLD-100 (O71). When ADR-080 is amended with measured figures, this table follows it.
 BUDGETS = {
   'battle_figure_us': (2.1, 'µs per figure per tick', 'figure in a battle (search, combat movement, laser bolts, Essence orbs)'),
-  'work_figure_us': (1.2, 'µs per figure per tick', 'Worker at settlement work (wandering stand-in until M2)'),
+  'work_figure_us': (1.2, 'µs per figure per tick', 'Worker at settlement work (the at-work scene is M1\'s wandering stand-in)'),
   'expedition_figure_us': (0.4, 'µs per figure per tick', 'figure of an expedition outside a battle (the travel scene)'),
   'draw_us': (0.03, 'µs per draw', 'a keyed simulation draw'),
   'ai_us': (60.0, 'µs per AI per tick', 'AI settlement or deputy'),
@@ -110,10 +113,14 @@ def figures_of(result):
     out.append(('sandbox-battle', 'integrated_cores', s['step_us']['mean'] / 1e6 / result['tick_period_s']))
   if 'at-work' in scenes:
     out.append(('at-work', 'work_figure_us', per_figure_tick(scenes['at-work'], ['sim.teams.advance_ungrouped'])))
+  if 'settlement-at-work' in scenes:
+    # M2 task T10 (ADR-138): the Worker at work in a settlement at its plateau, in place of M1's wandering stand-in.
+    out.append(('settlement-at-work', 'work_figure_us', per_figure_tick(scenes['settlement-at-work'], ['sim.teams.advance_ungrouped'])))
   if 'empty-region' in scenes:
     out.append(('empty-region', 'region_fixed_us', scenes['empty-region']['step_us']['mean']))
-  if 'region-bound' in scenes:
-    out.append(('region-bound', 'region_step_ms', scenes['region-bound']['step_us']['p95'] / 1000.0))
+  for name in ('region-bound', 'region-bound-settled'):
+    if name in scenes:
+      out.append((name, 'region_step_ms', scenes[name]['step_us']['p95'] / 1000.0))
   edges = result.get('travel') or []
   figure_ticks = sum(e['figure_ticks'] for e in edges)
   if figure_ticks:
@@ -152,6 +159,20 @@ def reported_rows(result):
       if sweep is not None:
         rows.append((name, 'route sweep, the routes no figure holds freed (ADR-104, DEC-651)', f'{sweep:.4g} µs per figure per tick',
                      '—', 'reported'))
+  # M2 task T10 (ADR-138): the growth scene of each seed against M2's exit, and the snapshot of a settlement at its end.
+  for run in result.get('growth') or []:
+    plateau = 'none' if run['plateau_h'] is None else f'{run["plateau_h"]:.2f} h'
+    halfway = 'none' if run['halfway_h'] is None else f'{run["halfway_h"]:.2f} h'
+    met = 'gap met' if run['gap_met'] else 'gap above 20 min'
+    met += ', plateau in hours 4 to 6' if run['plateau_met'] else ', plateau outside hours 4 to 6 (O84: it yields first)'
+    rows.append(('growth', f'seed {run["seed"]}: the largest gap between growth steps up to the plateau or hour 5, the plateau at '
+                 f'{run["largest_workers"]} Workers, and the halfway line reached (M3\'s contact, hour 2 to 3)',
+                 f'{run["gap_minutes"]:.1f} min from {run["gap_from_h"]:.2f} h; {plateau}; {halfway}', '20 min; 4 to 6 h; 2 to 3 h',
+                 f'reported: {met}'))
+  snapshot = result.get('snapshot')
+  if snapshot:
+    rows.append(('growth', 'a whole-world snapshot of the first seed\'s settlement at the run\'s end, encoded and saved (ADR-137)',
+                 f'{snapshot["bytes"]} bytes; {snapshot["encode_ms"]:.3f} ms, {snapshot["save_ms"]:.3f} ms', '—', 'reported'))
   flood = result.get('log')
   if flood:
     rows.append(('log-flood', 'the slowest thread\'s log call, and the records written and dropped (DBG T2)',
@@ -343,9 +364,10 @@ def pinned_display(text):
 def record(path, config, result, frames, build_id, when):
   """Writes the run into the record's performance section; returns its exit code (0, 1 above budget, 2 hardware changed).
   _frames is the bench's result, or None for a headless run."""
+  milestone = os.path.splitext(os.path.basename(path))[0]
   text = open(path, encoding='utf-8').read() if os.path.exists(path) else (
-    '# M1\n\nThe record of milestone M1 (README, "A milestone record"). Its exit criteria are added when the milestone '
-    'ends.\n')
+    f'# {milestone}\n\nThe record of milestone {milestone} (README, "A milestone record"). Its exit criteria are added when '
+    'the milestone ends.\n')
   if SECTION not in text:
     text = text.rstrip('\n') + (f'\n\n{SECTION}\n\nWritten by `Build/RunPerformance.py` (M1 plan §4, DBG-208, DBG-209, ADR-110): '
                                 'the reference test machine, pinned by the first run, and each run with every figure '

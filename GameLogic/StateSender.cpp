@@ -87,7 +87,8 @@ std::vector<ReplicatedObject> CollectReplicatedObjects(const RegionSimulation& _
   }
   for (std::uint32_t n = 0; n < _region.Effects().Capacity(); ++n)
   {
-    if (_region.Effects().Used(n))
+    // A turret round is drawn from its events, as a laser bolt is, and does not travel (ADR-133).
+    if (_region.Effects().Used(n) && _region.Effects().At(n).kind != EffectKind::TurretRound)
     {
       const Effect& effect = _region.Effects().At(n);
       objects.push_back({effect.id, EffectState(effect)});

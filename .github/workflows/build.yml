@@ -132,6 +132,12 @@ jobs:
         shell: pwsh
         run: python Build\CheckGeneratedSchemas.py
 
+      # The mesh kit writes the structure meshes it is the source of; its output is committed, and a recipe changed
+      # without its meshes, or a host that rounds the recipes otherwise, fails here (ADR-128).
+      - name: Check the mesh kit
+        shell: pwsh
+        run: python Build\CheckMeshKit.py
+
       # /warnaserror covers MSBuild's own warnings; /WX for the compiler is set in the projects.
       - name: Build
         shell: pwsh

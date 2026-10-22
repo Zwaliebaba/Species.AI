@@ -207,6 +207,7 @@ RegionTerrain BuildRegionTerrain(std::uint64_t _seed, std::uint32_t _attempt, co
   }
   region.digest = all.Finish();
   region.routes = LandRouteGraph::Build(PlaceNavigationNodes(region.layout, region.field, _tuning), region.field, _tuning);
+  region.resourceSites = PlaceResourceSites(region.layout, region.field, _tuning);
   return region;
 }
 
@@ -360,6 +361,13 @@ std::vector<TerrainCheck> CheckRegionTerrain(const RegionTerrain& _terrain, cons
   if (!reachable)
   {
     failed.push_back(TerrainCheck::Reachability);
+  }
+
+  // 7: the home resource sites of every site yield the same, within the tolerance (WLD-081); one where no Worker walks
+  // yields nothing (DEC-1000).
+  if (!HomeYieldsAgree(_terrain.resourceSites, field, _tuning))
+  {
+    failed.push_back(TerrainCheck::HomeYields);
   }
 
   // 8: the land route between the two ends of every edge of the travel network inside the region, each pair of valley

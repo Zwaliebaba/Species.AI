@@ -44,6 +44,9 @@ struct TuningMvp
     {
       // mvp.vision.unit_radius, in wu
       double unitRadius = 0.0;
+
+      // mvp.vision.cell_size, in wu
+      double cellSize = 0.0;
     };
 
     struct Settlement
@@ -83,6 +86,9 @@ struct TuningMvp
     {
       // mvp.territory.radius_per_worker, in wu per Worker
       double radiusPerWorker = 0.0;
+
+      // mvp.territory.cell_size, in wu
+      double cellSize = 0.0;
     };
 
     struct Resource
@@ -125,6 +131,9 @@ struct TuningMvp
 
       // mvp.construction.work_per_ru, in Worker-seconds per ru
       double workPerRu = 0.0;
+
+      // mvp.construction.center_ring_radius, in wu
+      double centerRingRadius = 0.0;
     };
 
     struct Cost
@@ -140,6 +149,9 @@ struct TuningMvp
 
       // mvp.cost.turret_ru, in ru
       double turretRu = 0.0;
+
+      // mvp.cost.turret_rebuild_fraction, in of the cost
+      double turretRebuildFraction = 0.0;
     };
 
     struct Upkeep
@@ -164,6 +176,42 @@ struct TuningMvp
 
       // mvp.priority.default_guard, in %
       double defaultGuard = 0.0;
+    };
+
+    struct Guard
+    {
+      // mvp.guard.gather_radius, in wu
+      double gatherRadius = 0.0;
+    };
+
+    struct Steward
+    {
+      // mvp.steward.think_s, in seconds
+      double thinkS = 0.0;
+
+      // mvp.steward.dwelling_margin, in Workers
+      std::int64_t dwellingMargin = 0;
+
+      // mvp.steward.ring_first, in wu from the Wellspring
+      double ringFirst = 0.0;
+
+      // mvp.steward.ring_step, in wu
+      double ringStep = 0.0;
+
+      // mvp.steward.rings_max, in rings
+      std::int64_t ringsMax = 0;
+
+      // mvp.steward.slot_spacing, in wu
+      double slotSpacing = 0.0;
+
+      // mvp.steward.lane_half_width, in wu
+      double laneHalfWidth = 0.0;
+
+      // mvp.steward.storehouse_search_step, in wu
+      double storehouseSearchStep = 0.0;
+
+      // mvp.steward.storehouse_search_rings, in rings
+      std::int64_t storehouseSearchRings = 0;
     };
 
     struct Strength
@@ -308,6 +356,9 @@ struct TuningMvp
     {
       // mvp.stats.sample_minutes, in minutes
       double sampleMinutes = 0.0;
+
+      // mvp.stats.population_step, in Workers
+      std::int64_t populationStep = 0;
     };
 
     struct Presence
@@ -432,6 +483,8 @@ struct TuningMvp
     Cost cost;
     Upkeep upkeep;
     Priority priority;
+    Guard guard;
+    Steward steward;
     Strength strength;
     Expedition expedition;
     Conflict conflict;
@@ -476,6 +529,15 @@ struct TuningMvp
 
         // ref.sim.container.orb_step, in slots
         std::int64_t orbStep = 0;
+
+        // ref.sim.container.structure_step, in slots
+        std::int64_t structureStep = 0;
+      };
+
+      struct Structure
+      {
+        // ref.sim.structure.default_radius, in wu
+        double defaultRadius = 0.0;
       };
 
       struct Spawn
@@ -657,6 +719,15 @@ struct TuningMvp
 
         // ref.sim.explosion.actor_gain, in factor
         double actorGain = 0.0;
+
+        // ref.sim.explosion.structure_reach, in × range
+        double structureReach = 0.0;
+      };
+
+      struct Ray
+      {
+        // ref.sim.ray.sprite_radius, in wu
+        double spriteRadius = 0.0;
       };
 
       struct Command
@@ -678,6 +749,7 @@ struct TuningMvp
       std::int64_t updateSlices = 0;
 
       Container container;
+      Structure structure;
       Spawn spawn;
       Physics physics;
       Walk walk;
@@ -688,6 +760,7 @@ struct TuningMvp
       Push push;
       Route route;
       Explosion explosion;
+      Ray ray;
       Command command;
       Team team;
     };
@@ -1255,11 +1328,27 @@ struct TuningMvp
         double push = 0.0;
       };
 
+      struct TurretRound
+      {
+        // ref.weapon.turret_round.life_ticks, in ticks
+        std::int64_t lifeTicks = 0;
+
+        // ref.weapon.turret_round.damage, in health
+        std::int64_t damage = 0;
+
+        // ref.weapon.turret_round.push, in wu/s
+        double push = 0.0;
+
+        // ref.weapon.turret_round.push_jitter, in wu/s
+        double pushJitter = 0.0;
+      };
+
       Laser laser;
       Throwing throwing;
       Thrown thrown;
       Grenade grenade;
       Shockwave shockwave;
+      TurretRound turretRound;
     };
 
     struct Econ
@@ -1295,7 +1384,134 @@ struct TuningMvp
         double wobbleOffsetRange = 0.0;
       };
 
+      struct SpawnNode
+      {
+        // ref.econ.spawn_node.door_speed, in wu/s
+        double doorSpeed = 0.0;
+
+        // ref.econ.spawn_node.door_jitter, in unit vectors
+        double doorJitter = 0.0;
+      };
+
       Orb orb;
+      SpawnNode spawnNode;
+    };
+
+    struct Bldg
+    {
+      struct Port
+      {
+        // ref.bldg.port.clearance_wu, in wu
+        double clearanceWu = 0.0;
+
+        // ref.bldg.port.radius_wu, in wu
+        double radiusWu = 0.0;
+
+        // ref.bldg.port.reservation_limit, in reservations
+        std::int64_t reservationLimit = 0;
+
+        // ref.bldg.port.reservation_cap, in reservations
+        std::int64_t reservationCap = 0;
+
+        // ref.bldg.port.reservation_decay_per_tick, in reservations per tick
+        std::int64_t reservationDecayPerTick = 0;
+      };
+
+      struct Structure
+      {
+        // ref.bldg.structure.push_step_wu, in wu
+        double pushStepWu = 0.0;
+      };
+
+      struct Turret
+      {
+        struct Gun
+        {
+          // ref.bldg.turret.gun.reload_ticks, in ticks
+          std::int64_t reloadTicks = 0;
+
+          // ref.bldg.turret.gun.min_range, in wu
+          double minRange = 0.0;
+
+          // ref.bldg.turret.gun.max_range, in wu
+          double maxRange = 0.0;
+
+          // ref.bldg.turret.gun.round_speed, in wu/s
+          double roundSpeed = 0.0;
+
+          // ref.bldg.turret.gun.start_back_fraction, in ticks of travel
+          double startBackFraction = 0.0;
+        };
+
+        // ref.bldg.turret.radius, in wu
+        double radius = 0.0;
+
+        // ref.bldg.turret.ray_sphere_radius, in wu
+        double raySphereRadius = 0.0;
+
+        // ref.bldg.turret.ray_sphere_height, in wu
+        double raySphereHeight = 0.0;
+
+        // ref.bldg.turret.recount_ticks, in ticks
+        std::int64_t recountTicks = 0;
+
+        // ref.bldg.turret.sweep_distance_base, in wu
+        double sweepDistanceBase = 0.0;
+
+        // ref.bldg.turret.sweep_distance_spread, in wu
+        double sweepDistanceSpread = 0.0;
+
+        // ref.bldg.turret.sweep_height_first, in wu
+        double sweepHeightFirst = 0.0;
+
+        // ref.bldg.turret.sweep_turn, in rad
+        double sweepTurn = 0.0;
+
+        // ref.bldg.turret.sweep_height_change, in wu
+        double sweepHeightChange = 0.0;
+
+        // ref.bldg.turret.los_step, in wu
+        double losStep = 0.0;
+
+        // ref.bldg.turret.wobble_xz, in wu
+        double wobbleXz = 0.0;
+
+        // ref.bldg.turret.wobble_y, in wu
+        double wobbleY = 0.0;
+
+        // ref.bldg.turret.wobble_rate_xz, in rad/s
+        double wobbleRateXz = 0.0;
+
+        // ref.bldg.turret.wobble_rate_y, in rad/s
+        double wobbleRateY = 0.0;
+
+        // ref.bldg.turret.fire_cone, in rad
+        double fireCone = 0.0;
+
+        // ref.bldg.turret.hose_window_ticks, in ticks
+        std::int64_t hoseWindowTicks = 0;
+
+        // ref.bldg.turret.min_aim_distance, in wu
+        double minAimDistance = 0.0;
+
+        // ref.bldg.turret.yaw_gain, in per tick
+        double yawGain = 0.0;
+
+        // ref.bldg.turret.pitch_blend, in per tick
+        double pitchBlend = 0.0;
+
+        // ref.bldg.turret.barrels_per_fire_step, in barrels
+        std::int64_t barrelsPerFireStep = 0;
+
+        // ref.bldg.turret.health, in health
+        std::int64_t health = 0;
+
+        Gun gun;
+      };
+
+      Port port;
+      Structure structure;
+      Turret turret;
     };
 
     struct Ctrl
@@ -1336,6 +1552,9 @@ struct TuningMvp
 
         // ref.bot.node.defend_leader_radius, in wu
         double defendLeaderRadius = 0.0;
+
+        // ref.bot.node.important_radius, in wu
+        double importantRadius = 0.0;
       };
 
       struct Cycle
@@ -1424,6 +1643,7 @@ struct TuningMvp
     Unit unit;
     Weapon weapon;
     Econ econ;
+    Bldg bldg;
     Ctrl ctrl;
     Bot bot;
   };
@@ -1437,6 +1657,9 @@ struct TuningMvp
 
       // wld.region.channel_width, in wu
       double channelWidth = 0.0;
+
+      // wld.region.coast_band, in wu
+      double coastBand = 0.0;
     };
 
     struct Site
@@ -1518,6 +1741,45 @@ struct TuningMvp
     {
       // wld.territory.max_radius, in wu
       double maxRadius = 0.0;
+
+      // wld.territory.founding_radius, in wu
+      double foundingRadius = 0.0;
+
+      // wld.territory.site_clearance, in wu
+      double siteClearance = 0.0;
+    };
+
+    struct Resource
+    {
+      // wld.resource.home_inner, in home resource sites
+      std::int64_t homeInner = 0;
+
+      // wld.resource.home_outer, in home resource sites
+      std::int64_t homeOuter = 0;
+
+      // wld.resource.inner_radius, in wu
+      double innerRadius = 0.0;
+
+      // wld.resource.outer_radius, in wu
+      double outerRadius = 0.0;
+
+      // wld.resource.extra_radius, in wu
+      double extraRadius = 0.0;
+
+      // wld.resource.extra_bearing, in degrees
+      double extraBearing = 0.0;
+
+      // wld.resource.home_yield_tolerance, in %
+      double homeYieldTolerance = 0.0;
+
+      // wld.resource.border_factor, in units
+      std::int64_t borderFactor = 0;
+
+      // wld.resource.central_factor, in units
+      std::int64_t centralFactor = 0;
+
+      // wld.resource.wild_clearance, in wu
+      double wildClearance = 0.0;
     };
 
     struct Travel
@@ -1531,6 +1793,7 @@ struct TuningMvp
     Terrain terrain;
     Generation generation;
     Territory territory;
+    Resource resource;
     Travel travel;
   };
 
@@ -1555,6 +1818,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Vision& _out)
 {
   _out.unitRadius = _reader.Decimal(_object, "unit_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.cellSize = _reader.Decimal(_object, "cell_size", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -1584,6 +1848,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Territory& _out)
 {
   _out.radiusPerWorker = _reader.Decimal(_object, "radius_per_worker", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.cellSize = _reader.Decimal(_object, "cell_size", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -1614,6 +1879,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.portsStorehouse = _reader.Integer(_object, "ports_storehouse", 0);
   _out.portsTurret = _reader.Integer(_object, "ports_turret", 0);
   _out.workPerRu = _reader.Decimal(_object, "work_per_ru", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.centerRingRadius = _reader.Decimal(_object, "center_ring_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -1623,6 +1889,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.dwellingEscalation = _reader.Decimal(_object, "dwelling_escalation", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.storehouseRu = _reader.Decimal(_object, "storehouse_ru", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.turretRu = _reader.Decimal(_object, "turret_ru", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.turretRebuildFraction = _reader.Decimal(_object, "turret_rebuild_fraction", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -1639,6 +1906,26 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.defaultGather = _reader.Decimal(_object, "default_gather", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.defaultConstruct = _reader.Decimal(_object, "default_construct", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.defaultGuard = _reader.Decimal(_object, "default_guard", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Guard& _out)
+{
+  _out.gatherRadius = _reader.Decimal(_object, "gather_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Steward& _out)
+{
+  _out.thinkS = _reader.Decimal(_object, "think_s", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.dwellingMargin = _reader.Integer(_object, "dwelling_margin", 0);
+  _out.ringFirst = _reader.Decimal(_object, "ring_first", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.ringStep = _reader.Decimal(_object, "ring_step", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.ringsMax = _reader.Integer(_object, "rings_max", 0);
+  _out.slotSpacing = _reader.Decimal(_object, "slot_spacing", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.laneHalfWidth = _reader.Decimal(_object, "lane_half_width", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.storehouseSearchStep = _reader.Decimal(_object, "storehouse_search_step", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.storehouseSearchRings = _reader.Integer(_object, "storehouse_search_rings", 0);
   _reader.Close(_object);
 }
 
@@ -1743,6 +2030,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Stats& _out)
 {
   _out.sampleMinutes = _reader.Decimal(_object, "sample_minutes", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.populationStep = _reader.Integer(_object, "population_step", 0);
   _reader.Close(_object);
 }
 
@@ -1830,6 +2118,8 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "cost"), _out.cost);
   ReadFields(_reader, _reader.Object(_object, "upkeep"), _out.upkeep);
   ReadFields(_reader, _reader.Object(_object, "priority"), _out.priority);
+  ReadFields(_reader, _reader.Object(_object, "guard"), _out.guard);
+  ReadFields(_reader, _reader.Object(_object, "steward"), _out.steward);
   ReadFields(_reader, _reader.Object(_object, "strength"), _out.strength);
   ReadFields(_reader, _reader.Object(_object, "expedition"), _out.expedition);
   ReadFields(_reader, _reader.Object(_object, "conflict"), _out.conflict);
@@ -1862,6 +2152,13 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.effectStep = _reader.Integer(_object, "effect_step", 1);
   _out.orbPresize = _reader.Integer(_object, "orb_presize", 0);
   _out.orbStep = _reader.Integer(_object, "orb_step", 1);
+  _out.structureStep = _reader.Integer(_object, "structure_step", 1);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::Structure& _out)
+{
+  _out.defaultRadius = _reader.Decimal(_object, "default_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -1967,6 +2264,13 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 {
   _out.actorReach = _reader.Decimal(_object, "actor_reach", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.actorGain = _reader.Decimal(_object, "actor_gain", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.structureReach = _reader.Decimal(_object, "structure_reach", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::Ray& _out)
+{
+  _out.spriteRadius = _reader.Decimal(_object, "sprite_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -1987,6 +2291,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.tickPeriod = _reader.Decimal(_object, "tick_period", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.updateSlices = _reader.Integer(_object, "update_slices", 0);
   ReadFields(_reader, _reader.Object(_object, "container"), _out.container);
+  ReadFields(_reader, _reader.Object(_object, "structure"), _out.structure);
   ReadFields(_reader, _reader.Object(_object, "spawn"), _out.spawn);
   ReadFields(_reader, _reader.Object(_object, "physics"), _out.physics);
   ReadFields(_reader, _reader.Object(_object, "walk"), _out.walk);
@@ -1997,6 +2302,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "push"), _out.push);
   ReadFields(_reader, _reader.Object(_object, "route"), _out.route);
   ReadFields(_reader, _reader.Object(_object, "explosion"), _out.explosion);
+  ReadFields(_reader, _reader.Object(_object, "ray"), _out.ray);
   ReadFields(_reader, _reader.Object(_object, "command"), _out.command);
   ReadFields(_reader, _reader.Object(_object, "team"), _out.team);
   _reader.Close(_object);
@@ -2266,6 +2572,15 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Weapon::TurretRound& _out)
+{
+  _out.lifeTicks = _reader.Integer(_object, "life_ticks", 0);
+  _out.damage = _reader.Integer(_object, "damage", 0);
+  _out.push = _reader.Decimal(_object, "push", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.pushJitter = _reader.Decimal(_object, "push_jitter", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Weapon& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "laser"), _out.laser);
@@ -2273,6 +2588,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "thrown"), _out.thrown);
   ReadFields(_reader, _reader.Object(_object, "grenade"), _out.grenade);
   ReadFields(_reader, _reader.Object(_object, "shockwave"), _out.shockwave);
+  ReadFields(_reader, _reader.Object(_object, "turret_round"), _out.turretRound);
   _reader.Close(_object);
 }
 
@@ -2295,9 +2611,78 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Econ::SpawnNode& _out)
+{
+  _out.doorSpeed = _reader.Decimal(_object, "door_speed", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.doorJitter = _reader.Decimal(_object, "door_jitter", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Econ& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "orb"), _out.orb);
+  ReadFields(_reader, _reader.Object(_object, "spawn_node"), _out.spawnNode);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Bldg::Port& _out)
+{
+  _out.clearanceWu = _reader.Decimal(_object, "clearance_wu", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.radiusWu = _reader.Decimal(_object, "radius_wu", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.reservationLimit = _reader.Integer(_object, "reservation_limit", 0);
+  _out.reservationCap = _reader.Integer(_object, "reservation_cap", 0);
+  _out.reservationDecayPerTick = _reader.Integer(_object, "reservation_decay_per_tick", 0);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Bldg::Structure& _out)
+{
+  _out.pushStepWu = _reader.Decimal(_object, "push_step_wu", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Bldg::Turret::Gun& _out)
+{
+  _out.reloadTicks = _reader.Integer(_object, "reload_ticks", 0);
+  _out.minRange = _reader.Decimal(_object, "min_range", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.maxRange = _reader.Decimal(_object, "max_range", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.roundSpeed = _reader.Decimal(_object, "round_speed", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.startBackFraction = _reader.Decimal(_object, "start_back_fraction", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Bldg::Turret& _out)
+{
+  _out.radius = _reader.Decimal(_object, "radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.raySphereRadius = _reader.Decimal(_object, "ray_sphere_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.raySphereHeight = _reader.Decimal(_object, "ray_sphere_height", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.recountTicks = _reader.Integer(_object, "recount_ticks", 0);
+  _out.sweepDistanceBase = _reader.Decimal(_object, "sweep_distance_base", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.sweepDistanceSpread = _reader.Decimal(_object, "sweep_distance_spread", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.sweepHeightFirst = _reader.Decimal(_object, "sweep_height_first", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.sweepTurn = _reader.Decimal(_object, "sweep_turn", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.sweepHeightChange = _reader.Decimal(_object, "sweep_height_change", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.losStep = _reader.Decimal(_object, "los_step", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.wobbleXz = _reader.Decimal(_object, "wobble_xz", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.wobbleY = _reader.Decimal(_object, "wobble_y", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.wobbleRateXz = _reader.Decimal(_object, "wobble_rate_xz", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.wobbleRateY = _reader.Decimal(_object, "wobble_rate_y", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.fireCone = _reader.Decimal(_object, "fire_cone", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.hoseWindowTicks = _reader.Integer(_object, "hose_window_ticks", 0);
+  _out.minAimDistance = _reader.Decimal(_object, "min_aim_distance", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.yawGain = _reader.Decimal(_object, "yaw_gain", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.pitchBlend = _reader.Decimal(_object, "pitch_blend", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.barrelsPerFireStep = _reader.Integer(_object, "barrels_per_fire_step", 0);
+  _out.health = _reader.Integer(_object, "health", 0);
+  ReadFields(_reader, _reader.Object(_object, "gun"), _out.gun);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Bldg& _out)
+{
+  ReadFields(_reader, _reader.Object(_object, "port"), _out.port);
+  ReadFields(_reader, _reader.Object(_object, "structure"), _out.structure);
+  ReadFields(_reader, _reader.Object(_object, "turret"), _out.turret);
   _reader.Close(_object);
 }
 
@@ -2327,6 +2712,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.range = _reader.Decimal(_object, "range", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.defendEnemyThreshold = _reader.Integer(_object, "defend_enemy_threshold", 0);
   _out.defendLeaderRadius = _reader.Decimal(_object, "defend_leader_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.importantRadius = _reader.Decimal(_object, "important_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -2397,6 +2783,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "unit"), _out.unit);
   ReadFields(_reader, _reader.Object(_object, "weapon"), _out.weapon);
   ReadFields(_reader, _reader.Object(_object, "econ"), _out.econ);
+  ReadFields(_reader, _reader.Object(_object, "bldg"), _out.bldg);
   ReadFields(_reader, _reader.Object(_object, "ctrl"), _out.ctrl);
   ReadFields(_reader, _reader.Object(_object, "bot"), _out.bot);
   _reader.Close(_object);
@@ -2406,6 +2793,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 {
   _out.side = _reader.Decimal(_object, "side", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.channelWidth = _reader.Decimal(_object, "channel_width", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.coastBand = _reader.Decimal(_object, "coast_band", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -2449,6 +2837,23 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Wld::Territory& _out)
 {
   _out.maxRadius = _reader.Decimal(_object, "max_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.foundingRadius = _reader.Decimal(_object, "founding_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.siteClearance = _reader.Decimal(_object, "site_clearance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Wld::Resource& _out)
+{
+  _out.homeInner = _reader.Integer(_object, "home_inner", 0);
+  _out.homeOuter = _reader.Integer(_object, "home_outer", 0);
+  _out.innerRadius = _reader.Decimal(_object, "inner_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.outerRadius = _reader.Decimal(_object, "outer_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.extraRadius = _reader.Decimal(_object, "extra_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.extraBearing = _reader.Decimal(_object, "extra_bearing", {.minimum = -180.0, .maximum = 180.0}, Neuron::SimPrecision::Binary64);
+  _out.homeYieldTolerance = _reader.Decimal(_object, "home_yield_tolerance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.borderFactor = _reader.Integer(_object, "border_factor", 0);
+  _out.centralFactor = _reader.Integer(_object, "central_factor", 0);
+  _out.wildClearance = _reader.Decimal(_object, "wild_clearance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -2465,6 +2870,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "terrain"), _out.terrain);
   ReadFields(_reader, _reader.Object(_object, "generation"), _out.generation);
   ReadFields(_reader, _reader.Object(_object, "territory"), _out.territory);
+  ReadFields(_reader, _reader.Object(_object, "resource"), _out.resource);
   ReadFields(_reader, _reader.Object(_object, "travel"), _out.travel);
   _reader.Close(_object);
 }
@@ -2515,11 +2921,13 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Worl
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Vision& _in)
 {
   _writer.F64(_in.unitRadius);
+  _writer.F64(_in.cellSize);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Vision& _out)
 {
   _out.unitRadius = _reader.F64();
+  _out.cellSize = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Settlement& _in)
@@ -2565,11 +2973,13 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Esse
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Territory& _in)
 {
   _writer.F64(_in.radiusPerWorker);
+  _writer.F64(_in.cellSize);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Territory& _out)
 {
   _out.radiusPerWorker = _reader.F64();
+  _out.cellSize = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Resource& _in)
@@ -2613,6 +3023,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Cons
   _writer.I64(_in.portsStorehouse);
   _writer.I64(_in.portsTurret);
   _writer.F64(_in.workPerRu);
+  _writer.F64(_in.centerRingRadius);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Construction& _out)
@@ -2622,6 +3033,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Cons
   _out.portsStorehouse = _reader.I64();
   _out.portsTurret = _reader.I64();
   _out.workPerRu = _reader.F64();
+  _out.centerRingRadius = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Cost& _in)
@@ -2630,6 +3042,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Cost
   _writer.F64(_in.dwellingEscalation);
   _writer.F64(_in.storehouseRu);
   _writer.F64(_in.turretRu);
+  _writer.F64(_in.turretRebuildFraction);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Cost& _out)
@@ -2638,6 +3051,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Cost
   _out.dwellingEscalation = _reader.F64();
   _out.storehouseRu = _reader.F64();
   _out.turretRu = _reader.F64();
+  _out.turretRebuildFraction = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Upkeep& _in)
@@ -2666,6 +3080,42 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Prio
   _out.defaultGather = _reader.F64();
   _out.defaultConstruct = _reader.F64();
   _out.defaultGuard = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Guard& _in)
+{
+  _writer.F64(_in.gatherRadius);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Guard& _out)
+{
+  _out.gatherRadius = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Steward& _in)
+{
+  _writer.F64(_in.thinkS);
+  _writer.I64(_in.dwellingMargin);
+  _writer.F64(_in.ringFirst);
+  _writer.F64(_in.ringStep);
+  _writer.I64(_in.ringsMax);
+  _writer.F64(_in.slotSpacing);
+  _writer.F64(_in.laneHalfWidth);
+  _writer.F64(_in.storehouseSearchStep);
+  _writer.I64(_in.storehouseSearchRings);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Steward& _out)
+{
+  _out.thinkS = _reader.F64();
+  _out.dwellingMargin = _reader.I64();
+  _out.ringFirst = _reader.F64();
+  _out.ringStep = _reader.F64();
+  _out.ringsMax = _reader.I64();
+  _out.slotSpacing = _reader.F64();
+  _out.laneHalfWidth = _reader.F64();
+  _out.storehouseSearchStep = _reader.F64();
+  _out.storehouseSearchRings = _reader.I64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Strength& _in)
@@ -2841,11 +3291,13 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Reno
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Stats& _in)
 {
   _writer.F64(_in.sampleMinutes);
+  _writer.I64(_in.populationStep);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Stats& _out)
 {
   _out.sampleMinutes = _reader.F64();
+  _out.populationStep = _reader.I64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Presence& _in)
@@ -2984,6 +3436,8 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp& _in)
   CookFields(_writer, _in.cost);
   CookFields(_writer, _in.upkeep);
   CookFields(_writer, _in.priority);
+  CookFields(_writer, _in.guard);
+  CookFields(_writer, _in.steward);
   CookFields(_writer, _in.strength);
   CookFields(_writer, _in.expedition);
   CookFields(_writer, _in.conflict);
@@ -3024,6 +3478,8 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp& _out
   ReadCookedFields(_reader, _out.cost);
   ReadCookedFields(_reader, _out.upkeep);
   ReadCookedFields(_reader, _out.priority);
+  ReadCookedFields(_reader, _out.guard);
+  ReadCookedFields(_reader, _out.steward);
   ReadCookedFields(_reader, _out.strength);
   ReadCookedFields(_reader, _out.expedition);
   ReadCookedFields(_reader, _out.conflict);
@@ -3055,6 +3511,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim:
   _writer.I64(_in.effectStep);
   _writer.I64(_in.orbPresize);
   _writer.I64(_in.orbStep);
+  _writer.I64(_in.structureStep);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim::Container& _out)
@@ -3064,6 +3521,17 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim:
   _out.effectStep = _reader.I64();
   _out.orbPresize = _reader.I64();
   _out.orbStep = _reader.I64();
+  _out.structureStep = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim::Structure& _in)
+{
+  _writer.F64(_in.defaultRadius);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim::Structure& _out)
+{
+  _out.defaultRadius = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim::Spawn::DefaultFront& _in)
@@ -3246,12 +3714,24 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim:
 {
   _writer.F64(_in.actorReach);
   _writer.F64(_in.actorGain);
+  _writer.F64(_in.structureReach);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim::Explosion& _out)
 {
   _out.actorReach = _reader.F64();
   _out.actorGain = _reader.F64();
+  _out.structureReach = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim::Ray& _in)
+{
+  _writer.F64(_in.spriteRadius);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim::Ray& _out)
+{
+  _out.spriteRadius = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim::Command& _in)
@@ -3279,6 +3759,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim&
   _writer.F64(_in.tickPeriod);
   _writer.I64(_in.updateSlices);
   CookFields(_writer, _in.container);
+  CookFields(_writer, _in.structure);
   CookFields(_writer, _in.spawn);
   CookFields(_writer, _in.physics);
   CookFields(_writer, _in.walk);
@@ -3289,6 +3770,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim&
   CookFields(_writer, _in.push);
   CookFields(_writer, _in.route);
   CookFields(_writer, _in.explosion);
+  CookFields(_writer, _in.ray);
   CookFields(_writer, _in.command);
   CookFields(_writer, _in.team);
 }
@@ -3298,6 +3780,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim&
   _out.tickPeriod = _reader.F64();
   _out.updateSlices = _reader.I64();
   ReadCookedFields(_reader, _out.container);
+  ReadCookedFields(_reader, _out.structure);
   ReadCookedFields(_reader, _out.spawn);
   ReadCookedFields(_reader, _out.physics);
   ReadCookedFields(_reader, _out.walk);
@@ -3308,6 +3791,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim&
   ReadCookedFields(_reader, _out.push);
   ReadCookedFields(_reader, _out.route);
   ReadCookedFields(_reader, _out.explosion);
+  ReadCookedFields(_reader, _out.ray);
   ReadCookedFields(_reader, _out.command);
   ReadCookedFields(_reader, _out.team);
 }
@@ -3802,6 +4286,22 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Weap
   _out.push = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Weapon::TurretRound& _in)
+{
+  _writer.I64(_in.lifeTicks);
+  _writer.I64(_in.damage);
+  _writer.F64(_in.push);
+  _writer.F64(_in.pushJitter);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Weapon::TurretRound& _out)
+{
+  _out.lifeTicks = _reader.I64();
+  _out.damage = _reader.I64();
+  _out.push = _reader.F64();
+  _out.pushJitter = _reader.F64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Weapon& _in)
 {
   CookFields(_writer, _in.laser);
@@ -3809,6 +4309,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Weap
   CookFields(_writer, _in.thrown);
   CookFields(_writer, _in.grenade);
   CookFields(_writer, _in.shockwave);
+  CookFields(_writer, _in.turretRound);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Weapon& _out)
@@ -3818,6 +4319,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Weap
   ReadCookedFields(_reader, _out.thrown);
   ReadCookedFields(_reader, _out.grenade);
   ReadCookedFields(_reader, _out.shockwave);
+  ReadCookedFields(_reader, _out.turretRound);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Econ::Orb::FloatingTicks& _in)
@@ -3854,14 +4356,140 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Econ
   _out.wobbleOffsetRange = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Econ::SpawnNode& _in)
+{
+  _writer.F64(_in.doorSpeed);
+  _writer.F64(_in.doorJitter);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Econ::SpawnNode& _out)
+{
+  _out.doorSpeed = _reader.F64();
+  _out.doorJitter = _reader.F64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Econ& _in)
 {
   CookFields(_writer, _in.orb);
+  CookFields(_writer, _in.spawnNode);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Econ& _out)
 {
   ReadCookedFields(_reader, _out.orb);
+  ReadCookedFields(_reader, _out.spawnNode);
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bldg::Port& _in)
+{
+  _writer.F64(_in.clearanceWu);
+  _writer.F64(_in.radiusWu);
+  _writer.I64(_in.reservationLimit);
+  _writer.I64(_in.reservationCap);
+  _writer.I64(_in.reservationDecayPerTick);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Bldg::Port& _out)
+{
+  _out.clearanceWu = _reader.F64();
+  _out.radiusWu = _reader.F64();
+  _out.reservationLimit = _reader.I64();
+  _out.reservationCap = _reader.I64();
+  _out.reservationDecayPerTick = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bldg::Structure& _in)
+{
+  _writer.F64(_in.pushStepWu);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Bldg::Structure& _out)
+{
+  _out.pushStepWu = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bldg::Turret::Gun& _in)
+{
+  _writer.I64(_in.reloadTicks);
+  _writer.F64(_in.minRange);
+  _writer.F64(_in.maxRange);
+  _writer.F64(_in.roundSpeed);
+  _writer.F64(_in.startBackFraction);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Bldg::Turret::Gun& _out)
+{
+  _out.reloadTicks = _reader.I64();
+  _out.minRange = _reader.F64();
+  _out.maxRange = _reader.F64();
+  _out.roundSpeed = _reader.F64();
+  _out.startBackFraction = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bldg::Turret& _in)
+{
+  _writer.F64(_in.radius);
+  _writer.F64(_in.raySphereRadius);
+  _writer.F64(_in.raySphereHeight);
+  _writer.I64(_in.recountTicks);
+  _writer.F64(_in.sweepDistanceBase);
+  _writer.F64(_in.sweepDistanceSpread);
+  _writer.F64(_in.sweepHeightFirst);
+  _writer.F64(_in.sweepTurn);
+  _writer.F64(_in.sweepHeightChange);
+  _writer.F64(_in.losStep);
+  _writer.F64(_in.wobbleXz);
+  _writer.F64(_in.wobbleY);
+  _writer.F64(_in.wobbleRateXz);
+  _writer.F64(_in.wobbleRateY);
+  _writer.F64(_in.fireCone);
+  _writer.I64(_in.hoseWindowTicks);
+  _writer.F64(_in.minAimDistance);
+  _writer.F64(_in.yawGain);
+  _writer.F64(_in.pitchBlend);
+  _writer.I64(_in.barrelsPerFireStep);
+  _writer.I64(_in.health);
+  CookFields(_writer, _in.gun);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Bldg::Turret& _out)
+{
+  _out.radius = _reader.F64();
+  _out.raySphereRadius = _reader.F64();
+  _out.raySphereHeight = _reader.F64();
+  _out.recountTicks = _reader.I64();
+  _out.sweepDistanceBase = _reader.F64();
+  _out.sweepDistanceSpread = _reader.F64();
+  _out.sweepHeightFirst = _reader.F64();
+  _out.sweepTurn = _reader.F64();
+  _out.sweepHeightChange = _reader.F64();
+  _out.losStep = _reader.F64();
+  _out.wobbleXz = _reader.F64();
+  _out.wobbleY = _reader.F64();
+  _out.wobbleRateXz = _reader.F64();
+  _out.wobbleRateY = _reader.F64();
+  _out.fireCone = _reader.F64();
+  _out.hoseWindowTicks = _reader.I64();
+  _out.minAimDistance = _reader.F64();
+  _out.yawGain = _reader.F64();
+  _out.pitchBlend = _reader.F64();
+  _out.barrelsPerFireStep = _reader.I64();
+  _out.health = _reader.I64();
+  ReadCookedFields(_reader, _out.gun);
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bldg& _in)
+{
+  CookFields(_writer, _in.port);
+  CookFields(_writer, _in.structure);
+  CookFields(_writer, _in.turret);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Bldg& _out)
+{
+  ReadCookedFields(_reader, _out.port);
+  ReadCookedFields(_reader, _out.structure);
+  ReadCookedFields(_reader, _out.turret);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Ctrl::Leader& _in)
@@ -3903,6 +4531,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bot:
   _writer.F64(_in.range);
   _writer.I64(_in.defendEnemyThreshold);
   _writer.F64(_in.defendLeaderRadius);
+  _writer.F64(_in.importantRadius);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Bot::Node& _out)
@@ -3912,6 +4541,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Bot:
   _out.range = _reader.F64();
   _out.defendEnemyThreshold = _reader.I64();
   _out.defendLeaderRadius = _reader.F64();
+  _out.importantRadius = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bot::Cycle& _in)
@@ -4028,6 +4658,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref& _in)
   CookFields(_writer, _in.unit);
   CookFields(_writer, _in.weapon);
   CookFields(_writer, _in.econ);
+  CookFields(_writer, _in.bldg);
   CookFields(_writer, _in.ctrl);
   CookFields(_writer, _in.bot);
 }
@@ -4038,6 +4669,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref& _out
   ReadCookedFields(_reader, _out.unit);
   ReadCookedFields(_reader, _out.weapon);
   ReadCookedFields(_reader, _out.econ);
+  ReadCookedFields(_reader, _out.bldg);
   ReadCookedFields(_reader, _out.ctrl);
   ReadCookedFields(_reader, _out.bot);
 }
@@ -4046,12 +4678,14 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::Regi
 {
   _writer.F64(_in.side);
   _writer.F64(_in.channelWidth);
+  _writer.F64(_in.coastBand);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld::Region& _out)
 {
   _out.side = _reader.F64();
   _out.channelWidth = _reader.F64();
+  _out.coastBand = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::Site& _in)
@@ -4125,11 +4759,43 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld::Gene
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::Territory& _in)
 {
   _writer.F64(_in.maxRadius);
+  _writer.F64(_in.foundingRadius);
+  _writer.F64(_in.siteClearance);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld::Territory& _out)
 {
   _out.maxRadius = _reader.F64();
+  _out.foundingRadius = _reader.F64();
+  _out.siteClearance = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::Resource& _in)
+{
+  _writer.I64(_in.homeInner);
+  _writer.I64(_in.homeOuter);
+  _writer.F64(_in.innerRadius);
+  _writer.F64(_in.outerRadius);
+  _writer.F64(_in.extraRadius);
+  _writer.F64(_in.extraBearing);
+  _writer.F64(_in.homeYieldTolerance);
+  _writer.I64(_in.borderFactor);
+  _writer.I64(_in.centralFactor);
+  _writer.F64(_in.wildClearance);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld::Resource& _out)
+{
+  _out.homeInner = _reader.I64();
+  _out.homeOuter = _reader.I64();
+  _out.innerRadius = _reader.F64();
+  _out.outerRadius = _reader.F64();
+  _out.extraRadius = _reader.F64();
+  _out.extraBearing = _reader.F64();
+  _out.homeYieldTolerance = _reader.F64();
+  _out.borderFactor = _reader.I64();
+  _out.centralFactor = _reader.I64();
+  _out.wildClearance = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::Travel& _in)
@@ -4149,6 +4815,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld& _in)
   CookFields(_writer, _in.terrain);
   CookFields(_writer, _in.generation);
   CookFields(_writer, _in.territory);
+  CookFields(_writer, _in.resource);
   CookFields(_writer, _in.travel);
 }
 
@@ -4159,6 +4826,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld& _out
   ReadCookedFields(_reader, _out.terrain);
   ReadCookedFields(_reader, _out.generation);
   ReadCookedFields(_reader, _out.territory);
+  ReadCookedFields(_reader, _out.resource);
   ReadCookedFields(_reader, _out.travel);
 }
 

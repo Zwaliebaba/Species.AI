@@ -50,8 +50,10 @@ std::filesystem::path ContentRootWith(const TemporaryFolder& _folder, std::strin
   return _folder.Path();
 }
 
-// That record cooked as the content build cooks it, in a loose-content folder of its own, mounted (ADR-108).
-Neuron::LooseContent CookedContentWith(const TemporaryFolder& _folder, std::string_view _from, std::string_view _to)
+// That record cooked as the content build cooks it, in a loose-content folder of its own, mounted (ADR-108), with the
+// structure records the tests write unless _structures is false (ADR-129).
+Neuron::LooseContent CookedContentWith(const TemporaryFolder& _folder, std::string_view _from, std::string_view _to,
+                                       bool _structures = true)
 {
   const auto tuning = Species::ReadTuningMvpSource(ContentRootWith(_folder, _from, _to));
   Assert::IsTrue(tuning.has_value(), L"the changed record reads whole");
@@ -62,7 +64,7 @@ Neuron::LooseContent CookedContentWith(const TemporaryFolder& _folder, std::stri
   cooked.entry.schemaVersion = Species::TUNING_MVP_VERSION;
   cooked.entry.simulationRelevant = Species::TUNING_MVP_SIMULATION_RELEVANT;
   cooked.bytes = Species::CookTuningMvp(tuning.value_or(Species::TuningMvp{}));
-  std::vector<Neuron::CookedEntry> entries;
+  std::vector<Neuron::CookedEntry> entries = _structures ? StructureRecordEntries() : std::vector<Neuron::CookedEntry>{};
   entries.push_back(std::move(cooked));
   Assert::IsTrue(Neuron::WriteLooseContent(_folder.Path() / L"content", std::move(entries)).has_value(), L"the folder is written");
   std::expected<Neuron::LooseContent, Neuron::AssetError> content = Neuron::LooseContent::Mount(_folder.Path() / L"content");
@@ -332,6 +334,42 @@ public:
     Assert::IsTrue(client->State() == Neuron::ConnectionState::Closed, L"stopping the server closes the connection");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp075TheIntegratedServerContinuesItsWorldFromItsFolder)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-075")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp075TheIntegratedServerContinuesItsWorldFromItsFolder)
+  {
+    // ADR-137: stopping the integrated server freezes its world into its folder with the marker of a clean stop, and a
+    // server started on the folder continues the world after the tick it froze before, where a new world starts at 0.
+    const TemporaryFolder folder;
+    const Neuron::LooseContent content = CookedContentWith(folder, "\"tick_period\": 0.1", "\"tick_period\": 0.01");
+    const Neuron::PlatformClock clock;
+    Species::IntegratedServer::Desc desc;
+    desc.clock = &clock;
+    desc.content = &content;
+    desc.snapshotFolder = folder.Path() / L"world";
+    const auto firstTicks = [&](std::uint64_t _atLeast)
+    {
+      Species::IntegratedServer server(desc);
+      std::unique_ptr<Neuron::Transport> client = server.Connect();
+      Assert::IsTrue(server.Start().has_value(), L"the server starts");
+      std::vector<std::uint64_t> ticks;
+      while (ticks.size() < _atLeast)
+      {
+        const Arrivals arrived = TakeArrivals(*client);
+        ticks.insert(ticks.end(), arrived.ticks.begin(), arrived.ticks.end());
+        clock.WaitUntil(clock.Now() + Neuron::Nanoseconds{2'000'000});
+      }
+      server.Stop();
+      return ticks;
+    };
+    const std::vector<std::uint64_t> before = firstTicks(5);
+    ExpectEqual(0, static_cast<std::int64_t>(before.front()), L"a new world starts at tick 0");
+    Assert::IsTrue(std::filesystem::exists(desc.snapshotFolder / Species::WorldServer::CLEAN_STOP_FILE_NAME), L"stopped cleanly");
+    const std::vector<std::uint64_t> after = firstTicks(1);
+    Assert::IsTrue(after.front() > before.back(), L"the world continues after the ticks it ran");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp099AServerWithoutItsTuningDoesNotStart)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-099")
   END_TEST_METHOD_ATTRIBUTE()
@@ -352,6 +390,52 @@ public:
     Assert::IsTrue(started.error().fault == Neuron::AssetFault::Missing, L"a missing record");
     server.Stop();
     Assert::IsFalse(client->Receive().has_value(), L"no tick ran");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Ast046AServerWithoutItsStructureRecordsDoesNotStart)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"AST-046")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"AST-043")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Ast046AServerWithoutItsStructureRecordsDoesNotStart)
+  {
+    // M2 task T3's done-when (ADR-129): the server starts from the cooked simulation data records, and content that
+    // lacks them starts no server.
+    const TemporaryFolder folder;
+    const Neuron::LooseContent content = CookedContentWith(folder, "\"tick_period\": 0.1", "\"tick_period\": 0.1", false);
+    const Neuron::PlatformClock clock;
+    Species::IntegratedServer::Desc desc;
+    desc.clock = &clock;
+    desc.content = &content;
+    Species::IntegratedServer server(desc);
+    std::unique_ptr<Neuron::Transport> client = server.Connect();
+    const auto started = server.Start();
+    Assert::IsFalse(started.has_value(), L"no structure records, no server");
+    Assert::IsTrue(started.error().fault == Neuron::AssetFault::Missing && started.error().key == "meshes/wellspring@sim",
+                   L"the first missing record");
+    server.Stop();
+    Assert::IsFalse(client->Receive().has_value(), L"no tick ran");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp030AServerWhoseResourceSiteMeshDisagreesWithItsTuningDoesNotStart)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-030")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-099")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp030AServerWhoseResourceSiteMeshDisagreesWithItsTuningDoesNotStart)
+  {
+    // ADR-130: a resource site's gathering ports are the port sockets of its mesh, so a tuning record that gives it 5 per
+    // unit against a mesh of 4 starts no server, and names the resource site's record.
+    const TemporaryFolder folder;
+    const Neuron::LooseContent content = CookedContentWith(folder, "\"ports_per_unit\": 4", "\"ports_per_unit\": 5");
+    const Neuron::PlatformClock clock;
+    Species::IntegratedServer::Desc desc;
+    desc.clock = &clock;
+    desc.content = &content;
+    Species::IntegratedServer server(desc);
+    const auto started = server.Start();
+    Assert::IsFalse(started.has_value(), L"no server");
+    Assert::IsTrue(started.error().fault == Neuron::AssetFault::Damaged && started.error().key == "meshes/resourcesite@sim",
+                   L"the resource site's record");
+    server.Stop();
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp099ATickPeriodChangedInDataChangesTheServersTicks)

@@ -53,6 +53,8 @@ This plan is a draft because the parts of M3 that cost most rest on what M2 meas
 - **The cost of four settlements and two battles.** M2 measures a region of four scripted settlements at their plateau (the M2 plan's table 1); M3 adds the two battles of MVP-015 and the AI settlements' decisions within ADR-080 item 2's budget, which O74 set at 60 µs.
 - **The HUD's form.** The relations panel, the warning and the results are built on M2's UI framework and HUD.
 
+> **Amendment 2026-10-22 (M2 task T10; [ADR-138](../ADR/ADR-138-the-scripted-steward-and-the-growth-scene-at-m2.md)).** On T10's tuning a lone settlement's territory reaches a halfway line at 2.65 to 2.67 hours of play on seeds 1 to 8, inside the scope's hour 2 to 3; two neighbours growing towards each other meet no later.
+
 ## 4 The order of M3
 
 **The valley is built and run headless before it is played.** Playtest 1 costs the owner two runs of 8 hours of play over two to three weeks (the scope's §6.1), so its measurable lines are first predicted without the owner: phase A builds the neighbours, the conflicts and the run as a headless simulation and ends with a valley run in which every settlement is driven by a policy, stepped faster than real time on a corpus of seeds (T9). Phase B makes it playable and audible, and the first-playable confirmations and Playtest 1 close it.

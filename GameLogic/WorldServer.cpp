@@ -9,6 +9,7 @@
 #include "SecureRandom.h"
 #include "PresentationEvents.h"
 #include "ServerStats.h"
+#include "SettlementCommands.h"
 #include "WorldServer.h"
 #include "WorldSnapshot.h"
 #include "WorldTerrain.h"
@@ -17,8 +18,14 @@
 #include <array>
 #include <bit>
 #include <cmath>
+#include <chrono>
 #include <cstddef>
+#include <format>
+#include <optional>
+#include <span>
 #include <stdexcept>
+#include <string>
+#include <string_view>
 #include <utility>
 
 namespace Species
@@ -60,6 +67,58 @@ CommandResult ResultOf(const Neuron::CommandOutcome& _outcome) noexcept
   return CommandResult::Duplicate;
 }
 
+// ADR-137: the tick of a file named world-<tick>.<suffix>, as the snapshots and journals are; none for another name.
+std::optional<std::uint64_t> TickOfFile(const std::filesystem::path& _path)
+{
+  const std::wstring stem = _path.stem().wstring();
+  constexpr std::wstring_view PREFIX = L"world-";
+  if (!stem.starts_with(PREFIX) || stem.size() == PREFIX.size() ||
+      !std::ranges::all_of(stem.substr(PREFIX.size()), [](wchar_t _c) { return _c >= L'0' && _c <= L'9'; }))
+  {
+    return std::nullopt;
+  }
+  std::uint64_t tick = 0;
+  for (const wchar_t digit : stem.substr(PREFIX.size()))
+  {
+    tick = tick * 10 + static_cast<std::uint64_t>(digit - L'0');
+  }
+  return tick;
+}
+
+// PIL-131: the tick that the marker of a clean stop names, or none when there is no marker or it names nothing.
+std::optional<std::uint64_t> CleanStopTick(const std::filesystem::path& _marker)
+{
+  const auto bytes = Neuron::ReadWholeFile(_marker);
+  if (!bytes || bytes->empty() || bytes->size() > 20 ||
+      !std::ranges::all_of(*bytes, [](std::byte _b) { return _b >= std::byte{'0'} && _b <= std::byte{'9'}; }))
+  {
+    return std::nullopt;
+  }
+  std::uint64_t tick = 0;
+  for (const std::byte digit : *bytes)
+  {
+    tick = tick * 10 + (std::to_integer<std::uint64_t>(digit) - '0');
+  }
+  return tick;
+}
+
+// A message the server answers itself rather than queueing (ADR-109, ADR-136): the checks of ADR-087 item 2 that need
+// no state, and the message decoded when they pass.
+template <Neuron::MessageCodec T>
+CommandResult CheckAnswered(const Neuron::MessageHeader& _header, Neuron::BitReader& _reader, std::size_t _bytes, T& _message)
+{
+  if (_header.version != T::VERSION)
+  {
+    return CommandResult::WrongVersion;
+  }
+  if (_bytes > T::MAX_BYTES)
+  {
+    return CommandResult::Oversized;
+  }
+  _message.Decode(_reader);
+  return _reader.Finish() ? CommandResult::Applied : CommandResult::Malformed;
+}
+
 } // namespace
 
 WorldServer::WorldServer(const Desc& _desc)
@@ -77,12 +136,19 @@ std::uint64_t WorldServer::Open()
 {
   if (!m_desc.snapshotFolder.empty())
   {
+    // PIL-131 (ADR-137): a world that froze cleanly left a marker naming its final snapshot. It goes as the world opens,
+    // so that a stop that leaves none is unclean.
+    const std::optional<std::uint64_t> cleanTick = CleanStopTick(m_desc.snapshotFolder / CLEAN_STOP_FILE_NAME);
+    if (!Neuron::RemoveFile(m_desc.snapshotFolder / CLEAN_STOP_FILE_NAME))
+    {
+      Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Error, "the marker of a clean stop could not be removed");
+    }
     // MVP-075: the newest snapshot that validates; a refused one is logged and the next older one tried.
     const Neuron::SnapshotStore store(m_desc.snapshotFolder, SnapshotsKept());
     for (const std::filesystem::path& snapshot : store.Snapshots())
     {
-      auto restored = Neuron::SnapshotStore::Load(snapshot).and_then([this](const Neuron::SnapshotContents& _contents)
-                                                                     { return RestoreWorld(_contents, m_desc.tuning); });
+      auto restored = Neuron::SnapshotStore::Load(snapshot).and_then(
+        [this](const Neuron::SnapshotContents& _contents) { return RestoreWorld(_contents, m_desc.tuning, &m_desc.structures); });
       if (!restored)
       {
         Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "the snapshot {} is refused: {}",
@@ -98,7 +164,18 @@ std::uint64_t WorldServer::Open()
         continue;
       }
       Adopt(std::move(*restored), std::move(terrain));
-      m_journal.reset(); // the journal of a restored world comes with saving at M2 (MVP-076)
+      // MVP-075, PIL-131: a world that did not freeze cleanly at this snapshot lost what it ran after it, a freeze of
+      // cause "unclean stop" from the snapshot's tick.
+      if (cleanTick != m_world->NextTick())
+      {
+        const std::optional<std::int64_t> now = CalendarSeconds();
+        const std::int64_t saved = m_world->Record().savedAtSeconds;
+        const std::uint64_t seconds = now && saved > 0 && *now > saved ? static_cast<std::uint64_t>(*now - saved) : 0;
+        m_world->Record().freezes.push_back({m_world->NextTick(), FreezeCause::UncleanStop, seconds});
+        Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning,
+                    "the world did not stop cleanly: a freeze of {} s from tick {}, cause unclean stop", seconds, m_world->NextTick());
+      }
+      m_journal = RestoredJournal(); // MVP-076: the journal from the snapshot it opened (ADR-137)
       Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Info, "the world opens from {} at tick {}",
                   snapshot.filename().string(), m_world->NextTick());
       return m_world->NextTick();
@@ -124,9 +201,10 @@ bool WorldServer::StartNew(std::uint64_t _seed, std::uint64_t _firstTick)
   // A new world draws its simulation key from the system's cryptographic generator (ADR-082 item 1), and holds the
   // seed that passed (MVP-011), which gives the same terrain at its first attempt. Its journal starts with it.
   CommandJournal journal;
-  journal.start = WorldStart{Neuron::DrawSecretKey(),          terrain->seed,          _firstTick, m_desc.regionCount, m_desc.sandbox,
-                             m_desc.sandbox && m_desc.watched, m_desc.syntheticFigures};
-  std::unique_ptr<WorldSimulation> world = StartWorld(journal.start, terrain, m_desc.tuning);
+  journal.start =
+    WorldStart{Neuron::DrawSecretKey(),          terrain->seed,           _firstTick,        m_desc.regionCount, m_desc.sandbox,
+               m_desc.sandbox && m_desc.watched, m_desc.syntheticFigures, m_desc.stewardSite};
+  std::unique_ptr<WorldSimulation> world = StartWorld(journal.start, terrain, m_desc.tuning, &m_desc.structures);
   Adopt(std::move(world), std::move(terrain));
   m_journal = std::move(journal);
   return true;
@@ -184,6 +262,85 @@ void WorldServer::Adopt(std::unique_ptr<WorldSimulation> _world, std::shared_ptr
   m_terrain = std::move(_terrain);
 }
 
+std::filesystem::path WorldServer::JournalPath(const std::filesystem::path& _folder, std::uint64_t _tick)
+{
+  return _folder / std::format(L"world-{:020}.journal", _tick);
+}
+
+std::uint64_t WorldServer::SnapshotTicks() const noexcept
+{
+  const double ticks = m_desc.tuning.mvp.persist.snapshotSeconds / m_desc.tuning.ref.sim.tickPeriod;
+  return ticks >= 1.0 ? static_cast<std::uint64_t>(std::llround(ticks)) : 0;
+}
+
+std::optional<std::int64_t> WorldServer::CalendarSeconds() const
+{
+  if (!m_desc.calendar)
+  {
+    return std::nullopt;
+  }
+  return std::chrono::duration_cast<std::chrono::seconds>(m_desc.calendar().time_since_epoch()).count();
+}
+
+CommandJournal WorldServer::RestoredJournal() const
+{
+  CommandJournal journal;
+  journal.start = WorldStart{m_world->SimulationKey(), m_world->WorldSeed(),
+                             m_world->NextTick(),      static_cast<std::uint16_t>(m_world->RegionCount()),
+                             m_desc.sandbox,           m_desc.sandbox && m_desc.watched,
+                             m_desc.syntheticFigures,  m_desc.stewardSite};
+  journal.restored = true;
+  return journal;
+}
+
+bool WorldServer::SaveCut()
+{
+  ENGINE_PROFILE_SCOPE("world.snapshot.save");
+  if (const std::optional<std::int64_t> now = CalendarSeconds())
+  {
+    m_world->Record().savedAtSeconds = *now;
+  }
+  Neuron::SnapshotStore store(m_desc.snapshotFolder, SnapshotsKept());
+  const auto saved = store.Save(SnapshotOf(*m_world));
+  if (!saved)
+  {
+    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Error, "the world could not be saved in {}",
+                m_desc.snapshotFolder.string());
+    return false;
+  }
+  Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Debug, "the world is saved in {}", saved->filename().string());
+  // MVP-076: the journal since the last cut goes beside the snapshot or the start it replays from, and a new one starts
+  // from this snapshot.
+  std::optional<std::uint64_t> written;
+  if (m_journal)
+  {
+    written = m_journal->start.firstTick;
+    if (!Neuron::ReplaceFileAtomically(JournalPath(m_desc.snapshotFolder, m_journal->start.firstTick), WriteJournal(*m_journal)))
+    {
+      Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Error, "the command journal from tick {} could not be written",
+                  m_journal->start.firstTick);
+    }
+  }
+  m_journal = RestoredJournal();
+  // The journals that start before the oldest snapshot kept go with the snapshots, but the one just written, which may
+  // start from the world's start.
+  const std::vector<std::filesystem::path> kept = store.Snapshots();
+  const std::optional<std::uint64_t> oldest = kept.empty() ? std::nullopt : TickOfFile(kept.back());
+  for (const std::filesystem::path& journal : Neuron::ListFiles(m_desc.snapshotFolder, ".journal"))
+  {
+    const std::optional<std::uint64_t> tick = TickOfFile(journal);
+    if (tick && oldest && *tick < *oldest && tick != written)
+    {
+      if (!Neuron::RemoveFile(journal))
+      {
+        Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "the journal {} could not be removed",
+                    journal.filename().string());
+      }
+    }
+  }
+  return true;
+}
+
 std::size_t WorldServer::SnapshotsKept() const noexcept
 {
   // mvp.persist.snapshots_kept; a value below 1 keeps the one snapshot a restart needs.
@@ -194,7 +351,7 @@ void WorldServer::Connect(Neuron::ConnectionId _connection)
 {
   // ADR-109: the next id of the world owner and, in the sandbox, the steward's side.
   const StableId steward = ConnectSteward(*m_world, m_desc.sandbox, m_desc.watched);
-  m_stewards.emplace(_connection, Steward{steward, 0, false, {}, {}});
+  m_stewards.emplace(_connection, Steward{steward, 0, false, {}, {}, {}});
   if (m_journal)
   {
     m_journal->entries.push_back({m_world->NextTick(), true, JOURNAL_WORLD_OWNER, steward, 0, {}});
@@ -226,24 +383,38 @@ void WorldServer::Receive(Neuron::ConnectionId _connection, const Neuron::Receiv
   if (!reader.Failed() && header.type == SandboxRestartCommand::TYPE && m_desc.sandbox)
   {
     SandboxRestartCommand restart;
-    restart.Decode(reader);
-    CommandResult result = CommandResult::Malformed;
-    if (header.version != SandboxRestartCommand::VERSION)
-    {
-      result = CommandResult::WrongVersion;
-    }
-    else if (_message.bytes.size() > SandboxRestartCommand::MAX_BYTES)
-    {
-      result = CommandResult::Oversized;
-    }
-    else if (reader.Finish())
+    CommandResult result = CheckAnswered(header, reader, _message.bytes.size(), restart);
+    if (result == CommandResult::Applied)
     {
       result = RestartSandbox(restart.newSeed) ? CommandResult::Applied : CommandResult::NoEffect;
     }
-    steward.reports.push_back({sequence, m_world->NextTick(), result});
+    steward.reports.push_back({sequence, m_world->NextTick(), result, 0});
     return;
   }
 #endif
+  // MVP-098 (ADR-136): a status request is read, not queued, by a steward who commands the settlement's team; the status
+  // goes after the next tick, which the outcome names.
+  if (!reader.Failed() && header.type == ReadSettlementStatusCommand::TYPE)
+  {
+    ReadSettlementStatusCommand request;
+    CommandResult result = CheckAnswered(header, reader, _message.bytes.size(), request);
+    const RegionSimulation& region = m_world->Region(0);
+    if (result == CommandResult::Applied && !region.MayCommand(steward.id, request.team, false))
+    {
+      result = CommandResult::NotPermitted;
+    }
+    else if (result == CommandResult::Applied &&
+             std::ranges::find(region.Settlements(), request.team, &Settlement::team) == region.Settlements().end())
+    {
+      result = CommandResult::NoEffect;
+    }
+    if (result == CommandResult::Applied)
+    {
+      steward.statusTeams.push_back(request.team);
+    }
+    steward.reports.push_back({sequence, m_world->NextTick(), result, 0});
+    return;
+  }
   Neuron::CommandQueue& region = m_world->Region(0).Commands();
   const bool regional = !reader.Failed() && region.Handles(header.type);
   Neuron::CommandQueue& queue = regional ? region : m_world->Commands();
@@ -272,7 +443,7 @@ void WorldServer::CollectReports(Neuron::CommandQueue& _queue)
     {
       if (steward.id == outcome.sender)
       {
-        steward.reports.push_back({outcome.sequence, outcome.tick, ResultOf(outcome)});
+        steward.reports.push_back({outcome.sequence, outcome.tick, ResultOf(outcome), outcome.reason});
       }
     }
   }
@@ -294,6 +465,11 @@ void WorldServer::Step(std::uint64_t _tick, Neuron::WorkerPool& _workers)
   m_statsTickStart = Neuron::MarkerClockNanoseconds();
 #endif
   m_world->Step(_tick, _workers);
+  // MVP-075: a snapshot after every mvp.persist.snapshot_seconds of world time.
+  if (const std::uint64_t period = SnapshotTicks(); !m_desc.snapshotFolder.empty() && period > 0 && m_world->NextTick() % period == 0)
+  {
+    static_cast<void>(SaveCut());
+  }
 #if ENGINE_DEVELOPMENT
   // Debug and test runs hash every tick (ADR-081 item 8); a Release server hashes at its saves.
   WorldHashes hashes = HashWorld(*m_world);
@@ -318,6 +494,19 @@ void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender
       ++sent;
     }
     steward.reports.erase(steward.reports.begin(), steward.reports.begin() + static_cast<std::ptrdiff_t>(sent));
+    // MVP-098: each status requested, after the reports; one the backlog refuses goes after a later tick.
+    std::size_t answered = 0;
+    while (answered < steward.statusTeams.size())
+    {
+      const auto settlement = std::ranges::find(region.Settlements(), steward.statusTeams[answered], &Settlement::team);
+      if (settlement != region.Settlements().end() &&
+          !_sender.Send(connection, Neuron::Channel::Reliable, Neuron::EncodeMessage(StatusOf(region, *settlement, _tick))).has_value())
+      {
+        break;
+      }
+      ++answered;
+    }
+    steward.statusTeams.erase(steward.statusTeams.begin(), steward.statusTeams.begin() + static_cast<std::ptrdiff_t>(answered));
     if (!steward.terrainSent && m_terrain)
     {
       // MVP-011: the seed and digest go once on the reliable channel, with the team the steward commands (ADR-119); a
@@ -384,8 +573,14 @@ void WorldServer::Stalled(const Neuron::ScheduleStall& _stall)
 {
   if (_stall.freeze)
   {
-    // The world record that holds freezes comes with saving at M2 (PIL-131, MVP-075); the loop has logged it.
-    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "freeze before tick {}, cause server stall", _stall.tick);
+    // PIL-131 (ADR-137): the freeze in the world record, with the wall time the loop gave up.
+    const auto seconds = static_cast<std::uint64_t>(std::max<std::int64_t>(0, _stall.lost.count() / 1'000'000'000));
+    if (m_world != nullptr)
+    {
+      m_world->Record().freezes.push_back({_stall.tick, FreezeCause::ServerStall, seconds});
+    }
+    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "freeze of {} s before tick {}, cause server stall", seconds,
+                _stall.tick);
   }
 }
 
@@ -397,22 +592,20 @@ void WorldServer::Freeze(std::uint64_t _nextTick)
   {
     return;
   }
-  // Freezing writes a final snapshot and loses nothing (ADR-083 item 9; MVP-075's snapshot stands in for the cut).
-  Neuron::SnapshotStore store(m_desc.snapshotFolder, SnapshotsKept());
-  if (const auto saved = store.Save(SnapshotOf(*m_world)); saved)
+  // Freezing writes a final snapshot and loses nothing (ADR-083 item 9; MVP-075's snapshot stands in for the cut), cuts
+  // the journal there, and leaves the marker of a clean stop that names it (ADR-137).
+  if (!SaveCut())
   {
-    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Info, "the world is saved in {}", saved->filename().string());
+    return;
   }
-  else
+  const std::string tick = std::to_string(m_world->NextTick());
+  if (!Neuron::ReplaceFileAtomically(m_desc.snapshotFolder / CLEAN_STOP_FILE_NAME, std::as_bytes(std::span(tick))))
   {
-    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Error, "the world could not be saved in {}",
-                m_desc.snapshotFolder.string());
+    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Error, "the marker of a clean stop could not be written");
+    return;
   }
-  // MVP-076: the journal of a world opened new in this run, beside the snapshots.
-  if (m_journal && !Neuron::ReplaceFileAtomically(m_desc.snapshotFolder / JOURNAL_FILE_NAME, WriteJournal(*m_journal)))
-  {
-    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Error, "the command journal could not be written");
-  }
+  Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Info, "the world is saved in {} at tick {}",
+              m_desc.snapshotFolder.string(), m_world->NextTick());
 }
 
 } // namespace Species

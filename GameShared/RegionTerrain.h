@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Navigation.h"
+#include "ResourceSites.h"
 #include "Sha256.h"
 #include "TerrainField.h"
 #include "TuningMvp.h"
@@ -32,8 +33,7 @@ enum class WorldDrawPurpose : std::uint64_t
 [[nodiscard]] double WorldUnit(std::uint64_t _seed, WorldDrawPurpose _purpose, std::uint64_t _region, std::uint64_t _attempt,
                                std::uint64_t _index) noexcept;
 
-// The checks of WLD-163 that the MVP's one region runs (MVP-011): it has no crossing, so check 2 has nothing to check;
-// check 7 waits for M2's yields.
+// The checks of WLD-163 that the MVP's one region runs (MVP-011): it has no crossing, so check 2 has nothing to check.
 enum class TerrainCheck : std::uint8_t
 {
   Channels = 1,
@@ -41,6 +41,7 @@ enum class TerrainCheck : std::uint8_t
   Rims = 4,
   DrySites = 5,
   Reachability = 6,
+  HomeYields = 7,
   Routes = 8
 };
 
@@ -74,15 +75,16 @@ struct RegionTerrain
   std::vector<Neuron::Sha256Digest> chunkDigests; // WLD-166: TER-252 per chunk, z outer and x inner
   Neuron::Sha256Digest digest{};                  // SHA-256 of the chunk digests in that order
   LandRouteGraph routes;                          // MVP-017: the region's nodes and their route tables (ADR-104)
+  std::vector<ResourceSitePlace> resourceSites;   // WLD-080 to WLD-085: the region's resource sites (ADR-130)
 };
 
 // One attempt of WLD-160 to WLD-162 for the MVP's one region: its layout, its tiles, the first pass and the levels it
-// reads, the flatten areas, the second pass, the chunk digests, and the navigation nodes and land route graph of MVP-017.
-// It runs no check.
+// reads, the flatten areas, the second pass, the chunk digests, the navigation nodes and land route graph of MVP-017,
+// and the resource sites of WLD-080 to WLD-085. It runs no check.
 [[nodiscard]] RegionTerrain BuildRegionTerrain(std::uint64_t _seed, std::uint32_t _attempt, const TuningMvp& _tuning);
 
-// WLD-163 checks 1 and 3 to 6 on the region's samples and check 8 on its routes: the checks that fail, in order; none
-// when it passes.
+// WLD-163 checks 1 and 3 to 6 on the region's samples, check 7 on its resource sites and check 8 on its routes: the
+// checks that fail, in order; none when it passes.
 [[nodiscard]] std::vector<TerrainCheck> CheckRegionTerrain(const RegionTerrain& _terrain, const TuningMvp& _tuning);
 
 struct TerrainFailure

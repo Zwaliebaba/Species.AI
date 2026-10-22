@@ -31,7 +31,13 @@ enum class GameMessageType : Neuron::MessageTypeId
   StateUpdate,
   PresentationEvents,
   // The server's tick statistics for the development overlay, Debug builds only (M1 task T15b, ADR-120).
-  ServerStats
+  ServerStats,
+  // The settlement's commands (M2 task T8, ADR-136), and the request for its status and the status itself (MVP-098).
+  PlaceStructure,
+  RebuildTurret,
+  SetPriorities,
+  ReadSettlementStatus,
+  SettlementStatus
 };
 
 [[nodiscard]] constexpr Neuron::MessageTypeId TypeIdOf(GameMessageType _type) noexcept

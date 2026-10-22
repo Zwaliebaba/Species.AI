@@ -4,6 +4,7 @@
 #include "OrderMarkers.h"
 #include "RegionSimulation.h"
 #include "StateValues.h"
+#include "Turret.h"
 #include "Weapons.h"
 
 #include <algorithm>
@@ -17,8 +18,11 @@ namespace
 {
 
 constexpr std::uint64_t EFFECT_KIND_MAX_BEFORE_MARKERS = static_cast<std::uint64_t>(EffectKind::ShockwaveRing);
-// The first state version whose effects hold a marker's route (M1 task T7).
+constexpr std::uint64_t EFFECT_KIND_MAX_BEFORE_ROUNDS = static_cast<std::uint64_t>(EffectKind::OrderTrailMark);
+// The first state version whose effects hold a marker's route (M1 task T7), and the first that has turret rounds (M2
+// task T5).
 constexpr std::uint32_t EFFECT_STATE_VERSION_MARKERS = 7;
+constexpr std::uint32_t EFFECT_STATE_VERSION_ROUNDS = 9;
 
 // The horizontal distance from _point to the segment from _a to _b (R-CRATE-441 step 7's 2-D distance).
 double SegmentDistance2D(const Neuron::Vec3& _point, const Neuron::Vec3& _a, const Neuron::Vec3& _b) noexcept
@@ -219,6 +223,23 @@ std::uint32_t Explode(RegionSimulation& _region, const Neuron::Vec3& _position, 
       ++kills;
     }
   }
+  // Step 2 (R-BLDG-035): every structure whose position lies within the structure reach takes −D × (1 − d ÷ 3r), with no
+  // team filter, in slot order.
+  const double structureReach = explosion.structureReach * _range;
+  SlicedPool<Structure>& structures = _region.Structures();
+  for (std::uint32_t slot = 0; slot < structures.Capacity(); ++slot)
+  {
+    if (!structures.Used(slot))
+    {
+      continue;
+    }
+    Structure& structure = structures.At(slot);
+    const double distance = Neuron::Length(structure.position - _position);
+    if (distance < structureReach)
+    {
+      DamageTurret(_region, structure, -static_cast<std::int32_t>(_damage * (1.0 - distance / structureReach)));
+    }
+  }
   _region.TeamAt(_team).kills += kills;
   CreateShockwaveRing(_region, _position, _range / tuning.ref.weapon.shockwave.sizeDivisor, _team);
   return kills;
@@ -260,7 +281,21 @@ bool AdvanceLaserBolt(RegionSimulation& _region, LaserBolt& _bolt)
   {
     return true; // R-CRATE-441 step 5
   }
-  // Step 6: the MVP has no structure until M2, so no structure stops a bolt.
+  // Step 6: the step's ray meeting a structure of its obstacle-grid cell ends the bolt, with its spark and sound and no
+  // damage to the structure.
+  const double length = Neuron::Length(next - legStart);
+  if (length > 0.0)
+  {
+    const Neuron::Vec3 direction = (next - legStart) * (1.0 / length);
+    for (const std::uint32_t index : _region.Obstacles().StructuresAt(next.x, next.z))
+    {
+      if (RayHits(_region.Obstacles().Shape(index), legStart, direction, length))
+      {
+        _region.Emit({EffectEventKind::LaserHitStructure, _bolt.team, _bolt.id, next, _bolt.velocity, 0.0});
+        return true;
+      }
+    }
+  }
   if (_bolt.harmless)
   {
     return false;
@@ -293,6 +328,8 @@ bool AdvanceEffect(RegionSimulation& _region, Effect& _effect)
     return AdvanceOrderMarker(_region, _effect);
   case EffectKind::OrderTrailMark:
     return AdvanceTrailMark(_region, _effect);
+  case EffectKind::TurretRound:
+    return AdvanceTurretRound(_region, _effect);
   case EffectKind::Grenade:
     break;
   }
@@ -348,13 +385,17 @@ void WriteEffect(Neuron::BitWriter& _writer, const Effect& _effect)
   _writer.WriteSigned(_effect.routePoint, 32);
   _writer.WriteBool(_effect.arrived);
   _writer.WriteBits(_effect.createdTick, 64);
+  _writer.WriteBits(_effect.source, 64);
 }
 
 bool ReadEffect(Neuron::BitReader& _reader, Effect& _effect, std::uint32_t _stateVersion)
 {
   const bool markers = _stateVersion >= EFFECT_STATE_VERSION_MARKERS;
   _effect.id = _reader.ReadBits(64);
-  _effect.kind = static_cast<EffectKind>(_reader.ReadBounded(markers ? EFFECT_KIND_MAX : EFFECT_KIND_MAX_BEFORE_MARKERS));
+  const std::uint64_t kindMax = _stateVersion >= EFFECT_STATE_VERSION_ROUNDS ? EFFECT_KIND_MAX
+                                : markers                                    ? EFFECT_KIND_MAX_BEFORE_ROUNDS
+                                                                             : EFFECT_KIND_MAX_BEFORE_MARKERS;
+  _effect.kind = static_cast<EffectKind>(_reader.ReadBounded(kindMax));
   _effect.team = static_cast<std::uint8_t>(_reader.ReadBits(8));
   bool finite = ReadVec3(_reader, _effect.position);
   finite = ReadVec3(_reader, _effect.velocity) && finite;
@@ -370,6 +411,7 @@ bool ReadEffect(Neuron::BitReader& _reader, Effect& _effect, std::uint32_t _stat
     _effect.arrived = _reader.ReadBool();
     _effect.createdTick = _reader.ReadBits(64);
   }
+  _effect.source = _stateVersion >= EFFECT_STATE_VERSION_ROUNDS ? _reader.ReadBits(64) : 0;
   // A ring's size divides its strength.
   return !_reader.Failed() && finite && _effect.id != 0 && (_effect.kind != EffectKind::ShockwaveRing || _effect.sizeSeconds > 0.0);
 }

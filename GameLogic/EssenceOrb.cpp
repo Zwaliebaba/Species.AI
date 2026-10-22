@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "Construction.h"
 #include "DrawPurpose.h"
 #include "EssenceOrb.h"
 #include "RegionSimulation.h"
@@ -14,8 +15,90 @@ namespace Species
 namespace
 {
 
+// The first state version whose orbs drift and wait, with their settlement (M2 task T6).
+constexpr std::uint32_t ORB_STATE_VERSION_DRIFT = 9;
+
+void Ascend(const TuningMvp& _tuning, EssenceOrb& _orb) noexcept
+{
+  _orb.state = OrbState::Ascent;
+  _orb.timerTicks = static_cast<std::int32_t>(_tuning.ref.econ.orb.ascentTicks);
+}
+
+// MVP-023: the settlement whose territory holds the point, or null.
+Settlement* TerritoryHolder(RegionSimulation& _region, const Neuron::Vec3& _point)
+{
+  for (Settlement& settlement : _region.Settlements())
+  {
+    const CellRaster* territory = _region.TerritoryOf(settlement.site);
+    if (territory != nullptr && territory->Holds(_point.x, _point.z))
+    {
+      return &settlement;
+    }
+  }
+  return nullptr;
+}
+
+Settlement* SettlementOf(RegionSimulation& _region, std::uint8_t _site)
+{
+  const auto found = std::ranges::find(_region.Settlements(), _site, &Settlement::site);
+  return found == _region.Settlements().end() ? nullptr : &*found;
+}
+
+// MVP-025: below the population limit the orb becomes a Worker at its Wellspring's door, as R-ECON-043 has a Spawn
+// Node's Workers appear; true when it has.
+bool BecomeWorker(RegionSimulation& _region, const Settlement& _settlement)
+{
+  if (Population(_region, _settlement) >= PopulationLimitOf(_region, _settlement))
+  {
+    return false;
+  }
+  static_cast<void>(_region.SpawnAtDoor(_settlement));
+  return true;
+}
+
+// MVP-023 and MVP-025: towards the Wellspring at the drift speed; on reaching it, a Worker, a waiting orb while fewer
+// than mvp.essence.wait_max of the settlement's orbs wait, or an ascending one. True when it is removed.
+bool DriftStep(RegionSimulation& _region, EssenceOrb& _orb)
+{
+  const TuningMvp& tuning = _region.Tuning();
+  const Settlement* settlement = SettlementOf(_region, _orb.settlement);
+  const Structure* wellspring =
+    settlement != nullptr ? _region.ResolveStructure(settlement->wellspringSlot, settlement->wellspringId) : nullptr;
+  if (wellspring == nullptr)
+  {
+    Ascend(tuning, _orb);
+    return false;
+  }
+  const Neuron::Vec3 home{wellspring->position.x - _orb.position.x, 0.0, wellspring->position.z - _orb.position.z};
+  if (Neuron::Length(home) > wellspring->radius)
+  {
+    _orb.velocity = Neuron::WithLength(home, tuning.mvp.essence.driftSpeed);
+    return false;
+  }
+  _orb.velocity = {};
+  if (BecomeWorker(_region, *settlement))
+  {
+    return true;
+  }
+  std::int64_t waiting = 0;
+  const SlicedPool<EssenceOrb>& orbs = _region.Orbs();
+  for (std::uint32_t slot = 0; slot < orbs.Capacity(); ++slot)
+  {
+    waiting += orbs.Used(slot) && orbs.At(slot).state == OrbState::Waiting && orbs.At(slot).settlement == _orb.settlement ? 1 : 0;
+  }
+  if (waiting < tuning.mvp.essence.waitMax)
+  {
+    _orb.state = OrbState::Waiting;
+  }
+  else
+  {
+    Ascend(tuning, _orb);
+  }
+  return false;
+}
+
 // R-UNIT-321: an orb inside a structure's hit volume is pushed out; once nothing holds it and it is slow, the push stops
-// for good. The MVP has no structure until M2, so only a test's shape pushes.
+// for good. From M2 task T5 the structures of the region push it (ADR-131).
 void StructurePush(RegionSimulation& _region, EssenceOrb& _orb)
 {
   const auto& orb = _region.Tuning().ref.unit.essenceOrb;
@@ -103,19 +186,36 @@ bool AdvanceOrb(RegionSimulation& _region, EssenceOrb& _orb)
     break;
   }
   case OrbState::Floating:
-    if (_orb.timerTicks <= 0)
+    if (const Settlement* holder = TerritoryHolder(_region, _orb.position); holder != nullptr)
     {
-      _orb.state = OrbState::Ascent;
-      _orb.timerTicks = static_cast<std::int32_t>(econ.ascentTicks);
+      // MVP-023: inside a settlement's territory it drifts to that settlement's Wellspring.
+      _orb.state = OrbState::Drifting;
+      _orb.settlement = holder->site;
+    }
+    else if (_orb.timerTicks <= 0)
+    {
+      Ascend(tuning, _orb);
     }
     break;
+  case OrbState::Drifting:
+    remove = DriftStep(_region, _orb);
+    break;
+  case OrbState::Waiting:
+  {
+    // MVP-025: a waiting orb becomes a Worker as soon as there is room.
+    _orb.velocity = {};
+    const Settlement* settlement = SettlementOf(_region, _orb.settlement);
+    remove = settlement != nullptr && BecomeWorker(_region, *settlement);
+    break;
+  }
   case OrbState::Ascent:
     _orb.hover.y = std::max(_orb.hover.y, orb.ascentRiseMin + draw.NextUnit(orb.ascentRiseRange));
     remove = _orb.timerTicks <= 0;
     break;
   }
-  // Step 4: the structure push; step 5: the integration, the map clamp and the floor (R-UNIT-322).
-  if (_orb.push && _orb.state != OrbState::Ascent)
+  // Step 4: the structure push, which an orb bound for its Wellspring does not take (ADR-134); step 5: the
+  // integration, the map clamp and the floor (R-UNIT-322).
+  if (_orb.push && (_orb.state == OrbState::Birth || _orb.state == OrbState::Floating))
   {
     StructurePush(_region, _orb);
   }
@@ -144,14 +244,16 @@ void WriteOrb(Neuron::BitWriter& _writer, const EssenceOrb& _orb)
   WriteDouble(_writer, _orb.groundHeight);
   _writer.WriteSigned(_orb.timerTicks, 32);
   _writer.WriteBool(_orb.push);
+  _writer.WriteBits(_orb.settlement, 8);
 }
 
-bool ReadOrb(Neuron::BitReader& _reader, EssenceOrb& _orb)
+bool ReadOrb(Neuron::BitReader& _reader, EssenceOrb& _orb, std::uint32_t _stateVersion)
 {
+  const bool drift = _stateVersion >= ORB_STATE_VERSION_DRIFT;
   _orb.id = _reader.ReadBits(64);
   _orb.owner = _reader.ReadBits(64);
   _orb.team = static_cast<std::uint8_t>(_reader.ReadBits(8));
-  _orb.state = static_cast<OrbState>(_reader.ReadBounded(ORB_STATE_MAX));
+  _orb.state = static_cast<OrbState>(_reader.ReadBounded(drift ? ORB_STATE_MAX : ORB_STATE_MAX_BEFORE_DRIFT));
   bool finite = ReadVec3(_reader, _orb.position);
   finite = ReadVec3(_reader, _orb.velocity) && finite;
   finite = ReadVec3(_reader, _orb.hover) && finite;
@@ -160,6 +262,7 @@ bool ReadOrb(Neuron::BitReader& _reader, EssenceOrb& _orb)
   finite = ReadDouble(_reader, _orb.groundHeight) && finite;
   _orb.timerTicks = static_cast<std::int32_t>(_reader.ReadSigned(32));
   _orb.push = _reader.ReadBool();
+  _orb.settlement = drift ? static_cast<std::uint8_t>(_reader.ReadBits(8)) : std::uint8_t{0};
   return !_reader.Failed() && finite && _orb.id != 0;
 }
 

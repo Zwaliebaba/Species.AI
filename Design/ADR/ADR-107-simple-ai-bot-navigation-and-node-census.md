@@ -136,3 +136,4 @@ Chosen option: "1".
   - **The members' threat search.** Centring it nearer the Leader made the formation weaker: with `ref.unit.worker.formation_search_offset` at 0.33 or 0 instead of 0.66, it killed 19 and 18 instead of 28, under the first key.
   - **A formation that the AI forms.** It took over 1,000 ticks to fill, and did not engage the crowd in 3,000 ticks.
   - **So the radius stays the reference's 300 wu.** A larger radius gives the AI fuller formations, which lose to a crowd that throws grenades more often than they win, and it does not make a battle end. How formations fare against grenades is DEC-111's and DEC-112's question, decided by playtest.
+* **Amendment 2026-10-21 (M2 task T5, [ADR-131](ADR-131-structure-step-collision-shapes-and-ports-at-m2.md)).** A node is important when a structure with at least one port stands strictly within `ref.bot.node.important_radius` of it (R-BOT-049). The structures advance in step 4 before the nodes.

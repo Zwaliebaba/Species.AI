@@ -25,7 +25,7 @@ inline constexpr std::uint32_t POSITION_VERTICAL_BITS = 20;   // signed: ±32,76
 inline constexpr std::uint32_t YAW_BITS = 10;
 inline constexpr std::uint32_t YAW_STEPS = std::uint32_t{1} << YAW_BITS;
 // A Worker's or a Leader's behaviour state as its replicated task.
-inline constexpr std::uint8_t FIGURE_TASK_MAX = 7;
+inline constexpr std::uint8_t FIGURE_TASK_MAX = 15;
 // An effect's timer, and a shockwave ring's size in 1/64 s.
 inline constexpr double EFFECT_SIZE_STEPS_PER_SECOND = 64.0;
 

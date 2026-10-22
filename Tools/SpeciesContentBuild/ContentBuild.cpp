@@ -1,12 +1,14 @@
 #include "pch.h"
 
 #include "AssetManifest.h"
+#include "CollisionCooker.h"
 #include "ContentBuild.h"
 #include "ContentKey.h"
 #include "Files.h"
 #include "FontPacker.h"
 #include "MeshCooker.h"
 #include "RecordCooker.h"
+#include "SimulationRecordCooker.h"
 #include "TextEncoding.h"
 #include "TextureCheck.h"
 
@@ -18,6 +20,7 @@
 #include <string>
 #include <system_error>
 #include <utility>
+#include <vector>
 
 namespace ContentBuild
 {
@@ -127,6 +130,8 @@ BuildResult CookContent(const std::filesystem::path& _root, BuildReport& _report
 
   std::map<std::string, FaceFiles> faces;  // by asset id
   std::map<std::string, std::string> keys; // a key's canonical form → the file it came from
+  std::vector<CookedGeometry> meshes;      // for the pairing pass of ADR-129
+  std::vector<CookedGeometry> collisions;
   for (const Source& source : sources)
   {
     if (source.contentPath.starts_with(SCHEMA_FOLDER))
@@ -142,9 +147,21 @@ BuildResult CookContent(const std::filesystem::path& _root, BuildReport& _report
       (source.file.ends_with(".json") ? face.tableRow : face.sheetRow) = row;
       continue;
     }
-    if (row != nullptr && row->category == "Meshes")
+    if (row != nullptr && row->category == "Meshes" && row->subcategory == COLLISION_SUBCATEGORY)
+    {
+      entry = CookCollision(*row, source.file, source.bytes, _report);
+      if (entry)
+      {
+        collisions.push_back(CookedGeometry{row, source.file, result.entries.size()});
+      }
+    }
+    else if (row != nullptr && row->category == "Meshes")
     {
       entry = CookMesh(*row, source.file, source.bytes, _report);
+      if (entry)
+      {
+        meshes.push_back(CookedGeometry{row, source.file, result.entries.size()});
+      }
     }
     else if (row != nullptr && IsTextureCategory(row->category) && source.file.ends_with(".dds"))
     {
@@ -169,6 +186,7 @@ BuildResult CookContent(const std::filesystem::path& _root, BuildReport& _report
       result.entries.push_back(std::move(*entry));
     }
   }
+  CookSimulationRecords(*manifest, meshes, collisions, result.entries, _report);
   for (const auto& [assetId, face] : faces)
   {
     if (face.sheet == nullptr || face.table == nullptr)

@@ -4,6 +4,7 @@
 #include "InProcessTransport.h"
 #include "IntegratedServer.h"
 #include "ServerHost.h"
+#include "StructureRecords.h"
 #include "Tuning.h"
 #include "WorldServer.h"
 
@@ -40,12 +41,25 @@ std::expected<void, Neuron::AssetError> IntegratedServer::Start()
   {
     return std::unexpected(std::move(tuning.error()));
   }
+  // ADR-129: the structures' ports and spheres come from their meshes' simulation data records, never from a mesh.
+  std::expected<StructureRecords, Neuron::AssetError> structures = LoadStructureRecords(*m_desc.content);
+  if (!structures)
+  {
+    return std::unexpected(std::move(structures.error()));
+  }
+  if (std::optional<Neuron::AssetError> fault = CheckStructureRecords(*structures, *tuning))
+  {
+    return std::unexpected(std::move(*fault));
+  }
   WorldServer::Desc world;
   world.tuning = *tuning;
+  world.structures = std::move(*structures);
   world.worldSeed = m_desc.worldSeed;
   world.sandbox = m_desc.sandbox;
   world.watched = m_desc.watched;
   world.syntheticFigures = m_desc.syntheticFigures;
+  world.snapshotFolder = m_desc.snapshotFolder;
+  world.calendar = [clock = m_desc.clock] { return clock->CalendarUtc(); }; // ADR-137: the world record's wall times
   m_parts->world = std::make_unique<WorldServer>(world);
   Neuron::ServerHost::Desc host;
   host.clock = m_desc.clock;

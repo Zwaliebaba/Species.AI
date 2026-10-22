@@ -311,7 +311,8 @@ void Dispatch(Turn& _turn)
   {
     const BotNode& counts = region.BotNodes().At(node);
     const bool calm = static_cast<double>(counts.EnemiesOf(team)) < bot.dispatch.calmRatio * static_cast<double>(counts.FriendsOf(team));
-    if (counts.owner == team && ((calm && counts.IdleOf(team) > static_cast<std::uint32_t>(bot.dispatch.idleLimit)) || !Important(node)))
+    if (counts.owner == team &&
+        ((calm && counts.IdleOf(team) > static_cast<std::uint32_t>(bot.dispatch.idleLimit)) || !Important(region, node)))
     {
       wellDefended.push_back(node);
     }
@@ -335,7 +336,7 @@ void Dispatch(Turn& _turn)
     {
       chance = bot.dispatch.sendMax;
     }
-    if (!Important(*target))
+    if (!Important(region, *target))
     {
       chance = bot.dispatch.sendAll;
     }

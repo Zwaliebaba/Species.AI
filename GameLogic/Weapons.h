@@ -28,8 +28,8 @@ struct LaserBolt
 };
 
 /// An effect of the region's effect pool (R-CRATE-400): a grenade, a thrown weapon with a fuse (R-CRATE-410,
-/// R-CRATE-415), the shockwave ring of an explosion (R-CRATE-470), a Leader's order marker (R-UNIT-185), or the trail
-/// mark one drops (R-UNIT-186).
+/// R-CRATE-415), the shockwave ring of an explosion (R-CRATE-470), a Leader's order marker (R-UNIT-185), the trail mark
+/// one drops (R-UNIT-186), or a turret round, whose fuse is its life (R-CRATE-450).
 struct Effect
 {
   StableId id = 0;
@@ -47,6 +47,8 @@ struct Effect
   std::int32_t routePoint = -1;  // the route point a marker walks to
   bool arrived = false;          // a marker past its route's end, which fades
   std::uint64_t createdTick = 0; // R-UNIT-186: a trail mark's tick of creation, which its life counts from
+  // From state version 9 (M2 task T5):
+  StableId source = 0; // R-CRATE-451: the turret that fired a turret round (ADR-133); 0 for every other kind
 };
 
 // R-CRATE-405, fire a laser: a bolt of _team from _position with _velocity, for the laser level's life (DEC-115).
@@ -60,8 +62,9 @@ void ThrowGrenade(RegionSimulation& _region, std::uint8_t _team, const Neuron::V
 void CreateShockwaveRing(RegionSimulation& _region, const Neuron::Vec3& _position, double _sizeSeconds, std::uint8_t _team);
 
 // R-CRATE-406, R-SIM-388: the explosion of range _range and damage _damage of _team at _position: every actor within
-// the actor reach takes its share and is knocked back, the exploding team's kills are counted, and its shockwave ring is
-// created. The MVP has no structure, so step 6 is not built. Returns the Workers of other teams it killed.
+// the actor reach takes its share and is knocked back, every structure within the structure reach takes its share, of
+// which only a built turret takes damage (R-BLDG-035, MVP-034), the exploding team's kills are counted, and its shockwave
+// ring is created. Returns the Workers of other teams it killed.
 std::uint32_t Explode(RegionSimulation& _region, const Neuron::Vec3& _position, double _range, double _damage, std::uint8_t _team);
 
 // R-CRATE-441 to R-CRATE-444: one advance of a bolt; true when it asks to be removed.
@@ -70,7 +73,7 @@ std::uint32_t Explode(RegionSimulation& _region, const Neuron::Vec3& _position, 
 [[nodiscard]] bool AdvanceEffect(RegionSimulation& _region, Effect& _effect);
 
 // The objects canonically (ADR-081 item 7), and the values the writers wrote; false when they do not read whole. An
-// effect of a state version before 7 follows no route.
+// effect of a state version before 7 follows no route, and one before 9 has no source.
 void WriteLaserBolt(Neuron::BitWriter& _writer, const LaserBolt& _bolt);
 [[nodiscard]] bool ReadLaserBolt(Neuron::BitReader& _reader, LaserBolt& _bolt);
 void WriteEffect(Neuron::BitWriter& _writer, const Effect& _effect);
