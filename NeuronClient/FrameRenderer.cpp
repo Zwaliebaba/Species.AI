@@ -329,7 +329,7 @@ bool CreateSwapChain(RendererState& _state)
 
 // The world frame's pipeline states (RND-061, ADR-113): the entries its passes use, and the final pass's. The count is
 // deduced, so a removed entry leaves no unnamed one behind for the catalog to refuse.
-const auto WORLD_PIPELINES = std::to_array<PipelineEntry>({
+constexpr auto WORLD_PIPELINES = std::to_array<PipelineEntry>({
   {"sky", g_SkyVS, g_SkyPS, VertexLayout::SkyInstance, BlendState::Additive, DepthState::None, CullState::Back, PipelineTarget::Scene},
   {"terrain", g_TerrainVS, g_TerrainPS, VertexLayout::Terrain, BlendState::Opaque, DepthState::TestWrite, CullState::Back,
    PipelineTarget::Scene},
