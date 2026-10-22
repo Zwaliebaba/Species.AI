@@ -44,8 +44,8 @@ struct Grievance
 // its grievances against it, in millionths.
 [[nodiscard]] std::int64_t AngerMicro(const RegionSimulation& _region, std::uint8_t _holder, std::uint8_t _against) noexcept;
 
-// MVP-027: the settlements at sites _first and _second are in contact: they are valley neighbours and both their
-// territories reach their pair's halfway line.
+// MVP-027: the settlements at sites _first and _second are in contact: they are valley neighbours and their territories
+// meet, at their pair's halfway line or, once a claim has moved a half of their border area, at its edge (ADR-160).
 [[nodiscard]] bool InContact(const RegionSimulation& _region, std::uint8_t _first, std::uint8_t _second);
 
 // MVP-051: a claim or an attack gives the Cladan at site _holder a grievance of its cause's weight against the

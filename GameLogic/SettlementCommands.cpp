@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "Claims.h"
 #include "Construction.h"
 #include "RegionSimulation.h"
 #include "SettlementCommands.h"
@@ -69,6 +70,43 @@ CommandEffect SetPrioritiesCommanded(RegionSimulation& _region, const SetPriorit
   return CommandEffect::Applied;
 }
 
+// MVP-053 (ADR-160): a claim by the team's settlement.
+CommandExecution MakeClaimCommanded(RegionSimulation& _region, const MakeClaimCommand& _command)
+{
+  const Settlement* settlement = SettlementOfTeam(_region, _command.team);
+  if (settlement == nullptr)
+  {
+    return {CommandEffect::NoEffect, static_cast<std::uint8_t>(ClaimRefusal::NoSettlement)};
+  }
+  const auto made = MakeClaim(_region, settlement->site, _command.area);
+  return made ? CommandExecution{CommandEffect::Applied, 0}
+              : CommandExecution{CommandEffect::NoEffect, static_cast<std::uint8_t>(made.error())};
+}
+
+// MVP-053 (ADR-160): the team's settlement withdraws its claim.
+CommandExecution WithdrawClaimCommanded(RegionSimulation& _region, const WithdrawClaimCommand& _command)
+{
+  const Settlement* settlement = SettlementOfTeam(_region, _command.team);
+  const std::optional<ClaimRefusal> refusal = settlement != nullptr ? WithdrawClaim(_region, settlement->site, _command.claim)
+                                                                    : std::optional<ClaimRefusal>(ClaimRefusal::NoSettlement);
+  return refusal ? CommandExecution{CommandEffect::NoEffect, static_cast<std::uint8_t>(*refusal)}
+                 : CommandExecution{CommandEffect::Applied, 0};
+}
+
+// MVP-054 (ADR-160): the team's settlement sends tribute to ease a grievance held against it.
+CommandExecution SendTributeCommanded(RegionSimulation& _region, const SendTributeCommand& _command)
+{
+  const Settlement* settlement = SettlementOfTeam(_region, _command.team);
+  if (settlement == nullptr)
+  {
+    return {CommandEffect::NoEffect, static_cast<std::uint8_t>(TributeRefusal::NoSettlement)};
+  }
+  const auto paid = SendTribute(_region, settlement->site, _command.to, static_cast<GrievanceCause>(_command.cause), _command.subject,
+                                _command.amountMilliRu);
+  return paid ? CommandExecution{CommandEffect::Applied, 0}
+              : CommandExecution{CommandEffect::NoEffect, static_cast<std::uint8_t>(paid.error())};
+}
+
 // One command type, permitted when its sender commands the team it names, a steward or an AI alike (DEC-122).
 template <class T, class R> void Add(RegionSimulation& _region, R (*_execute)(RegionSimulation&, const T&))
 {
@@ -85,6 +123,9 @@ void RegisterSettlementCommands(RegionSimulation& _region)
   Add<PlaceStructureCommand>(_region, &PlaceStructureCommanded);
   Add<RebuildTurretCommand>(_region, &RebuildTurretCommanded);
   Add<SetPrioritiesCommand>(_region, &SetPrioritiesCommanded);
+  Add<MakeClaimCommand>(_region, &MakeClaimCommanded);
+  Add<WithdrawClaimCommand>(_region, &WithdrawClaimCommanded);
+  Add<SendTributeCommand>(_region, &SendTributeCommanded);
 }
 
 SettlementStatus StatusOf(const RegionSimulation& _region, const Settlement& _settlement, std::uint64_t _tick)

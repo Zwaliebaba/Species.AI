@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "Claims.h"
 #include "Construction.h"
 #include "DrawPurpose.h"
 #include "FigureAdvance.h"
@@ -171,8 +172,14 @@ bool SettlementTaskSearch(Figure& _worker, const FigureContext& _context)
   { return territory != nullptr && territory->Holds(_structure.position.x, _structure.position.z); };
   // The work of each task: its nearest free port, and guard duty's gathering near the Wellspring, which is always open.
   std::array<std::optional<PortChoice>, TASKS> ports;
-  ports[0] = NearestFreePort(region, team, _worker.position, [&](const Structure& _structure, std::uint32_t)
-                             { return _structure.kind == StructureKind::ResourceSite && inTerritory(_structure); });
+  // MVP-053 (ADR-160): the central resource site is gathered by the settlement a claim gave it to.
+  const bool holdsCentral = MovedTo(region, CLAIM_AREA_CENTRAL) == std::optional<std::uint8_t>(settlement->site);
+  ports[0] = NearestFreePort(region, team, _worker.position,
+                             [&](const Structure& _structure, std::uint32_t)
+                             {
+                               return (_structure.kind == StructureKind::ResourceSite && inTerritory(_structure)) ||
+                                      (_structure.kind == StructureKind::ResourceSiteCentral && holdsCentral);
+                             });
   if (!settlement->queue.empty())
   {
     const StructureRef first = settlement->queue.front();

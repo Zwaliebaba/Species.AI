@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "Claims.h"
 #include "Construction.h"
 #include "RegionSimulation.h"
 #include "Statistics.h"
@@ -56,7 +57,9 @@ std::vector<std::uint32_t> HeldResourceSites(const RegionSimulation& _region, co
       continue;
     }
     const Structure& site = structures.At(slot);
-    if (site.kind == StructureKind::ResourceSite && site.resourceSite && territory->Holds(site.position.x, site.position.z))
+    const bool central = site.kind == StructureKind::ResourceSiteCentral &&
+                         MovedTo(_region, CLAIM_AREA_CENTRAL) == std::optional<std::uint8_t>(_settlement.site); // ADR-160
+    if (site.resourceSite && (central || (site.kind == StructureKind::ResourceSite && territory->Holds(site.position.x, site.position.z))))
     {
       held.push_back(site.resourceSite.value_or(0));
     }

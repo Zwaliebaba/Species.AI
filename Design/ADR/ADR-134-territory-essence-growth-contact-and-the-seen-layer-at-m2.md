@@ -113,3 +113,4 @@ GameLogicTests (`TerritoryTests`), on a fixture of two settlements and on one:
 ## More Information
 
 * **Amendment 2026-10-22 (M3 task T4, [ADR-159](ADR-159-grievances-anger-and-their-fade-at-m3.md)).** Contact is territory pressure's cause (MVP-051). The relations read whether a pair is in contact now, both territories reaching their halfway line, and not the event recorded once, so that a border area a claim moves (M3 task T5) can end it.
+* **Amendment 2026-10-22 (M3 task T5, [ADR-160](ADR-160-claims-moved-areas-and-tribute-at-m3.md)).** A half of a valley border area that a claim battle moved is within its winner's territory bounds and no longer within its own side's (WLD-060, WLD-086), and both territories are made again when it moves. The move is a territory event of its own kind, naming the half (WLD-066).

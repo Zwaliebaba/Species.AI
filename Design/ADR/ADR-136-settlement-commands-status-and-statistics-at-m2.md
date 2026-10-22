@@ -143,3 +143,7 @@ GameLogicTests (`StatisticsTests`):
 
 * Good, because the snapshot stays smaller.
 * Bad, because the log and the world can disagree after a crash, and no hash covers it.
+
+## More Information
+
+* **Amendment 2026-10-22 (M3 task T5, [ADR-160](ADR-160-claims-moved-areas-and-tribute-at-m3.md)).** A claim, its withdrawal and tribute are commands of the same path, registered with the settlement's; their refusals are their outcomes' reasons, a `ClaimRefusal` or a `TributeRefusal`.

@@ -95,6 +95,10 @@ constexpr std::uint32_t STATE_VERSION_WITH_SCRIPTED_STEWARDS = 10;
 constexpr std::uint32_t STATE_VERSION_WITH_GRIEVANCES = 11;
 // The grievances a region holds: a bound for the reader, far above four Cladans' grievances against three neighbours.
 constexpr std::uint64_t GRIEVANCES_MAX = 65'535;
+// The claims a region holds at once, four settlements' on the eight halves and the central resource site at most; and its
+// moved areas, one for each area (ADR-160).
+constexpr std::uint64_t CLAIMS_MAX = 36;
+constexpr std::uint64_t HOLDINGS_MAX = CLAIM_AREA_MAX + 1;
 // A region holds at most one settlement on each of its four sites (MVP-010).
 constexpr std::uint64_t SETTLEMENTS_MAX = std::tuple_size_v<decltype(RegionLayout::sites)>;
 // WLD-066: the territory events a region holds; the MVP records one contact for each valley border pair at most.
@@ -740,6 +744,7 @@ void RegionSimulation::Step(std::uint64_t _tick)
     }
     RecordContacts();
     AdvanceRelations(*this, _tick);
+    AdvanceClaims(*this, _tick);
   }
   {
     ENGINE_PROFILE_SCOPE("sim.settlements.seen");
@@ -943,6 +948,16 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
   {
     WriteGrievance(_writer, grievance);
   }
+  _writer.WriteBounded(m_claims.size(), CLAIMS_MAX);
+  for (const Claim& claim : m_claims)
+  {
+    WriteClaim(_writer, claim);
+  }
+  _writer.WriteBounded(m_holdings.size(), HOLDINGS_MAX);
+  for (const AreaHolding& holding : m_holdings)
+  {
+    WriteAreaHolding(_writer, holding);
+  }
 }
 
 bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stateVersion)
@@ -1095,8 +1110,15 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
     m_contacts.resize(_reader.ReadBounded(CONTACT_EVENTS_MAX));
     for (ContactEvent& event : m_contacts)
     {
-      if (!ReadContactEvent(_reader, event) || VALLEY_PAIRS[event.pair][0] != event.first || VALLEY_PAIRS[event.pair][1] != event.second ||
-          SettlementAt(event.first) == nullptr || SettlementAt(event.second) == nullptr)
+      if (!ReadContactEvent(_reader, event, _stateVersion) || SettlementAt(event.first) == nullptr || SettlementAt(event.second) == nullptr)
+      {
+        return false;
+      }
+      // A contact names its pair's sites in order; a moved half names them either way round.
+      const auto& sites = VALLEY_PAIRS[event.pair];
+      if (event.kind == ContactEventKind::Contact ? sites[0] != event.first || sites[1] != event.second
+                                                  : event.first == event.second || (event.first != sites[0] && event.first != sites[1]) ||
+                                                      (event.second != sites[0] && event.second != sites[1]))
       {
         return false;
       }
@@ -1140,6 +1162,38 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
           (index > 0 && std::tuple{m_grievances[index - 1].holder, m_grievances[index - 1].against, m_grievances[index - 1].cause,
                                    m_grievances[index - 1].subject} >=
                           std::tuple{grievance.holder, grievance.against, grievance.cause, grievance.subject}))
+      {
+        return false;
+      }
+    }
+  }
+  // A claim is a settled site's, at most one on each area, in the order made; a moved area is held by a settled site of
+  // its pair, in the order of the areas; a region before version 12 has neither (ADR-160).
+  m_claims.clear();
+  m_holdings.clear();
+  if (_stateVersion >= STATE_VERSION_WITH_CLAIMS)
+  {
+    m_claims.resize(_reader.ReadBounded(CLAIMS_MAX));
+    for (std::size_t index = 0; index < m_claims.size(); ++index)
+    {
+      const Claim& claim = m_claims[index];
+      if (!ReadClaim(_reader, m_claims[index]) || SettlementAt(claim.claimant) == nullptr ||
+          (index > 0 && m_claims[index - 1].id >= claim.id) ||
+          std::any_of(m_claims.begin(), m_claims.begin() + static_cast<std::ptrdiff_t>(index),
+                      [&](const Claim& _earlier) { return _earlier.claimant == claim.claimant && _earlier.area == claim.area; }))
+      {
+        return false;
+      }
+    }
+    m_holdings.resize(_reader.ReadBounded(HOLDINGS_MAX));
+    for (std::size_t index = 0; index < m_holdings.size(); ++index)
+    {
+      const AreaHolding& holding = m_holdings[index];
+      if (!ReadAreaHolding(_reader, m_holdings[index]) || SettlementAt(holding.holder) == nullptr ||
+          (index > 0 && m_holdings[index - 1].area >= holding.area) ||
+          (holding.area != CLAIM_AREA_CENTRAL &&
+           (OwnSiteOfArea(holding.area) == holding.holder ||
+            std::ranges::find(VALLEY_PAIRS[PairOfArea(holding.area)], holding.holder) == VALLEY_PAIRS[PairOfArea(holding.area)].end())))
       {
         return false;
       }

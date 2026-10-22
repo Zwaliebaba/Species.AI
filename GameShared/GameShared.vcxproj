@@ -155,6 +155,7 @@
     <ClInclude Include="OrbState.h" />
     <ClInclude Include="PresentationEvents.h" />
     <ClInclude Include="RegionTerrain.h" />
+    <ClInclude Include="RelationMessages.h" />
     <ClInclude Include="ReplicatedState.h" />
     <ClInclude Include="ResourceSites.h" />
     <ClInclude Include="ServerStats.h" />
@@ -176,6 +177,7 @@
     <ClCompile Include="Navigation.cpp" />
     <ClCompile Include="PresentationEvents.cpp" />
     <ClCompile Include="RegionTerrain.cpp" />
+    <ClCompile Include="RelationMessages.cpp" />
     <ClCompile Include="ReplicatedState.cpp" />
     <ClCompile Include="ResourceSites.cpp" />
     <ClCompile Include="ServerStats.cpp" />

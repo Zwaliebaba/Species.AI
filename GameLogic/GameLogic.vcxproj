@@ -148,6 +148,7 @@
     <ClInclude Include="ActorGridCache.h" />
     <ClInclude Include="AiController.h" />
     <ClInclude Include="BotNavigation.h" />
+    <ClInclude Include="Claims.h" />
     <ClInclude Include="Combat.h" />
     <ClInclude Include="CommandJournal.h" />
     <ClInclude Include="Construction.h" />
@@ -196,6 +197,7 @@
     <ClCompile Include="ActorGridCache.cpp" />
     <ClCompile Include="AiController.cpp" />
     <ClCompile Include="BotNavigation.cpp" />
+    <ClCompile Include="Claims.cpp" />
     <ClCompile Include="Combat.cpp" />
     <ClCompile Include="CommandJournal.cpp" />
     <ClCompile Include="Construction.cpp" />

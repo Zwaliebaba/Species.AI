@@ -93,7 +93,7 @@ bool InContact(const RegionSimulation& _region, std::uint8_t _first, std::uint8_
     if ((sites[0] == _first && sites[1] == _second) || (sites[0] == _second && sites[1] == _first))
     {
       return _region.SettlementAt(_first) != nullptr && _region.SettlementAt(_second) != nullptr &&
-             ReachesHalfwayLine(_region, _first, pair) && ReachesHalfwayLine(_region, _second, pair);
+             TerritoriesMeet(_region, _first, _second);
     }
   }
   return false;

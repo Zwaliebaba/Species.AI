@@ -29,6 +29,9 @@
     <ClCompile Include="BotTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="ClaimTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="CombatTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>

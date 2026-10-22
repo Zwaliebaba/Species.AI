@@ -6,6 +6,7 @@
 #include "BitReader.h"
 #include "BitWriter.h"
 #include "BotNavigation.h"
+#include "Claims.h"
 #include "CommandQueue.h"
 #include "EffectEvent.h"
 #include "EssenceOrb.h"
@@ -283,6 +284,28 @@ public:
   {
     return m_grievances;
   }
+  // MVP-053 (ADR-160): the region's claims in the order they were made, and the areas claims have moved, in their order.
+  [[nodiscard]] const std::vector<Claim>& Claims() const noexcept
+  {
+    return m_claims;
+  }
+  [[nodiscard]] std::vector<Claim>& Claims() noexcept
+  {
+    return m_claims;
+  }
+  [[nodiscard]] const std::vector<AreaHolding>& Holdings() const noexcept
+  {
+    return m_holdings;
+  }
+  [[nodiscard]] std::vector<AreaHolding>& Holdings() noexcept
+  {
+    return m_holdings;
+  }
+  // WLD-066 (ADR-160): a territory event that is no first contact, a claim's move of a border area.
+  void RecordContactEvent(const ContactEvent& _event)
+  {
+    m_contacts.push_back(_event);
+  }
   // MVP-064: the server's statistics of the region's settlements in the order they were recorded (ADR-136).
   [[nodiscard]] const std::vector<StatisticEntry>& Statistics() const noexcept
   {
@@ -457,6 +480,8 @@ private:
   std::vector<StatisticEntry> m_statistics; // MVP-064, state from version 9
   std::vector<ScriptedSteward> m_scripted;  // ADR-138, state from version 10
   std::vector<Grievance> m_grievances;      // MVP-050 (ADR-159), state from version 11
+  std::vector<Claim> m_claims;              // MVP-053 (ADR-160), state from version 12
+  std::vector<AreaHolding> m_holdings;      // MVP-053 (ADR-160), state from version 12
   std::vector<EffectEvent> m_events;        // presentation, never state
 #if ENGINE_DEVELOPMENT
   AdvanceObserver m_advanceObserver;

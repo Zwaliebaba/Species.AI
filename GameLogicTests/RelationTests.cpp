@@ -296,11 +296,12 @@ public:
     }
     Assert::IsTrue(Species::HashWorld(*back).world == Species::HashWorld(*world).world, L"and steps alike");
 
-    // Version 10's layout is version 11's without the grievances' count, which ends the region's state.
+    // Version 10's layout, with no territory event, is the current one without the counts that end the region's state:
+    // the grievances' of version 11 and the claims' and the moved areas' of version 12 (ADR-160).
     const std::unique_ptr<Species::WorldSimulation> plain = ValleyWorld();
     Neuron::BitWriter current;
     plain->Region(0).WriteState(current);
-    const std::size_t bits = current.BitCount() - Neuron::BitsFor(65'535);
+    const std::size_t bits = current.BitCount() - Neuron::BitsFor(65'535) - Neuron::BitsFor(36) - Neuron::BitsFor(9);
     Neuron::BitReader whole(current.Bytes());
     Neuron::BitWriter older;
     for (std::size_t done = 0; done < bits;)

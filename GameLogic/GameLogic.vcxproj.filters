@@ -27,6 +27,9 @@
     <ClInclude Include="BotNavigation.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="Claims.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="Combat.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -165,6 +168,9 @@
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="BotNavigation.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Claims.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="Combat.cpp">

@@ -127,3 +127,4 @@ GameLogicTests `RelationTests`:
   - `WorldSnapshot` (`WORLD_STATE_VERSION`);
   - `GameShared/TuningMvp` (the `pil` keys);
   - `GameLogicTests/RelationTests`, `StateHashTests`, `TestSupport` (`ValleyWorld`).
+* **Amendment 2026-10-22 (M3 task T5, [ADR-160](ADR-160-claims-moved-areas-and-tribute-at-m3.md)).** Contact is two valley neighbours whose territories meet, a cell of each sharing a side or a corner within the lens of their sites' discs, so that it holds across a half a claim has moved; before any move this is the halfway line.
