@@ -4,6 +4,7 @@
 #include "CommandMessages.h"
 #include "RegionTerrain.h"
 #include "ServerHost.h"
+#include "SettlementMessages.h"
 #include "Snapshot.h"
 #include "StableId.h"
 #include "StateHash.h"
@@ -132,6 +133,7 @@ private:
     std::vector<CommandReport> reports;    // the outcomes not yet sent, in the order they were made
     StateSender state;                     // ADR-111: what its client holds of the replicated state
     std::vector<std::uint8_t> statusTeams; // MVP-098: the settlements whose status it asked for, by team, not yet sent
+    std::vector<SettlementNotice> notices; // ADR-139: the guaranteed events of its teams not yet sent, in order
   };
 
   // Each queue's outcomes of the tick, to the steward that sent each command; an AI's are its own (ADR-106).

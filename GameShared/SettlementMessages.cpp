@@ -139,6 +139,34 @@ void SettlementStatus::Encode(Neuron::BitWriter& _writer) const
   }
 }
 
+void SettlementNotice::Encode(Neuron::BitWriter& _writer) const
+{
+  _writer.WriteBits(tick, 64);
+  _writer.WriteBounded(static_cast<std::uint64_t>(kind), NOTICE_KIND_MAX);
+  _writer.WriteBits(team, 8);
+  _writer.WriteBits(subject, 64);
+  _writer.WriteBounded(static_cast<std::uint64_t>(structure), STRUCTURE_KIND_MAX);
+  _writer.WriteSigned(position.x, POSITION_HORIZONTAL_BITS);
+  _writer.WriteSigned(position.y, POSITION_VERTICAL_BITS);
+  _writer.WriteSigned(position.z, POSITION_HORIZONTAL_BITS);
+}
+
+void SettlementNotice::Decode(Neuron::BitReader& _reader)
+{
+  tick = _reader.ReadBits(64);
+  kind = static_cast<NoticeKind>(_reader.ReadBounded(NOTICE_KIND_MAX));
+  team = ReadTeam(_reader);
+  subject = _reader.ReadBits(64);
+  if (subject == 0)
+  {
+    _reader.Fail(); // 0 is never a stable id
+  }
+  structure = static_cast<StructureKind>(_reader.ReadBounded(STRUCTURE_KIND_MAX));
+  position.x = static_cast<std::int32_t>(_reader.ReadSigned(POSITION_HORIZONTAL_BITS));
+  position.y = static_cast<std::int32_t>(_reader.ReadSigned(POSITION_VERTICAL_BITS));
+  position.z = static_cast<std::int32_t>(_reader.ReadSigned(POSITION_HORIZONTAL_BITS));
+}
+
 void SettlementStatus::Decode(Neuron::BitReader& _reader)
 {
   tick = _reader.ReadBits(64);

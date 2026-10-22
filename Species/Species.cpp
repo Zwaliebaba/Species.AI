@@ -26,6 +26,7 @@
 #include "Tuning.h"
 #include "WorldPresentation.h"
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdint>
@@ -339,10 +340,15 @@ int Run()
     IntegratedServer::Desc serverDesc;
     serverDesc.clock = &clock;
     serverDesc.content = &*content;
-    // M1 plan §6: the battle sandbox, from the seed of --seed or one the server draws (MVP-005).
+    // M1 plan §6: the battle sandbox, from the seed of --seed or one the server draws (MVP-005); a Debug build's --world
+    // starts a new world with the steward's settlement in its place, until T18's front end starts worlds (ADR-139).
     serverDesc.worldSeed = options.worldSeed;
-    serverDesc.sandbox = true;
+    serverDesc.sandbox = !options.world;
     serverDesc.watched = options.watch; // O77: a Debug build's --watch, both sides under the AI
+    if (options.world)
+    {
+      serverDesc.stewardSite = static_cast<std::uint8_t>(std::clamp<std::int64_t>(clientTuning->mvp.sandbox.stewardSite, 0, 3));
+    }
     IntegratedServer server(serverDesc);
     if (const auto started = server.Start(); !started)
     {

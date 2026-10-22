@@ -25,10 +25,22 @@ constexpr std::uint32_t TEAM_BITS = 8;
 constexpr std::uint32_t HEALTH_BITS = 16;
 constexpr std::uint32_t TIMER_BITS = 16;
 constexpr std::uint32_t SIZE_BITS = 16;
-constexpr std::uint32_t FIGURE_FLAG_BITS = 5;
+constexpr std::uint32_t FIGURE_FLAG_BITS = 6;
 constexpr std::uint32_t FIGURE_FIELD_BITS = 7;
 constexpr std::uint32_t EFFECT_FIELD_BITS = 3;
 constexpr std::uint32_t ORB_FIELD_BITS = 3;
+// ADR-139's classes.
+constexpr std::uint32_t STRUCTURE_FIELD_BITS = 5;
+constexpr std::uint32_t STRUCTURE_FLAG_BITS = 2;
+constexpr std::uint32_t PORTS_BITS = 16;
+constexpr std::uint32_t SETTLEMENT_FIELD_BITS = 3;
+constexpr std::uint32_t SITE_BITS = 8;
+constexpr std::uint32_t COLOR_BITS = 8;
+constexpr std::uint32_t COUNT_BITS = 16;
+constexpr std::uint32_t CELLS_FIELD_BITS = 1;
+constexpr std::uint32_t CHUNK_BITS = 8;
+constexpr std::uint32_t CHUNK_CELL_BITS = 64;
+constexpr std::uint64_t CELL_LAYER_MAX = static_cast<std::uint64_t>(CellLayer::Seen);
 constexpr std::uint64_t RECORD_KIND_MAX = static_cast<std::uint64_t>(RecordKind::Removed);
 
 constexpr bool FitsSigned(std::int64_t _value, std::uint32_t _bits) noexcept
@@ -134,7 +146,7 @@ QuantizedPosition Sum(const QuantizedPosition& _a, const QuantizedPosition& _b) 
 std::uint64_t FigureFlags(const ReplicatedFigure& _figure) noexcept
 {
   return (_figure.dead ? 1u : 0u) | (_figure.onGround ? 2u : 0u) | (_figure.underControl ? 4u : 0u) | (_figure.formation ? 8u : 0u) |
-         (_figure.selected ? 16u : 0u);
+         (_figure.selected ? 16u : 0u) | (_figure.loaded ? 32u : 0u);
 }
 
 void SetFigureFlags(ReplicatedFigure& _figure, std::uint64_t _flags) noexcept
@@ -144,6 +156,42 @@ void SetFigureFlags(ReplicatedFigure& _figure, std::uint64_t _flags) noexcept
   _figure.underControl = (_flags & 4u) != 0;
   _figure.formation = (_flags & 8u) != 0;
   _figure.selected = (_flags & 16u) != 0;
+  _figure.loaded = (_flags & 32u) != 0;
+}
+
+std::uint64_t StructureFlags(const ReplicatedStructure& _structure) noexcept
+{
+  return (_structure.built ? 1u : 0u) | (_structure.active ? 2u : 0u);
+}
+
+void SetStructureFlags(ReplicatedStructure& _structure, std::uint64_t _flags) noexcept
+{
+  _structure.built = (_flags & 1u) != 0;
+  _structure.active = (_flags & 2u) != 0;
+}
+
+// An optional team: a presence bit, then the team.
+std::size_t OptionalTeamBits(const std::optional<std::uint8_t>& _team) noexcept
+{
+  return 1 + (_team.has_value() ? TEAM_BITS : 0);
+}
+
+void WriteOptionalTeam(Neuron::BitWriter& _writer, const std::optional<std::uint8_t>& _team)
+{
+  _writer.WriteBool(_team.has_value());
+  if (_team)
+  {
+    _writer.WriteBits(*_team, TEAM_BITS);
+  }
+}
+
+std::optional<std::uint8_t> ReadOptionalTeam(Neuron::BitReader& _reader) noexcept
+{
+  if (!_reader.ReadBool())
+  {
+    return std::nullopt;
+  }
+  return static_cast<std::uint8_t>(_reader.ReadBits(TEAM_BITS));
 }
 
 // The changed fields of a figure, and a delta's state with them.
@@ -175,6 +223,29 @@ std::uint8_t OrbChanges(const ReplicatedOrb& _state, const ReplicatedOrb& _basel
   changed |= _state.position != _baseline.position ? ORB_FIELD_POSITION : 0u;
   changed |= _state.state != _baseline.state ? ORB_FIELD_STATE : 0u;
   changed |= _state.timer != _baseline.timer ? ORB_FIELD_TIMER : 0u;
+  return static_cast<std::uint8_t>(changed);
+}
+
+// A structure's kind, owner, place and front never change: a delta never carries them (ADR-139).
+std::uint8_t StructureChanges(const ReplicatedStructure& _state, const ReplicatedStructure& _baseline) noexcept
+{
+  unsigned changed = 0;
+  changed |= StructureFlags(_state) != StructureFlags(_baseline) ? STRUCTURE_FIELD_FLAGS : 0u;
+  changed |= _state.progress != _baseline.progress ? STRUCTURE_FIELD_PROGRESS : 0u;
+  changed |= _state.mannedPorts != _baseline.mannedPorts ? STRUCTURE_FIELD_PORTS : 0u;
+  changed |= _state.turretTeam != _baseline.turretTeam || _state.turretHealth != _baseline.turretHealth ? STRUCTURE_FIELD_TURRET : 0u;
+  changed |= _state.aimYaw != _baseline.aimYaw || _state.aimPitch != _baseline.aimPitch ? STRUCTURE_FIELD_AIM : 0u;
+  return static_cast<std::uint8_t>(changed);
+}
+
+// A settlement's site, team and colour never change.
+std::uint8_t SettlementChanges(const ReplicatedSettlement& _state, const ReplicatedSettlement& _baseline) noexcept
+{
+  unsigned changed = 0;
+  changed |=
+    _state.storesMilliRu != _baseline.storesMilliRu || _state.capacityMilliRu != _baseline.capacityMilliRu ? SETTLEMENT_FIELD_STORES : 0u;
+  changed |= _state.population != _baseline.population || _state.limit != _baseline.limit ? SETTLEMENT_FIELD_POPULATION : 0u;
+  changed |= _state.radius != _baseline.radius ? SETTLEMENT_FIELD_RADIUS : 0u;
   return static_cast<std::uint8_t>(changed);
 }
 
@@ -241,15 +312,64 @@ std::optional<StateRecord> MakeRecord(StableId _id, const ReplicatedState& _stat
     record.move = Difference(effect->position, baseline.position);
     record.state = delta;
   }
-  else
+  else if (const auto* orb = std::get_if<ReplicatedOrb>(&_state))
   {
-    const auto& orb = std::get<ReplicatedOrb>(_state);
     const auto& baseline = std::get<ReplicatedOrb>(*_baseline);
     ReplicatedOrb delta;
-    record.changed = OrbChanges(orb, baseline);
-    delta.state = (record.changed & ORB_FIELD_STATE) != 0 ? orb.state : OrbState::Birth;
-    delta.timer = (record.changed & ORB_FIELD_TIMER) != 0 ? orb.timer : std::uint16_t{0};
-    record.move = Difference(orb.position, baseline.position);
+    record.changed = OrbChanges(*orb, baseline);
+    delta.state = (record.changed & ORB_FIELD_STATE) != 0 ? orb->state : OrbState::Birth;
+    delta.timer = (record.changed & ORB_FIELD_TIMER) != 0 ? orb->timer : std::uint16_t{0};
+    record.move = Difference(orb->position, baseline.position);
+    record.state = delta;
+  }
+  else if (const auto* structure = std::get_if<ReplicatedStructure>(&_state))
+  {
+    const auto& baseline = std::get<ReplicatedStructure>(*_baseline);
+    ReplicatedStructure delta;
+    record.changed = StructureChanges(*structure, baseline);
+    if ((record.changed & STRUCTURE_FIELD_FLAGS) != 0)
+    {
+      SetStructureFlags(delta, StructureFlags(*structure));
+    }
+    delta.progress = (record.changed & STRUCTURE_FIELD_PROGRESS) != 0 ? structure->progress : std::uint16_t{0};
+    delta.mannedPorts = (record.changed & STRUCTURE_FIELD_PORTS) != 0 ? structure->mannedPorts : std::uint16_t{0};
+    if ((record.changed & STRUCTURE_FIELD_TURRET) != 0)
+    {
+      delta.turretTeam = structure->turretTeam;
+      delta.turretHealth = structure->turretHealth;
+    }
+    if ((record.changed & STRUCTURE_FIELD_AIM) != 0)
+    {
+      delta.aimYaw = structure->aimYaw;
+      delta.aimPitch = structure->aimPitch;
+    }
+    record.state = delta;
+  }
+  else if (const auto* settlement = std::get_if<ReplicatedSettlement>(&_state))
+  {
+    const auto& baseline = std::get<ReplicatedSettlement>(*_baseline);
+    ReplicatedSettlement delta;
+    record.changed = SettlementChanges(*settlement, baseline);
+    if ((record.changed & SETTLEMENT_FIELD_STORES) != 0)
+    {
+      delta.storesMilliRu = settlement->storesMilliRu;
+      delta.capacityMilliRu = settlement->capacityMilliRu;
+    }
+    if ((record.changed & SETTLEMENT_FIELD_POPULATION) != 0)
+    {
+      delta.population = settlement->population;
+      delta.limit = settlement->limit;
+    }
+    delta.radius = (record.changed & SETTLEMENT_FIELD_RADIUS) != 0 ? settlement->radius : std::uint32_t{0};
+    record.state = delta;
+  }
+  else
+  {
+    const auto& cells = std::get<ReplicatedCells>(_state);
+    const auto& baseline = std::get<ReplicatedCells>(*_baseline);
+    ReplicatedCells delta;
+    record.changed = cells.cells != baseline.cells ? CELLS_FIELD_CELLS : std::uint8_t{0};
+    delta.cells = cells.cells;
     record.state = delta;
   }
   if (record.changed == 0)
@@ -302,16 +422,55 @@ std::optional<ReplicatedState> ApplyRecord(const StateRecord& _record, const Rep
     effect->yaw = (_record.changed & EFFECT_FIELD_YAW) != 0 ? delta.yaw : effect->yaw;
     effect->timer = (_record.changed & EFFECT_FIELD_TIMER) != 0 ? delta.timer : effect->timer;
   }
-  else
+  else if (auto* orb = std::get_if<ReplicatedOrb>(&state))
   {
-    auto& orb = std::get<ReplicatedOrb>(state);
     const auto& delta = std::get<ReplicatedOrb>(_record.state);
     if ((_record.changed & ORB_FIELD_POSITION) != 0)
     {
-      orb.position = Sum(orb.position, _record.move);
+      orb->position = Sum(orb->position, _record.move);
     }
-    orb.state = (_record.changed & ORB_FIELD_STATE) != 0 ? delta.state : orb.state;
-    orb.timer = (_record.changed & ORB_FIELD_TIMER) != 0 ? delta.timer : orb.timer;
+    orb->state = (_record.changed & ORB_FIELD_STATE) != 0 ? delta.state : orb->state;
+    orb->timer = (_record.changed & ORB_FIELD_TIMER) != 0 ? delta.timer : orb->timer;
+  }
+  else if (auto* structure = std::get_if<ReplicatedStructure>(&state))
+  {
+    const auto& delta = std::get<ReplicatedStructure>(_record.state);
+    if ((_record.changed & STRUCTURE_FIELD_FLAGS) != 0)
+    {
+      SetStructureFlags(*structure, StructureFlags(delta));
+    }
+    structure->progress = (_record.changed & STRUCTURE_FIELD_PROGRESS) != 0 ? delta.progress : structure->progress;
+    structure->mannedPorts = (_record.changed & STRUCTURE_FIELD_PORTS) != 0 ? delta.mannedPorts : structure->mannedPorts;
+    if ((_record.changed & STRUCTURE_FIELD_TURRET) != 0)
+    {
+      structure->turretTeam = delta.turretTeam;
+      structure->turretHealth = delta.turretHealth;
+    }
+    if ((_record.changed & STRUCTURE_FIELD_AIM) != 0)
+    {
+      structure->aimYaw = delta.aimYaw;
+      structure->aimPitch = delta.aimPitch;
+    }
+  }
+  else if (auto* settlement = std::get_if<ReplicatedSettlement>(&state))
+  {
+    const auto& delta = std::get<ReplicatedSettlement>(_record.state);
+    if ((_record.changed & SETTLEMENT_FIELD_STORES) != 0)
+    {
+      settlement->storesMilliRu = delta.storesMilliRu;
+      settlement->capacityMilliRu = delta.capacityMilliRu;
+    }
+    if ((_record.changed & SETTLEMENT_FIELD_POPULATION) != 0)
+    {
+      settlement->population = delta.population;
+      settlement->limit = delta.limit;
+    }
+    settlement->radius = (_record.changed & SETTLEMENT_FIELD_RADIUS) != 0 ? delta.radius : settlement->radius;
+  }
+  else
+  {
+    auto& cells = std::get<ReplicatedCells>(state);
+    cells.cells = (_record.changed & CELLS_FIELD_CELLS) != 0 ? std::get<ReplicatedCells>(_record.state).cells : cells.cells;
   }
   return state;
 }
@@ -357,15 +516,53 @@ std::size_t RecordBits(const StateRecord& _record, std::optional<StableId> _prev
     bits += (_record.changed & EFFECT_FIELD_TIMER) != 0 ? TIMER_BITS : 0;
     return bits;
   }
+  if (std::holds_alternative<ReplicatedOrb>(_record.state))
+  {
+    if (whole)
+    {
+      return bits + TEAM_BITS + WHOLE_POSITION_BITS + Neuron::BitsFor(ORB_STATE_MAX) + TIMER_BITS;
+    }
+    bits += ORB_FIELD_BITS;
+    bits += (_record.changed & ORB_FIELD_POSITION) != 0 ? MoveBits(_record.move) : 0;
+    bits += (_record.changed & ORB_FIELD_STATE) != 0 ? Neuron::BitsFor(ORB_STATE_MAX) : 0;
+    bits += (_record.changed & ORB_FIELD_TIMER) != 0 ? TIMER_BITS : 0;
+    return bits;
+  }
+  if (const auto* structure = std::get_if<ReplicatedStructure>(&_record.state))
+  {
+    const std::size_t turretBits = OptionalTeamBits(structure->turretTeam) + HEALTH_BITS;
+    const std::size_t aimBits = YAW_BITS + PITCH_BITS;
+    if (whole)
+    {
+      return bits + OptionalTeamBits(structure->owner) + Neuron::BitsFor(STRUCTURE_KIND_MAX) + WHOLE_POSITION_BITS + YAW_BITS +
+             STRUCTURE_FLAG_BITS + Neuron::BitsFor(PROGRESS_PERMILLE_MAX) + PORTS_BITS + turretBits + aimBits;
+    }
+    bits += STRUCTURE_FIELD_BITS;
+    bits += (_record.changed & STRUCTURE_FIELD_FLAGS) != 0 ? STRUCTURE_FLAG_BITS : 0;
+    bits += (_record.changed & STRUCTURE_FIELD_PROGRESS) != 0 ? Neuron::BitsFor(PROGRESS_PERMILLE_MAX) : 0;
+    bits += (_record.changed & STRUCTURE_FIELD_PORTS) != 0 ? PORTS_BITS : 0;
+    bits += (_record.changed & STRUCTURE_FIELD_TURRET) != 0 ? turretBits : 0;
+    bits += (_record.changed & STRUCTURE_FIELD_AIM) != 0 ? aimBits : 0;
+    return bits;
+  }
+  if (std::holds_alternative<ReplicatedSettlement>(_record.state))
+  {
+    if (whole)
+    {
+      return bits + SITE_BITS + TEAM_BITS + COLOR_BITS + std::size_t{2} * STORES_BITS + std::size_t{2} * COUNT_BITS +
+             SETTLEMENT_RADIUS_BITS;
+    }
+    bits += SETTLEMENT_FIELD_BITS;
+    bits += (_record.changed & SETTLEMENT_FIELD_STORES) != 0 ? std::size_t{2} * STORES_BITS : 0;
+    bits += (_record.changed & SETTLEMENT_FIELD_POPULATION) != 0 ? std::size_t{2} * COUNT_BITS : 0;
+    bits += (_record.changed & SETTLEMENT_FIELD_RADIUS) != 0 ? SETTLEMENT_RADIUS_BITS : 0;
+    return bits;
+  }
   if (whole)
   {
-    return bits + TEAM_BITS + WHOLE_POSITION_BITS + Neuron::BitsFor(ORB_STATE_MAX) + TIMER_BITS;
+    return bits + Neuron::BitsFor(CELL_LAYER_MAX) + SITE_BITS + std::size_t{2} * CHUNK_BITS + CHUNK_CELL_BITS;
   }
-  bits += ORB_FIELD_BITS;
-  bits += (_record.changed & ORB_FIELD_POSITION) != 0 ? MoveBits(_record.move) : 0;
-  bits += (_record.changed & ORB_FIELD_STATE) != 0 ? Neuron::BitsFor(ORB_STATE_MAX) : 0;
-  bits += (_record.changed & ORB_FIELD_TIMER) != 0 ? TIMER_BITS : 0;
-  return bits;
+  return bits + CELLS_FIELD_BITS + ((_record.changed & CELLS_FIELD_CELLS) != 0 ? CHUNK_CELL_BITS : 0);
 }
 
 void WriteRecord(Neuron::BitWriter& _writer, const StateRecord& _record, std::optional<StableId> _previous)
@@ -464,27 +661,111 @@ void WriteRecord(Neuron::BitWriter& _writer, const StateRecord& _record, std::op
     }
     return;
   }
-  const auto& orb = std::get<ReplicatedOrb>(_record.state);
+  if (const auto* orb = std::get_if<ReplicatedOrb>(&_record.state))
+  {
+    if (whole)
+    {
+      _writer.WriteBits(orb->team, TEAM_BITS);
+      WritePosition(_writer, orb->position);
+    }
+    else
+    {
+      _writer.WriteBits(_record.changed, ORB_FIELD_BITS);
+      if ((_record.changed & ORB_FIELD_POSITION) != 0)
+      {
+        WriteMove(_writer, _record.move);
+      }
+    }
+    if (whole || (_record.changed & ORB_FIELD_STATE) != 0)
+    {
+      _writer.WriteBounded(static_cast<std::uint64_t>(orb->state), ORB_STATE_MAX);
+    }
+    if (whole || (_record.changed & ORB_FIELD_TIMER) != 0)
+    {
+      _writer.WriteBits(orb->timer, TIMER_BITS);
+    }
+    return;
+  }
+  if (const auto* structure = std::get_if<ReplicatedStructure>(&_record.state))
+  {
+    if (whole)
+    {
+      WriteOptionalTeam(_writer, structure->owner);
+      _writer.WriteBounded(static_cast<std::uint64_t>(structure->kind), STRUCTURE_KIND_MAX);
+      WritePosition(_writer, structure->position);
+      _writer.WriteBits(structure->yaw, YAW_BITS);
+    }
+    else
+    {
+      _writer.WriteBits(_record.changed, STRUCTURE_FIELD_BITS);
+    }
+    if (whole || (_record.changed & STRUCTURE_FIELD_FLAGS) != 0)
+    {
+      _writer.WriteBits(StructureFlags(*structure), STRUCTURE_FLAG_BITS);
+    }
+    if (whole || (_record.changed & STRUCTURE_FIELD_PROGRESS) != 0)
+    {
+      _writer.WriteBounded(structure->progress, PROGRESS_PERMILLE_MAX);
+    }
+    if (whole || (_record.changed & STRUCTURE_FIELD_PORTS) != 0)
+    {
+      _writer.WriteBits(structure->mannedPorts, PORTS_BITS);
+    }
+    if (whole || (_record.changed & STRUCTURE_FIELD_TURRET) != 0)
+    {
+      WriteOptionalTeam(_writer, structure->turretTeam);
+      _writer.WriteBits(structure->turretHealth, HEALTH_BITS);
+    }
+    if (whole || (_record.changed & STRUCTURE_FIELD_AIM) != 0)
+    {
+      _writer.WriteBits(structure->aimYaw, YAW_BITS);
+      _writer.WriteSigned(structure->aimPitch, PITCH_BITS);
+    }
+    return;
+  }
+  if (const auto* settlement = std::get_if<ReplicatedSettlement>(&_record.state))
+  {
+    if (whole)
+    {
+      _writer.WriteBits(settlement->site, SITE_BITS);
+      _writer.WriteBits(settlement->team, TEAM_BITS);
+      _writer.WriteBits(settlement->color, COLOR_BITS);
+    }
+    else
+    {
+      _writer.WriteBits(_record.changed, SETTLEMENT_FIELD_BITS);
+    }
+    if (whole || (_record.changed & SETTLEMENT_FIELD_STORES) != 0)
+    {
+      _writer.WriteBits(settlement->storesMilliRu, STORES_BITS);
+      _writer.WriteBits(settlement->capacityMilliRu, STORES_BITS);
+    }
+    if (whole || (_record.changed & SETTLEMENT_FIELD_POPULATION) != 0)
+    {
+      _writer.WriteBits(settlement->population, COUNT_BITS);
+      _writer.WriteBits(settlement->limit, COUNT_BITS);
+    }
+    if (whole || (_record.changed & SETTLEMENT_FIELD_RADIUS) != 0)
+    {
+      _writer.WriteBits(settlement->radius, SETTLEMENT_RADIUS_BITS);
+    }
+    return;
+  }
+  const auto& cells = std::get<ReplicatedCells>(_record.state);
   if (whole)
   {
-    _writer.WriteBits(orb.team, TEAM_BITS);
-    WritePosition(_writer, orb.position);
+    _writer.WriteBounded(static_cast<std::uint64_t>(cells.layer), CELL_LAYER_MAX);
+    _writer.WriteBits(cells.site, SITE_BITS);
+    _writer.WriteBits(cells.chunkX, CHUNK_BITS);
+    _writer.WriteBits(cells.chunkZ, CHUNK_BITS);
   }
   else
   {
-    _writer.WriteBits(_record.changed, ORB_FIELD_BITS);
-    if ((_record.changed & ORB_FIELD_POSITION) != 0)
-    {
-      WriteMove(_writer, _record.move);
-    }
+    _writer.WriteBits(_record.changed, CELLS_FIELD_BITS);
   }
-  if (whole || (_record.changed & ORB_FIELD_STATE) != 0)
+  if (whole || (_record.changed & CELLS_FIELD_CELLS) != 0)
   {
-    _writer.WriteBounded(static_cast<std::uint64_t>(orb.state), ORB_STATE_MAX);
-  }
-  if (whole || (_record.changed & ORB_FIELD_TIMER) != 0)
-  {
-    _writer.WriteBits(orb.timer, TIMER_BITS);
+    _writer.WriteBits(cells.cells, CHUNK_CELL_BITS);
   }
 }
 
@@ -591,7 +872,7 @@ bool ReadRecord(Neuron::BitReader& _reader, StateRecord& _record, std::optional<
     }
     _record.state = effect;
   }
-  else
+  else if (objectClass == 2)
   {
     ReplicatedOrb orb;
     if (whole)
@@ -616,6 +897,93 @@ bool ReadRecord(Neuron::BitReader& _reader, StateRecord& _record, std::optional<
       orb.timer = static_cast<std::uint16_t>(_reader.ReadBits(TIMER_BITS));
     }
     _record.state = orb;
+  }
+  else if (objectClass == 3)
+  {
+    ReplicatedStructure structure;
+    if (whole)
+    {
+      structure.owner = ReadOptionalTeam(_reader);
+      structure.kind = static_cast<StructureKind>(_reader.ReadBounded(STRUCTURE_KIND_MAX));
+      structure.position = ReadPosition(_reader);
+      structure.yaw = static_cast<std::uint16_t>(_reader.ReadBits(YAW_BITS));
+    }
+    else
+    {
+      _record.changed = static_cast<std::uint8_t>(_reader.ReadBits(STRUCTURE_FIELD_BITS));
+    }
+    if (whole || (_record.changed & STRUCTURE_FIELD_FLAGS) != 0)
+    {
+      SetStructureFlags(structure, _reader.ReadBits(STRUCTURE_FLAG_BITS));
+    }
+    if (whole || (_record.changed & STRUCTURE_FIELD_PROGRESS) != 0)
+    {
+      structure.progress = static_cast<std::uint16_t>(_reader.ReadBounded(PROGRESS_PERMILLE_MAX));
+    }
+    if (whole || (_record.changed & STRUCTURE_FIELD_PORTS) != 0)
+    {
+      structure.mannedPorts = static_cast<std::uint16_t>(_reader.ReadBits(PORTS_BITS));
+    }
+    if (whole || (_record.changed & STRUCTURE_FIELD_TURRET) != 0)
+    {
+      structure.turretTeam = ReadOptionalTeam(_reader);
+      structure.turretHealth = static_cast<std::uint16_t>(_reader.ReadBits(HEALTH_BITS));
+    }
+    if (whole || (_record.changed & STRUCTURE_FIELD_AIM) != 0)
+    {
+      structure.aimYaw = static_cast<std::uint16_t>(_reader.ReadBits(YAW_BITS));
+      structure.aimPitch = static_cast<std::int16_t>(_reader.ReadSigned(PITCH_BITS));
+    }
+    _record.state = structure;
+  }
+  else if (objectClass == 4)
+  {
+    ReplicatedSettlement settlement;
+    if (whole)
+    {
+      settlement.site = static_cast<std::uint8_t>(_reader.ReadBits(SITE_BITS));
+      settlement.team = static_cast<std::uint8_t>(_reader.ReadBits(TEAM_BITS));
+      settlement.color = static_cast<std::uint8_t>(_reader.ReadBits(COLOR_BITS));
+    }
+    else
+    {
+      _record.changed = static_cast<std::uint8_t>(_reader.ReadBits(SETTLEMENT_FIELD_BITS));
+    }
+    if (whole || (_record.changed & SETTLEMENT_FIELD_STORES) != 0)
+    {
+      settlement.storesMilliRu = _reader.ReadBits(STORES_BITS);
+      settlement.capacityMilliRu = _reader.ReadBits(STORES_BITS);
+    }
+    if (whole || (_record.changed & SETTLEMENT_FIELD_POPULATION) != 0)
+    {
+      settlement.population = static_cast<std::uint16_t>(_reader.ReadBits(COUNT_BITS));
+      settlement.limit = static_cast<std::uint16_t>(_reader.ReadBits(COUNT_BITS));
+    }
+    if (whole || (_record.changed & SETTLEMENT_FIELD_RADIUS) != 0)
+    {
+      settlement.radius = static_cast<std::uint32_t>(_reader.ReadBits(SETTLEMENT_RADIUS_BITS));
+    }
+    _record.state = settlement;
+  }
+  else
+  {
+    ReplicatedCells cells;
+    if (whole)
+    {
+      cells.layer = static_cast<CellLayer>(_reader.ReadBounded(CELL_LAYER_MAX));
+      cells.site = static_cast<std::uint8_t>(_reader.ReadBits(SITE_BITS));
+      cells.chunkX = static_cast<std::uint8_t>(_reader.ReadBits(CHUNK_BITS));
+      cells.chunkZ = static_cast<std::uint8_t>(_reader.ReadBits(CHUNK_BITS));
+    }
+    else
+    {
+      _record.changed = static_cast<std::uint8_t>(_reader.ReadBits(CELLS_FIELD_BITS));
+    }
+    if (whole || (_record.changed & CELLS_FIELD_CELLS) != 0)
+    {
+      cells.cells = _reader.ReadBits(CHUNK_CELL_BITS);
+    }
+    _record.state = cells;
   }
   // A delta carries at least one field, which the writer never leaves out.
   if (!whole && _record.changed == 0)

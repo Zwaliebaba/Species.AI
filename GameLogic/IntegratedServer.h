@@ -32,6 +32,7 @@ public:
     bool sandbox = false;                          // M1 plan §6: a new world is the battle sandbox
     bool watched = false;                          // O77: the sandbox's AI commands both sides, and the client none
     std::uint32_t syntheticFigures = 0;            // ADR-126: the sandbox's sides are a synthetic battle of this many figures
+    std::optional<std::uint8_t> stewardSite;       // MVP-012: a new world that is no sandbox has the steward's settlement here
     std::filesystem::path snapshotFolder;          // MVP-075 (ADR-137): where the world is saved and continued; none: never
   };
 

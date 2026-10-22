@@ -18,10 +18,12 @@ namespace Species
 class RegionSimulation;
 
 // The whole battle of _region as a client sees it until the seen layer of M3 (M1 plan T12, ADR-111): every figure,
-// effect and Essence orb, in stable-id order, with every team's own fields.
+// effect and Essence orb, and from M2 task T11 every structure, settlement and chunk of a settlement's territory and seen
+// layer (ADR-139), in stable-id order, with every team's own fields.
 [[nodiscard]] std::vector<ReplicatedObject> CollectReplicatedObjects(const RegionSimulation& _region);
 // _objects as the client of steward _steward sees them: a team it does not command shows it neither its order markers
-// nor its trail marks (R-UNIT-185, R-UNIT-186), nor which of its figures are selected (ADR-106).
+// nor its trail marks (R-UNIT-185, R-UNIT-186), nor which of its figures are selected (ADR-106), and a settlement it does
+// not command neither its seen layer nor its stores and population (MVP-097, ADR-139).
 [[nodiscard]] std::vector<ReplicatedObject> ViewForSteward(std::span<const ReplicatedObject> _objects, const RegionSimulation& _region,
                                                            StableId _steward);
 

@@ -2,14 +2,17 @@
 
 #include "CommandJournal.h"
 #include "CommandMessages.h"
+#include "Construction.h"
 #include "Development.h"
 #include "InProcessTransport.h"
 #include "MessageCodec.h"
 #include "PresentationEvents.h"
 #include "RegionSimulation.h"
 #include "Sandbox.h"
+#include "ScriptedSteward.h"
 #include "ServerHost.h"
 #include "ServerStats.h"
+#include "SettlementMessages.h"
 #include "StateHash.h"
 #include "StateReplica.h"
 #include "StateSender.h"
@@ -20,6 +23,9 @@
 #include "WorldSimulation.h"
 #include "WorldTerrain.h"
 
+#include <algorithm>
+#include <array>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -43,6 +49,7 @@ constexpr Neuron::ConnectionId CLIENT_CONNECTION = 1;
 constexpr Neuron::SipHashKey REPLICATION_TEST_KEY{0x7777777777777777, 0x0f0f0f0f0f0f0f0f};
 // The numbers this test gives the datagrams it drops, apart from the transport's own.
 constexpr std::uint64_t DROPPED_DATAGRAM_FIRST = std::uint64_t{1} << 62;
+constexpr std::uint8_t SETTLED_TEAM = 2; // the settlement of the tests' valley, whose team is its site
 
 Species::StableId Id(std::uint64_t _counter)
 {
@@ -66,6 +73,7 @@ public:
     m_dispatcher.Register<Species::CommandReport>([this](const Species::CommandReport&) { ++reports; });
     m_dispatcher.Register<Species::WorldTerrain>([](const Species::WorldTerrain&) {});
     m_dispatcher.Register<Species::ServerStats>([](const Species::ServerStats&) {});
+    m_dispatcher.Register<Species::SettlementNotice>([this](const Species::SettlementNotice& _notice) { notices.push_back(_notice); });
     m_server.Connect(CLIENT_CONNECTION);
   }
 
@@ -111,6 +119,7 @@ public:
   Species::StateReplica replica;
   std::uint64_t events = 0;
   std::uint64_t reports = 0;
+  std::vector<Species::SettlementNotice> notices;
 
 private:
   [[nodiscard]] std::optional<std::uint64_t> Send(Neuron::ConnectionId, Neuron::Channel _channel,
@@ -135,11 +144,12 @@ private:
   std::uint64_t m_stateDatagrams = 0;
 };
 
-// What the server's state is for the steward's client, by stable id.
-std::map<Species::StableId, Species::ReplicatedState> ServerView(const Species::WorldServer& _server)
+// What the server's state is for the client of the steward who commands _team, by stable id.
+std::map<Species::StableId, Species::ReplicatedState> ServerView(const Species::WorldServer& _server,
+                                                                 std::uint8_t _team = Species::SANDBOX_STEWARD_TEAM)
 {
   const Species::RegionSimulation& region = _server.Simulation()->Region(0);
-  const Species::StableId steward = region.CommanderOf(Species::SANDBOX_STEWARD_TEAM).sender;
+  const Species::StableId steward = region.CommanderOf(_team).sender;
   std::map<Species::StableId, Species::ReplicatedState> view;
   for (const Species::ReplicatedObject& object : Species::ViewForSteward(Species::CollectReplicatedObjects(region), region, steward))
   {
@@ -161,14 +171,28 @@ Species::StableId FirstFigureOf(const Species::StateReplica& _replica, std::uint
   return 0;
 }
 
+// The settlement of _team in the replica's latest view.
+std::optional<Species::ReplicatedSettlement> SettlementOf(const Species::StateReplica& _replica, std::uint8_t _team)
+{
+  for (const auto& [id, state] : _replica.Latest())
+  {
+    if (const auto* settlement = std::get_if<Species::ReplicatedSettlement>(&state); settlement != nullptr && settlement->team == _team)
+    {
+      return *settlement;
+    }
+  }
+  return std::nullopt;
+}
+
 // The per-tick hashes of _server's journal replayed headless, with presentation stubs: no client at all.
-std::vector<std::uint64_t> ReplayedHashes(const Species::WorldServer& _server, std::uint64_t _endTick, Neuron::WorkerPool& _pool)
+std::vector<std::uint64_t> ReplayedHashes(const Species::WorldServer& _server, std::uint64_t _endTick, Neuron::WorkerPool& _pool,
+                                          const Species::TuningMvp& _tuning = CommittedTuning(),
+                                          const Species::StructureRecords* _structures = nullptr)
 {
   const Species::CommandJournal journal = _server.Journal().value_or(Species::CommandJournal{});
-  const auto terrain =
-    std::make_shared<const Species::RegionTerrain>(*Species::GenerateRegionTerrain(journal.start.seed, CommittedTuning()));
+  const auto terrain = std::make_shared<const Species::RegionTerrain>(*Species::GenerateRegionTerrain(journal.start.seed, _tuning));
   std::vector<std::uint64_t> hashes;
-  static_cast<void>(Species::ReplayJournal(journal, terrain, CommittedTuning(), nullptr, _endTick, _pool,
+  static_cast<void>(Species::ReplayJournal(journal, terrain, _tuning, _structures, _endTick, _pool,
                                            [&hashes](const Species::WorldSimulation& _world)
                                            { hashes.push_back(Species::HashWorld(_world).world); }));
   return hashes;
@@ -298,6 +322,90 @@ public:
     ExpectEqual(0, static_cast<std::int64_t>(client.replica.Totals().missingBaselines), L"every baseline was there");
   }
 #endif
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr139ASettlementAtWorkIsReplicatedAndChangesNoTicksHash)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-090")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-093")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-102")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr139ASettlementAtWorkIsReplicatedAndChangesNoTicksHash)
+  {
+    // ADR-084's test with a settlement at work (M2 task T11, ADR-139): a world with the steward's settlement and an
+    // attached client, which places a dwelling once its replica shows the stores to pay for it, gives the headless
+    // replay's hash on every tick, and its replica holds the server's state after every tick: the structures, the
+    // settlement's stores, population and territory, its seen layer and its Workers' loads. The dwelling's completion
+    // reaches the client as a notice on the reliable channel.
+    Species::TuningMvp tuning = CommittedTuning();
+    tuning.mvp.cost.dwellingRu = 3.0; // a dwelling that the first loads pay for, so that the test sees it built
+    Species::WorldServer::Desc desc;
+    desc.tuning = tuning;
+    desc.structures = TestRecords();
+    desc.worldSeed = ValleyTerrain()->seed;
+    desc.stewardSite = SETTLED_TEAM;
+    Species::WorldServer server(desc);
+    const std::uint64_t first = server.Open();
+    AttachedClient client(server);
+    Neuron::WorkerPool pool(2);
+    std::vector<std::uint64_t> hashes;
+    bool placed = false;
+    bool loadSeen = false;
+    std::uint64_t tick = first;
+    for (; tick < first + 3'000 && client.notices.empty(); ++tick)
+    {
+      const std::optional<Species::ReplicatedSettlement> own = SettlementOf(client.replica, SETTLED_TEAM);
+      if (!placed && own && own->storesMilliRu >= 3'000)
+      {
+        const Species::RegionSimulation& region = server.Simulation()->Region(0);
+        const Species::Settlement& settlement = region.Settlements().front();
+        const std::vector<Neuron::Vec3> layout = Species::DwellingLayout(region, settlement);
+        const auto place = std::ranges::find_if(
+          layout, [&](const Neuron::Vec3& _place)
+          { return !Species::CheckPlacement(region, settlement.site, Species::StructureKind::Dwelling, _place.x, _place.z).has_value(); });
+        Assert::IsTrue(place != layout.end(), L"a place for the dwelling");
+        client.SendCommand(Species::PlaceStructureCommand{SETTLED_TEAM, Species::StructureKind::Dwelling, {place->x, place->z}});
+        placed = true;
+      }
+      client.Deliver();
+      server.Step(tick, pool);
+      hashes.push_back(Species::HashWorld(*server.Simulation()).world);
+      client.Publish(tick);
+      client.Read();
+      Assert::IsTrue(client.replica.Latest() == ServerView(server, SETTLED_TEAM), L"the replica holds the server's state");
+      loadSeen = loadSeen || std::ranges::any_of(client.replica.Latest(),
+                                                 [](const auto& _object)
+                                                 {
+                                                   const auto* figure = std::get_if<Species::ReplicatedFigure>(&_object.second);
+                                                   return figure != nullptr && figure->loaded;
+                                                 });
+    }
+    Assert::IsTrue(placed, L"the replica showed the stores");
+    ExpectEqual(1, static_cast<std::int64_t>(client.notices.size()), L"the dwelling's completion, noticed");
+    const Species::SettlementNotice& notice = client.notices.front();
+    Assert::IsTrue(notice.kind == Species::NoticeKind::StructureCompleted && notice.team == SETTLED_TEAM &&
+                     notice.structure == Species::StructureKind::Dwelling && notice.tick == tick - 1,
+                   L"of the dwelling, at the tick it was built");
+    const auto* dwelling = std::get_if<Species::ReplicatedStructure>(&client.replica.Latest().at(notice.subject));
+    Assert::IsTrue(dwelling != nullptr && dwelling->built && dwelling->kind == Species::StructureKind::Dwelling &&
+                     dwelling->owner == std::optional<std::uint8_t>(SETTLED_TEAM),
+                   L"its subject is the dwelling, built, in the replica");
+    Assert::IsTrue(loadSeen, L"a Worker carried a load");
+    const std::optional<Species::ReplicatedSettlement> own = SettlementOf(client.replica, SETTLED_TEAM);
+    const Species::RegionSimulation& region = server.Simulation()->Region(0);
+    Assert::IsTrue(own && std::uint32_t{own->population} == Species::Population(region, region.Settlements().front()) &&
+                     own->limit == CommittedTuning().mvp.settlement.populationBase + CommittedTuning().mvp.dwelling.population,
+                   L"the settlement's population, and the limit its dwelling raised");
+    std::array<std::size_t, 2> chunks{};
+    for (const auto& [id, state] : client.replica.Latest())
+    {
+      if (const auto* cells = std::get_if<Species::ReplicatedCells>(&state))
+      {
+        ++chunks[static_cast<std::size_t>(cells->layer)];
+      }
+    }
+    Assert::IsTrue(chunks[0] > 0 && chunks[1] > 0, L"its territory and its seen layer");
+    ExpectEqual(0, static_cast<std::int64_t>(client.replica.Totals().missingBaselines), L"every baseline was there");
+    Assert::IsTrue(ReplayedHashes(server, tick, pool, tuning, &TestRecords()) == hashes, L"the same hash on every tick, headless");
+  }
 };
 
 TEST_CLASS(StateSenderTests)
@@ -397,6 +505,66 @@ public:
     Assert::IsTrue(std::get<Species::ReplicatedFigure>(view[0].state).underControl, L"its own selection");
     Assert::IsFalse(std::get<Species::ReplicatedFigure>(view[1].state).selected, L"not the other team's");
     Assert::IsTrue(view[2].id == Id(3) && view[3].id == Id(5), L"its own marker, and every grenade");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr139ASettlementsStoresAndSeenLayerGoToItsCommanderOnly)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-090")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-097")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr139ASettlementsStoresAndSeenLayerGoToItsCommanderOnly)
+  {
+    // A settlement's territory, its structures and the resource sites go to every client, its seen layer and its stores
+    // and population to its commander's alone; the chunks of a raster hold every cell of it once.
+    const std::unique_ptr<Species::WorldSimulation> world = SettledWorld();
+    Species::RegionSimulation& region = world->Region(0);
+    const Species::StableId steward = world->Ids().Issue();
+    region.SetCommander(SETTLED_TEAM, steward, false);
+    Neuron::WorkerPool pool(0);
+    world->Step(0, pool); // the seen layers are made in the region's step
+    const std::vector<Species::ReplicatedObject> objects = Species::CollectReplicatedObjects(region);
+    Assert::IsTrue(std::ranges::is_sorted(objects, {}, &Species::ReplicatedObject::id), L"in stable-id order");
+    const Species::Settlement& settlement = region.Settlements().front();
+    std::array<std::size_t, 2> cells{};
+    std::size_t structures = 0;
+    for (const Species::ReplicatedObject& object : objects)
+    {
+      if (const auto* chunk = std::get_if<Species::ReplicatedCells>(&object.state))
+      {
+        Assert::IsTrue(object.id == Species::CellChunkObjectId(chunk->layer, chunk->site, chunk->chunkX, chunk->chunkZ), L"its id");
+        cells[static_cast<std::size_t>(chunk->layer)] += static_cast<std::size_t>(std::popcount(chunk->cells));
+      }
+      structures += std::holds_alternative<Species::ReplicatedStructure>(object.state) ? 1 : 0;
+    }
+    ExpectEqual(static_cast<std::int64_t>(region.TerritoryOf(settlement.site)->Count()), static_cast<std::int64_t>(cells[0]),
+                L"every cell of the territory once");
+    ExpectEqual(static_cast<std::int64_t>(region.SeenLayerOf(settlement.site)->Count()), static_cast<std::int64_t>(cells[1]),
+                L"every cell of the seen layer once");
+    Assert::IsTrue(structures > 11, L"its Wellspring and the resource sites");
+
+    const auto viewOf = [&](Species::StableId _steward)
+    {
+      std::size_t seen = 0;
+      std::optional<Species::ReplicatedSettlement> state;
+      for (const Species::ReplicatedObject& object : Species::ViewForSteward(objects, region, _steward))
+      {
+        const auto* chunk = std::get_if<Species::ReplicatedCells>(&object.state);
+        seen += chunk != nullptr && chunk->layer == Species::CellLayer::Seen ? 1 : 0;
+        if (const auto* replicated = std::get_if<Species::ReplicatedSettlement>(&object.state))
+        {
+          state = *replicated;
+        }
+      }
+      return std::pair{seen, state};
+    };
+    const auto [ownSeen, own] = viewOf(steward);
+    Assert::IsTrue(ownSeen > 0 && own && std::uint32_t{own->population} == Species::Population(region, settlement) && own->limit > 0 &&
+                     own->capacityMilliRu > 0 && own->radius > 0,
+                   L"its commander sees its seen layer, population, limit and stores");
+    const Species::ReplicatedSettlement ownState = own.value_or(Species::ReplicatedSettlement{});
+    const auto [otherSeen, other] = viewOf(world->Ids().Issue());
+    Assert::IsTrue(otherSeen == 0 && other && other->population == 0 && other->limit == 0 && other->capacityMilliRu == 0 &&
+                     other->radius == ownState.radius && other->color == ownState.color,
+                   L"another steward sees its territory and colour alone");
   }
 };
 

@@ -67,6 +67,23 @@ CommandResult ResultOf(const Neuron::CommandOutcome& _outcome) noexcept
   return CommandResult::Duplicate;
 }
 
+// ADR-139: the notice of a structure completed, with its kind, which the pool still holds in the tick that raised it.
+SettlementNotice NoticeOf(const RegionSimulation& _region, const EffectEvent& _event, std::uint64_t _tick)
+{
+  SettlementNotice notice{_tick,          NoticeKind::StructureCompleted, _event.team,
+                          _event.subject, StructureKind::Dwelling,        QuantizePosition(_event.position)};
+  const SlicedPool<Structure>& structures = _region.Structures();
+  for (std::uint32_t slot = 0; slot < structures.Capacity(); ++slot)
+  {
+    if (structures.Used(slot) && structures.At(slot).id == _event.subject)
+    {
+      notice.structure = structures.At(slot).kind;
+      break;
+    }
+  }
+  return notice;
+}
+
 // ADR-137: the tick of a file named world-<tick>.<suffix>, as the snapshots and journals are; none for another name.
 std::optional<std::uint64_t> TickOfFile(const std::filesystem::path& _path)
 {
@@ -494,6 +511,22 @@ void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender
       ++sent;
     }
     steward.reports.erase(steward.reports.begin(), steward.reports.begin() + static_cast<std::ptrdiff_t>(sent));
+    // ADR-084 item 5, MVP-102 (ADR-139): the tick's guaranteed events of the teams it commands, after the outcomes and
+    // in the order the region raised them; one the backlog refuses waits with those after it.
+    for (const EffectEvent& event : region.Events())
+    {
+      if (event.kind == EffectEventKind::StructureCompleted && region.CommanderOf(event.team).sender == steward.id)
+      {
+        steward.notices.push_back(NoticeOf(region, event, _tick));
+      }
+    }
+    std::size_t noticed = 0;
+    while (noticed < steward.notices.size() &&
+           _sender.Send(connection, Neuron::Channel::Reliable, Neuron::EncodeMessage(steward.notices[noticed])).has_value())
+    {
+      ++noticed;
+    }
+    steward.notices.erase(steward.notices.begin(), steward.notices.begin() + static_cast<std::ptrdiff_t>(noticed));
     // MVP-098: each status requested, after the reports; one the backlog refuses goes after a later tick.
     std::size_t answered = 0;
     while (answered < steward.statusTeams.size())

@@ -8,6 +8,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 namespace Species
@@ -52,6 +53,18 @@ public:
   [[nodiscard]] bool HoldsDisc(double _x, double _z, double _radius) const noexcept;
   // MVP-016: every cell whose centre lies within _radius of (_x, _z) becomes held.
   void HoldDisc(double _x, double _z, double _radius);
+  // ADR-139: the cells of the chunk (_chunkX, _chunkZ) of CELL_CHUNK_SIDE cells a side, bit (z × CELL_CHUNK_SIDE + x)
+  // for the cell x across and z up from its corner; and the chunks that hold a cell, as the first and last chunk on
+  // each axis, or none while no cell is held.
+  [[nodiscard]] std::uint64_t ChunkCells(std::int32_t _chunkX, std::int32_t _chunkZ) const noexcept;
+  struct ChunkBounds
+  {
+    std::int32_t firstX = 0;
+    std::int32_t firstZ = 0;
+    std::int32_t lastX = 0;
+    std::int32_t lastZ = 0;
+  };
+  [[nodiscard]] std::optional<ChunkBounds> HeldChunks() const noexcept;
 
 private:
   [[nodiscard]] std::int32_t CellOf(double _coordinate, double _origin) const noexcept;
@@ -62,6 +75,11 @@ private:
   std::int32_t m_cellsPerAxis = 0;
   std::vector<std::uint8_t> m_cells;
   std::size_t m_count = 0;
+  // The held cells' bounds, which only grow: no cell is ever released.
+  std::int32_t m_minX = 0;
+  std::int32_t m_minZ = 0;
+  std::int32_t m_maxX = -1;
+  std::int32_t m_maxZ = -1;
 };
 
 // WLD-060 and WLD-061 for a point of the settlement at _site, before its radius: inside the coast bands, within

@@ -2,6 +2,7 @@
 
 #include "CommandMessages.h"
 #include "GameMessages.h"
+#include "ReplicatedState.h"
 #include "StableId.h"
 #include "StructureKind.h"
 
@@ -125,6 +126,35 @@ struct SettlementStatus
   std::int64_t upkeepMilliRuPerHour = 0;
   std::int64_t strengthMilliRu = 0;
   std::vector<QueuedSite> queue;
+
+  void Encode(Neuron::BitWriter& _writer) const;
+  void Decode(Neuron::BitReader& _reader);
+};
+
+// MVP-102: what a notice tells its steward; a wire value that is never renumbered. M2 has structures completed; M3 adds
+// contact, claims, the warning and battles.
+enum class NoticeKind : std::uint8_t
+{
+  StructureCompleted = 0 // MVP-033: a construction site of the steward's settlement is built
+};
+
+inline constexpr std::uint64_t NOTICE_KIND_MAX = static_cast<std::uint64_t>(NoticeKind::StructureCompleted);
+
+/// ADR-084 item 5, MVP-102 (ADR-139): a guaranteed event for the HUD's notifications, on the reliable channel beside the
+/// command outcomes, to the steward who commands the team, in the order the region raised them: its tick, its kind, the
+/// team, its subject by stable id, and the subject's structure kind and position.
+struct SettlementNotice
+{
+  static constexpr Neuron::MessageTypeId TYPE = TypeIdOf(GameMessageType::SettlementNotice);
+  static constexpr std::uint8_t VERSION = 1;
+  static constexpr std::size_t MAX_BYTES = 29; // the header, the tick, the team, the subject, the kind and a whole position
+
+  std::uint64_t tick = 0;
+  NoticeKind kind = NoticeKind::StructureCompleted;
+  std::uint8_t team = 0;
+  StableId subject = 0;
+  StructureKind structure = StructureKind::Dwelling;
+  QuantizedPosition position;
 
   void Encode(Neuron::BitWriter& _writer) const;
   void Decode(Neuron::BitReader& _reader);

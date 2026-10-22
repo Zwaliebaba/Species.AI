@@ -6,6 +6,7 @@
 #include "FigureKind.h"
 #include "OrbState.h"
 #include "StableId.h"
+#include "StructureKind.h"
 #include "Vec3.h"
 
 #include <cstddef>
@@ -28,6 +29,19 @@ inline constexpr std::uint32_t YAW_STEPS = std::uint32_t{1} << YAW_BITS;
 inline constexpr std::uint8_t FIGURE_TASK_MAX = 15;
 // An effect's timer, and a shockwave ring's size in 1/64 s.
 inline constexpr double EFFECT_SIZE_STEPS_PER_SECOND = 64.0;
+// ADR-139: a turret's barrel elevation, signed, in the yaw's steps; a structure's manned ports, one bit each; a
+// construction site's progress in thousandths; and a settlement's stores in 40 bits of thousandths of a resource unit,
+// and its territory's radius.
+inline constexpr std::uint32_t PITCH_BITS = 10;
+inline constexpr std::size_t STRUCTURE_PORTS_MAX = 16;
+inline constexpr std::uint16_t PROGRESS_PERMILLE_MAX = 1'000;
+inline constexpr std::uint32_t STORES_BITS = 40;
+inline constexpr std::uint32_t SETTLEMENT_RADIUS_BITS = 20; // a territory's radius in 1/16 wu: up to 65,536 wu
+// ADR-139: a raster's chunk is CELL_CHUNK_SIDE cells a side, one bit each, so a chunk is 64 bits.
+inline constexpr std::int32_t CELL_CHUNK_SIDE = 8;
+// ADR-139: the owner id of the replicated objects that are no simulated object: a settlement, and a chunk of its
+// territory or its seen layer. No simulation owner takes it (ADR-096).
+inline constexpr OwnerId REPLICATION_OWNER_ID = 0xFFFF;
 
 /// A position in steps of 1/16 wu.
 struct QuantizedPosition
@@ -62,6 +76,7 @@ struct ReplicatedFigure
   bool underControl = false; // R-UNIT-136: a member of its team's crowd selection
   bool formation = false;    // R-UNIT-164: a Leader in formation mode
   bool selected = false;     // R-SIM-405: its team's selected Leader
+  bool loaded = false;       // MVP-031: a Worker carrying a load (ADR-139)
   // O78, ADR-125: a Leader's flag-pointer target, the first point after the start of its Waypoint order's route
   // (R-UNIT-191); none for any other figure or order.
   std::optional<QuantizedPosition> target;
@@ -95,9 +110,84 @@ struct ReplicatedOrb
   friend bool operator==(const ReplicatedOrb& _a, const ReplicatedOrb& _b) noexcept = default;
 };
 
+/// A structure as a client sees it (M2 task T11, ADR-139): its kind, the settlement team it belongs to (none for a resource
+/// site, WLD-084), its place and front, whether it is built and active (MVP-033 to MVP-035), its construction progress,
+/// which of its ports have their Worker (R-BLDG-017), and a turret's team, health and aim (R-BLDG-408, R-BLDG-416,
+/// R-BLDG-422). Its kind, owner, place and front never change.
+struct ReplicatedStructure
+{
+  std::optional<std::uint8_t> owner;
+  StructureKind kind = StructureKind::Wellspring;
+  QuantizedPosition position;
+  std::uint16_t yaw = 0;
+  bool built = true;
+  bool active = true;
+  std::uint16_t progress = 0;    // a construction site's work done, in thousandths of the work it needs
+  std::uint16_t mannedPorts = 0; // bit i: port i has its Worker; ports beyond STRUCTURE_PORTS_MAX are not sent
+  std::optional<std::uint8_t> turretTeam;
+  std::uint16_t turretHealth = 0;
+  std::uint16_t aimYaw = 0;  // a turret head's front
+  std::int16_t aimPitch = 0; // the barrels' up vector's tilt from vertical towards the head's front, in yaw steps
+
+  friend bool operator==(const ReplicatedStructure& _a, const ReplicatedStructure& _b) noexcept = default;
+};
+
+/// A settlement as a client sees it (ADR-139): its local site, its team and its Cladan's colour (MVP-013), its
+/// territory's radius (MVP-026), and, for the client whose steward commands it, its stores and their capacity
+/// (MVP-030) and its population and limit (MVP-022); another client sees those at 0.
+struct ReplicatedSettlement
+{
+  std::uint8_t site = 0;
+  std::uint8_t team = 0;
+  std::uint8_t color = 0;
+  std::uint64_t storesMilliRu = 0;
+  std::uint64_t capacityMilliRu = 0;
+  std::uint16_t population = 0;
+  std::uint16_t limit = 0;
+  std::uint32_t radius = 0; // in 1/16 wu, as a position
+
+  friend bool operator==(const ReplicatedSettlement& _a, const ReplicatedSettlement& _b) noexcept = default;
+};
+
+// The rasters of a settlement that a client receives (ADR-139); the values are on the wire.
+enum class CellLayer : std::uint8_t
+{
+  Territory, // MVP-026, in cells of mvp.territory.cell_size
+  Seen       // MVP-016, in cells of mvp.vision.cell_size, to its commander only (MVP-097)
+};
+
+/// CELL_CHUNK_SIDE by CELL_CHUNK_SIDE cells of a settlement's territory or seen layer (ADR-139), over its region's
+/// square from the square's corner of least x and z: the cells from (chunkX, chunkZ) times CELL_CHUNK_SIDE, bit
+/// (z × CELL_CHUNK_SIDE + x) for the cell x across and z up. A chunk with no cell held is not sent.
+struct ReplicatedCells
+{
+  CellLayer layer = CellLayer::Territory;
+  std::uint8_t site = 0;
+  std::uint8_t chunkX = 0;
+  std::uint8_t chunkZ = 0;
+  std::uint64_t cells = 0;
+
+  friend constexpr bool operator==(const ReplicatedCells& _a, const ReplicatedCells& _b) noexcept = default;
+};
+
 // The classes of replicated object, in the order of the variant's alternatives; the values are on the wire.
-using ReplicatedState = std::variant<ReplicatedFigure, ReplicatedEffect, ReplicatedOrb>;
-inline constexpr std::uint8_t REPLICATED_CLASS_MAX = 2;
+using ReplicatedState =
+  std::variant<ReplicatedFigure, ReplicatedEffect, ReplicatedOrb, ReplicatedStructure, ReplicatedSettlement, ReplicatedCells>;
+inline constexpr std::uint8_t REPLICATED_CLASS_MAX = 5;
+
+// ADR-139: the stable ids of the replicated objects that are no simulated object, under REPLICATION_OWNER_ID: a
+// settlement's by its local site, and a chunk's by its layer, site and place, so that each sorts after every simulated
+// object and every object keeps its id for its life.
+[[nodiscard]] constexpr StableId SettlementObjectId(std::uint8_t _site) noexcept
+{
+  return MakeStableId(REPLICATION_OWNER_ID, _site);
+}
+[[nodiscard]] constexpr StableId CellChunkObjectId(CellLayer _layer, std::uint8_t _site, std::uint8_t _chunkX,
+                                                   std::uint8_t _chunkZ) noexcept
+{
+  return MakeStableId(REPLICATION_OWNER_ID, (std::uint64_t{1} << 32) | (static_cast<std::uint64_t>(_layer) << 24) |
+                                              (std::uint64_t{_site} << 16) | (std::uint64_t{_chunkZ} << 8) | _chunkX);
+}
 
 /// One object of a client's interest set (ADR-086 item 1) under its stable id.
 struct ReplicatedObject
@@ -144,6 +234,15 @@ inline constexpr std::uint8_t EFFECT_FIELD_TIMER = 4;
 inline constexpr std::uint8_t ORB_FIELD_POSITION = 1;
 inline constexpr std::uint8_t ORB_FIELD_STATE = 2;
 inline constexpr std::uint8_t ORB_FIELD_TIMER = 4;
+inline constexpr std::uint8_t STRUCTURE_FIELD_FLAGS = 1; // built and active
+inline constexpr std::uint8_t STRUCTURE_FIELD_PROGRESS = 2;
+inline constexpr std::uint8_t STRUCTURE_FIELD_PORTS = 4;
+inline constexpr std::uint8_t STRUCTURE_FIELD_TURRET = 8; // its team and health
+inline constexpr std::uint8_t STRUCTURE_FIELD_AIM = 16;
+inline constexpr std::uint8_t SETTLEMENT_FIELD_STORES = 1;     // the stores and their capacity
+inline constexpr std::uint8_t SETTLEMENT_FIELD_POPULATION = 2; // the population and its limit
+inline constexpr std::uint8_t SETTLEMENT_FIELD_RADIUS = 4;
+inline constexpr std::uint8_t CELLS_FIELD_CELLS = 1;
 
 // The record that brings a client holding _baseline, or nothing, to _state: a whole record without a baseline, a delta
 // of the fields that changed, or none when nothing changed. A baseline of another class gives a whole record.

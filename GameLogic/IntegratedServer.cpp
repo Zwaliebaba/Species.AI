@@ -58,6 +58,7 @@ std::expected<void, Neuron::AssetError> IntegratedServer::Start()
   world.sandbox = m_desc.sandbox;
   world.watched = m_desc.watched;
   world.syntheticFigures = m_desc.syntheticFigures;
+  world.stewardSite = m_desc.stewardSite;
   world.snapshotFolder = m_desc.snapshotFolder;
   world.calendar = [clock = m_desc.clock] { return clock->CalendarUtc(); }; // ADR-137: the world record's wall times
   m_parts->world = std::make_unique<WorldServer>(world);

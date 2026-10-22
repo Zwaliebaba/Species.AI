@@ -37,7 +37,9 @@ enum class GameMessageType : Neuron::MessageTypeId
   RebuildTurret,
   SetPriorities,
   ReadSettlementStatus,
-  SettlementStatus
+  SettlementStatus,
+  // A guaranteed event for the HUD's notifications, on the reliable channel (M2 task T11, ADR-139).
+  SettlementNotice
 };
 
 [[nodiscard]] constexpr Neuron::MessageTypeId TypeIdOf(GameMessageType _type) noexcept

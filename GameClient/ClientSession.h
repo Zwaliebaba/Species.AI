@@ -7,6 +7,7 @@
 #include "RegionTerrain.h"
 #include "ReplicaTiming.h"
 #include "ServerStats.h"
+#include "SettlementMessages.h"
 #include "StateReplica.h"
 #include "Transport.h"
 #include "TuningMvp.h"
@@ -110,6 +111,12 @@ public:
   }
   // ADR-095: the commands' outcomes received and not yet taken, in the order they arrived.
   [[nodiscard]] std::vector<CommandReport> TakeReports();
+  // ADR-139: the guaranteed events received and not yet taken, in the order they arrived, for the HUD's notifications
+  // (MVP-102).
+  [[nodiscard]] std::vector<SettlementNotice> TakeNotices();
+  // ADR-139: the settlement of the team this client commands in the replica's latest view; none in the sandbox, or
+  // before it arrives.
+  [[nodiscard]] std::optional<ReplicatedSettlement> OwnSettlement() const;
   // MVP-011: the client refused the world, because the terrain it built from the server's seed differs, and closed.
   [[nodiscard]] bool Refused() const noexcept
   {
@@ -141,16 +148,19 @@ private:
   std::optional<std::uint8_t> m_commandedTeam;
   std::optional<ServerStats> m_serverStats;
   std::vector<CommandReport> m_reports;
+  std::vector<SettlementNotice> m_notices;
   std::uint64_t m_commandsSent = 0; // the reliable messages sent, which the server numbers from 0
   bool m_refused = false;
   std::string m_shownTitle;
 };
 
 // The interim title of M1 (M1 task T12) with the seed of MVP-005: "<product> — seed <s> — tick <n> — figures <a> : <b>",
-// each part once it is known, and "— waiting for the server" when the next state is late (ADR-084 item 4).
+// each part once it is known, then, from M2 task T11, the client's own settlement's "— stores <s> of <c> — Workers <p>
+// of <l>" in whole resource units, which the session shows in place of the sides (ADR-139), and "— waiting for the
+// server" when the next state is late (ADR-084 item 4).
 [[nodiscard]] std::string SessionTitle(std::string_view _productName, std::optional<std::uint64_t> _worldSeed,
                                        std::optional<std::uint64_t> _serverTick, std::span<const std::uint32_t> _sideFigures = {},
-                                       bool _waiting = false);
+                                       bool _waiting = false, const std::optional<ReplicatedSettlement>& _settlement = std::nullopt);
 // The title of a refused world (MVP-011), until the UI shows the message.
 [[nodiscard]] std::string RefusedTitle(std::string_view _productName);
 
