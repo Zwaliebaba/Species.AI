@@ -36,7 +36,7 @@ constexpr std::string_view BEAM_SHORT_KEY = "textures/fx/beamshort";
 constexpr std::string_view GAME_FACE_KEY = "fonts/gamefont";
 // ref.meta.lang.base: the base language and the MVP's one language (MVP scope §5.1), until the settings store chooses one
 // (M2 task T15, ADR-063, ADR-146).
-constexpr std::string_view UI_LANGUAGE = "en-GB";
+constexpr std::string_view UI_LANGUAGE = "en-US";
 
 // GameFont from the content: none when it is missing or damaged, which is logged.
 std::shared_ptr<const Neuron::FontAsset> LoadGameFace(const Neuron::LooseContent& _content)

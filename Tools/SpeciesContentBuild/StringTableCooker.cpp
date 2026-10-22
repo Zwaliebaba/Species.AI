@@ -78,7 +78,7 @@ std::size_t CharacterCount(std::string_view _utf8)
   return static_cast<std::size_t>(std::ranges::count_if(_utf8, [](char _c) { return (static_cast<std::uint8_t>(_c) & 0xC0u) != 0x80u; }));
 }
 
-// UI-233 for the characters GameFont can draw: the upper-cased form of Latin-1 text as ICU's en-GB mapping gives it. A
+// UI-233 for the characters GameFont can draw: the upper-cased form of Latin-1 text as ICU's en-US mapping gives it. A
 // character outside Latin-1 is kept, since the coverage check has already refused it.
 std::vector<std::uint32_t> UpperCased(const std::vector<std::uint32_t>& _points)
 {
@@ -111,7 +111,7 @@ std::vector<std::uint32_t> UpperCased(const std::vector<std::uint32_t>& _points)
   return upper;
 }
 
-// DAT-206: the BCP 47 tag that a table's file name gives, en_gb.json giving en-GB.
+// DAT-206: the BCP 47 tag that a table's file name gives, en_us.json giving en-US.
 std::string LanguageOfFile(std::string_view _file)
 {
   std::string_view stem = _file.substr(_file.find_last_of('/') + 1);

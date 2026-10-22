@@ -198,9 +198,9 @@ Table 3.3-A Fields of a binding set.
 
 ### 3.5 String tables
 
-**DAT-206** (MUST) A string table (`text.string_table`) is the text of one language: its authoring file holds the field `language`, the language's BCP 47 tag, which must match the file name of [GameAssets §2.2](../../../assets/GameAssets.md#22-file-names) (`en_gb.json` for `en-GB`), and the field `strings`, an object keyed by string id. The content build merges every string source of one language into one cooked table, one per asset `strings.en_gb`, `strings.fr_fr`, `strings.de_de`, `strings.it_it`, `strings.es_es`, `strings.pt_br`, `strings.ru_ru`, `strings.ja_jp` and `strings.ko_kr` (UI-222).
+**DAT-206** (MUST) A string table (`text.string_table`) is the text of one language: its authoring file holds the field `language`, the language's BCP 47 tag, which must match the file name of [GameAssets §2.2](../../../assets/GameAssets.md#22-file-names) (`en_us.json` for `en-GB`), and the field `strings`, an object keyed by string id. The content build merges every string source of one language into one cooked table, one per asset `strings.en_us`, `strings.fr_fr`, `strings.de_de`, `strings.it_it`, `strings.es_es`, `strings.pt_br`, `strings.ru_ru`, `strings.ja_jp` and `strings.ko_kr` (UI-222).
 
-> **Amendment 2026-10-22 (M2 task T14, [ADR-146](../../../ADR/ADR-146-the-string-table-and-its-formatting-at-m2.md)).** The table has no JSON Schema document, because the schema generator reads fixed fields only (DAT-026) and a table is an object keyed by id. The content build's string-table cooker is its validator: the fields `schema` (`text.string_table`), `version` (`1.0`), `language` and `strings`, and nothing else. At the MVP the one table is `strings.en_gb`.
+> **Amendment 2026-10-22 (M2 task T14, [ADR-146](../../../ADR/ADR-146-the-string-table-and-its-formatting-at-m2.md)).** The table has no JSON Schema document, because the schema generator reads fixed fields only (DAT-026) and a table is an object keyed by id. The content build's string-table cooker is its validator: the fields `schema` (`text.string_table`), `version` (`1.0`), `language` and `strings`, and nothing else. At the MVP the one table is `strings.en_us`.
 
 **DAT-207** (MUST) A string id is a Species string id (CONVENTIONS §8): lower-case, dotted, at most `ui.lang.max_id_length` (96) characters, compared exactly. Two entries with one id in one language, in one source or in two sources of the language, are a build error (DEC-801 item 2, UI-222); no source overrides another by load order.
 
@@ -228,6 +228,8 @@ Table 3.5-B The text of an entry in input mode M.
 | the other variant only | the empty text: the caption disappears in mode M |
 
 **DAT-210** (MUST) The base language is `ref.meta.lang.base` (en-GB), the source language of every string (ADR-063). The content build reports, for every other language, the ids that it lacks and the ids that the base language lacks, and fails on an id that is missing from the base language (UI-219, R-META-462, R-META-473, DEC-099).
+
+> **Amendment 2026-10-22 (O91).** `ref.meta.lang.base` is `en-US`: American English is the base language, and every en-GB in this document reads en-US.
 
 ### 3.6 Caption markup
 

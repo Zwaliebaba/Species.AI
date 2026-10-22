@@ -14,7 +14,7 @@ namespace Neuron
 class MessageLocale
 {
 public:
-  // _languageTag is a BCP 47 tag (ADR-063), en-GB for the MVP.
+  // _languageTag is a BCP 47 tag (ADR-063), en-US for the MVP (O91).
   explicit MessageLocale(std::string_view _languageTag);
   ~MessageLocale();
 
@@ -25,7 +25,7 @@ public:
   {
     return m_languageTag;
   }
-  // The language's form of a whole number, with its grouping (1,500 in en-GB).
+  // The language's form of a whole number, with its grouping (1,500 in en-US).
   [[nodiscard]] std::string FormatInteger(std::int64_t _value) const;
   // The language's form of a number, with its grouping and at most three fractional digits.
   [[nodiscard]] std::string FormatDecimal(double _value) const;

@@ -64,7 +64,7 @@ private:
   mutable std::set<std::string, std::less<>> m_missed;
 };
 
-// The content key of a language's table: strings/en_gb for en-GB (DAT-206, AST-014).
+// The content key of a language's table: strings/en_us for en-US (DAT-206, AST-014).
 [[nodiscard]] std::string StringTableKey(std::string_view _languageTag);
 // The table of _languageTag from the content, or an empty one, every look-up a miss, when the content lacks it or it is
 // damaged, which is logged.

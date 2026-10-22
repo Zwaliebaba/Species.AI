@@ -77,7 +77,7 @@ The `GameData/Records/<family>/` folders hold the authored JSON data records of 
 - Textures and meshes are named in PascalCase by **role**, with no category prefix, because the kind folder carries it (O64): `Fx/BeamLong.dds`, `Icon/Power/Workers.dds`, `Help/HintCameraControls.dds`. Sprites and meshes start with the unit or structure name (`Sprite/WorkerFront.dds`, `LeaderFigure.cmo`). Every other file is lower-case snake_case, named by role. Audio files start with their source (`worker_die_01.wav`), UI sounds with `ui_`, ambience with `amb_`, outcome stings with `outcome_`.
 - Numbered variants end in two digits, `NN` in a PascalCase name (`Ramp01`) and `_NN` in a snake_case one, counting from 01 without gaps. A row with a numbered pattern is one asset id with interchangeable variants, unless its spec gives each number a meaning (states, pages, themes).
 - No stem repeats a reference file stem, and no name contains an IP word. Ids and names come from [CONVENTIONS §8](../CONVENTIONS.md#8-naming).
-- String tables are named by their BCP 47 language tag in lower case with `_` for `-` (`en_gb.json`); the tag itself is stored in the file.
+- String tables are named by their BCP 47 language tag in lower case with `_` for `-` (`en_us.json`); the tag itself is stored in the file.
 - Maps follow `map_<mode>_<players>p_<nn>`; a thumbnail adds `_thumb`.
 - A **collision asset** (AST-044) is named after its render member with the suffix `Collision`, beside it in `GameData/Meshes/` (`TurretHeadCollision.cmo`); a **tint mask** (AST-022) is named after its parent member with `Tint`, which the owner's banner masks place before the state (`Marker/LeaderBannerTintIdle.dds`).
 - A drawn face (§17) has one **glyph sheet**, named after the face, and a **glyph table** named after the sheet with the suffix `Glyphs`, or `_glyphs` for a snake_case name (`GameFont.dds` and `GameFontGlyphs.json`; `ui_compact.png` and `ui_compact_glyphs.json`), so that the two members have different keys (O63; DAT-219 amendment).
@@ -104,7 +104,7 @@ Asset ids are dotted and lower case. Numbered variants share one id; documents c
 | `amb.` | ambience beds | `amb.match_bed` |
 | `music.` | music | `music.front_end.theme` |
 | `font.` | fonts | `font.ui.primary` |
-| `strings.` | string tables | `strings.en_gb` |
+| `strings.` | string tables | `strings.en_us` |
 | `mapfile.`, `thumb.` | maps and thumbnails, one id per mode | `mapfile.spawn_control` |
 | `<parent id>.<variant id>` | derived texture variants (AST-028): `shadow`, `trail` | `cursor.world.shadow` |
 | `<parent id>_tint` | companion tint masks of team-tinted cloth (AST-022) | `marker.leader_banner_tint` |
@@ -1125,7 +1125,7 @@ All player-facing text is new, written in plain functional English and keyed by 
 
 | File | Asset id | Language | Priority | Placeholder |
 |---|---|---|---|---|
-| `GameData/Strings/en_gb.json` | `strings.en_gb` | English (United Kingdom), the source language (`en-GB`) | mvp | pseudo-localised text |
+| `GameData/Strings/en_us.json` | `strings.en_us` | English (United States), the source language (`en-US`, O91) | mvp | pseudo-localised text |
 | `GameData/Strings/fr_fr.json` | `strings.fr_fr` | French (`fr-FR`) | launch | pseudo-localised text |
 | `GameData/Strings/de_de.json` | `strings.de_de` | German (`de-DE`) | launch | pseudo-localised text |
 | `GameData/Strings/it_it.json` | `strings.it_it` | Italian (`it-IT`) | launch | pseudo-localised text |
@@ -1134,13 +1134,13 @@ All player-facing text is new, written in plain functional English and keyed by 
 | `GameData/Strings/ru_ru.json` | `strings.ru_ru` | Russian (`ru-RU`) | launch | pseudo-localised text |
 | `GameData/Strings/ja_jp.json` | `strings.ja_jp` | Japanese (`ja-JP`) | launch | pseudo-localised text |
 | `GameData/Strings/ko_kr.json` | `strings.ko_kr` | Korean (`ko-KR`) | launch | pseudo-localised text |
-| `GameData/Strings/dev_en_gb.json` | `strings.dev_en_gb` | English (United Kingdom), development captions `ui.dev.*` only; in development editions only, never in a player edition | skirmish-first-playable | pseudo-localised text |
+| `GameData/Strings/dev_en_us.json` | `strings.dev_en_us` | English (United States), development captions `ui.dev.*` only; in development editions only, never in a player edition | skirmish-first-playable | pseudo-localised text |
 
 The language set is the reference set of nine; the design phase confirms it. Japanese and Korean need the companion fonts of §17, and every language beyond what the drawn faces cover, Russian among them, needs the DirectWrite upgrade of ADR-034 (O56).
 
 ### 18.1 String ids cited by the documents
 
-The reference documents and engine components cite 590 string ids and id patterns (such as `ui.input.key.<name>`). Each needs new en-GB text in `strings.en_gb` and a translation in every other table, except the development captions `ui.dev.*`, which live only in `strings.dev_en_gb`. The owning document defines each id and its meaning; this table sizes the writing by family (counted mechanically from the documents).
+The reference documents and engine components cite 590 string ids and id patterns (such as `ui.input.key.<name>`). Each needs new en-US text (O91) in `strings.en_us` and a translation in every other table, except the development captions `ui.dev.*`, which live only in `strings.dev_en_us`. The owning document defines each id and its meaning; this table sizes the writing by family (counted mechanically from the documents).
 
 | Family | Ids | Main owner |
 |---|---:|---|

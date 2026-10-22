@@ -227,7 +227,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ## 17 Player-facing text
 
-**9 string tables** (en-GB first, then French, German, Italian, Spanish, Portuguese, Russian, Japanese, Korean), and a development string table (en-GB only, development editions only). About 209 reference text entries in scope size the work: mode messages, objectives and HUD lines (74), team and faction names (11), menus (35), help (11), leaderboard pages (26), options (33), dialogs, windows and fields (19).
+**9 string tables** (en-US first (O91), then French, German, Italian, Spanish, Portuguese, Russian, Japanese, Korean), and a development string table (en-US only, development editions only). About 209 reference text entries in scope size the work: mode messages, objectives and HUD lines (74), team and faction names (11), menus (35), help (11), leaderboard pages (26), options (33), dialogs, windows and fields (19).
 
 - All text is new, in plain functional English, keyed by Species string ids; no reference line is copied or paraphrased closely.
 - Messages are short, read at a glance during a battle, and avoid jokes that need translation notes.

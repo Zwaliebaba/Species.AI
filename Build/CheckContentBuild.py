@@ -31,7 +31,7 @@ WEAPON = 'GameData/Meshes/ThrownWeapon.cmo'
 DWELLING = 'GameData/Meshes/Dwelling.cmo'
 STOREHOUSE_COLLISION = 'GameData/Meshes/StorehouseCollision.cmo'
 WELLSPRING_COLLISION = 'GameData/Meshes/WellspringCollision.cmo'
-STRINGS = 'GameData/Strings/en_gb.json'
+STRINGS = 'GameData/Strings/en_us.json'
 
 
 # ── A CMO file of the Visual Studio mesh content pipeline, read and written whole ──────────────────────────────────
@@ -289,7 +289,7 @@ FIXTURES = [
                 '"ui.title.game_name": "[[string:ui.title.other]]", "ui.title.other": "[[string:ui.title.game_name]]"'), STRINGS, 'cycle'),
   ('a string id that is not lower-case and dotted (DAT-207)', replace_text(STRINGS, '"ui.title.game_name"', '"UI.Title"'), STRINGS,
    'not a string id'),
-  ('a string table whose language is not its file name\'s (DAT-206)', replace_text(STRINGS, '"en-GB"', '"en-US"'), STRINGS,
+  ('a string table whose language is not its file name\'s (DAT-206)', replace_text(STRINGS, '"en-US"', '"en-GB"'), STRINGS,
    'language field'),
 ]
 

@@ -141,6 +141,8 @@ flowchart LR
 
 **BLD-078** (MUST) An edition's languages are the BCP 47 tags of its manifest, or one language group of table 4.7-A. The base language `ref.meta.lang.base` (`en-GB`, [reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md)) is part of every client edition, because every other language falls back to it per string id (ADR-063).
 
+> **Amendment 2026-10-22 (O91).** The base language is `en-US`, which takes en-GB's place in the language groups of table 4.7-A.
+
 Table 4.7-A Language groups.
 
 | Group | Languages, in this order |

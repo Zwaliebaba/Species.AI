@@ -19,13 +19,13 @@ namespace NeuronClientTests
 namespace
 {
 
-// The message _text with _arguments inserted in en-GB's forms, as the in-box ICU gives them.
+// The message _text with _arguments inserted in en-US's forms, as the in-box ICU gives them.
 std::string Formatted(std::string_view _text, std::span<const Neuron::FormatArgument> _arguments)
 {
-  static const Neuron::MessageLocale EN_GB("en-GB");
+  static const Neuron::MessageLocale EN_US("en-US");
   const auto pattern = Neuron::ParseMessage(_text);
   Assert::IsTrue(pattern.has_value(), L"a message of the subset");
-  return pattern ? Neuron::FormatPattern(*pattern, _arguments, EN_GB) : std::string();
+  return pattern ? Neuron::FormatPattern(*pattern, _arguments, EN_US) : std::string();
 }
 
 std::string Workers(std::int64_t _count)
@@ -47,7 +47,7 @@ public:
     Assert::AreEqual(std::string("No Workers"), Workers(0), L"the exact case first");
     Assert::AreEqual(std::string("1 Worker"), Workers(1), L"en's one");
     Assert::AreEqual(std::string("2 Workers"), Workers(2), L"en's other");
-    Assert::AreEqual(std::string("1,500 Workers"), Workers(1500), L"# in en-GB's grouping");
+    Assert::AreEqual(std::string("1,500 Workers"), Workers(1500), L"# in en-US's grouping");
     const std::array offset{Neuron::FormatArgument{"count", std::int64_t{2}}};
     Assert::AreEqual(std::string("you and 1 other"),
                      Formatted("{count, plural, offset:1 =1 {you} one {you and # other} other {you and # others}}", offset),

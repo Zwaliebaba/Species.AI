@@ -18,7 +18,7 @@ namespace
 Neuron::StringTableAsset SmallTable()
 {
   Neuron::StringTableAsset table;
-  table.language = "en-GB";
+  table.language = "en-US";
   table.entries = {
     {"ui.hud.stores", "Stores {stores}", "Stores {stores}", false},
     {"ui.hint.order", "Click to order", "Press A to order", false},
@@ -44,7 +44,7 @@ public:
     const auto read = Neuron::ReadStringTableAsset(bytes);
     Assert::IsTrue(read.has_value(), L"it reads");
     const Neuron::StringTableAsset back = read.value_or(Neuron::StringTableAsset{});
-    Assert::IsTrue(back.language == "en-GB" && back.entries.size() == 3, L"its language and strings");
+    Assert::IsTrue(back.language == "en-US" && back.entries.size() == 3, L"its language and strings");
     const Neuron::StringEntry* hint = Neuron::FindString(back, "ui.hint.order");
     Assert::IsTrue(hint != nullptr && hint->keyboardMouse == "Click to order" && hint->gamepad == "Press A to order", L"both modes");
     const Neuron::StringEntry* name = Neuron::FindString(back, "ui.title.game_name");

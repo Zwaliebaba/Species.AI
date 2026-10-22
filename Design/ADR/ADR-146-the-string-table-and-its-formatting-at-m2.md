@@ -150,3 +150,4 @@ Chosen options: 1 and 4.
   - `GameClient/UiLook`, `WorldPresentation`;
   - `GameData/Strings/en_gb.json`.
 * ADR-063 is amended with this record.
+* **Amendment 2026-10-22 (O91).** The table is American English: `GameData/Strings/en_us.json`, the asset `strings.en_us`, the content key `strings/en_us` and the ICU locale `en-US`. Every en-GB in this record reads en-US. Number grouping and plural categories are the same in both.

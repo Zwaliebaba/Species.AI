@@ -99,7 +99,7 @@ public:
     const Neuron::FontAsset face = GameLikeFace();
     std::vector<Neuron::UiBatch> batches;
     const Neuron::StringTable strings;
-    const Neuron::MessageLocale locale("en-GB");
+    const Neuron::MessageLocale locale("en-US");
     Species::AppendUiTestPage(face, CommittedPresentation(), strings, locale, {1280, 720}, batches);
     Assert::IsFalse(batches.empty(), L"a page");
     // The window body first: the accent strip, u to the repeat across and v once down, tinted and laid over.

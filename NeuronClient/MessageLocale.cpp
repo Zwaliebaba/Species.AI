@@ -67,7 +67,7 @@ struct MessageLocale::Handles
 MessageLocale::MessageLocale(std::string_view _languageTag)
   : m_languageTag(_languageTag)
 {
-  // ICU names a locale by its own id, which the BCP 47 tag gives (en-GB is en_GB).
+  // ICU names a locale by its own id, which the BCP 47 tag gives (en-US is en_US).
   std::array<char, ULOC_FULLNAME_CAPACITY> locale{};
   std::int32_t parsed = 0;
   UErrorCode status = U_ZERO_ERROR;

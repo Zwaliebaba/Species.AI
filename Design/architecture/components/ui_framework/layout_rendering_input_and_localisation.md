@@ -450,11 +450,13 @@ There are no bitmap font atlases ([reference/09](../../../reference/09_front_end
 
 > **Amendment 2026-10-22 (M2 task T14, [ADR-146](../../../ADR/ADR-146-the-string-table-and-its-formatting-at-m2.md)).** A miss is logged once per id in every build. A Debug build's look-up returns the id itself, so a string the owner has not yet written shows where it belongs, as the M2 plan's T14 checks; a Release build's returns the empty text, so no player sees an id. Until a second language exists, the base language is the one table, and a miss has nothing to fall back to.
 
+> **Amendment 2026-10-22 (O91).** The base language is American English, `en-US`. Every en-GB in this document reads en-US, and the coverage checks walk `strings.en_us`.
+
 **UI-220** (MUST) `Exists(id)` is true when the current language or the base language has the id. Counts that come from data use it, such as the number of help pages of a mode and the lines of the credits page (R-META-471).
 
 **UI-221** (MUST) A look-up returns a text view that stays valid while it is held (UI-239); there is no shared miss buffer that a later look-up overwrites, and look-ups never change the table, so concurrent readers are safe (DEC-102).
 
-**UI-222** (MUST) The content build merges every string source of a language into one table per language, the assets `strings.en_gb`, `strings.fr_fr`, `strings.de_de`, `strings.it_it`, `strings.es_es`, `strings.pt_br`, `strings.ru_ru`, `strings.ja_jp` and `strings.ko_kr`. Two entries with the same id in one language are a build error (DEC-801 item 2). Ids are compared exactly, in the lower-case dotted form of the Species conventions. The coverage reports against the base language are R-META-462 and R-META-473's.
+**UI-222** (MUST) The content build merges every string source of a language into one table per language, the assets `strings.en_us`, `strings.fr_fr`, `strings.de_de`, `strings.it_it`, `strings.es_es`, `strings.pt_br`, `strings.ru_ru`, `strings.ja_jp` and `strings.ko_kr`. Two entries with the same id in one language are a build error (DEC-801 item 2). Ids are compared exactly, in the lower-case dotted form of the Species conventions. The coverage reports against the base language are R-META-462 and R-META-473's.
 
 ### 4.12 Input-mode variants and caption markup
 
@@ -731,4 +733,4 @@ The palette tokens of UI-187 and UI-188 are the `ui.palette.*` rows; their value
 | `ui.chrome.title_height`, `ui.chrome.close_box`, `ui.button.auto_char_width`, `ui.button.auto_padding`, `ui.button.auto_height`, `ui.core.auto_grow_margin` | [core_and_widgets.md](core_and_widgets.md) §9 |
 | `inp.repeat.initial_delay`, `inp.repeat.period` (the repeat of the menu directions) | [input](../input/README.md) §4.18 |
 
-String ids cited: `ui.title.game_name` ([reference/09](../../../reference/09_front_end_and_match_flow/front_end_presentation.md)). Asset ids cited: `font.ui.primary`, `font.ui.primary_ja`, `font.ui.primary_ko`, `font.ui.stylised`, `font.ui.compact`, `strings.en_gb`, `strings.fr_fr`, `strings.de_de`, `strings.it_it`, `strings.es_es`, `strings.pt_br`, `strings.ru_ru`, `strings.ja_jp`, `strings.ko_kr`, `uitex.panel_accent`, `uitex.fill_blur`, `fx.glow_cloudy`, `glyph.pad.*`, `glyph.key.tab`.
+String ids cited: `ui.title.game_name` ([reference/09](../../../reference/09_front_end_and_match_flow/front_end_presentation.md)). Asset ids cited: `font.ui.primary`, `font.ui.primary_ja`, `font.ui.primary_ko`, `font.ui.stylised`, `font.ui.compact`, `strings.en_us`, `strings.fr_fr`, `strings.de_de`, `strings.it_it`, `strings.es_es`, `strings.pt_br`, `strings.ru_ru`, `strings.ja_jp`, `strings.ko_kr`, `uitex.panel_accent`, `uitex.fill_blur`, `fx.glow_cloudy`, `glyph.pad.*`, `glyph.key.tab`.

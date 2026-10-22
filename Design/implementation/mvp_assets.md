@@ -23,7 +23,7 @@ The generators are development tools under `Tools/`, projects of the one solutio
 | hand-drawn card | an image editor | the carried-load overlay, cut-out art at its exact size | draws it | 1 | 1 |
 | hand-drawn icon art | the owner's tools, exported as DDS in each row's runtime format (O64) | the placement cursor and its shadow, the pointer arrow, the turret icon, the check-box tick and the HUD icons | draws them | 20 | 22 |
 | recorded | a microphone | the Worker death group: eight short voices of a small crowd figure | records them | 1 | 8 |
-| written by hand | a text editor | the en-GB string table | writes it | 1 | 1 |
+| written by hand | a text editor | the en-US string table (O91) | writes it | 1 | 1 |
 | the owner's bitmap font sheet | the owner's image tool for the sheet; the glyph table generated from the sheet's grid; the font packer under `Tools/` writes the atlas page and the cooked glyph table | the game face GameFont and the development face EditorFont: one 16 px glyph sheet and a glyph table each (O62, O63) | drew both sheets; reviews the generated tables (§6) | 2 | 4 |
 
 *Table 1 — The production methods of the MVP's assets.*
@@ -137,7 +137,7 @@ MVP-102 and MVP-103: the HUD's panels are bodies of the two panel strips (UI-460
 | `icon.hud.deputy` | Deputy actions in the away report | 64x64 px display, white art | new | M4 | hand-drawn icon art |
 | `font.ui.primary` | Game face GameFont: every text that a player sees, in the Title, Body and Caption roles (O62); its Japanese and Korean companions are not needed | 2 files: the 16 px glyph sheet and its glyph table; one R8_UNORM page, drawn at whole-number scales; U+0020-007E, U+00BF-00FF | existing | M2 | the owner's bitmap font sheet (§6) |
 | `font.dev.editor` | Development face EditorFont: the development overlay and windows, in Debug builds only (O62) | 2 files: the 16 px glyph sheet and its glyph table; one R8_UNORM page; U+0020-007E, U+00BF-00FF | new | M1 | the owner's bitmap font sheet (§6) |
-| `strings.en_gb` | English (United Kingdom) string table: HUD, notifications, reports and the front end | UTF-8 JSON, ICU MessageFormat | existing | M2 | written by hand |
+| `strings.en_us` | English (United States) string table (O91): HUD, notifications, reports and the front end | UTF-8 JSON, ICU MessageFormat | existing | M2 | written by hand |
 
 *Table 6 — The MVP's UI and text assets.*
 
@@ -213,7 +213,7 @@ MVP-087, from M3: one sample group per sound, the smallest that suits it. The wa
 - **Icon art** (22 files): the placement cursor and its shadow, the pointer arrow, the turret icon, the check-box tick and the 17 new HUD icon files (15 asset ids): 12 files for M2, the nine relations and run icons for M3 and the deputy icon for M4; the M1 cursors, markers, banners and icons are made (§6).
 - **The Worker death group** (8 files) for M3, recorded; a synthesised set may stand in for it.
 - **The faces' missing marks**, optional: the eight punctuation marks, £ and ° drawn into free cells of GameFont (0x7F to 0x9F are empty) and mapped in its glyph table; until then the en-GB strings use ASCII punctuation ([GameAssets.md §17](../assets/GameAssets.md#17-fonts)).
-- **The en-GB string table**, grown at each milestone; the names of the resource (Crystal), the dwelling and the storehouse are confirmed (O57).
+- **The en-US string table** (O91), grown at each milestone; the names of the resource (Crystal), the dwelling and the storehouse are confirmed (O57).
 
 **What the owner approves:**
 

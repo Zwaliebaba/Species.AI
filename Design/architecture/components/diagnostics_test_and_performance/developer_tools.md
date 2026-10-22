@@ -14,7 +14,7 @@ The development drawing queue and the debug-command declarations are those of Li
 
 ## 3 Data model
 
-**Development text.** Development captions are developer-facing, in the base language only, and live in the development string table, which uses `strings.dev_en_gb`: only the editions that are never released hold it, and no player edition contains it (ADR-056). New text, keyed as follows; arguments are ICU MessageFormat arguments (ADR-063):
+**Development text.** Development captions are developer-facing, in the base language only, and live in the development string table, which uses `strings.dev_en_us`: only the editions that are never released hold it, and no player edition contains it (ADR-056). New text, keyed as follows; arguments are ICU MessageFormat arguments (ADR-063):
 
 | String id | Text |
 |---|---|

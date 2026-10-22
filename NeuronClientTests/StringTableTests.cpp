@@ -23,7 +23,7 @@ namespace
 Neuron::StringTableAsset SmallTable()
 {
   Neuron::StringTableAsset table;
-  table.language = "en-GB";
+  table.language = "en-US";
   table.entries = {
     {"ui.hint.order", "Click to order", "Press A to order", false},
     {"ui.hud.workers", "{count, plural, one {# Worker} other {# Workers}}", "{count, plural, one {# Worker} other {# Workers}}", false},
@@ -45,7 +45,7 @@ public:
   TEST_METHOD(Ui218ALookUpReturnsTheTextOfItsMode)
   {
     const Neuron::StringTable table(SmallTable());
-    Assert::IsTrue(table.Language() == "en-GB");
+    Assert::IsTrue(table.Language() == "en-US");
     Assert::IsTrue(table.Lookup("ui.hint.order") == "Click to order", L"keyboard and mouse by default");
     Assert::IsTrue(table.Lookup("ui.hint.order", Neuron::InputMode::Gamepad) == "Press A to order", L"the gamepad's variant");
     Assert::IsTrue(table.Exists("ui.hint.order") && table.Exists("ui.hud.workers"), L"UI-220");
@@ -79,13 +79,13 @@ public:
   TEST_METHOD(Ui227AStringIsFormattedWithItsArguments)
   {
     const Neuron::StringTable table(SmallTable());
-    const Neuron::MessageLocale locale("en-GB");
+    const Neuron::MessageLocale locale("en-US");
     const std::array one{Neuron::FormatArgument{"count", std::int64_t{1}}};
     const std::array many{Neuron::FormatArgument{"count", std::int64_t{2400}}};
     Assert::AreEqual(std::string("1 Worker"), table.Format("ui.hud.workers", one, locale));
     Assert::AreEqual(std::string("2,400 Workers"), table.Format("ui.hud.workers", many, locale));
     Assert::AreEqual(std::string(table.Lookup("ui.hud.idle")), table.Format("ui.hud.idle", one, locale), L"a miss is the look-up's");
-    Assert::AreEqual(std::string("strings/en_gb"), Neuron::StringTableKey("en-GB"), L"the table's content key");
+    Assert::AreEqual(std::string("strings/en_us"), Neuron::StringTableKey("en-US"), L"the table's content key");
   }
 };
 

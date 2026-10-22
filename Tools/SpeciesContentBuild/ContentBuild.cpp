@@ -34,10 +34,10 @@ constexpr std::string_view CONTENT_ROOT = "GameData";
 // GameData/Schemas/ holds the JSON Schema documents, which the generator reads and nothing packs (ADR-098).
 constexpr std::string_view SCHEMA_FOLDER = "Schemas/";
 constexpr std::string_view RECORD_FOLDER = "Records/";
-// The manifest category of the string tables (DAT-206), and the face whose glyphs the en-GB table's coverage is
+// The manifest category of the string tables (DAT-206), and the face whose glyphs the en-US table's coverage is
 // checked against: GameFont, which every font role of the MVP uses (UI-199 as O63 amends it, ADR-146).
 constexpr std::string_view STRING_TABLE_CATEGORY = "String table";
-constexpr std::string_view EN_GB_FACE = "font.ui.primary";
+constexpr std::string_view BASE_LANGUAGE_FACE = "font.ui.primary";
 
 // The manifest categories whose files are textures (AST table 3.2-A).
 constexpr std::array<std::string_view, 8> TEXTURE_CATEGORIES{"Unit sprites",
@@ -199,7 +199,7 @@ BuildResult CookContent(const std::filesystem::path& _root, BuildReport& _report
     }
   }
   CookSimulationRecords(*manifest, meshes, collisions, result.entries, _report);
-  std::optional<Neuron::FontAsset> enGbFace;
+  std::optional<Neuron::FontAsset> baseLanguageFace;
   for (const auto& [assetId, face] : faces)
   {
     if (face.sheet == nullptr || face.table == nullptr)
@@ -214,11 +214,11 @@ BuildResult CookContent(const std::filesystem::path& _root, BuildReport& _report
     {
       // The face's one entry takes the sheet's key; its table is folded into it (ADR-108).
       entry->entry.key = Neuron::KeyOfSource(face.sheet->contentPath);
-      if (assetId == EN_GB_FACE)
+      if (assetId == BASE_LANGUAGE_FACE)
       {
         if (auto cooked = Neuron::ReadFontAsset(entry->bytes))
         {
-          enGbFace = std::move(*cooked);
+          baseLanguageFace = std::move(*cooked);
         }
       }
       result.entries.push_back(std::move(*entry));
@@ -227,17 +227,17 @@ BuildResult CookContent(const std::filesystem::path& _root, BuildReport& _report
   // DAT-217 (ADR-146): each language's table, its coverage checked against the face its font roles use.
   for (const auto& [row, source] : stringTables)
   {
-    if (row->assetId != "strings.en_gb")
+    if (row->assetId != "strings.en_us")
     {
       _report.Fail(source->file, std::format("its row {} is a language the MVP's faces do not draw (UI-199, ADR-146)", row->assetId));
       continue;
     }
-    if (!enGbFace)
+    if (!baseLanguageFace)
     {
-      _report.Fail(source->file, std::format("its coverage needs the face {}, which did not cook (UI-199)", EN_GB_FACE));
+      _report.Fail(source->file, std::format("its coverage needs the face {}, which did not cook (UI-199)", BASE_LANGUAGE_FACE));
       continue;
     }
-    std::optional<Neuron::CookedEntry> entry = CookStringTable(*row, source->file, source->bytes, *enGbFace, _report);
+    std::optional<Neuron::CookedEntry> entry = CookStringTable(*row, source->file, source->bytes, *baseLanguageFace, _report);
     if (entry)
     {
       entry->entry.key = Neuron::KeyOfSource(source->contentPath);
