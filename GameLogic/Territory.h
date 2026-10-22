@@ -2,6 +2,7 @@
 
 #include "BitReader.h"
 #include "BitWriter.h"
+#include "RegionTerrain.h"
 #include "Settlement.h"
 #include "Vec3.h"
 
@@ -15,10 +16,6 @@ namespace Species
 {
 
 class RegionSimulation;
-
-// WLD-062: the region's pairs of valley neighbours, by local site, in the order of the navigation nodes' border areas
-// (MVP-017).
-inline constexpr std::array<std::array<std::uint8_t, 2>, 4> VALLEY_PAIRS{{{0, 1}, {2, 3}, {0, 2}, {1, 3}}};
 
 /// A set of cells of a region's square (ADR-134): a settlement's territory, in cells of mvp.territory.cell_size (MVP-026,
 /// WLD-060), or its seen layer, in cells of mvp.vision.cell_size (MVP-016). A cell is held when its centre is. Both are

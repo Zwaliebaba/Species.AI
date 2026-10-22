@@ -50,6 +50,7 @@ enum class SceneTexture : std::uint16_t
   IconLeader,  // icon.power.leader
   IconWorkers, // icon.power.workers
   GlowCloudy,  // fx.glow_cloudy (ADR-140): the orbs drifting home and the Wellspring's glow
+  BeamLong,    // fx.beam_long (ADR-143): the territory lines
   Count
 };
 

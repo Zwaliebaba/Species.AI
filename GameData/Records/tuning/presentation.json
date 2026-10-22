@@ -546,6 +546,21 @@
         "g": 0.9,
         "b": 1.0
       }
+    },
+    "territory_line": {
+      "half_width": 3,
+      "lift": 2,
+      "alpha": 0.8
+    },
+    "border_mark": {
+      "spot_size": 4,
+      "spacing": 24,
+      "color": {
+        "r": 0.55,
+        "g": 0.55,
+        "b": 0.55
+      },
+      "alpha": 0.6
     }
   },
   "dbg": {

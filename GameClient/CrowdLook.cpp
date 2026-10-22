@@ -54,6 +54,7 @@ constexpr std::array<std::string_view, static_cast<std::size_t>(SceneTexture::Co
   "textures/icon/power/leader",
   "textures/icon/power/workers",
   "textures/fx/glowcloudy",
+  "textures/fx/beamlong",
 };
 constexpr std::array<std::string_view, static_cast<std::size_t>(SceneMesh::Count)> SCENE_MESH_KEYS{
   "meshes/leaderfigure", "meshes/thrownweapon", "meshes/wellspring",      "meshes/resourcesite", "meshes/resourcesitecentral",

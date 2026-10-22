@@ -10,6 +10,7 @@ This file records the decisions of the Species design and of the MVP built from 
 |---|---|---|---|
 | [DEC-1000](#dec-1000-the-place-of-the-ninth-home-resource-site-on-the-mvps-terrain) | The place of the ninth home resource site on the MVP's terrain | Resolved | WLD, MVP |
 | [DEC-1001](#dec-1001-the-provisional-looks-of-the-settlement) | The provisional looks of the settlement | Open | MVP |
+| [DEC-1002](#dec-1002-the-provisional-looks-of-the-territories) | The provisional looks of the territories | Open | MVP |
 
 ## 1 World and sites
 
@@ -47,3 +48,16 @@ This file records the decisions of the Species design and of the MVP built from 
   - B — values that the owner sets before the run.
 - Recommendation: A. Each look is one key of the client's presentation record, read at start-up, so a retune changes no code and nothing the simulation computes.
 - Decide by: the owner's run of M2 task T12; the likeness review of PIL-027 at M2's end judges the result.
+
+### DEC-1002 The provisional looks of the territories
+- Status: Open
+- Affects: implementation/mvp_scope.md (MVP-084, and table 3's `mvp.territory_line.*` and `mvp.border_mark.*`); ADR-143
+- Specified behaviour: The client draws the territories and the border areas with the first values of table 3 (owner decision O90). MVP-084 states that a territory is a glowing line of `fx.beam_long` in its Cladan's colour and that border areas are marked, but not how wide, how bright or how marked.
+  - Each settlement's territory line runs halfway between the cells it holds and those it does not, `mvp.territory_line.lift` (2 wu) over the terrain, a camera-facing segment of `fx.beam_long` of half-width `mvp.territory_line.half_width` (3 wu) at alpha `mvp.territory_line.alpha` (0.8) in its Cladan's colour.
+  - Each valley border area's halfway line and edge carry a spot of `fx.particle_dot` every `mvp.border_mark.spacing` (24 wu), of half-size `mvp.border_mark.spot_size` (4 wu), lifted by its size over the terrain, in `mvp.border_mark.color` (0.55, 0.55, 0.55) at alpha `mvp.border_mark.alpha` (0.6), outside the coast bands.
+  - Holders are not marked, since none is replicated at M2 (WLD-063); the strategic view's marks (WLD-241) are not drawn in the settlement view.
+- Options:
+  - A — the values as stated, which the owner retunes after M2 task T13's run, as DEC-1001's after T12's;
+  - B — values that the owner sets before the run.
+- Recommendation: A. Each look is one key of the client's presentation record, so a retune changes no code and nothing the simulation computes.
+- Decide by: the owner's run of M2 task T13; the likeness review of PIL-027 at M2's end judges the result.

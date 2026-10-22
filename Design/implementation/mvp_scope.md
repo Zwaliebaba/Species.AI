@@ -227,7 +227,9 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 > **Amendment 2026-10-22 (O89; M2 task T12, [ADR-140](../ADR/ADR-140-structures-drawn-and-the-stand-ins-at-m2.md); DEC-1001, Open).** A dwelling's and a storehouse's ports, which serve their construction alone at M2, show their pads and status stars only while the structure is a construction site; a resource site's and a turret's ports are drawn always. How far a site is sunk, how dark an inactive structure is and how the completion flash and the Wellspring's glow look are the provisional presentation keys of table 3, which the owner tunes after T12's run (DEC-1001).
 
-**MVP-084** (MUST) A settlement's territory is drawn as a glowing line on the terrain in its Cladan's colour (`fx.beam_long`), border areas and claims are marked on it, and the area outside the steward's areas lies under black fog with the public layer drawn on it (WLD-244).
+**MVP-084** (MUST) A settlement's territory is drawn as a glowing line on the terrain in its Cladan's colour (`fx.beam_long`), border areas and claims are marked on it, and the area outside the steward's areas lies under black fog with the public layer drawn on it (WLD-244). How wide and bright the line is and how the border areas are marked is DEC-1002.
+
+> **Amendment 2026-10-22 (O90; M2 task T13, [ADR-143](../ADR/ADR-143-territory-lines-and-border-areas-drawn-at-m2.md); DEC-1002, Open).** Every settlement's territory line runs halfway between the cells it holds and the cells it does not, as the replica holds them, at a lift over the terrain. Each valley border area's halfway line and edge are marked with spots of `fx.particle_dot`, in a neutral colour while no holder is replicated (WLD-063); the holders and the claims are marked with M3's claims (MVP-053). The line's width, lift and alpha and the spots' size, spacing and colour are the provisional presentation keys of table 3, which the owner tunes after T13's run (DEC-1002).
 
 **MVP-085** (MUST) The client draws at `mvp.client.fps_target` (60 frames per second) at 1,920 × 1,080 with up to `mvp.client.figures_max` (1,500) figures on screen on the reference test machine (DBG-209), which is the owner's PC, pinned at M1 (O58), and draws the replica one tick behind with interpolation (ADR-084).
 
@@ -434,6 +436,13 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.orb.cloudy_size` | 16 | wu, half-size | — | provisional | MVP-082 | The cloudy glow of `fx.glow_cloudy` about an orb drifting home or waiting at its Wellspring (MVP-023, MVP-025) |
 | `mvp.orb.cloudy_alpha` | 0.5 | alpha, 0 to 1 | — | provisional | MVP-082 | — |
 | `mvp.worker.load_color` | 0.6, 0.9, 1.0 | linear RGB | — | provisional | MVP-082 | The carried load's card `sprite.worker.carry_load` over the Worker's body (MVP-031) |
+| `mvp.territory_line.half_width` | 3 | wu, half-width | — | provisional | MVP-084 | The territory line's segment of `fx.beam_long` in the Cladan's colour (O90, DEC-1002, ADR-143); the owner tunes the territory's looks after M2 task T13's run |
+| `mvp.territory_line.lift` | 2 | wu over the terrain | — | provisional | MVP-084 | — |
+| `mvp.territory_line.alpha` | 0.8 | alpha, 0 to 1 | — | provisional | MVP-084 | — |
+| `mvp.border_mark.spot_size` | 4 | wu, half-size | — | provisional | MVP-084 | A spot of `fx.particle_dot` on a valley border area's halfway line or edge (WLD-062), lifted by its size over the terrain |
+| `mvp.border_mark.spacing` | 24 | wu between spots | — | provisional | MVP-084 | — |
+| `mvp.border_mark.color` | 0.55, 0.55, 0.55 | linear RGB | — | provisional | MVP-084 | Neutral while no holder is replicated (WLD-063) |
+| `mvp.border_mark.alpha` | 0.6 | alpha, 0 to 1 | — | provisional | MVP-084 | — |
 
 *Table 3 — The tuning values of the MVP.*
 

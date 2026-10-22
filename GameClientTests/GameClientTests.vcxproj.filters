@@ -59,6 +59,9 @@
     <ClCompile Include="StructureLookTests.cpp">
       <Filter>View</Filter>
     </ClCompile>
+    <ClCompile Include="TerritoryLookTests.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
     <ClCompile Include="TestSupport.cpp">
       <Filter>Tests</Filter>
     </ClCompile>

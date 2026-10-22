@@ -63,6 +63,9 @@
     <ClInclude Include="StructureLook.h">
       <Filter>View</Filter>
     </ClInclude>
+    <ClInclude Include="TerritoryLook.h">
+      <Filter>View</Filter>
+    </ClInclude>
     <ClInclude Include="WorldMarkers.h">
       <Filter>View</Filter>
     </ClInclude>
@@ -111,6 +114,9 @@
       <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="StructureLook.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="TerritoryLook.cpp">
       <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="WorldMarkers.cpp">

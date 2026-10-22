@@ -242,6 +242,7 @@ WorldPresentation::WorldPresentation(Desc _desc)
     m_start(_desc.clock->Now()),
     m_effects(*_desc.presentation, *_desc.tuning),
     m_structures(*_desc.presentation),
+    m_territories(*_desc.presentation, *_desc.tuning),
     m_profile(ProfileDescOf(*_desc.presentation)),
     m_presentationClock(_desc.presentation->ref.sim.frame.deltaClamp)
 {
@@ -266,6 +267,7 @@ void WorldPresentation::Update(const ClientSession& _session)
   m_firstDisplayTick.reset();
   m_effects.Clear();
   m_structures.Clear();
+  m_territories.Clear();
   if (terrain == nullptr)
   {
     m_world.reset();
@@ -367,6 +369,9 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
                                 std::make_move_iterator(structures.quads.end()));
     }
     AppendOrbBatches(InterpolateOrbs(_session.Replica(), fraction), *m_desc.presentation, inputs.quadBatches);
+    // M2 task T13 (ADR-143): every settlement's territory line and the border areas' spots, in pass 10a.
+    m_territories.Update(_session.Replica().Latest(), *m_terrain);
+    m_territories.AppendBatches(inputs.quadBatches);
     // M1 task T17b (ADR-125): the route preview in pass 12, the world markers in pass 16 and the badge in pass 20.
     if (crowd.localTeam.has_value())
     {

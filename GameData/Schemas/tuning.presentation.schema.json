@@ -4500,6 +4500,130 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "territory_line": {
+          "type": "object",
+          "description": "the mvp.territory_line.* keys",
+          "properties": {
+            "half_width": {
+              "type": "number",
+              "description": "mvp.territory_line.half_width (MVP-084)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "lift": {
+              "type": "number",
+              "description": "mvp.territory_line.lift (MVP-084)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "alpha": {
+              "type": "number",
+              "description": "mvp.territory_line.alpha (MVP-084)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "alpha",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "half_width",
+            "lift",
+            "alpha"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "border_mark": {
+          "type": "object",
+          "description": "the mvp.border_mark.* keys",
+          "properties": {
+            "spot_size": {
+              "type": "number",
+              "description": "mvp.border_mark.spot_size (MVP-084)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "spacing": {
+              "type": "number",
+              "description": "mvp.border_mark.spacing (MVP-084)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "color": {
+              "type": "object",
+              "description": "mvp.border_mark.color (MVP-084)",
+              "properties": {
+                "r": {
+                  "type": "number",
+                  "description": "mvp.border_mark.color.r",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "linear RGB",
+                  "x-species-presence": "required"
+                },
+                "g": {
+                  "type": "number",
+                  "description": "mvp.border_mark.color.g",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "linear RGB",
+                  "x-species-presence": "required"
+                },
+                "b": {
+                  "type": "number",
+                  "description": "mvp.border_mark.color.b",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "linear RGB",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "r",
+                "g",
+                "b"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "alpha": {
+              "type": "number",
+              "description": "mvp.border_mark.alpha (MVP-084)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "alpha",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "spot_size",
+            "spacing",
+            "color",
+            "alpha"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
@@ -4509,7 +4633,9 @@
         "structure",
         "wellspring",
         "orb",
-        "worker"
+        "worker",
+        "territory_line",
+        "border_mark"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

@@ -345,3 +345,4 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 | DEC-972 | [What the cheats-used marker suppresses](engine_gap_rules.md#dec-972-what-the-cheats-used-marker-suppresses) | Open | engine_gap_rules.md |
 | DEC-1000 | [The place of the ninth home resource site on the MVP's terrain](species_design.md#dec-1000-the-place-of-the-ninth-home-resource-site-on-the-mvps-terrain) | Resolved | species_design.md |
 | DEC-1001 | [The provisional looks of the settlement](species_design.md#dec-1001-the-provisional-looks-of-the-settlement) | Open | species_design.md |
+| DEC-1002 | [The provisional looks of the territories](species_design.md#dec-1002-the-provisional-looks-of-the-territories) | Open | species_design.md |

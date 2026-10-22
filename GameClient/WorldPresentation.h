@@ -10,6 +10,7 @@
 #include "PresentationClock.h"
 #include "SettlementView.h"
 #include "StructureLook.h"
+#include "TerritoryLook.h"
 #include "TuningMvp.h"
 #include "TuningPresentation.h"
 #include "WorldScene.h"
@@ -87,6 +88,7 @@ private:
   LeaderLook m_leaders;
   EffectsLook m_effects;
   StructureLook m_structures;
+  TerritoryLook m_territories;
   Neuron::FrameProfile m_profile;
   Neuron::PresentationClock m_presentationClock;
   bool m_overlayShown = false;
