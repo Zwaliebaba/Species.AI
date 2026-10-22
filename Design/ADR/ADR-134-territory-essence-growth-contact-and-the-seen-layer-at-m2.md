@@ -13,7 +13,7 @@ M2 task T6 builds a settlement's territory, its growth from Essence, its contact
 - The territory stays inside the bounds of WLD-060: the coast, the halfway line of each valley border area, the edge of the home cell, the clearances round the other sites' cores and the central resource sites. It is always one connected area.
 - The steward places structures wholly inside it (MVP-032). Until T6, ADR-132 measured that against the disc of the territory's radius.
 
-The requirements say where the territory stops, but not how the simulation holds an area that a disc, half-planes, circles and the terrain's shoreline cut. This record decides that first; T6's later parts add the orbs and growth, contact and the seen layer.
+The requirements say where the territory stops, but not how the simulation holds an area that a disc, half-planes, circles and the terrain's shoreline cut. This record decides that first, then how orbs reach the Wellspring and the Wellspring grows (MVP-023 to MVP-025); T6's last part adds contact and the seen layer.
 
 ## Decision Drivers
 
@@ -44,6 +44,20 @@ Chosen option: 1. Option 2 cannot keep the territory connected: a point across a
 
   The MVP's world is one region with no crossing (MVP-010), so the crossing border areas of WLD-060 are not built.
 * **A footprint inside it** (MVP-032, `InTerritory`): the cell of its centre and every cell whose centre the footprint's disc covers are held. A footprint may therefore overhang the territory's edge by less than a cell.
+* **Orbs** (MVP-023, MVP-025). The orb gains two states, `Drifting` (3) and `Waiting` (4), and the site of the settlement it is bound for.
+  - A floating orb inside a settlement's territory drifts to that settlement's Wellspring: each tick its velocity is the horizontal direction to the Wellspring at `mvp.essence.drift_speed`, and its wobble stays. An orb finishes its birth first (R-UNIT-311), so that a death is still seen where it happened. An orb outside every territory keeps the reference's states and ascends.
+  - A drifting or waiting orb takes no structure push (R-UNIT-321), which would hold it off the Wellspring's hit volume.
+  - It reaches the Wellspring within the Wellspring's radius, its bounding sphere's.
+    - Below the population limit it becomes a Worker at the Wellspring's door, as the founding Workers appear (R-ECON-043).
+    - Otherwise it waits there while fewer than `mvp.essence.wait_max` of that settlement's orbs wait, and ascends if not.
+  - A waiting orb becomes a Worker as soon as there is room, in the orb pool's order.
+  - The population is the team's living figures; a Leader counts as the Worker it was.
+* **The settlement step.** After its region's slices and AI, each settlement, in founding order:
+  - sets its radius to `wld.territory.founding_radius` plus `mvp.territory.radius_per_worker` for each of its population above `mvp.settlement.start_workers`, up to `wld.territory.max_radius`. The radius never falls, and a radius that grows makes the territory again (MVP-026);
+  - counts its growth timer down while it is below its population limit and its stores hold `mvp.essence.orb_cost_ru`, and holds it otherwise. At 0 its Wellspring pays that cost for one orb at its centre, and the timer restarts at `mvp.essence.wellspring_interval_s`, 120 ticks (MVP-024). A founded settlement starts its timer there.
+
+  The orb reaches the Wellspring once born, so each Worker follows its payment by the orb's birth, about 6 s, whose rise varies by a few ticks.
+* **State.** The orb's two states and its settlement, and the settlement's growth timer, are part of version 9 (ADR-099).
 
 ### Consequences
 
@@ -59,6 +73,12 @@ GameLogicTests (`TerritoryTests`):
 - a territory at its largest radius on its own side of each halfway line, out of the coast bands, clear of the other sites' cores and of the central resource site, on dry ground, and reaching a halfway line;
 - a footprint well inside the territory accepted, and one that overhangs its edge by 30 wu refused;
 - a restored world making the same cells.
+
+GameLogicTests (`EssenceTests`):
+- a settlement of 20 Workers with full stores paying for an orb exactly every 120 ticks, and growing a Worker about as often to its limit of 40 and no further, for 20 orbs' cost;
+- an orb 300 wu inside the territory closing on the Wellspring at the drift speed and becoming a Worker there, while an orb outside every territory does not drift;
+- at the limit, 20 of 21 arriving orbs waiting and the 21st ascending, and a waiting orb taking the room a death leaves;
+- a radius of 540 wu for 10 Workers above 20, which stays when five of them die.
 
 ## Pros and Cons of the Options
 

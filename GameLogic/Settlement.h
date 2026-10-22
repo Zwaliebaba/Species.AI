@@ -52,7 +52,8 @@ struct Cladan
 /// A settlement, owned by the job of its region (MVP-096, ADR-130): its site, the team slot of its Workers, which is its
 /// site, whether a steward runs it or it is an AI settlement (PIL-007), its Cladan, its fidelity, its Wellspring, its
 /// stores in integer thousandths of a resource unit (MVP-030), its territory's radius, which never shrinks (MVP-026),
-/// and its construction sites in the order they are built (MVP-032, ADR-132).
+/// its construction sites in the order they are built (MVP-032, ADR-132) and its Wellspring's growth timer (MVP-024,
+/// ADR-134).
 struct Settlement
 {
   std::uint8_t site = 0;
@@ -65,6 +66,7 @@ struct Settlement
   std::int64_t storesMilliRu = 0;
   double territoryRadius = 0.0; // wu
   std::vector<StructureRef> queue;
+  std::int32_t growthTicks = 0; // MVP-024: until the Wellspring's next orb, counting only while it may grow (ADR-134)
 };
 
 // MVP-030: a tuning amount of resource units in thousandths, rounded once to the nearest.

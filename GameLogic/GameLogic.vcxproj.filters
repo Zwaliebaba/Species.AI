@@ -51,6 +51,9 @@
     <ClInclude Include="Formation.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="Growth.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="IntegratedServer.h">
       <Filter>Server</Filter>
     </ClInclude>
@@ -159,6 +162,9 @@
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="Formation.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Growth.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="IntegratedServer.cpp">

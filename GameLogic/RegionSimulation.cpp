@@ -4,6 +4,7 @@
 #include "EssenceOrb.h"
 #include "FigureAdvance.h"
 #include "Formation.h"
+#include "Growth.h"
 #include "Profile.h"
 #include "RegionCommands.h"
 #include "RegionSimulation.h"
@@ -577,6 +578,7 @@ const Settlement& RegionSimulation::FoundSettlement(std::uint8_t _site, bool _st
   settlement.stewarded = _stewarded;
   settlement.cladan.color = _site;
   settlement.territoryRadius = m_tuning->wld.territory.foundingRadius;
+  settlement.growthTicks = GrowthIntervalTicks(*m_tuning);
   const Neuron::Vec3 outward{center.x - layout.valleyCenter.x, 0.0, center.z - layout.valleyCenter.z};
   settlement.wellspringSlot = AddStructure(StructureKind::Wellspring, settlement.team, std::nullopt, center.x, center.z, outward);
   settlement.wellspringId = m_structures.At(settlement.wellspringSlot).id;
@@ -635,6 +637,14 @@ void RegionSimulation::Step(std::uint64_t _tick)
     for (AiController& ai : m_ais)
     {
       StepAi(*this, ai);
+    }
+  }
+  {
+    // ADR-134: each settlement's own step, in founding order.
+    ENGINE_PROFILE_SCOPE("sim.settlements.advance");
+    for (Settlement& settlement : m_settlements)
+    {
+      AdvanceSettlement(*this, settlement);
     }
   }
   {
@@ -902,7 +912,8 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
       (!m_bolts.ReadState(_reader, POOL_CAPACITY_MAX, [](Neuron::BitReader& _in, LaserBolt& _bolt) { return ReadLaserBolt(_in, _bolt); }) ||
        !m_effects.ReadState(_reader, POOL_CAPACITY_MAX,
                             [&](Neuron::BitReader& _in, Effect& _effect) { return ReadEffect(_in, _effect, _stateVersion); }) ||
-       !m_orbs.ReadState(_reader, POOL_CAPACITY_MAX, [](Neuron::BitReader& _in, EssenceOrb& _orb) { return ReadOrb(_in, _orb); })))
+       !m_orbs.ReadState(_reader, POOL_CAPACITY_MAX,
+                         [&](Neuron::BitReader& _in, EssenceOrb& _orb) { return ReadOrb(_in, _orb, _stateVersion); })))
   {
     return false;
   }

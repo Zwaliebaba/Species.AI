@@ -91,6 +91,26 @@ std::uint32_t ActiveCount(const RegionSimulation& _region, std::uint8_t _team, S
   return count;
 }
 
+std::uint32_t Population(const RegionSimulation& _region, const Settlement& _settlement)
+{
+  if (_settlement.team >= _region.TeamCount())
+  {
+    return 0;
+  }
+  std::uint32_t population = 0;
+  const SlicedPool<Figure>& figures = _region.TeamAt(_settlement.team).figures;
+  for (std::uint32_t slot = 0; slot < figures.Capacity(); ++slot)
+  {
+    population += figures.Used(slot) && !figures.At(slot).dead ? 1U : 0U;
+  }
+  return population;
+}
+
+std::uint32_t PopulationLimitOf(const RegionSimulation& _region, const Settlement& _settlement)
+{
+  return PopulationLimit(_region.Tuning(), ActiveCount(_region, _settlement.team, StructureKind::Dwelling));
+}
+
 bool InTerritory(const RegionSimulation& _region, const Settlement& _settlement, const Neuron::Vec3& _point, double _radius)
 {
   const TerritoryMap* territory = _region.TerritoryOf(_settlement.site);

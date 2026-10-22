@@ -172,6 +172,7 @@
     <ClCompile Include="BotTests.cpp" />
     <ClCompile Include="CombatTests.cpp" />
     <ClCompile Include="CommandTests.cpp" />
+    <ClCompile Include="EssenceTests.cpp" />
     <ClCompile Include="FormationTests.cpp" />
     <ClCompile Include="MovementTests.cpp" />
     <ClCompile Include="RegionSimulationTests.cpp" />

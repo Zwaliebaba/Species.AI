@@ -35,6 +35,9 @@
     <ClCompile Include="CommandTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="EssenceTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="FormationTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>

@@ -55,6 +55,11 @@ enum class PlacementRefusal : std::uint8_t
 // storehouses that add to the stores' capacity (MVP-022, MVP-034).
 [[nodiscard]] std::uint32_t ActiveCount(const RegionSimulation& _region, std::uint8_t _team, StructureKind _kind);
 
+// MVP-022: the settlement's population, its team's living figures, a Leader counting as the Worker it was, and its
+// population limit from its active dwellings.
+[[nodiscard]] std::uint32_t Population(const RegionSimulation& _region, const Settlement& _settlement);
+[[nodiscard]] std::uint32_t PopulationLimitOf(const RegionSimulation& _region, const Settlement& _settlement);
+
 // MVP-032: a disc of _radius at _point lies wholly inside the settlement's territory, its centre's cell and every cell
 // whose centre it covers held (ADR-134).
 [[nodiscard]] bool InTerritory(const RegionSimulation& _region, const Settlement& _settlement, const Neuron::Vec3& _point, double _radius);
