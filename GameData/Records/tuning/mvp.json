@@ -97,7 +97,7 @@
     },
     "battle": {
       "objective_radius": 150,
-      "objective_hold_s": 30,
+      "objective_hold_s": 120,
       "rout_share": 0.25
     },
     "protection": {
@@ -118,7 +118,7 @@
     },
     "claim": {
       "uncontested_minutes": 30,
-      "cooldown_minutes": 60
+      "cooldown_minutes": 120
     },
     "relation": {
       "tribute_ru_per_weight": 10

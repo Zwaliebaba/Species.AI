@@ -139,7 +139,7 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 **MVP-044** (MUST) Defender's advantage (O2): inside its own territory, a defending settlement's Workers and Leaders take `mvp.defense.damage_taken_factor` (0.75) of the damage the reference rules give; the defender's turrets fight; and the Essence of every death inside the defender's territory drifts to the defender's Wellspring (MVP-023), within the bound of MVP-046.
 
 **MVP-045** (MUST) A battle ends at the first of:
-- **Objective held**: the attacker has Workers within `mvp.battle.objective_radius` (150 wu) of the objective, and no defender there, for `mvp.battle.objective_hold_s` (30 s). The objective of a raid is the target's Wellspring; of a claim battle, the claimed area's resource site. The attacker wins.
+- **Objective held**: the attacker has Workers within `mvp.battle.objective_radius` (150 wu) of the objective, and no defender there, for `mvp.battle.objective_hold_s` (120 s, O100). The objective of a raid is the target's Wellspring; of a claim battle, the claimed area's resource site. The attacker wins.
 - **Loss cap reached**: the defender's losses reach its loss cap (MVP-046). The attacker wins, and its gain is the capped amount.
 - **Rout**: the attacker has fewer than `mvp.battle.rout_share` (25 %) of the Workers it sent, or it withdraws by command. The defender wins.
 - **Time**: `pil.battle.max_minutes` (20 minutes) pass (PIL-047). The defender wins.
@@ -163,9 +163,11 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-052** (MUST) Every grievance loses `mvp.grievance.fade_share_per_hour` (10 %) of its weight per hour, `pil.conflict.settled_fade_factor` (4) times faster once its cause is removed (contact ended, claim withdrawn or settled; PIL-122). A battle result removes `mvp.grievance.battle_relief_won` (50 %) of the attacker's grievances against the target when the attacker wins, and `mvp.grievance.battle_relief_lost` (25 %) when it loses.
 
-**MVP-053** (MUST) Claims (PIL-120, PIL-121): a settlement may claim the half of a valley border area that a neighbour holds (WLD-062, WLD-086), or the valley's central resource site. A claim on a held area is settled by a claim battle, which moves the area if the claimant wins, or by the claimant's withdrawal. A claim on the central resource site while nobody holds it is held after `mvp.claim.uncontested_minutes` (30 minutes) unless another settlement claims it in that time; then the claim is contested and settled by a claim battle at the site, outside every territory and so with no defender's advantage. A settlement's core and home cell are never claimable (WLD-061). How claims are spaced, and the battle values Playtest 1's lines need, are built as DEC-1008 states until the owner decides.
+**MVP-053** (MUST) Claims (PIL-120, PIL-121): a settlement may claim the half of a valley border area that a neighbour holds (WLD-062, WLD-086), or the valley's central resource site. A claim on a held area is settled by a claim battle, which moves the area if the claimant wins, or by the claimant's withdrawal. A claim on the central resource site while nobody holds it is held after `mvp.claim.uncontested_minutes` (30 minutes) unless another settlement claims it in that time; then the claim is contested and settled by a claim battle at the site, outside every territory and so with no defender's advantage. A settlement's core and home cell are never claimable (WLD-061). No claim may be made on an area until `mvp.claim.cooldown_minutes` (120 minutes) have passed since the last claim on it ended, by a withdrawal, a claim battle or the central site's wait (O100).
 
 > **Amendment 2026-10-23 (M3 task T9; [ADR-164](../ADR/ADR-164-the-command-paths-confirmation-the-valley-run-and-the-valley-at-war-at-m3.md)).** The valley run of seeds 1 to 8 meets two of Playtest 1's six measurable lines (§6.1). Its misses come from claims repeated with nothing to space them, a held half claimed back as soon as it changes hands, and from the battle values of MVP-045. What to change is [DEC-1008](../decisions/species_design.md#dec-1008-the-valley-runs-misses-of-playtest-1s-lines), Open; until it is decided the rules stand as written.
+
+> **Amendment 2026-10-23 (O100; [ADR-160](../ADR/ADR-160-claims-moved-areas-and-tribute-at-m3.md)).** The owner took [DEC-1008](../decisions/species_design.md#dec-1008-the-valley-runs-misses-of-playtest-1s-lines)'s option A: claims are spaced by `mvp.claim.cooldown_minutes` on each area, and `mvp.battle.objective_hold_s` rises to 120 s (MVP-045). The figures in battles and the growth steps are retuned on the owner's M2 evidence (O98).
 
 **MVP-054** (MUST) Easing (PIL-064): a steward eases a grievance that a Cladan holds against its settlement by tribute, sending stores that reduce the grievance's weight by one for every `mvp.relation.tribute_ru_per_weight` (10 ru), or by withdrawing a claim, which removes the claim's cause. Tribute is the reserved term of CONVENTIONS §8.15 used for this one rule; truce and alliance are not built.
 
@@ -407,7 +409,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.conflict.warning_minutes` | 5 | minutes of world time | tick | provisional | MVP-042 | Narrows WLD-102's 10; Playtest 2 checks it is enough when the deputy defends |
 | `mvp.defense.damage_taken_factor` | 0.75 | of reference damage | tick | provisional | MVP-044 | Defending should win most even fights |
 | `mvp.battle.objective_radius` | 150 | wu | — | provisional | MVP-045 | — |
-| `mvp.battle.objective_hold_s` | 30 | seconds | tick | provisional | MVP-045 | — |
+| `mvp.battle.objective_hold_s` | 120 | seconds | tick | provisional | MVP-045 | O100: a claim battle is fought before it is won; 30 until the valley run's sweep |
 | `mvp.battle.rout_share` | 0.25 | of Workers sent | — | provisional | MVP-045 | Battles of 4 to 12 minutes (PIL-047) |
 | `mvp.protection.loss_cap_worker_share` | 0.30 | of Workers at battle start | — | provisional | MVP-046 | Playtest 2: back to strength within a day after a night of attacks (PIL-022) |
 | `mvp.protection.loss_cap_store_share` | 0.25 | of stores | — | provisional | MVP-046 | — |
@@ -422,6 +424,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.grievance.battle_relief_won` | 50 | % of the attacker's grievances | — | provisional | MVP-052 | Without relief an AI would attack again at every respite's end |
 | `mvp.grievance.battle_relief_lost` | 25 | % of the attacker's grievances | — | provisional | MVP-052 | — |
 | `mvp.claim.uncontested_minutes` | 30 | minutes | scaled | provisional | MVP-053 | — |
+| `mvp.claim.cooldown_minutes` | 120 | minutes | scaled | provisional | MVP-053 | O100: an area is claimed again at most every 2 hours of play, from the valley run's sweep of 60 and 120 |
 | `mvp.relation.tribute_ru_per_weight` | 10 | ru per weight | — | provisional | MVP-054 | Easing must be affordable but not cheaper than defending |
 | `mvp.temperament.bold_threshold` | 40 | anger | — | provisional | MVP-057 | — |
 | `mvp.temperament.territorial_threshold` | 70 | anger | — | provisional | MVP-057 | — |

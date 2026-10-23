@@ -129,3 +129,13 @@ GameLogicTests:
   - `Tools/SpeciesFrameBench/SpeciesFrameBench`;
   - `Build/RunPerformance.py`;
   - `GameLogicTests/CommandPathTests`, `SettlementAiTests`, `BattleTests`, `RunTests`.
+* **Amendment 2026-10-23 (O100).** The owner took [DEC-1008](../decisions/species_design.md#dec-1008-the-valley-runs-misses-of-playtest-1s-lines)'s option A with no values, so the valley run swept them. The probe ran seeds 1 to 4 for a run each with the Territorial stand-in, at a cooldown of 60 or 120 minutes and a hold of 30, 120 or 180 s, on the local harness:
+
+  | Cooldown, hold | The steward's battles | Within 4 to 12 minutes | Claims | A claim battle's median |
+  |---|---|---|---|---|
+  | 60 min, 30 s | 14 to 19 | 17 % of 127 | 57 | 1.0 min |
+  | 60 min, 120 s | 12 to 18 | 18 % of 125 | 58 | 2.1 min |
+  | 120 min, 120 s | 12 to 19 | 27 % of 120 | 48 | 2.9 min |
+  | 120 min, 180 s | 10 to 18 | 19 % of 115 | 49 | 3.2 min |
+
+  The values are 120 minutes and 120 s. Raids are now most of the steward's battles (38 of 61 at the chosen values), two thirds of the raids end at `pil.battle.max_minutes` or in a rout, and a claim battle still often ends in a rout within a minute: the values of `mvp.battle.rout_share`, the loss cap and the AI's expeditions (DEC-1006) decide those, and they wait for the owner's M2 evidence (O98). The valley run of seeds 1 to 8 on the chosen values is in `playtests/M3.md`.
