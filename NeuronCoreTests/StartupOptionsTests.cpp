@@ -178,6 +178,22 @@ public:
     Assert::IsFalse(Parse({L"--world"}).uiTest, L"no test page unless asked");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Plt022TheGpuValidationOptionTakesNoValue)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-022")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-107")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Plt022TheGpuValidationOptionTakesNoValue)
+  {
+    // ADR-174: `--gpu-validation` stands alone and validates a whole session on its own adapter; Release knows no such option.
+    const Neuron::StartupOptions options = Parse({L"--gpu-validation", L"--world"});
+#if ENGINE_DEVELOPMENT
+    Assert::IsTrue(options.gpuValidation && options.world && options.ignoredArguments.empty(), L"validation, with a world");
+#else
+    Assert::IsFalse(options.gpuValidation, L"no validation option in Release");
+#endif
+    Assert::IsFalse(Parse({L"--world"}).gpuValidation, L"no validation unless asked");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Ast105TheContentFolderIsBesideTheExecutableByDefault)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"AST-105")
   END_TEST_METHOD_ATTRIBUTE()

@@ -22,7 +22,8 @@ inline constexpr std::uint32_t RENDER_CHECK_FRAMES_MAX = 10'000;
 /// folder to mount (PLT-026, AST-105), `--seed <number>` a new world's seed (MVP-005, ADR-109), `--render-check
 /// <frames>` the number of world frames a render check draws (ADR-113), `--watch` a session that watches and
 /// commands nothing (O77), `--world` a new world in place of the development sandbox (ADR-139), `--sandbox` the battle
-/// sandbox in place of the front end (ADR-155), and `--ui-test` the UI's test page over the world (ADR-145); all are
+/// sandbox in place of the front end (ADR-155), `--ui-test` the UI's test page over the world (ADR-145), and
+/// `--gpu-validation` the debug layer's GPU-based validation on the session's own adapter (ADR-006, ADR-174); all are
 /// compiled into Debug builds only, so a Release build ignores them as
 /// unknown arguments (PLT-107). The other options of the table arrive with the services
 /// they configure.
@@ -36,6 +37,7 @@ struct StartupOptions
   bool world = false;                             // takes no value
   bool sandbox = false;                           // takes no value (ADR-155)
   bool uiTest = false;                            // takes no value
+  bool gpuValidation = false;                     // takes no value (ADR-174)
   std::vector<std::string> ignoredArguments;      // PLT-022: logged and ignored, as UTF-8
 };
 

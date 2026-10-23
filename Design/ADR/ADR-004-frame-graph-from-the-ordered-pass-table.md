@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-10-17
 decision-makers: Species technology lead
 ---
@@ -86,3 +86,11 @@ Proposed option: **1, a static frame graph compiled from the pass table**. **Def
 - The threading model that decides which threads record passes is deferred to the design phase (see [the index](README.md#deferred-to-the-design-phase)).
 - **Amendment 2026-10-18 (owner decision O55).** Since O55 the first playable of the "Confirmed when" line is the MVP's M3 build ([MVP scope](../implementation/mvp_scope.md) §3, §5.3), not the skirmish of O20, and the evidence is gathered on that build: the frame compiled from the pass table is the world frame that it draws (renderer RND-067 amendment), and the tests of the Confirmation section run on that frame.
 - **Amendment 2026-10-20 (M1 task T13, owner decision O75, [ADR-113](ADR-113-the-frame-at-m1.md)).** M1 builds the frame graph without transient aliasing: every target of the world frame is a committed resource, and the table is validated and its barriers derived once per sample count when the device objects are created. The M1 form ends with the first frame that holds a transient target besides the scene targets, the depth copy or the capture copy of RND-063, whose task adds the aliasing.
+- **Amendment 2026-10-23 (M3 task T16, owner decision O104, [ADR-174](ADR-174-the-first-playables-confirmations-at-m3.md)).** The M3 build confirms the record:
+  - its world frame is compiled from the pass table when the device objects are created, and again only on a reconfiguration (RND-030);
+  - `FrameGraphTests` check the derived barriers and the validation errors;
+  - CI's render checks draw the battle sandbox, a settlement world and the front end on WARP with the debug layer and GPU-based validation, and fail on any message;
+  - `Build\CheckProjectFiles.py` rule 14 allows one barrier call in the tree, in the executor `Transition`, and the frame with no world now sends its back buffer's two transitions through it;
+  - each pass records its own profile marker (DBG-045) in table order, which a PIX capture shows.
+
+  The aliasing plan has no test, because M1 builds no transient aliasing (the amendment of 2026-10-20). The record is accepted.

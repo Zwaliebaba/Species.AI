@@ -42,6 +42,8 @@ Since O55 the first playable is M3's build, and fourteen Proposed ADRs name it a
 
 *Table 1 — What the ADRs put at M3, and the task that produces each.*
 
+> **Amendment 2026-10-23 (M3 task T16, owner decision O104, [ADR-174](../ADR/ADR-174-the-first-playables-confirmations-at-m3.md)).** No golden-image test is built for the M3 build, and ADR-007's enhanced executor is not added before it. The rows that name them are confirmed or amended on the evidence in hand, and the deferred checks move to before the first external build. ADR-079's latency is measured by the frame bench and judged by `Build\RunPerformance.py`. ADR-002, ADR-004 and ADR-062 are accepted. ADR-006, ADR-015, ADR-078 and ADR-079's M3 part wait for the owner's T16 run: the performance run, and a Debug `--gpu-validation` session through a battle to a save with one forced device removal. The other rows keep their own triggers. `playtests/M3.md` records each row's evidence and verdict.
+
 M1's and M2's records leave these to M3:
 
 | Left by | What M3 builds | Task |

@@ -76,3 +76,8 @@ Engine features provided from the start:
 * Components: UI framework (`UI`), input (`INP`), renderer (`RND`), audio engine (`AEN`), animation and VFX (`VFX`, the flash and motion rules).
 * **Amendment 2026-10-17.** The minimum text size is defined for every client height by the rule of the UI framework (UI-171, `ui.access.min_text_1080p`, `ui.access.min_text_2160p`), which interpolates between the two XAG reference points.
 * **Amendment 2026-10-18 (owner decision O55).** Since O55 the first playable of the "Confirmed when" line is the MVP's M3 build ([MVP scope](../implementation/mvp_scope.md) §3, §5.3), not the skirmish of O20, and the evidence is gathered on that build: the conformance table and the contrast, text-size and flash tests cover its front-end page, its HUD and recorded battles of that build in place of the combat scenes of a match.
+* **Amendment 2026-10-23 (M3 task T16, owner decision O104, [ADR-174](ADR-174-the-first-playables-confirmations-at-m3.md)).** M3 builds the conformance table, kept in the [UI framework](../architecture/components/ui_framework/README.md) component's README (§7.1) for the M3 build. The text-size tests pass: `UiTextTests`, `UiLayoutTests` and `UiLookTests` check UI-171's minimum at every height, with the DPI scale. The flash rules have tests of their own: `EffectsLookTests` checks VFX-235's onsets in a window and DEC-964's reduced setting. Two tests wait:
+  - the contrast test, because the HUD's text sits on the owner's panel art, which a test cannot decode, and on DEC-1005's provisional palette;
+  - the capture-based flash test, which needs the golden images' captures (O104).
+
+  Both move to before the first external build. The record stays Proposed until they pass.

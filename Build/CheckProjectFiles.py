@@ -161,6 +161,10 @@ AGILITY_EXPORTS_FILE = 'AgilitySdkExports.cpp'            # and every other prog
 AGILITY_EXPORT_OPTIONS = ('/EXPORT:D3D12SDKVersion=AGILITY_SDK_VERSION,DATA', '/EXPORT:D3D12SDKPath=AGILITY_SDK_PATH,DATA')
 AGILITY_SDK_PATH = r'".\\D3D12\\"'                     # bld.pin.d3d12_sdk_path, as a C++ literal
 PIX_FILE = 'NeuronCore/Profile.cpp'                       # ADR-068, DBG-080: no other code calls the PIX runtime
+# ADR-004, ADR-007 (ADR-174): one barrier call in the tree, in the frame graph's executor, which translates the passes'
+# declared accesses; a pass, a renderer or another frame records none of its own.
+BARRIER_EXECUTOR = 'NeuronClient/FrameRenderer.cpp'
+BARRIER_CALL = re.compile(r'(?:->|\.)\s*(?:ResourceBarrier|Barrier)\s*\(')
 # AEN-025, AEN-045 (ADR-026, ADR-172): the voice back-end alone includes the XAudio2 family, and its callbacks only set
 # flags. AEN-003's half, no simulation-generator or simulation header in audio code, is rules 13 and 14's SimRng check.
 VOICE_BACKEND = 'NeuronClient/XAudio2Device.cpp'
@@ -773,6 +777,10 @@ def rule_14(tree):
         if os.path.basename(header.replace('\\', '/')) == os.path.basename(WINDOWS_HEADERS):
           yield f'{path}:{line}', f'includes {header} in {project}; the server and simulation reach the system through ' \
                                   'the platform layer only (ADR-083 item 1)'
+    for index, m in enumerate(BARRIER_CALL.finditer(stripped)):
+      if path != BARRIER_EXECUTOR or index > 0:
+        line = stripped.count('\n', 0, m.start()) + 1
+        yield f'{path}:{line}', f'records a barrier outside the frame graph\'s one executor in {BARRIER_EXECUTOR} (ADR-004, ADR-007)'
     if path != PIX_FILE:
       for line, _, header in SolutionModel.includes(text):
         if header.lower() in ('pix3.h', 'pix3_win.h', 'pixevents.h'):
@@ -1008,6 +1016,9 @@ FIXTURES = [
    lambda r: write(r, 'NeuronCoreTests/TestSupport.h', '\ninline std::jthread g_worker;\n', append=True)),
   (14, 'a window created outside the platform layer and the client engine (PLT-003)',
    lambda r: write(r, 'GameClient/pch.h', '\ninline auto g_create = CreateWindowExW;\n', append=True)),
+  (14, 'a barrier recorded outside the frame graph\'s executor (ADR-004)',
+   lambda r: write(r, 'NeuronClient/UiRenderer.cpp', '\ninline void Flush(ID3D12GraphicsCommandList* _list, const D3D12_RESOURCE_BARRIER& _barrier)\n'
+                   '{\n  _list->ResourceBarrier(1, &_barrier);\n}\n', append=True)),
   (14, 'pix3.h included outside Profile.cpp (DBG-080)',
    lambda r: write(r, 'NeuronCore/Log.cpp', '\n#include <pix3.h>\n', append=True)),
   (5, 'an application manifest in a library project',

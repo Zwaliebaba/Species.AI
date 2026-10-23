@@ -1299,8 +1299,10 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
     // No world, or its surfaces still on their way: the background colour (RND-070).
     ENGINE_PROFILE_SCOPE("render.clear");
     const std::array<float, 4> background{_inputs.background[0], _inputs.background[1], _inputs.background[2], 1.0f};
-    const D3D12_RESOURCE_BARRIER toTarget = TransitionBarrier(backBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-    commands->ResourceBarrier(1, &toTarget);
+    // ADR-004, ADR-174: the back buffer's two transitions go through the frame graph's one barrier executor too.
+    const std::array<ID3D12Resource*, 4> resources{nullptr, nullptr, nullptr, backBuffer};
+    constexpr std::array BACK_BUFFER_TO_TARGET{TargetTransition{TARGET_BACK_BUFFER, TargetAccess::Present, TargetAccess::RenderTarget}};
+    Transition(commands, BACK_BUFFER_TO_TARGET, resources);
     commands->ClearRenderTargetView(target, background.data(), 0, nullptr);
     if (!_inputs.overlayText.empty() || !_inputs.overlayRects.empty() || _inputs.cursor || !_inputs.ui.empty() || !_inputs.uiCursor.empty())
     {
@@ -1323,9 +1325,8 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
                                  _inputs.overlayRects);
       state.ui->Record(commands, *state.ring, *state.catalog, state.swapChainSize, _inputs.overlayText);
     }
-    const D3D12_RESOURCE_BARRIER toPresent =
-      TransitionBarrier(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-    commands->ResourceBarrier(1, &toPresent);
+    constexpr std::array BACK_BUFFER_TO_PRESENT{TargetTransition{TARGET_BACK_BUFFER, TargetAccess::RenderTarget, TargetAccess::Present}};
+    Transition(commands, BACK_BUFFER_TO_PRESENT, resources);
   }
   if (timed)
   {

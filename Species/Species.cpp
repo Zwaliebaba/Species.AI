@@ -483,6 +483,9 @@ int Run()
     renderConfig.gpuValidation = true;
     Neuron::Log(Neuron::LogCategory::Render, Neuron::LogLevel::Info, "render check: {} world frames on the WARP adapter", *checkFrames);
   }
+  // ADR-174: a whole session validated on the GPU it runs on (ADR-006, MVP-075), whose debug-layer messages the log
+  // counts when it ends.
+  renderConfig.gpuValidation = renderConfig.gpuValidation || options.gpuValidation;
 #endif
 
   // PLT-016, PLT-018, PLT-025: the user-data root, which `--user-data` replaces; inside the install directory it ends the
@@ -734,6 +737,12 @@ int Run()
       Neuron::Log(Neuron::LogCategory::Render, checkPassed ? Neuron::LogLevel::Info : Neuron::LogLevel::Error,
                   "render check {}: {} of {} frames drawn, {} debug-layer messages", checkPassed ? "passed" : "failed", checkedFrames,
                   *checkFrames, layerMessages);
+    }
+    else if (options.gpuValidation)
+    {
+      const std::uint64_t layerMessages = Neuron::FrameRenderer::DebugLayerMessages();
+      Neuron::Log(Neuron::LogCategory::Render, layerMessages == 0 ? Neuron::LogLevel::Info : Neuron::LogLevel::Error,
+                  "GPU-based validation of the session: {} frames drawn, {} debug-layer messages", checkedFrames, layerMessages);
     }
 #else
     static_cast<void>(checkedFrames);
