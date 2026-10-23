@@ -238,6 +238,7 @@ struct SceneResult
   // first frame whose display time reaches the tick that applied it; and the orders given up on.
   std::vector<double> orders;
   std::uint32_t ordersLost = 0;
+  std::uint32_t samples = 0; // ADR-015: the scene targets' samples per pixel while measuring
 };
 
 void Print(std::FILE* _stream, std::string_view _text)
@@ -727,6 +728,7 @@ SceneEnd RunScene(const Scene& _scene, const Options& _options, const Bench& _be
       _result.onScreenSum += onScreen;
       _result.onScreenMax = std::max(_result.onScreenMax, onScreen);
       _result.window = size;
+      _result.samples = _bench.renderer->SceneSamples();
       if (session.ServerTick().value_or(0) >= *firstTick + measuredTicks)
       {
         _result.ticks = session.ServerTick().value_or(0) - *firstTick;
@@ -822,24 +824,24 @@ std::string JsonOf(const std::vector<SceneResult>& _results, const Options& _opt
     const double frames = static_cast<double>(std::max<std::size_t>(records.size(), 1));
     const std::vector<double> gpu = ValuesOf(records, [](const FrameRecord& _frame) { return _frame.gpu; });
     const std::uint64_t held = result.refreshesShown > result.presentsShown ? result.refreshesShown - result.presentsShown : 0;
-    scenes +=
-      std::format(R"({}    {{"name": "{}", "seed": {}, "figures": {}, "ticks": {}, "frames": {}, "suspended_frames": {}, )"
-                  R"("window": {{"width": {}, "height": {}}}, "interval_ms": {}, "work_ms": {}, "missed_frames": {}, )"
-                  R"("gpu_frames": {}, "gpu_ms": {}, "latency_wait_ms": {}, "fence_wait_ms": {}, "present_ms": {}, )"
-                  R"("display": {{"presents_shown": {}, "refreshes": {}, "held_refreshes": {}}}, "longest": {}, )"
-                  R"("figures_alive": {{"min": {}, "max": {}}}, "figures_on_screen": {{"mean": {:.1f}, "max": {}}}, "grown": {}, )"
-                  R"("valley": {}, "orders": {}, "orders_lost": {}, "order_ms": {}}})",
-                  scenes.empty() ? "" : ",\n", result.name, SCENE_SEED, result.figures, result.ticks, records.size(),
-                  result.suspendedFrames, result.window.width, result.window.height,
-                  JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.interval); }))),
-                  JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.work); }))),
-                  MissedFrames(records, periodMs), gpu.size(), JsonOf(SummaryOf(gpu)),
-                  JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.latencyWait); }))),
-                  JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.fenceWait); }))),
-                  JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.present); }))),
-                  result.presentsShown, result.refreshesShown, held, LongestJsonOf(records), result.aliveMax == 0 ? 0U : result.aliveMin,
-                  result.aliveMax, result.onScreenSum / frames, result.onScreenMax, GrownJsonOf(result.grown), ValleyJsonOf(result.valley),
-                  result.orders.size(), result.ordersLost, result.orders.empty() ? std::string("null") : JsonOf(SummaryOf(result.orders)));
+    scenes += std::format(R"({}    {{"name": "{}", "seed": {}, "figures": {}, "ticks": {}, "frames": {}, "suspended_frames": {}, )"
+                          R"("window": {{"width": {}, "height": {}}}, "interval_ms": {}, "work_ms": {}, "missed_frames": {}, )"
+                          R"("gpu_frames": {}, "gpu_ms": {}, "latency_wait_ms": {}, "fence_wait_ms": {}, "present_ms": {}, )"
+                          R"("display": {{"presents_shown": {}, "refreshes": {}, "held_refreshes": {}}}, "longest": {}, )"
+                          R"("figures_alive": {{"min": {}, "max": {}}}, "figures_on_screen": {{"mean": {:.1f}, "max": {}}}, "grown": {}, )"
+                          R"("valley": {}, "orders": {}, "orders_lost": {}, "order_ms": {}, "samples": {}}})",
+                          scenes.empty() ? "" : ",\n", result.name, SCENE_SEED, result.figures, result.ticks, records.size(),
+                          result.suspendedFrames, result.window.width, result.window.height,
+                          JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.interval); }))),
+                          JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.work); }))),
+                          MissedFrames(records, periodMs), gpu.size(), JsonOf(SummaryOf(gpu)),
+                          JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.latencyWait); }))),
+                          JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.fenceWait); }))),
+                          JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.present); }))),
+                          result.presentsShown, result.refreshesShown, held, LongestJsonOf(records),
+                          result.aliveMax == 0 ? 0U : result.aliveMin, result.aliveMax, result.onScreenSum / frames, result.onScreenMax,
+                          GrownJsonOf(result.grown), ValleyJsonOf(result.valley), result.orders.size(), result.ordersLost,
+                          result.orders.empty() ? std::string("null") : JsonOf(SummaryOf(result.orders)), result.samples);
   }
   return std::format("{{\n  \"tool\": \"{}\", \"configuration\": \"{}\", \"platform\": \"{}\", \"quick\": {}, \"fps_target\": {}, "
                      "\"figures_max\": {},\n  \"adapter\": \"{}\", \"display\": {{\"width\": {}, \"height\": {}, \"refresh_hz\": {}}},\n"

@@ -68,6 +68,7 @@ PRESENTATION_LIBRARIES = ('d3d12', 'dxgi', 'xaudio2', 'x3daudio', 'gameinput', '
 # string tables against the system fonts that the client draws them with. The tool never ships and no server links it.
 PRESENTATION_LIBRARY_EXCEPTIONS = {('Tools/SpeciesContentBuild/FontCoverage.cpp', 'dwrite')}
 SHADER_PROJECT = 'NeuronClient'                           # ADR-090 item 1
+SHADER_MODEL = '6.6'                                      # ADR-002, ADR-003: every shader's profile is *_6_6
 
 # R14 and BLD-038: the packages a game or engine project may restore, with the tuning key of each pin.
 ALLOWED_PACKAGES = {
@@ -511,6 +512,17 @@ def rule_7(tree):
           yield f'{p.directory}/{f}', 'an .hlsli is never compiled on its own (BLD-121)'
       else:
         yield f'{p.directory}/{f}', 'Shader/ holds only .hlsl and .hlsli files (AGENTS.md §2)'
+  # ADR-002 (M3 task T16): every shader compiles at the target's Shader Model in every build, and no item sets another.
+  for p in tree.projects:
+    if not any(kind == 'FXCompile' for kind, _, _ in p.items):
+      continue
+    for c, pl in SolutionModel.BUILDS:
+      model = p.setting(c, 'FXCompile.ShaderModel', pl)
+      if model != SHADER_MODEL:
+        yield p.path, f'its shaders compile at Shader Model {model or "(the default)"} in {c}|{pl}, not {SHADER_MODEL} (ADR-002)'
+    for kind, include, metadata in p.items:
+      if kind == 'FXCompile' and metadata.get('ShaderModel', SHADER_MODEL) != SHADER_MODEL:
+        yield f'{p.directory}/{include}', f'it sets Shader Model {metadata["ShaderModel"]}, not {SHADER_MODEL} (ADR-002)'
 
 
 def rule_8(tree):
@@ -961,6 +973,8 @@ FIXTURES = [
    lambda r: write(r, 'GameShared/pch.h', '\ninline int colourIndex = 0;\n', append=True)),
   (7, 'a shader with a lower-case name that is not an FXCompile item',
    lambda r: write(r, 'NeuronClient/Shader/bad.hlsl', '')),
+  (7, 'shaders compiled at Shader Model 6.0 (ADR-002)',
+   lambda r: edit(r, 'NeuronClient/NeuronClient.vcxproj', '<ShaderModel>6.6</ShaderModel>', '<ShaderModel>6.0</ShaderModel>')),
   (8, 'a project that defines ENGINE_DEVELOPMENT', fixture_switch),
   (9, 'a package version that is not its pin',
    lambda r: edit(r, 'NeuronCore/packages.config', 'version="1.0.240308001"', 'version="1.0.0"')),

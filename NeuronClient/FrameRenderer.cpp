@@ -1383,6 +1383,11 @@ void FrameRenderer::OnDeviceRebuilt(std::function<void()> _listener)
   m_state->rebuiltListeners.push_back(std::move(_listener));
 }
 
+std::uint32_t FrameRenderer::SceneSamples() const noexcept
+{
+  return m_state->targets.has_value() ? m_state->targets->Samples() : 0;
+}
+
 std::uint64_t FrameRenderer::WorldFrames() const noexcept
 {
   return m_state->worldFrames;

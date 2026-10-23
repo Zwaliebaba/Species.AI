@@ -403,6 +403,8 @@ def pacing_rows(scene):
   if 'gpu_ms' in scene:
     gpu = scene['gpu_ms']
     measured = f'{gpu["p99"]:.2f} ms, {gpu["max"]:.1f} ms' if scene.get('gpu_frames') else 'not read: no timestamp queries'
+    if scene.get('samples'):
+      measured += f', the scene at {scene["samples"]}x multisampling (ADR-015)'
     rows.append((name, "frame's time on the GPU, 99th percentile and longest", measured, '—', 'reported'))
   if 'latency_wait_ms' in scene:
     rows.append((name, 'waits at the 99th percentile: the frame-latency object and the cap, the fence, the present',
@@ -726,7 +728,8 @@ FRAMES_FIXTURE = {
                           {'interval': 16.9, 'work': 7.0, 'latency_wait': 9.5, 'fence_wait': 0.1, 'present': 0.3, 'gpu': None}],
               'figures_alive': {'min': figures, 'max': figures}, 'figures_on_screen': {'mean': figures * 0.8, 'max': figures},
               'grown': {'ticks': 154000, 'workers': 300, 'structures': 40} if name == 'settlement-drawn' else None,
-              'valley': {'ticks': 3100, 'battles': 2, 'figures': 1204} if name == 'valley-drawn' else None, **ORDERS_FIXTURE}
+              'valley': {'ticks': 3100, 'battles': 2, 'figures': 1204} if name == 'valley-drawn' else None, 'samples': 4,
+              **ORDERS_FIXTURE}
              for name, figures in (('sandbox-drawn', 400), ('figures-max-drawn', 1500), ('settlement-drawn', 300), ('valley-drawn', 1204))],
 }
 
@@ -877,6 +880,7 @@ def self_test(tool, tuning_source, bench=None, warp=False):
       ('a rendered run names the adapter it drew on (O100)', lambda: recorded(f' drawn by {frames["adapter"]}')),
       ('a rendered run reports where its frames\' time went (ADR-148)',
        lambda: recorded("frame's time on the GPU", 'waits at the 99th percentile', 'showed no new frame', 'longest frames')),
+      ('a rendered run names the multisampling its GPU time was measured at (ADR-015)', lambda: recorded('x multisampling (ADR-015)')),
       ('a rendered run on another display stops',
        lambda: record(path, reference, within, frames_like(frames, 16.0, display=(1920, 1080, 144)), 'fixture', 'other display') == 2),
       ('a rendered run is judged by the display the bench drew on, not the machine\'s reading',

@@ -186,6 +186,52 @@ public:
     Assert::IsTrue(router.Query(FORWARD), L"and back in the next");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr028AltF10AndTheMouseButtonsPressAndReleaseInOneFrame)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-052")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr028AltF10AndTheMouseButtonsPressAndReleaseInOneFrame)
+  {
+    // ADR-028's confirmation for keys, Alt and F10 among them, and mouse buttons (M3 task T16): each control pressed and
+    // released within one frame shows both edges and is not held after it.
+    using enum Neuron::Condition;
+    const std::vector<Neuron::ActionBindings> actions{
+      {"alt down", Neuron::ValueKind::Boolean, {Neuron::KeyBinding(Neuron::KeyCode::Alt, Down)}},
+      {"alt up", Neuron::ValueKind::Boolean, {Neuron::KeyBinding(Neuron::KeyCode::Alt, Up)}},
+      {"alt", Neuron::ValueKind::Boolean, {Neuron::KeyBinding(Neuron::KeyCode::Alt, Held)}},
+      {"f10 down", Neuron::ValueKind::Boolean, {Neuron::KeyBinding(Neuron::KeyCode::F10, Down)}},
+      {"f10 up", Neuron::ValueKind::Boolean, {Neuron::KeyBinding(Neuron::KeyCode::F10, Up)}},
+      {"f10", Neuron::ValueKind::Boolean, {Neuron::KeyBinding(Neuron::KeyCode::F10, Held)}},
+      {"primary down", Neuron::ValueKind::Boolean, {Neuron::MouseBinding(Neuron::MouseControl::Primary, Down)}},
+      {"primary up", Neuron::ValueKind::Boolean, {Neuron::MouseBinding(Neuron::MouseControl::Primary, Up)}},
+      {"primary", Neuron::ValueKind::Boolean, {Neuron::MouseBinding(Neuron::MouseControl::Primary, Held)}},
+      {"secondary down", Neuron::ValueKind::Boolean, {Neuron::MouseBinding(Neuron::MouseControl::Secondary, Down)}},
+      {"secondary up", Neuron::ValueKind::Boolean, {Neuron::MouseBinding(Neuron::MouseControl::Secondary, Up)}},
+      {"secondary", Neuron::ValueKind::Boolean, {Neuron::MouseBinding(Neuron::MouseControl::Secondary, Held)}},
+      {"middle down", Neuron::ValueKind::Boolean, {Neuron::MouseBinding(Neuron::MouseControl::Middle, Down)}},
+      {"middle up", Neuron::ValueKind::Boolean, {Neuron::MouseBinding(Neuron::MouseControl::Middle, Up)}},
+      {"middle", Neuron::ValueKind::Boolean, {Neuron::MouseBinding(Neuron::MouseControl::Middle, Held)}},
+    };
+    ScriptedBackEnd controls;
+    Neuron::InputRouter router(actions, controls, nullptr);
+    controls.Key(Neuron::KeyCode::Alt, true);
+    controls.Key(Neuron::KeyCode::Alt, false);
+    controls.Key(Neuron::KeyCode::F10, true);
+    controls.Key(Neuron::KeyCode::F10, false);
+    for (const Neuron::MouseControl button : {Neuron::MouseControl::Primary, Neuron::MouseControl::Secondary, Neuron::MouseControl::Middle})
+    {
+      controls.Button(button, true);
+      controls.Button(button, false);
+    }
+    router.AdvanceFrame({}, CLIENT);
+    for (std::uint16_t control = 0; control < 5; ++control)
+    {
+      const auto at = static_cast<std::uint16_t>(control * 3);
+      Assert::IsTrue(router.Query(Neuron::ActionId{at}) && router.Query(Neuron::ActionId{static_cast<std::uint16_t>(at + 1)}),
+                     L"both edges in the frame");
+      Assert::IsFalse(router.Query(Neuron::ActionId{static_cast<std::uint16_t>(at + 2)}), L"not held after it");
+    }
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Inp133ARepeatFiresOnThePressThenAfterTheDelayAndEveryPeriod)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-133")
   END_TEST_METHOD_ATTRIBUTE()

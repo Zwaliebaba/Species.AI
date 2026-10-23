@@ -121,6 +121,9 @@ public:
 
   // The frames presented with the world drawn, since the renderer was created.
   [[nodiscard]] std::uint64_t WorldFrames() const noexcept;
+  // ADR-015: the samples per pixel of the scene targets in use, which may be fewer than preferred (ADR-015's fallback); 0 before
+  // the targets are made.
+  [[nodiscard]] std::uint32_t SceneSamples() const noexcept;
   // ADR-155: every frame presented, a world's or not, which a render check of the front end counts.
   [[nodiscard]] std::uint64_t PresentedFrames() const noexcept;
   // RND-011, R-SIM-576: the frames presented in the last window, per second of the window.
