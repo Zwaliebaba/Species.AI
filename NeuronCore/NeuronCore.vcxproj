@@ -189,6 +189,7 @@
     <ClInclude Include="SimulationRecord.h" />
     <ClInclude Include="SipHash.h" />
     <ClInclude Include="SoundAsset.h" />
+    <ClInclude Include="SpscQueue.h" />
     <ClInclude Include="StartupOptions.h" />
     <ClInclude Include="StreamFraming.h" />
     <ClInclude Include="StringTableAsset.h" />

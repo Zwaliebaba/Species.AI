@@ -172,6 +172,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-169](ADR-169-the-epilogue-the-standing-and-the-time-left-at-m3.md) | The epilogue, the standing and the time left at M3 | Proposed | 2026-10-23 |
 | [ADR-170](ADR-170-the-world-menu-the-epilogue-page-and-leaving-at-m3.md) | The world's menu, the epilogue's page and leaving at M3 | Proposed | 2026-10-23 |
 | [ADR-171](ADR-171-the-first-sound-set-synthesized-and-cooked-at-m3.md) | The first sound set, synthesized and cooked, at M3 | Proposed | 2026-10-23 |
+| [ADR-172](ADR-172-the-audio-engine-at-the-mvps-size.md) | The audio engine at the MVP's size | Proposed | 2026-10-23 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

@@ -194,6 +194,7 @@
     <ClCompile Include="SimRngTests.cpp" />
     <ClCompile Include="SipHashTests.cpp" />
     <ClCompile Include="SoundAssetTests.cpp" />
+    <ClCompile Include="SpscQueueTests.cpp" />
     <ClCompile Include="StartupOptionsTests.cpp" />
     <ClCompile Include="StringTableAssetTests.cpp" />
     <ClCompile Include="TerrainFieldTests.cpp" />

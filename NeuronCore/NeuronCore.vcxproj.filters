@@ -168,6 +168,9 @@
     <ClInclude Include="SoundAsset.h">
       <Filter>Content</Filter>
     </ClInclude>
+    <ClInclude Include="SpscQueue.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
     <ClInclude Include="StartupOptions.h">
       <Filter>Platform</Filter>
     </ClInclude>

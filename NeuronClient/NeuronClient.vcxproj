@@ -159,6 +159,9 @@
   <ItemGroup>
     <ClInclude Include="AdapterChoice.h" />
     <ClInclude Include="AppWindow.h" />
+    <ClInclude Include="AudioDevice.h" />
+    <ClInclude Include="AudioEngine.h" />
+    <ClInclude Include="AudioMath.h" />
     <ClInclude Include="BindingNotation.h" />
     <ClInclude Include="CursorRenderer.h" />
     <ClInclude Include="DdsTexture.h" />
@@ -194,6 +197,7 @@
     <ClInclude Include="SceneQuads.h" />
     <ClInclude Include="SceneTargets.h" />
     <ClInclude Include="ShaderLayouts.h" />
+    <ClInclude Include="SilentAudioDevice.h" />
     <ClInclude Include="SkyLayers.h" />
     <ClInclude Include="StringTable.h" />
     <ClInclude Include="TextSystem.h" />
@@ -205,11 +209,14 @@
     <ClInclude Include="WindowGeometry.h" />
     <ClInclude Include="WorldRenderer.h" />
     <ClInclude Include="WorldScene.h" />
+    <ClInclude Include="XAudio2Device.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AdapterChoice.cpp" />
     <ClCompile Include="AppWindow.cpp" />
+    <ClCompile Include="AudioEngine.cpp" />
+    <ClCompile Include="AudioMath.cpp" />
     <ClCompile Include="BindingNotation.cpp" />
     <ClCompile Include="CursorRenderer.cpp" />
     <ClCompile Include="DdsTexture.cpp" />
@@ -252,6 +259,7 @@
     <ClCompile Include="UploadRing.cpp" />
     <ClCompile Include="WindowGeometry.cpp" />
     <ClCompile Include="WorldRenderer.cpp" />
+    <ClCompile Include="XAudio2Device.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
