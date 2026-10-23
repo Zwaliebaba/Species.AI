@@ -771,8 +771,8 @@ std::string JsonOf(const std::vector<SceneResult>& _results, const Options& _opt
   return std::format("{{\n  \"tool\": \"{}\", \"configuration\": \"{}\", \"platform\": \"{}\", \"quick\": {}, \"fps_target\": {}, "
                      "\"figures_max\": {},\n  \"adapter\": \"{}\", \"display\": {{\"width\": {}, \"height\": {}, \"refresh_hz\": {}}},\n"
                      "  \"scenes\": [\n{}\n  ]\n}}\n",
-                     PRODUCT_NAME, CONFIGURATION, PLATFORM, _options.quick ? "true" : "false", fpsTarget, _tuning.mvp.client.figuresMax, adapter,
-                     _display.width, _display.height, _display.refreshHz, scenes);
+                     PRODUCT_NAME, CONFIGURATION, PLATFORM, _options.quick ? "true" : "false", fpsTarget, _tuning.mvp.client.figuresMax,
+                     adapter, _display.width, _display.height, _display.refreshHz, scenes);
 }
 
 std::optional<Options> ParseOptions(std::span<const std::string_view> _arguments)
