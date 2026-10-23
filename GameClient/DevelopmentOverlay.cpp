@@ -2,6 +2,7 @@
 
 #include "DevelopmentOverlay.h"
 #include "RelationMessages.h"
+#include "TextSystem.h"
 #include "TuningMvp.h"
 #include "TuningPresentation.h"
 
@@ -34,13 +35,16 @@ constexpr std::array<std::array<std::uint8_t, 3>, 8> TEAM_BASE_COLORS{{
 }};
 constexpr float COLOR_LEVELS = 255.0f;
 
-// ADR-120: the frame page's layout, in unscaled pixels from the target's top-left corner, and its colours.
+// ADR-120: the frame page's layout, in unscaled pixels from the target's top-left corner, and its colours. ADR-176: the
+// page's top is also its gap under the HUD's settlement panel, and its backdrop reaches past its content by its padding.
 constexpr float PAGE_LEFT_PIXELS = 10.0f;
 constexpr float PAGE_TOP_PIXELS = 10.0f;
 constexpr float LINE_GAP_PIXELS = 2.0f;
 constexpr float GRAPH_GAP_PIXELS = 8.0f;
 constexpr float LABEL_GAP_PIXELS = 6.0f;
+constexpr float BACKDROP_PADDING_PIXELS = 6.0f;
 constexpr std::array<float, 4> TEXT_COLOR{1.0f, 1.0f, 1.0f, 1.0f};
+constexpr std::array<float, 4> PAGE_BACKDROP_COLOR{0.0f, 0.0f, 0.0f, 0.6f};
 constexpr std::array<float, 4> GRAPH_BACKDROP_COLOR{0.0f, 0.0f, 0.0f, 0.5f};
 constexpr std::array<float, 4> GRAPH_GUIDE_COLOR{0.6f, 0.6f, 0.6f, 1.0f};
 constexpr std::array<float, 4> GRAPH_BAR_COLOR{1.0f, 0.0f, 0.0f, 1.0f}; // DBG-089: one red line per frame
@@ -158,22 +162,40 @@ ReplicaCounts CountReplica(const StateReplica& _replica)
 }
 
 FramePage BuildFramePage(const FramePageInputs& _inputs, const TuningPresentation& _presentation, const TuningMvp& _tuning,
-                         float _lineHeightPixels)
+                         Neuron::TextSystem& _text, std::optional<float> _belowPixels)
 {
   FramePage page;
   const std::array<float, 4> warning = WarningColor(_presentation);
-  float top = PAGE_TOP_PIXELS;
-  const auto line = [&page, &top, _lineHeightPixels](const std::string& _text, const std::array<float, 4>& _color)
+  const auto textSize = static_cast<float>(_presentation.dbg.overlay.textSize);
+  const float lineHeight = _text.Metrics(Neuron::FontRole::Development, textSize).heightPixels;
+  const float pageTop = _belowPixels.value_or(0.0f) + PAGE_TOP_PIXELS;
+  // ADR-176: the backdrop reaches the right end of the widest line or graph label.
+  float right = PAGE_LEFT_PIXELS;
+  const auto widthOf = [&_text, textSize](const std::string& _line)
+  { return std::ceil(_text.Layout(_line, Neuron::FontRole::Development, textSize).widthPixels); };
+  float top = pageTop;
+  const auto line = [&page, &top, &right, &widthOf, lineHeight](const std::string& _line, const std::array<float, 4>& _color)
   {
     Neuron::OverlayLine added;
-    added.text = _text;
+    added.text = _line;
     added.insetX = PAGE_LEFT_PIXELS;
     added.insetY = top;
     added.corner = Neuron::OverlayCorner::TopLeft;
     added.color = _color;
+    right = std::max(right, PAGE_LEFT_PIXELS + widthOf(_line));
     page.lines.push_back(std::move(added));
-    top += _lineHeightPixels + LINE_GAP_PIXELS;
+    top += lineHeight + LINE_GAP_PIXELS;
   };
+  // ADR-176: the backdrop, first so that everything else draws over it, sized once the page is laid out.
+  page.rects.push_back({0.0f, 0.0f, 0.0f, 0.0f, PAGE_BACKDROP_COLOR});
+  const auto backdrop = [&page, &right, pageTop](float _bottom)
+  {
+    page.rects.front() = {PAGE_LEFT_PIXELS - BACKDROP_PADDING_PIXELS, pageTop - BACKDROP_PADDING_PIXELS,
+                          right - PAGE_LEFT_PIXELS + 2.0f * BACKDROP_PADDING_PIXELS, _bottom - pageTop + 2.0f * BACKDROP_PADDING_PIXELS,
+                          PAGE_BACKDROP_COLOR};
+  };
+  // DBG-095 as ADR-176 amends it: in a world the frame-rate line is the page's first row.
+  line(FrameRateText(_inputs.framesPerSecond, _inputs.objects), TEXT_COLOR);
   const Neuron::FrameProfile* profile = _inputs.profile;
   if (profile != nullptr)
   {
@@ -212,6 +234,7 @@ FramePage BuildFramePage(const FramePageInputs& _inputs, const TuningPresentatio
   }
   if (profile == nullptr)
   {
+    backdrop(top - LINE_GAP_PIXELS);
     return page;
   }
   // DBG-089: the frame-time graph, one line per frame of the history at a pixel each, the newest at the right, under
@@ -222,6 +245,7 @@ FramePage BuildFramePage(const FramePageInputs& _inputs, const TuningPresentatio
   const float graphTop = top - LINE_GAP_PIXELS + GRAPH_GAP_PIXELS;
   const float graphBottom = graphTop + graphHeight;
   page.rects.push_back({PAGE_LEFT_PIXELS, graphTop, graphWidth, graphHeight, GRAPH_BACKDROP_COLOR});
+  right = std::max(right, PAGE_LEFT_PIXELS + graphWidth);
   const std::deque<double>& history = profile->FrameTimesMilliseconds();
   for (std::size_t frame = 0; frame < history.size() && static_cast<float>(frame) < graphWidth; ++frame)
   {
@@ -236,11 +260,13 @@ FramePage BuildFramePage(const FramePageInputs& _inputs, const TuningPresentatio
     Neuron::OverlayLine label;
     label.text = std::format("{} ms ({} fps)", std::llround(mark), std::llround(1000.0 / mark));
     label.insetX = PAGE_LEFT_PIXELS + graphWidth + LABEL_GAP_PIXELS;
-    label.insetY = std::round(y - _lineHeightPixels / 2.0f);
+    label.insetY = std::round(y - lineHeight / 2.0f);
     label.corner = Neuron::OverlayCorner::TopLeft;
     label.color = GRAPH_GUIDE_COLOR;
+    right = std::max(right, label.insetX + widthOf(label.text));
     page.lines.push_back(std::move(label));
   }
+  backdrop(std::max(graphBottom, top - LINE_GAP_PIXELS));
   return page;
 }
 
