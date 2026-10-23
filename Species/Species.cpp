@@ -2,6 +2,7 @@
 
 #include "AppWindow.h"
 #include "AssetError.h"
+#include "AudioEngine.h"
 #include "ClientSession.h"
 #include "ClientSettings.h"
 #include "Development.h"
@@ -28,8 +29,11 @@
 #include "TextEncoding.h"
 #include "Tuning.h"
 #include "UserData.h"
+#include "WorldMenu.h"
 #include "WorldPresentation.h"
 #include "WorldSaves.h"
+#include "WorldSounds.h"
+#include "XAudio2Device.h"
 
 #include <algorithm>
 #include <array>
@@ -191,13 +195,25 @@ void EndWorld(ClientWorld& _world)
   _world.server->Stop();
 }
 
+// MVP-103 and MVP-063 (ADR-155, ADR-170): the world Continue opens and the ended worlds whose epilogues open, from _saves;
+// none when no world is kept.
+void RefreshFrontEnd(FrontEnd& _frontEnd, const std::optional<std::filesystem::path>& _saves)
+{
+  if (_saves.has_value())
+  {
+    _frontEnd.SetLatest(LatestWorld(*_saves));
+    _frontEnd.SetEnded(EndedWorlds(*_saves));
+  }
+}
+
 // The frame loop until the quit, or, for a render check, until it has drawn _checkFrames frames, world frames when it
 // checks a world, or its limit has passed: the front end's state while no world runs, and the world's once _active
-// holds one (ADR-155). Returns the frames the render check counts.
+// holds one (ADR-155), with _worldMenu over it, which leaves to the front end again (ADR-170). Returns the frames the
+// render check counts.
 std::uint64_t RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neuron::FrameRenderer& _renderer,
-                           Neuron::RenderConfig _renderConfig, WorldPresentation& _world, FrontEnd& _frontEnd,
+                           Neuron::RenderConfig _renderConfig, WorldPresentation& _world, FrontEnd& _frontEnd, WorldMenu& _worldMenu,
                            const WorldStarter& _startWorld, std::optional<ClientWorld> _active, const Neuron::SettingsStore& _settings,
-                           std::optional<std::uint32_t> _checkFrames)
+                           const std::optional<std::filesystem::path>& _saves, std::optional<std::uint32_t> _checkFrames)
 {
   const bool checksWorld = _active.has_value();
   const auto checkedFrames = [&]() { return checksWorld ? _renderer.WorldFrames() : _renderer.PresentedFrames(); };
@@ -226,6 +242,10 @@ std::uint64_t RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _wi
       layoutChanged = layoutChanged || std::holds_alternative<Neuron::KeyboardLayoutChanged>(_event);
     });
   _renderer.OnDeviceRebuilt([] { Neuron::Log(Neuron::LogCategory::Render, Neuron::LogLevel::Info, "presentation resumed"); });
+  if (_active.has_value())
+  {
+    _world.AttachWorldMenu(&_worldMenu); // ADR-170: a world started by a Debug start-up option has its menu too
+  }
 
   // ADR-120: each root step's time joins the frame profile, the renderer's waits apart from its work, and every tenth
   // roll-up period the frame page's figures go to the log. ADR-148: a frame starts once the swap chain can take it, so
@@ -305,6 +325,8 @@ std::uint64_t RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _wi
         {
           _active = std::move(*started);
           _world.CloseFrontEnd();
+          _worldMenu.Reset();
+          _world.AttachWorldMenu(&_worldMenu);
         }
         else
         {
@@ -320,6 +342,30 @@ std::uint64_t RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _wi
                         Neuron::Permanence::Permanent);
         _renderConfig.presentMode = display.uncapped ? Neuron::PresentMode::Uncapped : Neuron::PresentMode::VerticalSync;
         _renderer.Reconfigure(_renderConfig);
+      }
+    }
+    // ADR-170 (ADR-083 item 3): in a world, the menu's choice returns to it, quits, or leaves to the front end, which ends
+    // the world as the quit does and opens the main page on the saves as they now are.
+    else if (const std::optional<WorldMenuChoice> choice = _worldMenu.TakeChoice(); choice.has_value())
+    {
+      if (choice->kind == WorldMenuChoice::Kind::Quit)
+      {
+        break;
+      }
+      if (choice->kind == WorldMenuChoice::Kind::Resume)
+      {
+        _world.CloseWorldMenu();
+      }
+      else
+      {
+        EndWorld(*_active);
+        _active.reset();
+        _world.AttachWorldMenu(nullptr);
+        _world.LeaveWorld();
+        _worldMenu.Reset();
+        RefreshFrontEnd(_frontEnd, _saves);
+        _frontEnd.SetContinueFault(std::nullopt);
+        _world.OpenFrontEnd(_frontEnd, FrontEndPage::Main);
       }
     }
     // The camera's step is the real time since the previous frame's start (CAM-030), clamped by the camera.
@@ -344,6 +390,17 @@ std::uint64_t RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _wi
         {
           static_cast<void>(RecordWorldSeed(*_active->saved, *session.WorldSeed()));
         }
+      }
+      // MVP-063 (ADR-170): the run's end is written into the saved world's description, and its epilogue opens once it
+      // comes.
+      _worldMenu.Update(session);
+      if (_active->saved.has_value() && !_active->saved->ended && _worldMenu.RunEnded())
+      {
+        static_cast<void>(RecordRunEnded(*_active->saved));
+      }
+      if (_worldMenu.TakeEpilogueArrived())
+      {
+        _world.OpenWorldMenu(GamePage::WorldEpilogue);
       }
       _world.Update(session);
       _world.UpdateHud(session, view, _window.ClientSize(), _window.DpiScale());
@@ -426,6 +483,9 @@ int Run()
     renderConfig.gpuValidation = true;
     Neuron::Log(Neuron::LogCategory::Render, Neuron::LogLevel::Info, "render check: {} world frames on the WARP adapter", *checkFrames);
   }
+  // ADR-174: a whole session validated on the GPU it runs on (ADR-006, MVP-075), whose debug-layer messages the log
+  // counts when it ends.
+  renderConfig.gpuValidation = renderConfig.gpuValidation || options.gpuValidation;
 #endif
 
   // PLT-016, PLT-018, PLT-025: the user-data root, which `--user-data` replaces; inside the install directory it ends the
@@ -515,12 +575,26 @@ int Run()
     renderConfig.frameRateWindowSeconds = presentationTuning->ref.sim.frame.fpsWindow;
     renderConfig.frameRateInitial = presentationTuning->ref.sim.frame.fpsInitial;
     presentation.renderer->Reconfigure(renderConfig);
+    // M3 task T15 (ADR-172, ADR-173): the audio engine on its own clock (AEN-006) and thread, through XAudio2 on the
+    // default output device or, with none, silent (AEN-100). Its table is the first sound set's, read from the content;
+    // it starts at the stored master volume and follows it as the options page sets it (AEN-076).
+    const Neuron::CounterTimeSource audioClock;
+    Neuron::AudioEngine::Desc audioDesc;
+    audioDesc.settings = AudioSettingsOf(*presentationTuning, static_cast<unsigned>(settings.GetInteger(SETTING_MASTER_VOLUME)));
+    audioDesc.events = GameSoundEvents(*content, *presentationTuning);
+    audioDesc.device = Neuron::CreateXAudio2Device(AudioDeviceDescOf(*presentationTuning));
+    audioDesc.clock = &audioClock;
+    Neuron::AudioEngine audio(std::move(audioDesc));
+    const Neuron::SettingsStore::SubscriptionId volumeSubscription =
+      settings.Subscribe(std::string(SETTING_MASTER_VOLUME), [&audio, &settings](std::string_view /*_key*/)
+                         { static_cast<void>(audio.SetMasterVolume(static_cast<unsigned>(settings.GetInteger(SETTING_MASTER_VOLUME)))); });
     WorldPresentation::Desc worldDesc;
     worldDesc.tuning = &*clientTuning;
     worldDesc.presentation = &*presentationTuning;
     worldDesc.content = &*content;
     worldDesc.clock = &clock;
     worldDesc.display = DisplayOptionsOf(settings); // ADR-150
+    worldDesc.audio = &audio;
 #if ENGINE_DEVELOPMENT
     worldDesc.uiTest = options.uiTest; // ADR-145: the UI's test page
 #endif
@@ -579,18 +653,17 @@ int Run()
     frontEndDesc.settings = &settings;
     frontEndDesc.savesAvailable = savesFolder.has_value();
     FrontEnd frontEnd(frontEndDesc);
-    if (savesFolder.has_value())
-    {
-      frontEnd.SetLatest(LatestWorld(*savesFolder));
-    }
+    RefreshFrontEnd(frontEnd, savesFolder);
     const WorldStarter startWorld = [&](const FrontEndChoice& _choice) -> std::expected<ClientWorld, ContinueFault>
     {
       IntegratedServer::Desc desc;
       std::optional<SavedWorld> saved;
-      if (_choice.kind == FrontEndChoice::Kind::Continue && frontEnd.Latest().has_value())
+      const bool continues = _choice.kind == FrontEndChoice::Kind::Continue && frontEnd.Latest().has_value();
+      if (continues || (_choice.kind == FrontEndChoice::Kind::Epilogue && _choice.world.has_value()))
       {
-        // MVP-075: the latest world from its newest snapshot that validates, or not at all (ADR-155).
-        saved = frontEnd.Latest();
+        // MVP-075: the latest world, or MVP-063's ended one whose epilogue opens (ADR-170), from its newest snapshot that
+        // validates, or not at all (ADR-155).
+        saved = continues ? frontEnd.Latest() : _choice.world;
         desc.snapshotFolder = saved->folder;
         desc.restoreOnly = true;
         desc.worldSeed = saved->seed;
@@ -598,12 +671,14 @@ int Run()
       }
       else
       {
-        // MVP-005, MVP-012: a new world from the seed typed or one the server draws, at the site chosen, in a new folder.
+        // MVP-005, MVP-012: a new world from the seed typed or one the server draws, at the site chosen, in a new folder,
+        // with the AI settlements chosen (MVP-013, O103).
         desc.worldSeed = _choice.seed;
         desc.stewardSite = _choice.site;
+        desc.aiSettlements = _choice.aiSettlements;
         if (savesFolder.has_value())
         {
-          saved = CreateWorld(*savesFolder, _choice.seed, _choice.site);
+          saved = CreateWorld(*savesFolder, _choice.seed, _choice.site, _choice.aiSettlements);
           desc.snapshotFolder = saved.has_value() ? saved->folder : std::filesystem::path{};
         }
       }
@@ -641,8 +716,16 @@ int Run()
     }
 
     presentation.window->Show();
+    // ADR-170: the world's menu and epilogue, over whichever world runs.
+    WorldMenu::Desc worldMenuDesc;
+    worldMenuDesc.presentation = &*presentationTuning;
+    worldMenuDesc.tuning = &*clientTuning;
+    worldMenuDesc.strings = &world.Strings();
+    worldMenuDesc.locale = &world.Locale();
+    WorldMenu worldMenu(worldMenuDesc);
     const std::uint64_t checkedFrames = RunFrameLoop(clock, *presentation.window, *presentation.renderer, renderConfig, world, frontEnd,
-                                                     startWorld, std::move(initial), settings, checkFrames);
+                                                     worldMenu, startWorld, std::move(initial), settings, savesFolder, checkFrames);
+    settings.Unsubscribe(volumeSubscription);
     // PLT-043: the renderer releases its swap chain before the window is destroyed.
     presentation.renderer.reset();
     presentation.window.reset();
@@ -654,6 +737,12 @@ int Run()
       Neuron::Log(Neuron::LogCategory::Render, checkPassed ? Neuron::LogLevel::Info : Neuron::LogLevel::Error,
                   "render check {}: {} of {} frames drawn, {} debug-layer messages", checkPassed ? "passed" : "failed", checkedFrames,
                   *checkFrames, layerMessages);
+    }
+    else if (options.gpuValidation)
+    {
+      const std::uint64_t layerMessages = Neuron::FrameRenderer::DebugLayerMessages();
+      Neuron::Log(Neuron::LogCategory::Render, layerMessages == 0 ? Neuron::LogLevel::Info : Neuron::LogLevel::Error,
+                  "GPU-based validation of the session: {} frames drawn, {} debug-layer messages", checkedFrames, layerMessages);
     }
 #else
     static_cast<void>(checkedFrames);

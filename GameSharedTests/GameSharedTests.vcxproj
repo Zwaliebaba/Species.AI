@@ -170,6 +170,7 @@
   <ItemGroup>
     <ClCompile Include="NavigationTests.cpp" />
     <ClCompile Include="RegionTerrainTests.cpp" />
+    <ClCompile Include="RelationMessageTests.cpp" />
     <ClCompile Include="SettlementMessageTests.cpp" />
     <ClCompile Include="StateUpdateTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />

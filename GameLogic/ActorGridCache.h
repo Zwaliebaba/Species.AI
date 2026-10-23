@@ -57,6 +57,11 @@ public:
 
   // R-SIM-318: every entry older than the maximum age at _tick goes; run in slice ref.sim.grid_cache.evict_slice.
   void Evict(std::uint64_t _tick);
+  // ADR-161: every entry goes, when a battle starts or ends and the teams' enemies change with it.
+  void Clear() noexcept
+  {
+    m_entries.clear();
+  }
 
   [[nodiscard]] std::size_t EntryCount() const noexcept
   {

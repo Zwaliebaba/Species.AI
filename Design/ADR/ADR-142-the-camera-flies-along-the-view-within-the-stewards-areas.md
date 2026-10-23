@@ -152,3 +152,4 @@ Chosen options: 1, 3 and 5.
 * The tuning key `wld.view.settlement_margin` joins the MVP's record, with WLD-244's value.
 * The code: `GameClient/StewardAreas`, `SettlementCamera`, `SettlementView`.
 * ADR-119 is amended with this record.
+* **Amendment 2026-10-23 (M3 task T12, [ADR-167](ADR-167-the-conflict-verbs-and-markers-at-m3.md)).** The battlefield of each battle that the valley status lists with the steward's settlement as a side joins the steward's areas while it is listed (WLD-244), so the camera may follow the expedition into its battle.

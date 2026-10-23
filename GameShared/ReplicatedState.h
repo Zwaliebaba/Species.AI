@@ -60,7 +60,8 @@ struct QuantizedPosition
 [[nodiscard]] double YawRadians(std::uint16_t _yaw) noexcept;
 
 /// A Worker or a Leader as a client sees it (ADR-086 item 3): its position, and its facing, health, task, order and flags,
-/// each sent on change only. Its team and kind never change. The flags of its team's selections are its team's own: the
+/// each sent on change only. Its kind never changes; its team changes when it leaves with an expedition or comes back
+/// (ADR-161), and the record that carries the change is whole (ADR-165). The flags of its team's selections are its team's own: the
 /// server sets them only for the client that commands the team (ADR-111).
 struct ReplicatedFigure
 {
@@ -245,7 +246,8 @@ inline constexpr std::uint8_t SETTLEMENT_FIELD_RADIUS = 4;
 inline constexpr std::uint8_t CELLS_FIELD_CELLS = 1;
 
 // The record that brings a client holding _baseline, or nothing, to _state: a whole record without a baseline, a delta
-// of the fields that changed, or none when nothing changed. A baseline of another class gives a whole record.
+// of the fields that changed, or none when nothing changed. A baseline of another class, or of a figure of another
+// team, gives a whole record.
 [[nodiscard]] std::optional<StateRecord> MakeRecord(StableId _id, const ReplicatedState& _state, const ReplicatedState* _baseline);
 // A removal of _id.
 [[nodiscard]] StateRecord RemovalRecord(StableId _id) noexcept;

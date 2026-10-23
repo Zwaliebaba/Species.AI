@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-10-17
 decision-makers: Species technology lead
 ---
@@ -89,3 +89,4 @@ Proposed option: **1**. **Default while Proposed:** the team builds and tests ag
 - The hardware reach of feature level 12_2, and of 12_0-only GPUs that pass the checks, is not verified. Revisit this ADR when hardware data is available.
 - Related: ADR-003 (shader profiles), ADR-006 (bindless binding model), ADR-009 (crowd culling with `ExecuteIndirect`), ADR-010 (GPU particles).
 - **Amendment 2026-10-18 (owner decision O55).** Since O55 the first playable of the "Confirmed when" line is the MVP's M3 build ([MVP scope](../implementation/mvp_scope.md) §3, §5.3), not the skirmish of O20, and the evidence is gathered on that build: the capability probe's unit test and the golden-image tests at exactly feature level 12_1 run on it as stated.
+- **Amendment 2026-10-23 (M3 task T16, owner decision O104, [ADR-174](ADR-174-the-first-playables-confirmations-at-m3.md)).** The M3 build confirms the floor on this evidence: the probe's unit tests (`PresentationTests`: the first capable adapter chosen, and the Shader Model query looping down from the highest the runtime knows), and `Build\CheckProjectFiles.py` rule 7, which holds every shader to Shader Model 6.6 in every build, with no optional fast path registered. The golden-image tests at exactly feature level 12_1 move, with every golden image (O104), to the minimum-specification tier measured before the first external build (O58, O98). A finding there that blocks players still relaxes the floor to option 2 by a revision of this record. The record is accepted.

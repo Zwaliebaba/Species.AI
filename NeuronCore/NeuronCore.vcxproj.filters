@@ -165,6 +165,12 @@
     <ClInclude Include="SipHash.h">
       <Filter>Maths</Filter>
     </ClInclude>
+    <ClInclude Include="SoundAsset.h">
+      <Filter>Content</Filter>
+    </ClInclude>
+    <ClInclude Include="SpscQueue.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
     <ClInclude Include="StartupOptions.h">
       <Filter>Platform</Filter>
     </ClInclude>
@@ -322,6 +328,9 @@
     </ClCompile>
     <ClCompile Include="SipHash.cpp">
       <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundAsset.cpp">
+      <Filter>Content</Filter>
     </ClCompile>
     <ClCompile Include="StartupOptions.cpp">
       <Filter>Platform</Filter>

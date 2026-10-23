@@ -4,6 +4,7 @@
 #include "GameUi.h"
 #include "InputBindings.h"
 #include "UiLook.h"
+#include "WorldMenu.h"
 
 #include <chrono>
 #include <memory>
@@ -259,9 +260,15 @@ GameUi::GameUi(const TuningPresentation& _presentation)
 #endif
         // ADR-155: the front end's pages, while it is open.
         const auto first = static_cast<Neuron::UiPageId>(GamePage::FrontEndMain);
-        if (m_frontEnd != nullptr && _page >= first && _page <= static_cast<Neuron::UiPageId>(GamePage::FrontEndOptions))
+        if (m_frontEnd != nullptr && _page >= first && _page <= static_cast<Neuron::UiPageId>(GamePage::FrontEndPastRuns))
         {
           return m_frontEnd->MakePage(static_cast<FrontEndPage>(_page - first));
+        }
+        // ADR-170: the world's menu and epilogue, while a world runs.
+        const auto menu = static_cast<Neuron::UiPageId>(GamePage::WorldMenu);
+        if (m_worldMenu != nullptr && _page >= menu && _page <= static_cast<Neuron::UiPageId>(GamePage::WorldEpilogue))
+        {
+          return m_worldMenu->MakePage(static_cast<WorldMenuPage>(_page - menu));
         }
         return nullptr;
       })
@@ -288,6 +295,37 @@ void GameUi::OpenFrontEnd(FrontEnd& _frontEnd, GamePage _page)
 void GameUi::CloseFrontEnd()
 {
   m_core.CloseScreen();
+}
+
+void GameUi::AttachWorldMenu(WorldMenu* _menu)
+{
+  if (_menu == nullptr && m_worldMenu != nullptr && !m_core.Stack().empty() &&
+      m_core.Stack().front() == static_cast<Neuron::UiPageId>(GamePage::WorldMenu))
+  {
+    m_core.CloseScreen();
+  }
+  m_worldMenu = _menu;
+}
+
+void GameUi::OpenWorldMenu(GamePage _page)
+{
+  if (m_worldMenu == nullptr)
+  {
+    return;
+  }
+  m_core.OpenScreen(static_cast<Neuron::UiPageId>(GamePage::WorldMenu));
+  if (_page != GamePage::WorldMenu)
+  {
+    m_core.Request({Neuron::UiPageRequest::Kind::Push, static_cast<Neuron::UiPageId>(_page)});
+  }
+}
+
+void GameUi::CloseWorldMenu()
+{
+  if (!m_core.Stack().empty() && m_core.Stack().front() == static_cast<Neuron::UiPageId>(GamePage::WorldMenu))
+  {
+    m_core.CloseScreen();
+  }
 }
 
 void GameUi::SetScales(std::optional<double> _uiScale, std::optional<double> _textScale)
@@ -319,6 +357,12 @@ void GameUi::Update(Neuron::InputRouter& _router, Neuron::SizePx _client, float 
   m_pointerHeld = input.pointerHeld;
   input.windowFocused = _windowFocused;
   input.text = _router.Text(); // INP-112 (ADR-154)
+  // ADR-170: in a world with no window open, the close action opens the world's menu, and does no more this frame.
+  if (m_worldMenu != nullptr && input.close && m_core.Stack().empty())
+  {
+    OpenWorldMenu();
+    input.close = false;
+  }
   m_metrics = UiMetricsOf(m_presentation, _client, _dpiScale, m_uiScale, m_textScale);
   m_core.Update(input, m_metrics);
   // UI-006: what a focused window takes reaches no world action.

@@ -2,6 +2,7 @@
 
 #include "CommandMessages.h"
 #include "Development.h"
+#include "RelationMessages.h"
 #include "SettlementHud.h"
 #include "SettlementMessages.h"
 #include "StateReplica.h"
@@ -15,14 +16,38 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <span>
+#include <utility>
 #include <variant>
 #include <vector>
 
 namespace Species
 {
 
-// A command of the settlement verbs (MVP-101), as the client sends it.
-using SettlementCommand = std::variant<PlaceStructureCommand, SetPrioritiesCommand>;
+// A command of the settlement verbs (MVP-101), as the client sends it; from M3 task T12 (ADR-167) the conflict verbs'.
+using SettlementCommand = std::variant<PlaceStructureCommand, SetPrioritiesCommand, MakeClaimCommand, WithdrawClaimCommand,
+                                       SendTributeCommand, DeclareAttackCommand, WithdrawAttackCommand>;
+
+/// MVP-101 (ADR-167): what the conflict verbs read of the client's settlement: the latest valley status, its local site,
+/// the Leaders that would lead an expedition, and its stores.
+struct ConflictView
+{
+  std::optional<ValleyStatus> valley;
+  std::uint8_t site = 0;
+  std::vector<StableId> leaders;
+  std::int64_t storesMilliRu = 0;
+};
+
+// ADR-167: the living Leaders of team _team in _latest that would lead an expedition: _selected first while it is one of
+// them, then the others in id order, at most EXPEDITION_LEADERS_MAX.
+[[nodiscard]] std::vector<StableId> ExpeditionLeadersOf(const StateReplica::View& _latest, std::uint8_t _team,
+                                                        std::optional<StableId> _selected);
+// MVP-042, MVP-101 (ADR-167): the attack a relations row would declare, the button _button its zone index: a raid on a
+// Cladan's settlement, unprovoked when its own Cladan holds no grievance against the target and claims nothing the target
+// holds (PIL-063), or the battle of the steward's open or contested claim, against the area's holder or the rival
+// claimant; with its cost, as the server charges it. None for a row that names no attack or no target.
+[[nodiscard]] std::optional<PendingAttack> AttackOf(const RelationRow& _row, std::uint8_t _button, const ConflictView& _view,
+                                                    const TuningMvp& _tuning);
 
 // MVP-036: _shares, which sum to 100, with _task's share moved by _deltaPercent and the others moved the other way so
 // that they still sum to 100. A raise takes half the step from each other task, the larger giving the odd point; a lower
@@ -61,6 +86,9 @@ struct SettlementFrame
   std::optional<HudZoneRect> hudZone;
   std::optional<Neuron::Vec3> ground;
   double realStepSeconds = 0.0;
+  // ADR-167: the relations rows of the HUD's last layout, which its buttons' zones index, and the conflict verbs' view.
+  std::span<const RelationRow> relations;
+  ConflictView conflict;
 };
 
 /// A frame's commands of the settlement verbs, and the presses they took, which reach no battle verb.
@@ -79,6 +107,11 @@ struct SettlementVerbResult
 ///   region sends the placement at the pointer ground point and stays in the mode; the secondary press leaves it, as it
 ///   releases a selection (O82). The mode shows the ghost and the cursor of what the client foresees at the pointer.
 /// - **Refusals.** The server's refusal of a placement is kept mvp.hud.notice_seconds for the HUD with its reason.
+/// - **Conflicts** (M3 task T12, ADR-167). A relations row's button makes a claim, withdraws one, withdraws the
+///   expedition or sends a grievance's tribute at once. A raid or a claim battle is declared in two presses: the first
+///   shows the attack with its cost and whether it is unprovoked, a second on the same button declares it, and the
+///   secondary press, or any other press over the HUD, drops it. Their refusals are kept as a placement's is.
+/// - **Results** (M3 task T13, ADR-168). A press on the result card closes the result it shows.
 /// Nothing is sent while the client commands no settlement. Frame thread only.
 class SettlementVerbs
 {
@@ -94,8 +127,13 @@ public:
   // the verbs ignore when it is not one of theirs.
   void Sent(std::uint64_t _sequence, const SettlementCommand& _command);
   void Reported(const CommandReport& _report);
-  // A new world: the mode, the refusal and the shares sent are dropped.
+  // A new world: the mode, the refusal, the shares sent and the attack being declared are dropped.
   void Reset() noexcept;
+  // ADR-167: the attack being declared.
+  [[nodiscard]] const std::optional<PendingAttack>& Pending() const noexcept
+  {
+    return m_pending;
+  }
 
   [[nodiscard]] std::optional<StructureKind> Placing() const noexcept
   {
@@ -130,7 +168,9 @@ private:
     std::optional<std::uint64_t> tick; // its report's tick, once applied
   };
 
-  void PressHud(const HudZoneRect& _zone, std::uint8_t _team, const PlacementView& _view, SettlementVerbResult& _result);
+  void PressHud(const HudZoneRect& _zone, std::uint8_t _team, const PlacementView& _view, const SettlementFrame& _frame,
+                SettlementVerbResult& _result);
+  void PressRelation(std::uint8_t _button, std::uint8_t _team, const SettlementFrame& _frame, SettlementVerbResult& _result);
 
   const TuningMvp& m_tuning;
   const TuningPresentation& m_presentation;
@@ -141,6 +181,11 @@ private:
   std::optional<PlacementRefusal> m_refusal;
   double m_refusalAgeSeconds = 0.0;
   std::optional<SentShares> m_shares;
+  std::optional<PendingAttack> m_pending;                                 // ADR-167
+  std::vector<std::pair<std::uint64_t, ConflictKind>> m_conflicts;        // the conflict commands sent and not yet reported
+  std::optional<std::pair<ConflictKind, std::uint8_t>> m_conflictRefusal; // the last refused, and its reason
+  double m_conflictRefusalAgeSeconds = 0.0;
+  std::uint64_t m_resultsClosed = 0; // ADR-168: the presses on the result card, never reset, so the HUD can count them
 };
 
 } // namespace Species

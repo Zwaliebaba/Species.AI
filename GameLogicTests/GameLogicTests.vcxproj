@@ -169,19 +169,25 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ActorGridTests.cpp" />
+    <ClCompile Include="BattleTests.cpp" />
     <ClCompile Include="BotTests.cpp" />
+    <ClCompile Include="ClaimTests.cpp" />
     <ClCompile Include="CombatTests.cpp" />
+    <ClCompile Include="CommandPathTests.cpp" />
     <ClCompile Include="CommandTests.cpp" />
     <ClCompile Include="EssenceTests.cpp" />
     <ClCompile Include="FormationTests.cpp" />
     <ClCompile Include="GrowthSceneTests.cpp" />
     <ClCompile Include="MovementTests.cpp" />
     <ClCompile Include="RegionSimulationTests.cpp" />
+    <ClCompile Include="RelationTests.cpp" />
     <ClCompile Include="ReplicationTests.cpp" />
     <ClCompile Include="RouteTests.cpp" />
+    <ClCompile Include="RunTests.cpp" />
     <ClCompile Include="SandboxTests.cpp" />
     <ClCompile Include="SavingTests.cpp" />
     <ClCompile Include="ScriptedStewardTests.cpp" />
+    <ClCompile Include="SettlementAiTests.cpp" />
     <ClCompile Include="SettlementCommandTests.cpp" />
     <ClCompile Include="SettlementTests.cpp" />
     <ClCompile Include="SlicedPoolTests.cpp" />
@@ -193,6 +199,7 @@
     <ClCompile Include="TestSupport.cpp" />
     <ClCompile Include="TurretTests.cpp" />
     <ClCompile Include="UpkeepTests.cpp" />
+    <ClCompile Include="ValleyTests.cpp" />
     <ClCompile Include="WeaponTests.cpp" />
     <ClCompile Include="WorldSnapshotTests.cpp" />
     <ClCompile Include="WorldTests.cpp" />

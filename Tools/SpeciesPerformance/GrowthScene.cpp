@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <utility>
 
 namespace Performance
@@ -82,6 +83,9 @@ GrowthRun RunGrowth(std::uint64_t _seed, const Species::TuningMvp& _tuning, cons
   start.seed = terrain->seed;
   start.stewardSite = site;
   std::unique_ptr<Species::WorldSimulation> world = Species::StartWorld(start, terrain, _tuning, &_records);
+  // ADR-163: the scene measures growth, not a run's end, so its world's run never ends and the world measured after it
+  // still steps.
+  world->SetRunEnd(std::numeric_limits<std::uint64_t>::max());
   Species::RegionSimulation& region = world->Region(0);
   static_cast<void>(region.AddScriptedSteward(site));
   const std::int64_t sampleTicks = std::max<std::int64_t>(1, Species::SampleTicks(_tuning));
@@ -227,7 +231,14 @@ std::optional<SavedWorldRun> ReadSavedWorld(const std::filesystem::path& _folder
         continue;
       }
       saved.run.largestWorkers = std::max(saved.run.largestWorkers, entry.workers);
-      (Species::IsGrowthStep(entry.kind) ? saved.run.steps : saved.samples).push_back(entry);
+      if (Species::IsGrowthStep(entry.kind))
+      {
+        saved.run.steps.push_back(entry);
+      }
+      else if (entry.kind == Species::StatisticKind::Sample)
+      {
+        saved.samples.push_back(entry); // M3's battles, claims, grievances and halfway lines are no sample (ADR-163)
+      }
     }
     return saved;
   }

@@ -169,6 +169,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AppWindowTests.cpp" />
+    <ClCompile Include="AudioEngineTests.cpp" />
+    <ClCompile Include="AudioMathTests.cpp" />
     <ClCompile Include="BindingNotationTests.cpp" />
     <ClCompile Include="FrameGraphTests.cpp" />
     <ClCompile Include="GlyphAtlasTests.cpp" />

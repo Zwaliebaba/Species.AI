@@ -1,16 +1,25 @@
 #include "pch.h"
 
 #include "ClientSession.h"
+#include "GameUi.h"
 #include "InProcessTransport.h"
+#include "MessageCodec.h"
+#include "MessageLocale.h"
 #include "PlatformClock.h"
 #include "PresentationEvents.h"
 #include "RegionTerrain.h"
+#include "RelationMessages.h"
 #include "ReplicaTiming.h"
+#include "SettlementHud.h"
 #include "SettlementMessages.h"
 #include "StateUpdate.h"
 #include "TestSupport.h"
+#include "UiCore.h"
+#include "UiLook.h"
+#include "WorldMenu.h"
 #include "WorldTerrain.h"
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -370,6 +379,214 @@ public:
     Assert::IsTrue(notices.size() == 1 && notices[0].subject == notice.subject && notices[0].structure == Species::StructureKind::Dwelling,
                    L"the notice, decoded");
     Assert::IsTrue(f.session->TakeNotices().empty(), L"taken once");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr165TheValleyStatusAndTheBattleResultsArrive)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-048")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-098")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr165TheValleyStatusAndTheBattleResultsArrive)
+  {
+    // ADR-165: the session keeps the latest valley status the server answered, and the battle results to be taken once,
+    // in the order they arrived.
+    Fixture f;
+    Assert::IsFalse(f.session->LatestValleyStatus().has_value(), L"none before the first");
+    Species::ValleyStatus first;
+    first.tick = 10;
+    first.team = 2;
+    Species::ValleyStatus second = first;
+    second.tick = 20;
+    second.claims.push_back({Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 4), 2, 3, 15, Species::ClaimState::Open});
+    Species::BattleResultNotice raid;
+    raid.expedition = Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 7);
+    raid.attacker = 1;
+    raid.defender = 2;
+    raid.endTick = 18;
+    Species::BattleResultNotice claim = raid;
+    claim.expedition = Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 8);
+    claim.area = std::uint8_t{3};
+    for (const std::vector<std::byte>& bytes :
+         {Neuron::EncodeMessage(first), Neuron::EncodeMessage(raid), Neuron::EncodeMessage(second), Neuron::EncodeMessage(claim)})
+    {
+      Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, bytes).has_value(), L"sent");
+    }
+    f.session->Update();
+    const std::optional<Species::ValleyStatus>& status = f.session->LatestValleyStatus();
+    Assert::IsTrue(status && status->tick == 20 && status->claims == second.claims, L"the latest status");
+    const std::vector<Species::BattleResultNotice> results = f.session->TakeBattleResults();
+    Assert::IsTrue(results.size() == 2 && results[0].expedition == raid.expedition && results[1].area == claim.area,
+                   L"both results, in order");
+    Assert::IsTrue(f.session->TakeBattleResults().empty(), L"taken once");
+    // ADR-169: and the latest epilogue.
+    Assert::IsFalse(f.session->LatestEpilogue().has_value(), L"no epilogue before the first");
+    Species::Epilogue epilogue;
+    epilogue.tick = 30;
+    epilogue.team = 2;
+    epilogue.runEnded = true;
+    epilogue.settlements.push_back({});
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(epilogue)).has_value(), L"sent");
+    f.session->Update();
+    Assert::IsTrue(f.session->LatestEpilogue() == epilogue, L"the epilogue kept");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp048EachOwnResultWaitsOnTheCardUntilClosed)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-048")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-102")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp048EachOwnResultWaitsOnTheCardUntilClosed)
+  {
+    // ADR-168: the HUD takes the session's results: the settlement's own wait on the result card in the order they came,
+    // each closed by a press on the card, which the verbs count; another battle's public line is a card among the notices.
+    Fixture f;
+    const Species::WorldTerrain sent{SeedOne().seed, SeedOne().digest, std::uint8_t{2}};
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(sent)).has_value());
+    const Species::ReplicatedSettlement own{2, 2, 2, 120'500, 1'500'000, 20, 40, 5'600};
+    f.Send(Species::StateUpdate{3, 0, {RecordOf(Species::SettlementObjectId(2), own, nullptr)}});
+    Species::BattleResultNotice raid;
+    raid.expedition = Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 7);
+    raid.attacker = 2;
+    raid.defender = 1;
+    raid.attackerWon = true;
+    raid.endTick = 3;
+    raid.side = true;
+    Species::BattleResultNotice claim = raid;
+    claim.expedition = Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 8);
+    claim.area = std::uint8_t{4};
+    Species::BattleResultNotice publicLine = raid;
+    publicLine.expedition = Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 9);
+    publicLine.attacker = 0;
+    publicLine.defender = 3;
+    publicLine.side = false;
+    for (const std::vector<std::byte>& bytes :
+         {Neuron::EncodeMessage(raid), Neuron::EncodeMessage(publicLine), Neuron::EncodeMessage(claim)})
+    {
+      Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, bytes).has_value(), L"sent");
+    }
+    f.session->Update();
+    Species::SettlementHud hud(CommittedPresentation(), CommittedTuning());
+    const Neuron::UiMetrics metrics = Species::UiMetricsOf(CommittedPresentation(), {1920, 1080}, 1.0f, std::nullopt, std::nullopt);
+    Species::HudVerbs verbs;
+    verbs.resultsClosed = 4; // the verbs' count before this HUD
+    hud.Update(*f.session, 1.0, metrics, verbs);
+    const Species::HudModel& model = hud.Model();
+    Assert::IsTrue(model.results.size() == 2 && model.results[0].expedition == raid.expedition &&
+                     model.results[1].expedition == claim.expedition,
+                   L"its two results wait, in order");
+    Assert::IsTrue(model.notices.size() == 1 && model.notices[0].result.has_value() &&
+                     model.notices[0].result.value_or(Species::BattleResultNotice{}).expedition == publicLine.expedition,
+                   L"the public line is a card");
+    verbs.resultsClosed = 5;
+    hud.Update(*f.session, 1.1, metrics, verbs);
+    Assert::IsTrue(hud.Model().results.size() == 1 && hud.Model().results[0].expedition == claim.expedition, L"the first closed");
+    verbs.resultsClosed = 6;
+    hud.Update(*f.session, 1.2, metrics, verbs);
+    Assert::IsTrue(hud.Model().results.empty(), L"and the second");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp063TheEpilogueIsAskedForOnceTheRunEndsAndOpensOnce)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-063")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp063TheEpilogueIsAskedForOnceTheRunEndsAndOpensOnce)
+  {
+    // ADR-170: the world's menu asks for the epilogue once the valley status says the run has ended, once, and keeps the
+    // ended run's epilogue when it comes, whose page then opens once.
+    Fixture f;
+    const Species::WorldTerrain sent{SeedOne().seed, SeedOne().digest, std::uint8_t{2}};
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(sent)).has_value());
+    const Species::ReplicatedSettlement own{2, 2, 2, 120'500, 1'500'000, 20, 40, 5'600};
+    f.Send(Species::StateUpdate{3, 0, {RecordOf(Species::SettlementObjectId(2), own, nullptr)}});
+    f.session->Update();
+    const Neuron::MessageLocale locale("en-US");
+    Species::WorldMenu::Desc desc;
+    desc.presentation = &CommittedPresentation();
+    desc.tuning = &CommittedTuning();
+    desc.strings = &CommittedStrings();
+    desc.locale = &locale;
+    Species::WorldMenu menu(desc);
+    std::vector<std::uint8_t> asked;
+    Neuron::MessageDispatcher server;
+    server.Register<Species::ReadEpilogueCommand>([&asked](const Species::ReadEpilogueCommand& _command)
+                                                  { asked.push_back(_command.team); });
+    const auto drain = [&]()
+    {
+      while (std::optional<Neuron::ReceivedMessage> message = f.server->Receive())
+      {
+        static_cast<void>(server.Dispatch(message->bytes));
+      }
+    };
+    menu.Update(*f.session);
+    drain();
+    Assert::IsTrue(menu.Site() == std::optional<std::uint8_t>(std::uint8_t{2}) && !menu.RunEnded() && asked.empty(),
+                   L"nothing asked while the run goes on");
+
+    Species::ValleyStatus valley;
+    valley.tick = 4;
+    valley.team = 2;
+    valley.runEnded = true;
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(valley)).has_value());
+    f.session->Update();
+    menu.Update(*f.session);
+    menu.Update(*f.session);
+    drain();
+    Assert::IsTrue(menu.RunEnded() && asked == std::vector<std::uint8_t>{2}, L"the run's end asks for the epilogue, once");
+    Assert::IsFalse(menu.Ended().has_value() || menu.TakeEpilogueArrived(), L"which has not come yet");
+
+    Species::Epilogue epilogue;
+    epilogue.tick = 5;
+    epilogue.team = 2;
+    epilogue.runEnded = true;
+    for (const std::uint8_t site : std::array<std::uint8_t, 4>{2, 0, 3, 1})
+    {
+      Species::EpilogueLine line;
+      line.site = site;
+      line.renown.site = site;
+      epilogue.settlements.push_back(line);
+    }
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(epilogue)).has_value());
+    f.session->Update();
+    menu.Update(*f.session);
+    Assert::IsTrue(menu.Ended() == std::optional<Species::Epilogue>(epilogue), L"the epilogue kept");
+    Assert::IsTrue(menu.TakeEpilogueArrived(), L"its page opens");
+    menu.Update(*f.session);
+    Assert::IsFalse(menu.TakeEpilogueArrived(), L"once");
+    // Its page over the menu: a row for each section, the standing shown first, Leave to the front end, and Back.
+    Neuron::UiCore ui(
+      [&menu](Neuron::UiPageId _page) -> std::unique_ptr<Neuron::UiPage>
+      { return menu.MakePage(static_cast<Species::WorldMenuPage>(_page - static_cast<Neuron::UiPageId>(Species::GamePage::WorldMenu))); });
+    const Neuron::UiMetrics metrics = Species::UiMetricsOf(CommittedPresentation(), {1920, 1080}, 1.0f, std::nullopt, std::nullopt);
+    ui.OpenScreen(static_cast<Neuron::UiPageId>(Species::GamePage::WorldMenu));
+    ui.Request({Neuron::UiPageRequest::Kind::Push, static_cast<Neuron::UiPageId>(Species::GamePage::WorldEpilogue)});
+    ui.Update({}, metrics);
+    ui.Update({}, metrics);
+    const Neuron::UiWindow* page = ui.Focused();
+    Assert::IsTrue(ui.Stack().size() == 2 && page != nullptr && Neuron::ValidateWindow(*page).empty(),
+                   L"UI-372: the epilogue passes the validator");
+    Assert::IsTrue(page->Contains(page->Find("section_4")) && page->Contains(page->Find("line_7")) && !page->Contains(page->Find("line_8")),
+                   L"five sections, and as many lines as the longest");
+    Assert::IsTrue(page->Cursor() == page->Find("section_0"), L"the cursor starts on the standing");
+    const Neuron::UiRect lastLine = page->RectOf(page->Find("line_7"));
+    const Neuron::UiRect rightBox = page->RectOf(page->Find("right_box"));
+    const Neuron::UiRect leave = page->RectOf(page->Find("leave"));
+    const Neuron::UiRect back = page->RectOf(page->Find("back"));
+    Assert::IsTrue(lastLine.bottom <= rightBox.bottom && leave.bottom <= back.top, L"the text and the rows fit their boxes");
+    Neuron::UiInput activate;
+    activate.activate = true;
+    for (int step = 0; step < 5; ++step)
+    {
+      Neuron::UiInput down;
+      down.down = true;
+      ui.Update(down, metrics);
+    }
+    Assert::IsTrue(page->Cursor() == page->Find("leave"), L"Leave below the sections");
+    ui.Update(activate, metrics);
+    Assert::IsTrue(menu.TakeChoice().value_or(Species::WorldMenuChoice{}).kind == Species::WorldMenuChoice::Kind::Leave, L"which leaves");
+    Neuron::UiInput close;
+    close.close = true;
+    ui.Update(close, metrics);
+    ui.Update({}, metrics);
+    Assert::IsTrue(ui.Stack().size() == 1 && !menu.TakeChoice().has_value(), L"Back returns to the menu");
+    menu.Reset();
+    Assert::IsFalse(menu.RunEnded() || menu.Ended().has_value() || menu.Site().has_value(), L"a new world starts with none");
   }
 };
 

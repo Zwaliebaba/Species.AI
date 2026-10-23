@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -90,8 +91,22 @@ constexpr std::uint32_t STATE_VERSION_WITH_BOTS = 8;
 constexpr std::uint32_t STATE_VERSION_WITH_SETTLEMENTS = 9;
 // ... and the scripted stewards (M2 task T10, ADR-138).
 constexpr std::uint32_t STATE_VERSION_WITH_SCRIPTED_STEWARDS = 10;
+// ... and the Cladans' grievances (M3 task T4, ADR-159).
+constexpr std::uint32_t STATE_VERSION_WITH_GRIEVANCES = 11;
+// The grievances a region holds: a bound for the reader, far above four Cladans' grievances against three neighbours.
+constexpr std::uint64_t GRIEVANCES_MAX = 65'535;
+// The claims a region holds at once, four settlements' on the eight halves and the central resource site at most; and its
+// moved areas, one for each area (ADR-160).
+constexpr std::uint64_t CLAIMS_MAX = 36;
+constexpr std::uint64_t HOLDINGS_MAX = CLAIM_AREA_MAX + 1;
 // A region holds at most one settlement on each of its four sites (MVP-010).
 constexpr std::uint64_t SETTLEMENTS_MAX = std::tuple_size_v<decltype(RegionLayout::sites)>;
+// A region's expeditions, one for each settlement, its battles in progress, far above wld.scale.battles_per_region_max,
+// its battle results, and its respites, one for each settlement (ADR-161): bounds for the reader.
+constexpr std::uint64_t EXPEDITIONS_MAX = SETTLEMENTS_MAX;
+constexpr std::uint64_t BATTLES_MAX = SETTLEMENTS_MAX;
+constexpr std::uint64_t BATTLE_RESULTS_MAX = 65'535;
+constexpr std::uint64_t RESPITES_MAX = SETTLEMENTS_MAX;
 // WLD-066: the territory events a region holds; the MVP records one contact for each valley border pair at most.
 constexpr std::uint64_t CONTACT_EVENTS_MAX = 4095;
 // MVP-064: the statistics a region holds, far above a run's: four settlements sampled every 5 minutes for 8 hours, with
@@ -173,12 +188,20 @@ StableId RegionSimulation::AddScriptedSteward(std::uint8_t _team)
   const StableId id = m_ids.Issue();
   m_scripted.push_back({id, _team, 1, 0});
   SetCommander(_team, id, true);
+  // ADR-162: an AI settlement's decisions, sent as its steward.
+  const auto settlement = std::ranges::find(m_settlements, _team, &Settlement::team);
+  if (settlement->cladan.temperament != Temperament::None &&
+      std::ranges::find(m_settlementAis, _team, &SettlementAi::team) == m_settlementAis.end())
+  {
+    m_settlementAis.push_back(MakeSettlementAi(m_scripted.back(), ExpeditionTeamOf(settlement->site)));
+  }
   return id;
 }
 
 void RegionSimulation::RemoveScriptedStewards(std::uint8_t _team)
 {
   std::erase_if(m_scripted, [_team](const ScriptedSteward& _steward) { return _steward.team == _team; });
+  std::erase_if(m_settlementAis, [_team](const SettlementAi& _ai) { return _ai.team == _team; });
 }
 
 StableId RegionSimulation::AddAi(std::uint8_t _team)
@@ -406,9 +429,45 @@ TeamMask RegionSimulation::FriendsOf(std::uint8_t _team) noexcept
   return friends;
 }
 
-TeamMask RegionSimulation::EnemiesOf(std::uint8_t _team) noexcept
+TeamMask RegionSimulation::EnemiesOf(std::uint8_t _team) const noexcept
 {
-  return ~FriendsOf(_team);
+  TeamMask enemies = ~FriendsOf(_team);
+  if (IsSettlementSide(*this, _team))
+  {
+    // ADR-157 and ADR-161: a settlement and its expedition are at peace with every settlement and expedition, but for
+    // the two sides of a battle in progress.
+    for (const Settlement& settlement : m_settlements)
+    {
+      enemies.reset(settlement.team);
+      enemies.reset(ExpeditionTeamOf(settlement.site));
+    }
+    for (const Battle& battle : m_battles)
+    {
+      const std::uint8_t attacker = ExpeditionTeamOf(battle.attacker);
+      if (_team == attacker || _team == battle.defender)
+      {
+        enemies.set(_team == attacker ? battle.defender : attacker);
+      }
+    }
+  }
+  return enemies;
+}
+
+std::uint32_t RegionSimulation::MoveFigure(std::uint8_t _from, std::uint32_t _slot, std::uint8_t _to)
+{
+  ENGINE_CHECK(_from < m_teams.size() && m_teams[_from].figures.Used(_slot) && _from != _to, "a figure of team {} to move", _from);
+  static_cast<void>(EnsureTeam(_to));
+  const Figure figure = m_teams[_from].figures.At(_slot);
+  m_grid.Unregister({figure.id, _slot, _from}, figure.cells);
+  m_teams[_from].figures.Free(_slot);
+  if (m_teams[_from].selectedId == figure.id)
+  {
+    m_teams[_from].selectedId = 0;
+    m_teams[_from].selectedSlot = 0;
+  }
+  const std::uint32_t slot = m_teams[_to].figures.Take(figure);
+  m_grid.Register({figure.id, slot, _to}, figure.cells);
+  return slot;
 }
 
 std::vector<ActorRef> RegionSimulation::InRange(double _x, double _z, double _range, const TeamMask& _teams) const
@@ -463,16 +522,26 @@ HealthChange RegionSimulation::Damage(const ActorRef& _ref, std::int32_t _amount
     return {false, false};
   }
   const bool alive = !figure->dead;
-  const HealthChange change = ApplyHealthChange(*figure, _amount, _kind, *m_tuning, InFormation(*figure, _ref.team));
-  if (alive && _amount < 0)
+  // MVP-044 and MVP-046 (ADR-161): a defender's advantage in its territory, and no loss beyond its loss cap.
+  const std::int32_t amount = _amount < 0 ? BattleDamage(*this, _ref.team, figure->position, _amount) : _amount;
+  if (amount == 0 && _amount != 0)
+  {
+    return {false, false};
+  }
+  const HealthChange change = ApplyHealthChange(*figure, amount, _kind, *m_tuning, InFormation(*figure, _ref.team));
+  if (alive && amount < 0)
   {
     Emit({EffectEventKind::FigureHurt, _ref.team, figure->id, figure->position, {}, 0.0});
   }
   if (change.killed)
   {
     Emit({EffectEventKind::FigureDied, _ref.team, figure->id, figure->position, {}, 0.0});
-    // R-UNIT-038, R-ECON-067: one orb at the corpse, with half the corpse's velocity.
-    SpawnOrb(*this, figure->position, figure->velocity * m_tuning->ref.econ.orb.deathVelocityFactor, _ref.team, figure->id);
+    // R-UNIT-038, R-ECON-067: one orb at the corpse, with half the corpse's velocity, unless a battle's bound lets it
+    // ascend (PIL-045, ADR-161).
+    if (BattleDeath(*this, _ref.team, figure->position))
+    {
+      SpawnOrb(*this, figure->position, figure->velocity * m_tuning->ref.econ.orb.deathVelocityFactor, _ref.team, figure->id);
+    }
   }
   return change;
 }
@@ -535,7 +604,29 @@ void RegionSimulation::RecordStatistic(const StatisticEntry& _entry)
   if (m_statistics.size() < STATISTICS_MAX)
   {
     m_statistics.push_back(_entry);
+    NoteHalfway(_entry);
   }
+}
+
+void RegionSimulation::NoteHalfway(const StatisticEntry& _entry) noexcept
+{
+  if (_entry.kind == StatisticKind::HalfwayReached && _entry.site < SETTLEMENTS_MAX && _entry.detail < VALLEY_PAIRS.size())
+  {
+    m_halfwayReached = static_cast<std::uint16_t>(m_halfwayReached | (1U << (_entry.site * VALLEY_PAIRS.size() + _entry.detail)));
+  }
+}
+
+bool RegionSimulation::HalfwayReached(std::uint8_t _site, std::size_t _pair) const noexcept
+{
+  return _site < SETTLEMENTS_MAX && _pair < VALLEY_PAIRS.size() && (m_halfwayReached >> (_site * VALLEY_PAIRS.size() + _pair) & 1U) != 0;
+}
+
+bool RegionSimulation::InQuietMinutes() const noexcept
+{
+  const auto& run = m_tuning->mvp.run;
+  const auto quiet =
+    static_cast<std::uint64_t>(std::max<std::int64_t>(0, std::llround(run.quietMinutes * 60.0 / m_tuning->ref.sim.tickPeriod)));
+  return m_runEndTick != std::numeric_limits<std::uint64_t>::max() && m_nextTick + quiet >= m_runEndTick;
 }
 
 void RegionSimulation::RecordContacts()
@@ -552,6 +643,7 @@ void RegionSimulation::RecordContacts()
     if (ReachesHalfwayLine(*this, first, pair) && ReachesHalfwayLine(*this, second, pair))
     {
       m_contacts.push_back({m_nextTick, ContactEventKind::Contact, first, second, static_cast<std::uint8_t>(pair)});
+      Raise({NoticeKind::Contact, first, second, 0, static_cast<std::uint8_t>(pair), {}}); // ADR-165
     }
   }
 }
@@ -645,7 +737,7 @@ void RegionSimulation::PlaceResourceSites()
   }
 }
 
-const Settlement& RegionSimulation::FoundSettlement(std::uint8_t _site, bool _stewarded)
+const Settlement& RegionSimulation::FoundSettlement(std::uint8_t _site, bool _stewarded, Temperament _temperament)
 {
   ENGINE_CHECK(m_terrain != nullptr && m_records != nullptr, "region {} founds a settlement with no terrain or no records", m_index);
   const RegionLayout& layout = m_terrain->layout;
@@ -656,6 +748,7 @@ const Settlement& RegionSimulation::FoundSettlement(std::uint8_t _site, bool _st
   settlement.team = _site;
   settlement.stewarded = _stewarded;
   settlement.cladan.color = _site;
+  settlement.cladan.temperament = _temperament;
   settlement.territoryRadius = m_tuning->wld.territory.foundingRadius;
   settlement.growthTicks = GrowthIntervalTicks(*m_tuning);
   const std::int64_t step = m_tuning->mvp.stats.populationStep;
@@ -669,6 +762,7 @@ const Settlement& RegionSimulation::FoundSettlement(std::uint8_t _site, bool _st
   settlement.wellspringId = m_structures.At(settlement.wellspringSlot).id;
   EnsureTeam(settlement.team);
   const Settlement& founded = m_settlements.emplace_back(std::move(settlement));
+  m_renown.push_back({founded.site, 0, 0, 0, 0}); // MVP-061 (ADR-163)
   m_territories.push_back(ComputeTerritory(*this, founded));
   for (std::int64_t worker = 0; worker < m_tuning->mvp.settlement.startWorkers; ++worker)
   {
@@ -701,11 +795,20 @@ std::uint32_t RegionSimulation::SpawnAtDoor(const Settlement& _settlement)
   return SpawnFigures(spawn).front();
 }
 
+void RegionSimulation::Pass(std::uint64_t _tick)
+{
+  ENGINE_ASSERT(_tick == m_nextTick);
+  m_events.clear();
+  m_valleyEvents.clear();
+  m_nextTick = _tick + 1;
+}
+
 void RegionSimulation::Step(std::uint64_t _tick)
 {
   ENGINE_ASSERT(_tick == m_nextTick);
   m_draws.SetTick(_tick);
   m_events.clear();
+  m_valleyEvents.clear();
   // R-SIM-510: the tick's commands, the tick clock (the region's tick: the world has no game speed), then the slices.
   // The markers divide the step by the objects it advances, for the cost measurement (DBG-045, ADR-110).
   {
@@ -718,13 +821,6 @@ void RegionSimulation::Step(std::uint64_t _tick)
     StepSlice(slice);
   }
   {
-    ENGINE_PROFILE_SCOPE("sim.ai.step");
-    for (AiController& ai : m_ais)
-    {
-      StepAi(*this, ai);
-    }
-  }
-  {
     // ADR-134: each settlement's own step, in founding order.
     ENGINE_PROFILE_SCOPE("sim.settlements.advance");
     for (Settlement& settlement : m_settlements)
@@ -732,10 +828,22 @@ void RegionSimulation::Step(std::uint64_t _tick)
       AdvanceSettlement(*this, settlement);
     }
     RecordContacts();
+    AdvanceRelations(*this, _tick);
+    AdvanceClaims(*this, _tick);
+    AdvanceBattles(*this, _tick);
   }
   {
     ENGINE_PROFILE_SCOPE("sim.settlements.seen");
     UpdateSeenLayers();
+  }
+  {
+    // ADR-158: each AI looks after the seen layers are made, so that it reads the step's own, which a restored region
+    // makes again at its first step.
+    ENGINE_PROFILE_SCOPE("sim.ai.step");
+    for (AiController& ai : m_ais)
+    {
+      StepAi(*this, ai);
+    }
   }
   {
     // ADR-138: each scripted steward looks at the tick's end, as the AIs do, and its commands execute at the next.
@@ -743,6 +851,12 @@ void RegionSimulation::Step(std::uint64_t _tick)
     for (ScriptedSteward& steward : m_scripted)
     {
       StepScriptedSteward(*this, steward);
+      // ADR-162: then the AI settlement's decisions and battle cores, sent as the steward.
+      const auto ai = std::ranges::find(m_settlementAis, steward.team, &SettlementAi::team);
+      if (ai != m_settlementAis.end())
+      {
+        StepSettlementAi(*this, steward, *ai);
+      }
     }
   }
   {
@@ -921,6 +1035,56 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
   {
     WriteScriptedSteward(_writer, steward);
   }
+  _writer.WriteBounded(m_grievances.size(), GRIEVANCES_MAX);
+  for (const Grievance& grievance : m_grievances)
+  {
+    WriteGrievance(_writer, grievance);
+  }
+  _writer.WriteBounded(m_claims.size(), CLAIMS_MAX);
+  for (const Claim& claim : m_claims)
+  {
+    WriteClaim(_writer, claim);
+  }
+  _writer.WriteBounded(m_holdings.size(), HOLDINGS_MAX);
+  for (const AreaHolding& holding : m_holdings)
+  {
+    WriteAreaHolding(_writer, holding);
+  }
+  _writer.WriteBounded(m_expeditions.size(), EXPEDITIONS_MAX);
+  for (const Expedition& expedition : m_expeditions)
+  {
+    WriteExpedition(_writer, expedition);
+  }
+  _writer.WriteBounded(m_battles.size(), BATTLES_MAX);
+  for (const Battle& battle : m_battles)
+  {
+    WriteBattle(_writer, battle);
+  }
+  _writer.WriteBounded(m_results.size(), BATTLE_RESULTS_MAX);
+  for (const BattleResult& result : m_results)
+  {
+    WriteBattleResult(_writer, result);
+  }
+  _writer.WriteBounded(m_respites.size(), RESPITES_MAX);
+  for (const Respite& respite : m_respites)
+  {
+    WriteRespite(_writer, respite);
+  }
+  _writer.WriteBounded(m_settlementAis.size(), SETTLEMENTS_MAX);
+  for (const SettlementAi& ai : m_settlementAis)
+  {
+    WriteSettlementAi(_writer, ai);
+  }
+  _writer.WriteBounded(m_renown.size(), SETTLEMENTS_MAX);
+  for (const SettlementRenown& renown : m_renown)
+  {
+    WriteSettlementRenown(_writer, renown);
+  }
+  _writer.WriteBounded(m_claimEnds.size(), HOLDINGS_MAX);
+  for (const ClaimEnd& end : m_claimEnds)
+  {
+    WriteClaimEnd(_writer, end);
+  }
 }
 
 bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stateVersion)
@@ -1073,20 +1237,29 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
     m_contacts.resize(_reader.ReadBounded(CONTACT_EVENTS_MAX));
     for (ContactEvent& event : m_contacts)
     {
-      if (!ReadContactEvent(_reader, event) || VALLEY_PAIRS[event.pair][0] != event.first || VALLEY_PAIRS[event.pair][1] != event.second ||
-          SettlementAt(event.first) == nullptr || SettlementAt(event.second) == nullptr)
+      if (!ReadContactEvent(_reader, event, _stateVersion) || SettlementAt(event.first) == nullptr || SettlementAt(event.second) == nullptr)
+      {
+        return false;
+      }
+      // A contact names its pair's sites in order; a moved half names them either way round.
+      const auto& sites = VALLEY_PAIRS[event.pair];
+      if (event.kind == ContactEventKind::Contact ? sites[0] != event.first || sites[1] != event.second
+                                                  : event.first == event.second || (event.first != sites[0] && event.first != sites[1]) ||
+                                                      (event.second != sites[0] && event.second != sites[1]))
       {
         return false;
       }
     }
-    // A statistics entry names a settled site.
+    // A statistics entry names a settled site; the halfway lines reached are known from them (ADR-163).
     m_statistics.resize(_reader.ReadBounded(STATISTICS_MAX));
+    m_halfwayReached = 0;
     for (StatisticEntry& entry : m_statistics)
     {
-      if (!ReadStatisticEntry(_reader, entry) || SettlementAt(entry.site) == nullptr)
+      if (!ReadStatisticEntry(_reader, entry, _stateVersion) || SettlementAt(entry.site) == nullptr)
       {
         return false;
       }
+      NoteHalfway(entry);
     }
   }
   // A scripted steward commands, as an AI, the team of a settlement; a region of version 9 has none.
@@ -1099,6 +1272,180 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
       if (!ReadScriptedSteward(_reader, steward) ||
           std::ranges::find(m_settlements, steward.team, &Settlement::team) == m_settlements.end() ||
           !MayCommand(steward.id, steward.team, true))
+      {
+        return false;
+      }
+    }
+  }
+  // A grievance is held by one settlement against another, in the region's order, one for each cause and subject; a
+  // region before version 11 has none (MVP-095).
+  m_grievances.clear();
+  if (_stateVersion >= STATE_VERSION_WITH_GRIEVANCES)
+  {
+    m_grievances.resize(_reader.ReadBounded(GRIEVANCES_MAX));
+    for (std::size_t place = 0; place < m_grievances.size(); ++place)
+    {
+      const Grievance& grievance = m_grievances[place];
+      if (!ReadGrievance(_reader, m_grievances[place]) || SettlementAt(grievance.holder) == nullptr ||
+          SettlementAt(grievance.against) == nullptr ||
+          (place > 0 && std::tuple{m_grievances[place - 1].holder, m_grievances[place - 1].against, m_grievances[place - 1].cause,
+                                   m_grievances[place - 1].subject} >=
+                          std::tuple{grievance.holder, grievance.against, grievance.cause, grievance.subject}))
+      {
+        return false;
+      }
+    }
+  }
+  // A claim is a settled site's, at most one on each area, in the order made; a moved area is held by a settled site of
+  // its pair, in the order of the areas; a region before version 12 has neither (ADR-160).
+  m_claims.clear();
+  m_holdings.clear();
+  if (_stateVersion >= STATE_VERSION_WITH_CLAIMS)
+  {
+    m_claims.resize(_reader.ReadBounded(CLAIMS_MAX));
+    for (std::size_t place = 0; place < m_claims.size(); ++place)
+    {
+      const Claim& claim = m_claims[place];
+      if (!ReadClaim(_reader, m_claims[place]) || SettlementAt(claim.claimant) == nullptr ||
+          (place > 0 && m_claims[place - 1].id >= claim.id) ||
+          std::any_of(m_claims.begin(), m_claims.begin() + static_cast<std::ptrdiff_t>(place),
+                      [&](const Claim& _earlier) { return _earlier.claimant == claim.claimant && _earlier.area == claim.area; }))
+      {
+        return false;
+      }
+    }
+    m_holdings.resize(_reader.ReadBounded(HOLDINGS_MAX));
+    for (std::size_t place = 0; place < m_holdings.size(); ++place)
+    {
+      const AreaHolding& holding = m_holdings[place];
+      if (!ReadAreaHolding(_reader, m_holdings[place]) || SettlementAt(holding.holder) == nullptr ||
+          (place > 0 && m_holdings[place - 1].area >= holding.area) ||
+          (holding.area != CLAIM_AREA_CENTRAL &&
+           (OwnSiteOfArea(holding.area) == holding.holder ||
+            std::ranges::find(VALLEY_PAIRS[PairOfArea(holding.area)], holding.holder) == VALLEY_PAIRS[PairOfArea(holding.area)].end())))
+      {
+        return false;
+      }
+    }
+  }
+  // An expedition is a settled site's, one for each, in the order declared, against another settled site; a battle is an
+  // expedition's, one for each; a result and a respite name settled sites; a region before version 13 has none of them
+  // (ADR-161).
+  m_expeditions.clear();
+  m_battles.clear();
+  m_results.clear();
+  m_respites.clear();
+  if (_stateVersion >= STATE_VERSION_WITH_BATTLES)
+  {
+    m_expeditions.resize(_reader.ReadBounded(EXPEDITIONS_MAX));
+    for (std::size_t place = 0; place < m_expeditions.size(); ++place)
+    {
+      const Expedition& expedition = m_expeditions[place];
+      if (!ReadExpedition(_reader, m_expeditions[place]) || SettlementAt(expedition.attacker) == nullptr ||
+          SettlementAt(expedition.target) == nullptr || (place > 0 && m_expeditions[place - 1].id >= expedition.id) ||
+          std::any_of(m_expeditions.begin(), m_expeditions.begin() + static_cast<std::ptrdiff_t>(place),
+                      [&](const Expedition& _earlier) { return _earlier.attacker == expedition.attacker; }))
+      {
+        return false;
+      }
+    }
+    m_battles.resize(_reader.ReadBounded(BATTLES_MAX));
+    for (Battle& battle : m_battles)
+    {
+      if (!ReadBattle(_reader, battle) || SettlementAt(battle.attacker) == nullptr || SettlementAt(battle.defender) == nullptr ||
+          std::ranges::find(m_expeditions, battle.expedition, &Expedition::id) == m_expeditions.end())
+      {
+        return false;
+      }
+    }
+    m_results.resize(_reader.ReadBounded(BATTLE_RESULTS_MAX));
+    for (BattleResult& result : m_results)
+    {
+      if (!ReadBattleResult(_reader, result) || SettlementAt(result.attacker) == nullptr || SettlementAt(result.defender) == nullptr)
+      {
+        return false;
+      }
+    }
+    m_respites.resize(_reader.ReadBounded(RESPITES_MAX));
+    for (Respite& respite : m_respites)
+    {
+      if (!ReadRespite(_reader, respite) || SettlementAt(respite.site) == nullptr)
+      {
+        return false;
+      }
+    }
+  }
+  // An AI settlement's decisions are its scripted steward's, one for each, sent as it; a region before version 14 makes
+  // them afresh for each AI settlement's steward (ADR-162).
+  m_settlementAis.clear();
+  if (_stateVersion >= STATE_VERSION_WITH_SETTLEMENT_AI)
+  {
+    m_settlementAis.resize(_reader.ReadBounded(SETTLEMENTS_MAX));
+    for (std::size_t place = 0; place < m_settlementAis.size(); ++place)
+    {
+      const SettlementAi& ai = m_settlementAis[place];
+      if (!ReadSettlementAi(_reader, m_settlementAis[place]))
+      {
+        return false;
+      }
+      const auto steward = std::ranges::find(m_scripted, ai.team, &ScriptedSteward::team);
+      const auto settlement = std::ranges::find(m_settlements, ai.team, &Settlement::team);
+      if (steward == m_scripted.end() || settlement == m_settlements.end() || settlement->cladan.temperament == Temperament::None ||
+          ai.defense.id != steward->id || ai.attack.id != steward->id || ai.defense.team != ai.team ||
+          ai.attack.team != ExpeditionTeamOf(settlement->site) ||
+          std::any_of(m_settlementAis.begin(), m_settlementAis.begin() + static_cast<std::ptrdiff_t>(place),
+                      [&](const SettlementAi& _earlier) { return _earlier.team == ai.team; }))
+      {
+        return false;
+      }
+    }
+  }
+  else
+  {
+    for (const ScriptedSteward& steward : m_scripted)
+    {
+      const auto settlement = std::ranges::find(m_settlements, steward.team, &Settlement::team);
+      if (settlement->cladan.temperament != Temperament::None)
+      {
+        m_settlementAis.push_back(MakeSettlementAi(steward, ExpeditionTeamOf(settlement->site)));
+      }
+    }
+  }
+  // A settlement's renown is its own, one for each in the settlements' order; a region before version 15 starts its
+  // settlements' renown at none (ADR-163).
+  m_renown.clear();
+  if (_stateVersion >= STATE_VERSION_WITH_RENOWN)
+  {
+    m_renown.resize(_reader.ReadBounded(SETTLEMENTS_MAX));
+    if (m_renown.size() != m_settlements.size())
+    {
+      return false;
+    }
+    for (std::size_t place = 0; place < m_renown.size(); ++place)
+    {
+      if (!ReadSettlementRenown(_reader, m_renown[place]) || m_renown[place].site != m_settlements[place].site)
+      {
+        return false;
+      }
+    }
+  }
+  else
+  {
+    for (const Settlement& settlement : m_settlements)
+    {
+      m_renown.push_back({settlement.site, 0, 0, 0, 0});
+    }
+  }
+  // O102 (DEC-1008): an area's last claim ended no later than the region's tick, one for each area, in the order of the
+  // areas; a region before version 16 has none, so no area cools down.
+  m_claimEnds.clear();
+  if (_stateVersion >= STATE_VERSION_WITH_CLAIM_COOLDOWN)
+  {
+    m_claimEnds.resize(_reader.ReadBounded(HOLDINGS_MAX));
+    for (std::size_t place = 0; place < m_claimEnds.size(); ++place)
+    {
+      if (!ReadClaimEnd(_reader, m_claimEnds[place]) || m_claimEnds[place].tick > m_nextTick ||
+          (place > 0 && m_claimEnds[place - 1].area >= m_claimEnds[place].area))
       {
         return false;
       }

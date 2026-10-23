@@ -39,6 +39,7 @@ public:
     bool watched = false;                          // O77: the AI commands the sandbox's sides or the world's settlement (ADR-140)
     std::uint32_t syntheticFigures = 0;            // ADR-126: the sandbox's sides are a synthetic battle of this many figures
     std::optional<std::uint8_t> stewardSite;       // MVP-012: a new world that is no sandbox has the steward's settlement here
+    std::uint8_t aiSettlements = 0;                // MVP-013 (ADR-157, O103): a new world's AI settlements, the steward's choice
     std::filesystem::path snapshotFolder;          // MVP-075 (ADR-137): where the world is saved and continued; none: never
     bool restoreOnly = false;                      // ADR-155: the world in snapshotFolder is continued, or the server does not start
   };

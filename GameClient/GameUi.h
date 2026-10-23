@@ -15,7 +15,7 @@
 namespace Species
 {
 
-// The client's pages (ADR-149), and the front end's of T18 (ADR-155).
+// The client's pages (ADR-149), the front end's of T18 (ADR-155), and the world's menu and epilogue (ADR-170).
 enum class GamePage : Neuron::UiPageId
 {
   None = 0,
@@ -25,10 +25,14 @@ enum class GamePage : Neuron::UiPageId
 #endif
   FrontEndMain = 16, // MVP-103's page, the front end's root
   FrontEndNewWorld,
-  FrontEndOptions
+  FrontEndOptions,
+  FrontEndPastRuns, // ADR-170: the ended worlds whose epilogues open
+  WorldMenu = 32,   // ADR-170: the world's menu, its screen's root
+  WorldEpilogue     // MVP-063's epilogue
 };
 
 class FrontEnd;
+class WorldMenu;
 
 /// The client's UI (ADR-030 to ADR-033 at M2, ADR-149): the UI core with the game's pages, the page family's look from the
 /// presentation record, and its input from the router's menu and pointer actions. It is updated before the camera and
@@ -49,6 +53,11 @@ public:
   // _page pushed over its main page; and the screen closed, as a world starts.
   void OpenFrontEnd(FrontEnd& _frontEnd, GamePage _page = GamePage::FrontEndMain);
   void CloseFrontEnd();
+  // ADR-170: the world's menu while a world runs, none once it ends; the close action opens it over the world. Its screen
+  // opens with _page pushed over the menu, and closes as the steward returns to the world.
+  void AttachWorldMenu(WorldMenu* _menu);
+  void OpenWorldMenu(GamePage _page = GamePage::WorldMenu);
+  void CloseWorldMenu();
   // The frame's update (UI-352) from _router's actions, laid out for a client area of _client at _dpiScale; while a
   // window has the focus, the world's camera and verb actions are suppressed for the rest of the frame.
   void Update(Neuron::InputRouter& _router, Neuron::SizePx _client, float _dpiScale, bool _windowFocused);
@@ -73,6 +82,7 @@ private:
   std::optional<double> m_textScale;
   bool m_pointerHeld = false;
   FrontEnd* m_frontEnd = nullptr;
+  WorldMenu* m_worldMenu = nullptr;
 };
 
 } // namespace Species

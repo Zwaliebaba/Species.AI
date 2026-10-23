@@ -39,7 +39,21 @@ enum class GameMessageType : Neuron::MessageTypeId
   ReadSettlementStatus,
   SettlementStatus,
   // A guaranteed event for the HUD's notifications, on the reliable channel (M2 task T11, ADR-139).
-  SettlementNotice
+  SettlementNotice,
+  // The relations' commands (M3 task T5, ADR-160).
+  MakeClaim,
+  WithdrawClaim,
+  SendTribute,
+  // The attacks (M3 task T6, ADR-161).
+  DeclareAttack,
+  WithdrawAttack,
+  // The valley's status and the battle results (M3 task T10, ADR-165).
+  ReadValleyStatus,
+  ValleyStatus,
+  BattleResultNotice,
+  // The run's epilogue (M3 task T14, ADR-169).
+  ReadEpilogue,
+  Epilogue
 };
 
 [[nodiscard]] constexpr Neuron::MessageTypeId TypeIdOf(GameMessageType _type) noexcept

@@ -41,6 +41,17 @@ enum class UiImage : std::uint16_t
   IconWorkers,           // icon.power.workers: the Workers and the population limit
   IconTurret,            // icon.power.gun_turret: the turret on the construction bar
   ArrowPointer,          // cursor.pointer: the arrows of HUD lists (UI-465), pointing down; the priorities' arrows (ADR-153)
+  // ADR-166: M3's HUD icons (the MVP assets' HUD rows).
+  IconContact,  // icon.hud.contact: contact, and the territory-pressure cause
+  IconClaim,    // icon.hud.claim: claims and the claim cause
+  IconAttack,   // icon.hud.attack: attacks, the warning and the attack cause
+  IconBattle,   // icon.hud.battle: a battle's start and end
+  IconTribute,  // icon.hud.tribute: tribute
+  IconWithdraw, // icon.hud.withdraw: a withdrawn claim or expedition
+  IconRespite,  // icon.hud.respite: a settlement under a respite
+  IconRenown,   // icon.hud.renown: the renown standing
+  IconRunClock, // icon.hud.run_clock: the run's time left and its quiet minutes
+  ResultCard,   // icon.hud.result_card: the frame of a battle's result
   Count
 };
 

@@ -1897,12 +1897,22 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "s of real time",
                   "x-species-presence": "required"
+                },
+                "audio_update_period": {
+                  "type": "number",
+                  "description": "ref.sim.frame.audio_update_period (R-SIM-570)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "s of real time",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
                 "fps_window",
                 "fps_initial",
-                "delta_clamp"
+                "delta_clamp",
+                "audio_update_period"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -4202,6 +4212,248 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "aud": {
+          "type": "object",
+          "description": "the ref.aud.* keys",
+          "properties": {
+            "bus": {
+              "type": "object",
+              "description": "the ref.aud.bus.* keys",
+              "properties": {
+                "ui": {
+                  "type": "object",
+                  "description": "the ref.aud.bus.ui.* keys",
+                  "properties": {
+                    "level": {
+                      "type": "number",
+                      "description": "ref.aud.bus.ui.level (R-AUD-221)",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "dB",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "level"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "announcer": {
+                  "type": "object",
+                  "description": "the ref.aud.bus.announcer.* keys",
+                  "properties": {
+                    "level": {
+                      "type": "number",
+                      "description": "ref.aud.bus.announcer.level (R-AUD-221)",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "dB",
+                      "x-species-presence": "required"
+                    },
+                    "duck_world_db": {
+                      "type": "number",
+                      "description": "ref.aud.bus.announcer.duck_world_db (R-AUD-221, AEN-216)",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "dB",
+                      "x-species-presence": "required"
+                    },
+                    "duck_time": {
+                      "type": "number",
+                      "description": "ref.aud.bus.announcer.duck_time (R-AUD-221, AEN-216)",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "s of audio time",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "level",
+                    "duck_world_db",
+                    "duck_time"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "voice": {
+                  "type": "object",
+                  "description": "the ref.aud.bus.voice.* keys",
+                  "properties": {
+                    "level": {
+                      "type": "number",
+                      "description": "ref.aud.bus.voice.level (R-AUD-221)",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "dB",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "level"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "world": {
+                  "type": "object",
+                  "description": "the ref.aud.bus.world.* keys",
+                  "properties": {
+                    "level": {
+                      "type": "number",
+                      "description": "ref.aud.bus.world.level (R-AUD-221)",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "dB",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "level"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "ambience": {
+                  "type": "object",
+                  "description": "the ref.aud.bus.ambience.* keys",
+                  "properties": {
+                    "level": {
+                      "type": "number",
+                      "description": "ref.aud.bus.ambience.level (R-AUD-221)",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "dB",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "level"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "music": {
+                  "type": "object",
+                  "description": "the ref.aud.bus.music.* keys",
+                  "properties": {
+                    "level": {
+                      "type": "number",
+                      "description": "ref.aud.bus.music.level (R-AUD-221)",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "dB",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "level"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "ui",
+                "announcer",
+                "voice",
+                "world",
+                "ambience",
+                "music"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "mix": {
+              "type": "object",
+              "description": "the ref.aud.mix.* keys",
+              "properties": {
+                "floor_db": {
+                  "type": "number",
+                  "description": "ref.aud.mix.floor_db (R-AUD-225)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "dB",
+                  "x-species-presence": "required"
+                },
+                "master_step_db": {
+                  "type": "number",
+                  "description": "ref.aud.mix.master_step_db (R-AUD-225)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "dB per step",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "floor_db",
+                "master_step_db"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "rank": {
+              "type": "object",
+              "description": "the ref.aud.rank.* keys",
+              "properties": {
+                "copy_decay": {
+                  "type": "number",
+                  "description": "ref.aud.rank.copy_decay (R-AUD-216, AEN-141)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times per louder copy",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "copy_decay"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "layer": {
+              "type": "object",
+              "description": "the ref.aud.layer.* keys",
+              "properties": {
+                "one_shot_patience_updates": {
+                  "type": "integer",
+                  "description": "ref.aud.layer.one_shot_patience_updates (R-AUD-061, AEN-146)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "audio updates",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "one_shot_patience_updates"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "bus",
+            "mix",
+            "rank",
+            "layer"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
@@ -4210,7 +4462,8 @@
         "unit",
         "bldg",
         "weapon",
-        "meta"
+        "meta",
+        "aud"
       ],
       "additionalProperties": false,
       "x-species-type": "object",
@@ -5432,6 +5685,23 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "fraction",
               "x-species-presence": "required"
+            },
+            "relations_rows_max": {
+              "type": "integer",
+              "description": "mvp.hud.relations_rows_max (MVP-102)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "rows",
+              "x-species-presence": "required"
+            },
+            "result_width": {
+              "type": "number",
+              "description": "mvp.hud.result_width (MVP-048)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "HUD units",
+              "x-species-presence": "required"
             }
           },
           "required": [
@@ -5453,7 +5723,177 @@
             "queue_size",
             "palette",
             "priority_step",
-            "disabled_alpha"
+            "disabled_alpha",
+            "relations_rows_max",
+            "result_width"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "sound": {
+          "type": "object",
+          "description": "the mvp.sound.* keys",
+          "properties": {
+            "min_distance": {
+              "type": "number",
+              "description": "mvp.sound.min_distance (MVP-087, DEC-1009)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "laser_shot": {
+              "type": "object",
+              "description": "the mvp.sound.laser_shot.* keys",
+              "properties": {
+                "level_db": {
+                  "type": "number",
+                  "description": "mvp.sound.laser_shot.level_db (MVP-087, DEC-1009)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "dB",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "level_db"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "death": {
+              "type": "object",
+              "description": "the mvp.sound.death.* keys",
+              "properties": {
+                "level_db": {
+                  "type": "number",
+                  "description": "mvp.sound.death.level_db (MVP-087, DEC-1009)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "dB",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "level_db"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "orb_becomes_worker": {
+              "type": "object",
+              "description": "the mvp.sound.orb_becomes_worker.* keys",
+              "properties": {
+                "level_db": {
+                  "type": "number",
+                  "description": "mvp.sound.orb_becomes_worker.level_db (MVP-087, DEC-1009)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "dB",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "level_db"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "structure_completed": {
+              "type": "object",
+              "description": "the mvp.sound.structure_completed.* keys",
+              "properties": {
+                "level_db": {
+                  "type": "number",
+                  "description": "mvp.sound.structure_completed.level_db (MVP-087, DEC-1009)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "dB",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "level_db"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "attack_warning": {
+              "type": "object",
+              "description": "the mvp.sound.attack_warning.* keys",
+              "properties": {
+                "level_db": {
+                  "type": "number",
+                  "description": "mvp.sound.attack_warning.level_db (MVP-087, DEC-1009)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "dB",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "level_db"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "battle_started": {
+              "type": "object",
+              "description": "the mvp.sound.battle_started.* keys",
+              "properties": {
+                "level_db": {
+                  "type": "number",
+                  "description": "mvp.sound.battle_started.level_db (MVP-087, DEC-1009)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "dB",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "level_db"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "battle_ended": {
+              "type": "object",
+              "description": "the mvp.sound.battle_ended.* keys",
+              "properties": {
+                "level_db": {
+                  "type": "number",
+                  "description": "mvp.sound.battle_ended.level_db (MVP-087, DEC-1009)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "dB",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "level_db"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "min_distance",
+            "laser_shot",
+            "death",
+            "orb_becomes_worker",
+            "structure_completed",
+            "attack_warning",
+            "battle_started",
+            "battle_ended"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -5471,7 +5911,8 @@
         "territory_line",
         "border_mark",
         "view_fog",
-        "hud"
+        "hud",
+        "sound"
       ],
       "additionalProperties": false,
       "x-species-type": "object",
@@ -9421,6 +9862,352 @@
       "additionalProperties": false,
       "x-species-type": "object",
       "x-species-presence": "required"
+    },
+    "aen": {
+      "type": "object",
+      "description": "the aen.* keys",
+      "properties": {
+        "update": {
+          "type": "object",
+          "description": "the aen.update.* keys",
+          "properties": {
+            "period": {
+              "type": "number",
+              "description": "aen.update.period (AEN-120, AEN-148)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "s of audio time",
+              "x-species-presence": "required"
+            },
+            "schedule_latency": {
+              "type": "number",
+              "description": "aen.update.schedule_latency (AEN-024)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "s of audio time",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "period",
+            "schedule_latency"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "queue": {
+          "type": "object",
+          "description": "the aen.queue.* keys",
+          "properties": {
+            "command_capacity": {
+              "type": "integer",
+              "description": "aen.queue.command_capacity (AEN-020)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "commands",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "command_capacity"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "instances": {
+          "type": "object",
+          "description": "the aen.instances.* keys",
+          "properties": {
+            "capacity": {
+              "type": "integer",
+              "description": "aen.instances.capacity (AEN-300)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "instances",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "capacity"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "voice": {
+          "type": "object",
+          "description": "the aen.voice.* keys",
+          "properties": {
+            "budget": {
+              "type": "integer",
+              "description": "aen.voice.budget (AEN-142, AEN-143)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "voices",
+              "x-species-presence": "required"
+            },
+            "pool_headroom": {
+              "type": "integer",
+              "description": "aen.voice.pool_headroom (AEN-142)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "voices",
+              "x-species-presence": "required"
+            },
+            "bus_cap": {
+              "type": "object",
+              "description": "the aen.voice.bus_cap.* keys",
+              "properties": {
+                "ui": {
+                  "type": "integer",
+                  "description": "aen.voice.bus_cap.ui (AEN-143)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "voices",
+                  "x-species-presence": "required"
+                },
+                "announcer": {
+                  "type": "integer",
+                  "description": "aen.voice.bus_cap.announcer (AEN-143)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "voices",
+                  "x-species-presence": "required"
+                },
+                "voice": {
+                  "type": "integer",
+                  "description": "aen.voice.bus_cap.voice (AEN-143)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "voices",
+                  "x-species-presence": "required"
+                },
+                "world": {
+                  "type": "integer",
+                  "description": "aen.voice.bus_cap.world (AEN-143)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "voices",
+                  "x-species-presence": "required"
+                },
+                "ambience": {
+                  "type": "integer",
+                  "description": "aen.voice.bus_cap.ambience (AEN-143)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "voices",
+                  "x-species-presence": "required"
+                },
+                "music": {
+                  "type": "integer",
+                  "description": "aen.voice.bus_cap.music (AEN-143, AEN-361)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "voices",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "ui",
+                "announcer",
+                "voice",
+                "world",
+                "ambience",
+                "music"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "event_cap": {
+              "type": "object",
+              "description": "the aen.voice.event_cap.* keys",
+              "properties": {
+                "world_default": {
+                  "type": "integer",
+                  "description": "aen.voice.event_cap.world_default (AEN-143)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "voices",
+                  "x-species-presence": "required"
+                },
+                "world_max": {
+                  "type": "integer",
+                  "description": "aen.voice.event_cap.world_max (AEN-143)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "voices",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "world_default",
+                "world_max"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "steal_margin_db": {
+              "type": "number",
+              "description": "aen.voice.steal_margin_db (AEN-145)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "dB",
+              "x-species-presence": "required"
+            },
+            "state_hold": {
+              "type": "number",
+              "description": "aen.voice.state_hold (AEN-145)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "s of audio time",
+              "x-species-presence": "required"
+            },
+            "steal_fade": {
+              "type": "number",
+              "description": "aen.voice.steal_fade (AEN-145, AEN-149)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "s of audio time",
+              "x-species-presence": "required"
+            },
+            "max_frequency_ratio": {
+              "type": "number",
+              "description": "aen.voice.max_frequency_ratio (AEN-142)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "budget",
+            "pool_headroom",
+            "bus_cap",
+            "event_cap",
+            "steal_margin_db",
+            "state_hold",
+            "steal_fade",
+            "max_frequency_ratio"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "mix": {
+          "type": "object",
+          "description": "the aen.mix.* keys",
+          "properties": {
+            "limiter": {
+              "type": "object",
+              "description": "the aen.mix.limiter.* keys",
+              "properties": {
+                "release": {
+                  "type": "integer",
+                  "description": "aen.mix.limiter.release (AEN-220)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "FXMasteringLimiter release, 1 to 20",
+                  "x-species-presence": "required"
+                },
+                "loudness": {
+                  "type": "integer",
+                  "description": "aen.mix.limiter.loudness (AEN-220)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "FXMasteringLimiter loudness, 1 to 1800",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "release",
+                "loudness"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "limiter"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "spatial": {
+          "type": "object",
+          "description": "the aen.spatial.* keys",
+          "properties": {
+            "max_distance_default": {
+              "type": "number",
+              "description": "aen.spatial.max_distance_default (AEN-062, AEN-202)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "max_distance_fade_fraction": {
+              "type": "number",
+              "description": "aen.spatial.max_distance_fade_fraction (AEN-202)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "0 to 1",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "max_distance_default",
+            "max_distance_fade_fraction"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "rng": {
+          "type": "object",
+          "description": "the aen.rng.* keys",
+          "properties": {
+            "match_seed": {
+              "type": "integer",
+              "description": "aen.rng.match_seed (AEN-004)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "seed",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "match_seed"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        }
+      },
+      "required": [
+        "update",
+        "queue",
+        "instances",
+        "voice",
+        "mix",
+        "spatial",
+        "rng"
+      ],
+      "additionalProperties": false,
+      "x-species-type": "object",
+      "x-species-presence": "required"
     }
   },
   "required": [
@@ -9434,7 +10221,8 @@
     "cam",
     "vfx",
     "ui",
-    "inp"
+    "inp",
+    "aen"
   ],
   "additionalProperties": false
 }

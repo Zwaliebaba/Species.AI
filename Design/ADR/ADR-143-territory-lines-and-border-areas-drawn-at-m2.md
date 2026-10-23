@@ -118,3 +118,4 @@ Chosen options: 1 and 4.
 * The rules: MVP-013, MVP-053, MVP-084, MVP-090; WLD-060, WLD-062, WLD-063, WLD-241, WLD-242; RND-306, RND-339, RND-355.
 * Owner decision O90; DEC-1002.
 * The code: `GameClient/TerritoryLook`, `CrowdLook` (the texture), `WorldPresentation`; `GameShared/RegionTerrain.h` (`VALLEY_PAIRS`); the presentation record's `mvp.territory_line.*` and `mvp.border_mark.*`.
+* **Amendment 2026-10-23 (M3 task T11, [ADR-166](ADR-166-the-relations-panel-and-the-notifications-of-m3.md)).** Each spot on a half's edge knows its area, and takes its claimant's colour while a claim on it stands, else its holder's from the valley's status, else the neutral mark's; the halfway line stays neutral.

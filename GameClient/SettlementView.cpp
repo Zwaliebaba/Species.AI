@@ -57,14 +57,15 @@ std::shared_ptr<const Neuron::CursorImages> LoadCursorImages(const Neuron::Loose
 
 std::optional<StableId> LeaderUnderRay(std::span<const InterpolatedFigure> _figures, std::uint8_t _ownTeam, const Neuron::Ray& _ray,
                                        const Neuron::FrameView& _frame, Neuron::SizePx _view, const TuningPresentation& _presentation,
-                                       double _scaleFactor)
+                                       double _scaleFactor, std::optional<std::uint8_t> _expeditionTeam)
 {
   const TuningPresentation::Ref::Unit& unit = _presentation.ref.unit;
   std::optional<StableId> best;
   double bestScore = std::numeric_limits<double>::infinity();
   for (const InterpolatedFigure& figure : _figures)
   {
-    if (figure.state.dead || figure.state.kind != FigureKind::Leader || figure.state.team != _ownTeam)
+    if (figure.state.dead || figure.state.kind != FigureKind::Leader ||
+        (figure.state.team != _ownTeam && std::optional<std::uint8_t>(figure.state.team) != _expeditionTeam))
     {
       continue;
     }
@@ -92,6 +93,27 @@ std::optional<StableId> LeaderUnderRay(std::span<const InterpolatedFigure> _figu
     }
   }
   return best;
+}
+
+std::uint8_t BattleTeamOf(std::span<const InterpolatedFigure> _figures, std::uint8_t _team, std::uint8_t _expeditionTeam,
+                          std::uint8_t _current, std::optional<StableId> _pressed) noexcept
+{
+  const auto living = [_expeditionTeam](const InterpolatedFigure& _figure)
+  { return _figure.state.team == _expeditionTeam && !_figure.state.dead; };
+  if (std::ranges::none_of(_figures, living))
+  {
+    return _team;
+  }
+  if (_pressed.has_value())
+  {
+    const auto pressed = std::ranges::find(_figures, *_pressed, &InterpolatedFigure::id);
+    if (pressed != _figures.end() && pressed->state.kind == FigureKind::Leader &&
+        (pressed->state.team == _team || pressed->state.team == _expeditionTeam))
+    {
+      return pressed->state.team;
+    }
+  }
+  return _current == _expeditionTeam ? _expeditionTeam : _team;
 }
 
 Neuron::CursorQuad CursorAt(CursorKind _kind, Neuron::PointPx _pointer, const TuningPresentation& _presentation) noexcept
@@ -206,6 +228,9 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
     m_settlement.Reset();
     m_preview.Reset();
     m_markers.Clear();
+    m_battleTeam.reset();
+    m_fields.clear();
+    m_targets.clear();
 #if ENGINE_DEVELOPMENT
     m_scriptStep = 0;
 #endif
@@ -226,11 +251,25 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
   }
   m_pointer = _router.Pointer().positionPixels;
   m_viewSize = _view;
-  // WLD-244 (ADR-142): the steward's areas from the territory the replica holds; a sandbox has none.
+  // WLD-244 (ADR-142): the steward's areas from the territory the replica holds; a sandbox has none. From M3 (ADR-167)
+  // the battlefield of each battle its settlement is a side of joins them while the valley status lists it.
   const std::optional<std::uint8_t> ownTeam = _session.CommandedTeam();
+  const std::optional<ValleyStatus>& valley = _session.LatestValleyStatus();
+  m_fields.clear();
+  if (valley.has_value())
+  {
+    for (const BattleLine& battle : valley->battles)
+    {
+      if (battle.side)
+      {
+        const Neuron::Vec3 center = PositionOf(battle.fieldCenter);
+        m_fields.push_back({center.x, center.z, static_cast<double>(battle.fieldRadius) / POSITION_STEPS_PER_UNIT});
+      }
+    }
+  }
   if (terrain != nullptr)
   {
-    m_areas.Update(_session.Replica().Latest(), ownTeam, terrain->layout, *m_desc.tuning);
+    m_areas.Update(_session.Replica().Latest(), ownTeam, terrain->layout, *m_desc.tuning, m_fields);
   }
   if (m_camera.InWorld() && terrain != nullptr)
   {
@@ -263,7 +302,11 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
       m_camera.UpdatePointerGround(m_pointer, _view, terrain->field);
     }
   }
-  // The hover over the client's own Leaders (R-CTRL-055), and the cursor it gives.
+  // The hover over the client's own Leaders (R-CTRL-055), and from M3 its expedition's (ADR-167), and the cursor it gives.
+  const PlacementView placement =
+    PlacementViewOf(_session.Replica().Latest(), m_camera.InWorld() ? ownTeam : std::nullopt, _session.LatestStatus());
+  const std::optional<std::uint8_t> expeditionTeam =
+    placement.settlement.has_value() ? std::optional<std::uint8_t>(ExpeditionTeamOf(placement.settlement->site)) : std::nullopt;
   m_hovered.reset();
   std::vector<InterpolatedFigure> figures;
   if (m_camera.InWorld() && ownTeam.has_value())
@@ -272,14 +315,15 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
     const Neuron::Ray ray = Neuron::PickRayAt(static_cast<double>(m_pointer.x), static_cast<double>(m_pointer.y), frame, _view,
                                               m_desc.presentation->cam.pick.rowOffset);
     figures = InterpolateFigures(_session.Replica(), _session.InterpolationFraction());
-    m_hovered = LeaderUnderRay(figures, *ownTeam, ray, frame, _view, *m_desc.presentation, m_desc.workerScaleFactor);
+    m_hovered = LeaderUnderRay(figures, *ownTeam, ray, frame, _view, *m_desc.presentation, m_desc.workerScaleFactor, expeditionTeam);
   }
   // ADR-119 (O76): unavailable while the pointer's ray misses the terrain or its ground point lies outside the region.
   const auto& ground = m_camera.PointerGround();
   const bool onRegion = ground.has_value() && ground->onTerrain && ground->position.x >= m_region.minX &&
                         ground->position.x <= m_region.maxX && ground->position.z >= m_region.minZ && ground->position.z <= m_region.maxZ;
   // M1 task T17 (ADR-124): the battle verbs follow the camera (R-CTRL-020 step 8), with the outcomes of their commands.
-  for (const CommandReport& report : _session.TakeReports())
+  m_reports = _session.TakeReports();
+  for (const CommandReport& report : m_reports)
   {
     m_verbs.Reported(report);
     m_settlement.Reported(report);
@@ -320,7 +364,20 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
   {
     settlementFrame.hudZone = _hud->ZoneAt(m_pointer);
   }
-  const PlacementView placement = PlacementViewOf(_session.Replica().Latest(), verbTeam, _session.LatestStatus());
+  // M3 task T12 (ADR-167): the conflict verbs read the relations rows of the HUD's last layout, which its buttons' zones
+  // index, the valley status, and the Leaders that would lead an expedition.
+  if (_hud != nullptr)
+  {
+    settlementFrame.relations = _hud->RelationRows();
+  }
+  if (placement.settlement.has_value() && verbTeam.has_value())
+  {
+    ConflictView& conflict = settlementFrame.conflict;
+    conflict.valley = valley;
+    conflict.site = placement.settlement->site;
+    conflict.leaders = ExpeditionLeadersOf(_session.Replica().Latest(), *verbTeam, m_verbs.SelectedLeader());
+    conflict.storesMilliRu = static_cast<std::int64_t>(placement.settlement->storesMilliRu);
+  }
   const SettlementVerbResult settled = m_settlement.Update(settlementFrame, verbTeam, placement, m_areas);
   verbs.controls.primaryDown = verbs.controls.primaryDown && !settled.tookPrimary;
   verbs.controls.secondaryDown = verbs.controls.secondaryDown && !settled.tookSecondary;
@@ -333,6 +390,19 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
       m_settlement.Sent(*sequence, command);
     }
   }
+  // MVP-049 (ADR-167): the battle verbs command the expedition's team from a press on one of its Leaders, and the
+  // settlement's again from a press on one of its own or at the expedition's end; a change drops the verbs' state.
+  std::optional<std::uint8_t> battleTeam = verbTeam;
+  if (verbTeam.has_value() && expeditionTeam.has_value())
+  {
+    const std::optional<StableId> pressed = verbs.controls.primaryDown ? verbs.leaderUnderPointer : std::nullopt;
+    battleTeam = BattleTeamOf(figures, *verbTeam, *expeditionTeam, m_battleTeam.value_or(*verbTeam), pressed);
+  }
+  if (battleTeam != m_battleTeam && m_battleTeam.has_value())
+  {
+    m_verbs.Reset();
+  }
+  m_battleTeam = battleTeam;
 #if ENGINE_DEVELOPMENT
   if (m_desc.scriptedVerbs && verbTeam.has_value())
   {
@@ -347,7 +417,7 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
   }
 #endif
   bool ordered = false;
-  for (const BattleCommand& command : m_verbs.Update(verbs, verbTeam, _session.Replica(), figures))
+  for (const BattleCommand& command : m_verbs.Update(verbs, battleTeam, _session.Replica(), figures))
   {
     const std::optional<std::uint64_t> sequence =
       std::visit([&_session](const auto& _command) { return _session.SendCommand(_command); }, command);
@@ -370,7 +440,7 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
   m_selectedWorkers = 0;
   if (verbTeam.has_value())
   {
-    const std::uint8_t team = verbTeam.value_or(0);
+    const std::uint8_t team = battleTeam.value_or(0);
     // ADR-153: no route is previewed while placing or with the pointer over the HUD, where no press orders.
     VerbFrame previewFrame = verbs;
     if (m_settlement.Placing().has_value() || settlementFrame.hudZone.has_value())
@@ -385,6 +455,15 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
     markers.size = _view;
     markers.pointer = m_pointer;
     markers.realStepSeconds = _dtSeconds;
+    // M3 task T12 (ADR-167): its expedition's Leaders, away under the fog or not, and the attacks' and claims' markers.
+    markers.expeditionTeam = expeditionTeam;
+    markers.areas = &m_areas;
+    m_targets.clear();
+    if (valley.has_value() && placement.settlement.has_value() && terrain != nullptr)
+    {
+      m_targets = ConflictTargetsOf(*valley, placement.settlement->site, _session.Replica().Latest(), *terrain, *m_desc.tuning);
+    }
+    markers.targets = m_targets;
     m_markers.Update(figures, verbTeam, m_verbs.SelectedLeader(), markers);
     m_badge = CursorBadge(m_verbs.LeaderSelected(), m_verbs.WorkersSelected(), team, m_pointer, _view, *m_desc.presentation);
     m_badgeCount = BadgeCount(m_badge, !m_verbs.LeaderSelected() && m_verbs.WorkersSelected() ? m_selectedWorkers : 0);

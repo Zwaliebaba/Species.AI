@@ -9,6 +9,7 @@
 #include <optional>
 #include <utility>
 #include <variant>
+#include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -155,6 +156,34 @@ public:
     areas.Clear();
     Assert::AreEqual(std::uint64_t{3}, areas.Revision(), L"forgotten");
     Assert::IsFalse(areas.Known());
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Wld244ABattlefieldJoinsTheAreasForItsBattle)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"WLD-244")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Wld244ABattlefieldJoinsTheAreasForItsBattle)
+  {
+    // ADR-167: a battlefield far beyond the margin joins the areas while it is given, its cells those whose centres lie
+    // within its radius of its centre; the areas are rebuilt when the fields change, and lose it when it ends.
+    Species::StewardAreas areas;
+    const Species::StateReplica::View replica = Replica(TEAM, {{100, 120}});
+    areas.Update(replica, TEAM, Layout(), CommittedTuning());
+    const double fieldX = CenterX(200);
+    const double fieldZ = CenterZ(200);
+    Assert::IsFalse(areas.Contains(fieldX, fieldZ), L"far from the territory");
+    const std::vector<Species::StewardAreas::Field> fields{{fieldX, fieldZ, 300.0}};
+    areas.Update(replica, TEAM, Layout(), CommittedTuning(), fields);
+    Assert::AreEqual(std::uint64_t{2}, areas.Revision(), L"rebuilt for the battlefield");
+    Assert::IsTrue(areas.Contains(fieldX, fieldZ), L"its centre");
+    Assert::IsTrue(areas.Contains(fieldX + 290.0, fieldZ), L"within its radius");
+    Assert::IsFalse(areas.Contains(fieldX + 320.0, fieldZ), L"beyond its radius");
+    Assert::IsFalse(areas.InTerritory(fieldX, fieldZ), L"in the areas, not the territory");
+    Assert::IsTrue(areas.Contains(CenterX(100) + MARGIN, CenterZ(120)), L"the territory's margin stays");
+    areas.Update(replica, TEAM, Layout(), CommittedTuning(), fields);
+    Assert::AreEqual(std::uint64_t{2}, areas.Revision(), L"the same fields");
+    areas.Update(replica, TEAM, Layout(), CommittedTuning());
+    Assert::AreEqual(std::uint64_t{3}, areas.Revision(), L"rebuilt when the battle ends");
+    Assert::IsFalse(areas.Contains(fieldX, fieldZ), L"and the battlefield is gone");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Adr142APointOutsideGoesToTheNearestCellOfTheAreas)

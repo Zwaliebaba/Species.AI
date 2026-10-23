@@ -262,7 +262,40 @@ void WorldPresentation::UpdateHud(ClientSession& _session, const SettlementView&
 {
   const double seconds = std::chrono::duration<double>(m_desc.clock->Now() - m_start).count();
   m_hud->Update(_session, seconds, UiMetricsOf(*m_desc.presentation, _client, _dpiScale, m_desc.display.uiScale, m_desc.display.textScale),
-                _view.Settlement().ForHud());
+                _view.Settlement().ForHud(), _view.Markers().IconPlaces());
+  // ADR-173: the warning of an attack and a battle's start and end, two-dimensional, as their notices arrive.
+  if (m_desc.audio != nullptr)
+  {
+    std::vector<SoundCue> cues;
+    for (const SettlementNotice& notice : m_hud->Arrived())
+    {
+      if (const std::optional<SoundCue> cue = CueOf(notice); cue.has_value())
+      {
+        cues.push_back(*cue);
+      }
+    }
+    PlayCues(*m_desc.audio, cues);
+  }
+}
+
+void WorldPresentation::LeaveWorld()
+{
+  ClearWorld();
+  m_hud = std::make_unique<SettlementHud>(*m_desc.presentation, *m_desc.tuning);
+}
+
+void WorldPresentation::ClearWorld()
+{
+  m_terrain = nullptr;
+  m_world.reset();
+  m_firstDisplayTick.reset();
+  m_leaders = LeaderLook{};
+  m_effects.Clear();
+  m_structures.Clear();
+  m_sounds.Clear();
+  m_territories.Clear();
+  m_viewMask.reset();
+  m_viewMaskRevision.reset();
 }
 
 void WorldPresentation::Update(const ClientSession& _session)
@@ -272,16 +305,10 @@ void WorldPresentation::Update(const ClientSession& _session)
   {
     return;
   }
+  ClearWorld();
   m_terrain = terrain;
-  m_firstDisplayTick.reset();
-  m_effects.Clear();
-  m_structures.Clear();
-  m_territories.Clear();
-  m_viewMask.reset();
-  m_viewMaskRevision.reset();
   if (terrain == nullptr)
   {
-    m_world.reset();
     return;
   }
   const Neuron::Nanoseconds before = m_desc.clock->Now();
@@ -324,6 +351,12 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
   }
   // ADR-123: the presentation events are taken every frame, and dropped while no world is drawn.
   const std::vector<ReceivedEvent> events = _session.TakeEvents();
+  // ADR-173: the listener is the camera, before its shake, and the events' sounds play with their draws.
+  if (m_desc.audio != nullptr && m_terrain != nullptr && displayTick.has_value())
+  {
+    static_cast<void>(m_desc.audio->SetListener(ListenerOf(inputs.camera)));
+    PlayCues(*m_desc.audio, m_sounds.Due(events, *displayTick));
+  }
   // M1 task T16 (ADR-121): the crowds, on the presentation clock (VFX-016; no world is held at M1, at game speed 1).
   m_presentationClock.Advance(m_desc.clock->Now(), false, 1.0);
   if (m_terrain != nullptr && m_sceneTextures != nullptr)
@@ -333,7 +366,8 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     crowd.cameraFront = Neuron::ViewDirection(inputs.camera);
     crowd.scaledSeconds = m_presentationClock.ScaledSeconds();
     crowd.unscaledSeconds = m_presentationClock.UnscaledSeconds();
-    crowd.localTeam = _session.CommandedTeam();
+    // ADR-167: the team the battle verbs command, the settlement's or its expedition's, shows its selection.
+    crowd.localTeam = _view.BattleTeam().has_value() ? _view.BattleTeam() : _session.CommandedTeam();
     crowd.entityDetail = m_desc.display.entityDetail;
     crowd.workerScaleFactor = m_desc.display.workerScaleFactor;
     const double fraction = _session.InterpolationFraction();
@@ -408,6 +442,7 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     AppendOrbBatches(orbs, *m_desc.presentation, inputs.quadBatches);
     // M2 task T13 (ADR-143): every settlement's territory line and the border areas' spots, in pass 10a.
     m_territories.Update(_session.Replica().Latest(), *m_terrain);
+    m_territories.SetValley(_session.LatestValleyStatus()); // M3 task T11 (ADR-166): the areas' holders and claims
     m_territories.AppendBatches(inputs.quadBatches);
     // M1 task T17b (ADR-125): the route preview in pass 12, the world markers in pass 16 and the badge in pass 20, its
     // count in the UI's batches of pass 20 (ADR-145).

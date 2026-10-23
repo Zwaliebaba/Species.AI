@@ -343,9 +343,9 @@ bool CreateSwapChain(RendererState& _state)
   return true;
 }
 
-// The world frame's pipeline states (RND-061, ADR-113): the entries its passes use, and the final pass's. The size is
-// deduced, so a removed entry never leaves an empty one behind.
-const auto WORLD_PIPELINES = std::to_array<PipelineEntry>({
+// The world frame's pipeline states (RND-061, ADR-113): the entries its passes use, and the final pass's. The count is
+// deduced, so a removed entry leaves no unnamed one behind for the catalog to refuse.
+constexpr auto WORLD_PIPELINES = std::to_array<PipelineEntry>({
   {"sky", g_SkyVS, g_SkyPS, VertexLayout::SkyInstance, BlendState::Additive, DepthState::None, CullState::Back, PipelineTarget::Scene},
   {"terrain", g_TerrainVS, g_TerrainPS, VertexLayout::Terrain, BlendState::Opaque, DepthState::TestWrite, CullState::Back,
    PipelineTarget::Scene},
@@ -1299,8 +1299,10 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
     // No world, or its surfaces still on their way: the background colour (RND-070).
     ENGINE_PROFILE_SCOPE("render.clear");
     const std::array<float, 4> background{_inputs.background[0], _inputs.background[1], _inputs.background[2], 1.0f};
-    const D3D12_RESOURCE_BARRIER toTarget = TransitionBarrier(backBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-    commands->ResourceBarrier(1, &toTarget);
+    // ADR-004, ADR-174: the back buffer's two transitions go through the frame graph's one barrier executor too.
+    const std::array<ID3D12Resource*, 4> resources{nullptr, nullptr, nullptr, backBuffer};
+    constexpr std::array BACK_BUFFER_TO_TARGET{TargetTransition{TARGET_BACK_BUFFER, TargetAccess::Present, TargetAccess::RenderTarget}};
+    Transition(commands, BACK_BUFFER_TO_TARGET, resources);
     commands->ClearRenderTargetView(target, background.data(), 0, nullptr);
     if (!_inputs.overlayText.empty() || !_inputs.overlayRects.empty() || _inputs.cursor || !_inputs.ui.empty() || !_inputs.uiCursor.empty())
     {
@@ -1323,9 +1325,8 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
                                  _inputs.overlayRects);
       state.ui->Record(commands, *state.ring, *state.catalog, state.swapChainSize, _inputs.overlayText);
     }
-    const D3D12_RESOURCE_BARRIER toPresent =
-      TransitionBarrier(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-    commands->ResourceBarrier(1, &toPresent);
+    constexpr std::array BACK_BUFFER_TO_PRESENT{TargetTransition{TARGET_BACK_BUFFER, TargetAccess::RenderTarget, TargetAccess::Present}};
+    Transition(commands, BACK_BUFFER_TO_PRESENT, resources);
   }
   if (timed)
   {
@@ -1381,6 +1382,11 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
 void FrameRenderer::OnDeviceRebuilt(std::function<void()> _listener)
 {
   m_state->rebuiltListeners.push_back(std::move(_listener));
+}
+
+std::uint32_t FrameRenderer::SceneSamples() const noexcept
+{
+  return m_state->targets.has_value() ? m_state->targets->Samples() : 0;
 }
 
 std::uint64_t FrameRenderer::WorldFrames() const noexcept

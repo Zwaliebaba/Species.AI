@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "DevelopmentOverlay.h"
+#include "RelationMessages.h"
 #include "StableId.h"
 #include "StateUpdate.h"
 #include "TestSupport.h"
@@ -108,8 +109,10 @@ public:
     const std::array<float, 4> red = Species::TeamColor(1);
     Assert::AreEqual(1.0f, red[0], 1e-6f);
     Assert::AreEqual(50.0f / 255.0f, red[1], 1e-6f);
-    const std::array<float, 4> pink = Species::TeamColor(7);
-    Assert::AreEqual(150.0f / 255.0f, pink[1], 1e-6f);
+    // ADR-167: an expedition's team, 4 + its site, takes its settlement's colour, so team 7 is site 3's blue.
+    Assert::IsTrue(Species::TeamColor(Species::ExpeditionTeamOf(0)) == green, L"site 0's expedition is green");
+    const std::array<float, 4> blue = Species::TeamColor(Species::ExpeditionTeamOf(3));
+    Assert::AreEqual(180.0f / 255.0f, blue[1], 1e-6f, L"site 3's expedition is blue");
     const std::array<float, 4> beyond = Species::TeamColor(8);
     Assert::IsTrue(beyond == std::array<float, 4>{1.0f, 1.0f, 1.0f, 1.0f}, L"white beyond the player colours");
   }

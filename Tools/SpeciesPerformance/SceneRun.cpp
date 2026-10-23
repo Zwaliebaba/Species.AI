@@ -33,7 +33,7 @@ SceneRun MeasureWorld(std::string _name, Species::WorldSimulation& _world, std::
   for (std::size_t region = 0; region < _world.RegionCount(); ++region)
   {
     const Species::RegionSimulation& simulation = _world.Region(region);
-    run.ais += simulation.Ais().size();
+    run.ais += simulation.Ais().size() + simulation.SettlementAis().size(); // M1's AIs and M3's AI settlements (ADR-164)
     for (std::size_t team = 0; team < simulation.TeamCount(); ++team)
     {
       run.sides += simulation.TeamAt(team).figures.Count() > 0 ? std::size_t{1} : std::size_t{0};

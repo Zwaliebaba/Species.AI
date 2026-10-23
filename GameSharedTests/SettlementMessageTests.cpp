@@ -118,14 +118,14 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp102ANoticeRoundTripsAtItsBound)
   {
-    // ADR-139: a guaranteed event of the HUD's notifications reads back whole at its bound, and one with no subject is
-    // malformed.
-    const Species::SettlementNotice notice{(std::uint64_t{1} << 63) + 5,
-                                           Species::NoticeKind::StructureCompleted,
-                                           2,
-                                           0x0100'0000'0000'0042,
-                                           Species::StructureKind::Turret,
-                                           Species::QuantizedPosition{(1 << 23) - 1, -(1 << 19), -(1 << 23)}};
+    // ADR-139, ADR-165: a guaranteed event of the HUD's notifications reads back whole at its bound; one with no subject
+    // is malformed, but for contact and the run's, which name none.
+    Species::SettlementNotice notice{
+      (std::uint64_t{1} << 63) + 5, Species::NoticeKind::RunEnded,  2,
+      0x0100'0000'0000'0042,        Species::StructureKind::Turret, Species::QuantizedPosition{(1 << 23) - 1, -(1 << 19), -(1 << 23)}};
+    notice.other = std::uint8_t{3};
+    notice.ours = true;
+    notice.detail = 255;
     const std::vector<std::byte> bytes = Neuron::EncodeMessage(notice);
     ExpectEqual(static_cast<std::int64_t>(Species::SettlementNotice::MAX_BYTES), static_cast<std::int64_t>(bytes.size()), L"at its bound");
     Neuron::MessageDispatcher dispatcher;
@@ -133,9 +133,22 @@ public:
     dispatcher.Register<Species::SettlementNotice>([&received](const Species::SettlementNotice& _notice) { received = _notice; });
     Assert::IsTrue(dispatcher.Dispatch(bytes) && received && received->tick == notice.tick && received->kind == notice.kind &&
                      received->team == 2 && received->subject == notice.subject && received->structure == Species::StructureKind::Turret &&
-                     received->position == notice.position,
+                     received->position == notice.position && received->other == std::optional<std::uint8_t>(std::uint8_t{3}) &&
+                     received->ours && received->detail == 255,
                    L"every field");
+    Species::SettlementNotice none = notice;
+    none.other.reset();
+    received.reset();
+    Assert::IsTrue(dispatcher.Dispatch(Neuron::EncodeMessage(none)) && received && !received->other.has_value(), L"no other site");
+    for (const Species::NoticeKind kind : {Species::NoticeKind::Contact, Species::NoticeKind::RunQuiet, Species::NoticeKind::RunEnded})
+    {
+      Species::SettlementNotice nameless = notice;
+      nameless.kind = kind;
+      nameless.subject = 0;
+      Assert::IsTrue(Decodes<Species::SettlementNotice>(Neuron::EncodeMessage(nameless)), L"contact and the run name no subject");
+    }
     Species::SettlementNotice nobody = notice;
+    nobody.kind = Species::NoticeKind::StructureCompleted;
     nobody.subject = 0;
     Assert::IsFalse(Decodes<Species::SettlementNotice>(Neuron::EncodeMessage(nobody)), L"no subject");
   }

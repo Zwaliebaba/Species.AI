@@ -24,7 +24,13 @@
     <ClInclude Include="AiController.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="Battles.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="BotNavigation.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Claims.h">
       <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="Combat.h">
@@ -75,6 +81,12 @@
     <ClInclude Include="RegionSimulation.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="Relations.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Renown.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="RouteStore.h">
       <Filter>Space</Filter>
     </ClInclude>
@@ -88,6 +100,9 @@
       <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="Settlement.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="SettlementAi.h">
       <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="SettlementCommands.h">
@@ -132,6 +147,9 @@
     <ClInclude Include="Upkeep.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="ValleyAtWar.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="Weapons.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -161,7 +179,13 @@
     <ClCompile Include="AiController.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="Battles.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="BotNavigation.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Claims.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="Combat.cpp">
@@ -209,6 +233,12 @@
     <ClCompile Include="RegionSimulation.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="Relations.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Renown.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="RouteStore.cpp">
       <Filter>Space</Filter>
     </ClCompile>
@@ -222,6 +252,9 @@
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="Settlement.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="SettlementAi.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="SettlementCommands.cpp">
@@ -258,6 +291,9 @@
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="Upkeep.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="ValleyAtWar.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="Weapons.cpp">

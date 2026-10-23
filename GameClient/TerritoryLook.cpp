@@ -11,6 +11,7 @@
 #include <initializer_list>
 #include <limits>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <variant>
 
@@ -117,6 +118,42 @@ void TerritoryLook::Clear() noexcept
   m_spots.clear();
 }
 
+void TerritoryLook::SetValley(const std::optional<ValleyStatus>& _valley)
+{
+  m_holders.fill(std::nullopt);
+  m_claimants.fill(std::nullopt);
+  if (!_valley.has_value())
+  {
+    return;
+  }
+  for (std::size_t area = 0; area < VALLEY_AREAS; ++area)
+  {
+    m_holders[area] = _valley->areas[area].holder;
+  }
+  for (const ClaimLine& claim : _valley->claims)
+  {
+    if (claim.area < VALLEY_AREAS && !m_claimants[claim.area].has_value())
+    {
+      m_claimants[claim.area] = claim.claimant;
+    }
+  }
+}
+
+std::array<float, 4> TerritoryLook::SpotColor(const BorderSpot& _spot) const noexcept
+{
+  const TuningPresentation::Mvp::BorderMark& mark = m_presentation->mvp.borderMark;
+  const auto alpha = static_cast<float>(mark.alpha);
+  if (_spot.area.has_value() && *_spot.area < VALLEY_AREAS)
+  {
+    const std::optional<std::uint8_t> marked = m_claimants[*_spot.area].has_value() ? m_claimants[*_spot.area] : m_holders[*_spot.area];
+    if (marked.has_value())
+    {
+      return WithAlpha(TeamColor(*marked), mark.alpha);
+    }
+  }
+  return {static_cast<float>(mark.color.r), static_cast<float>(mark.color.g), static_cast<float>(mark.color.b), alpha};
+}
+
 void TerritoryLook::Update(const StateReplica::View& _latest, const RegionTerrain& _terrain)
 {
   if (&_terrain != m_terrain)
@@ -208,16 +245,17 @@ void TerritoryLook::PlaceBorderSpots(const RegionTerrain& _terrain)
   const double radius = m_tuning->wld.territory.maxRadius;
   const TuningPresentation::Mvp::BorderMark& mark = m_presentation->mvp.borderMark;
   const double spacing = std::max(mark.spacing, 1.0);
-  const auto place = [&](const Neuron::Vec3& _point)
+  const auto place = [&](const Neuron::Vec3& _point, std::optional<std::uint8_t> _area)
   {
     if (_point.x >= layout.originX + band && _point.z >= layout.originZ + band && _point.x <= layout.originX + layout.side - band &&
         _point.z <= layout.originZ + layout.side - band)
     {
-      m_spots.push_back({_point.x, _terrain.field.Height(_point.x, _point.z) + mark.spotSize, _point.z});
+      m_spots.push_back({{_point.x, _terrain.field.Height(_point.x, _point.z) + mark.spotSize, _point.z}, _area});
     }
   };
-  for (const auto& pair : VALLEY_PAIRS)
+  for (std::size_t index = 0; index < VALLEY_PAIRS.size(); ++index)
   {
+    const auto& pair = VALLEY_PAIRS[index];
     const Neuron::Vec3& first = layout.sites[pair[0]];
     const Neuron::Vec3& second = layout.sites[pair[1]];
     const Neuron::Vec3 across{second.x - first.x, 0.0, second.z - first.z};
@@ -233,18 +271,20 @@ void TerritoryLook::PlaceBorderSpots(const RegionTerrain& _terrain)
     const auto lineSpots = static_cast<std::int64_t>(std::max(1.0, std::ceil(2.0 * reach / spacing)));
     for (std::int64_t k = 0; k <= lineSpots; ++k)
     {
-      place(middle + along * (-reach + 2.0 * reach * static_cast<double>(k) / static_cast<double>(lineSpots)));
+      place(middle + along * (-reach + 2.0 * reach * static_cast<double>(k) / static_cast<double>(lineSpots)), std::nullopt);
     }
     // Each arc runs between the two meetings, which the halfway line already marks.
     const double half = std::acos(std::clamp(distance / (2.0 * radius), -1.0, 1.0));
     const auto arcSpots = static_cast<std::int64_t>(std::max(1.0, std::ceil(2.0 * half * radius / spacing)));
-    for (const auto& [center, other] : {std::pair{first, second}, std::pair{second, first}})
+    // The arc about one site bounds the half nearer the other, whose area is the pair's index × 2 + that other's side.
+    for (const auto& [center, other, side] : {std::tuple{first, second, 1U}, std::tuple{second, first, 0U}})
     {
       const double facing = std::atan2(other.z - center.z, other.x - center.x);
+      const auto area = static_cast<std::uint8_t>(index * 2 + side);
       for (std::int64_t k = 1; k < arcSpots; ++k)
       {
         const double angle = facing - half + 2.0 * half * static_cast<double>(k) / static_cast<double>(arcSpots);
-        place({center.x + radius * std::cos(angle), 0.0, center.z + radius * std::sin(angle)});
+        place({center.x + radius * std::cos(angle), 0.0, center.z + radius * std::sin(angle)}, area);
       }
     }
   }
@@ -293,16 +333,14 @@ void TerritoryLook::AppendBatches(std::vector<Neuron::QuadBatch>& _batches) cons
                           static_cast<float>(mark.spotSize),
                           0.0f,
                           {}};
-  const std::array<float, 4> color{static_cast<float>(mark.color.r), static_cast<float>(mark.color.g), static_cast<float>(mark.color.b),
-                                   static_cast<float>(mark.alpha)};
-  for (const Neuron::Vec3& spot : m_spots)
+  for (const BorderSpot& spot : m_spots)
   {
     Neuron::SceneQuad quad;
-    quad.position = spot;
+    quad.position = spot.position;
     quad.halfWidth = static_cast<float>(mark.spotSize);
     quad.halfHeight = quad.halfWidth;
-    quad.color = color;
-    quad.endColor = color;
+    quad.color = SpotColor(spot);
+    quad.endColor = quad.color;
     spots.quads.push_back(quad);
   }
   if (!spots.quads.empty())

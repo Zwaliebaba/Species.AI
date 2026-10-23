@@ -14,7 +14,7 @@ namespace Species
 
 // ADR-084 item 5: a droppable presentation event older than 500 ms is not played.
 inline constexpr double PRESENTATION_EVENT_LIFE_SECONDS = 0.5;
-inline constexpr std::uint8_t EFFECT_EVENT_KIND_MAX = static_cast<std::uint8_t>(EffectEventKind::TurretDestroyed);
+inline constexpr std::uint8_t EFFECT_EVENT_KIND_MAX = static_cast<std::uint8_t>(EffectEventKind::OrbBecameWorker);
 
 /// The droppable presentation events of one tick for one client (ADR-084 item 5, ADR-111), in the order the rules
 /// emitted them, on the state channel: a lost datagram loses its events, and nothing is sent again. A position travels

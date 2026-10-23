@@ -144,3 +144,5 @@ The growth scene on seeds 1 to 8, on the tuned values: every seed meets the gap 
 ## More Information
 
 * **Amendment 2026-10-22 (M2 task T19, [ADR-156](ADR-156-the-settlement-drawn-at-its-plateau-and-the-owners-growth-run.md)).** A steward who connects to a world that is not watched takes each settlement a steward runs from its scripted steward, which stops, so the world's snapshot still restores. `SpeciesPerformance.exe --saved-world` reads a saved world's growth from its statistics and judges it as the growth scene is, and every run of the tool reads its own growth snapshot back that way.
+* **Amendment 2026-10-22 (M3 task T2, [ADR-157](ADR-157-the-four-settlements-and-their-peace-at-m3.md)).** Each AI settlement of an M3 world is run by a scripted steward from its founding, as its AI commander (O98).
+* **Amendment 2026-10-22 (M3 task T7, [ADR-162](ADR-162-the-ai-settlements-decisions-at-m3.md)).** The scripted steward of an AI settlement also runs its decisions, its claims, its attacks and its battle cores, after its own look, sharing its sequence of commands with them.

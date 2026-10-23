@@ -120,3 +120,4 @@ Chosen options: 1 and 4.
 * Owner decision O90; DEC-1002.
 * The code: `NeuronClient/WorldScene.h` (`ViewMask`), `ShaderLayouts.h`, `WorldRenderer`, `FrameRenderer`, `Shader/Terrain*`, `Shader/SeaFlat*`, `Shader/SeaWaves*`; `GameClient/StewardAreas`, `WorldPresentation`; the presentation record's `mvp.view_fog.*`.
 * ADR-115 is amended with this record.
+* **Amendment 2026-10-23 (M3 task T12, [ADR-167](ADR-167-the-conflict-verbs-and-markers-at-m3.md)).** The battlefields of the steward's battles join the areas, and the view mask is built again when they do, so a battle away is fought in the clear.

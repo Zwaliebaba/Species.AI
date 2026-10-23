@@ -57,6 +57,9 @@
     <ClInclude Include="RegionTerrain.h">
       <Filter>World</Filter>
     </ClInclude>
+    <ClInclude Include="RelationMessages.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
     <ClInclude Include="ReplicatedState.h">
       <Filter>Replication</Filter>
     </ClInclude>
@@ -115,6 +118,9 @@
     </ClCompile>
     <ClCompile Include="RegionTerrain.cpp">
       <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="RelationMessages.cpp">
+      <Filter>Messages</Filter>
     </ClCompile>
     <ClCompile Include="ReplicatedState.cpp">
       <Filter>Replication</Filter>

@@ -191,6 +191,13 @@ public:
     Assert::IsTrue(ascent.changed == (Species::ORB_FIELD_STATE | Species::ORB_FIELD_TIMER), L"the orb's state and timer");
     Assert::IsTrue(Species::ApplyRecord(RoundTrip(ascent, std::nullopt), &orb) == rising, L"applied");
     Assert::IsTrue(RecordOf(Id(1), orb, &held).kind == Species::RecordKind::Whole, L"another class goes whole");
+    // ADR-165: a figure that left with an expedition, or came back, goes whole, for a delta carries no team.
+    Species::ReplicatedFigure left = baseline;
+    left.team = static_cast<std::uint8_t>(baseline.team + 4);
+    const Species::StateRecord moved = RecordOf(Id(1), left, &held);
+    Assert::IsTrue(moved.kind == Species::RecordKind::Whole &&
+                     Species::ApplyRecord(RoundTrip(moved, std::nullopt), &held) == Species::ReplicatedState{left},
+                   L"a figure of another team goes whole");
     Assert::IsFalse(Species::ApplyRecord(record, &orb).has_value(), L"and a delta never applies to another class");
     Assert::IsFalse(Species::ApplyRecord(record, nullptr).has_value(), L"nor to no baseline");
   }

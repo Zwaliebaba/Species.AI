@@ -4,6 +4,8 @@
 #include "DevelopmentOverlay.h"
 #include "FigureKind.h"
 #include "Picking.h"
+#include "ReplicatedState.h"
+#include "ResourceSites.h"
 #include "WorldMarkers.h"
 
 #include <algorithm>
@@ -51,6 +53,7 @@ void WorldMarkers::Clear() noexcept
 {
   m_markers.clear();
   m_quads.clear();
+  m_icons.clear();
   m_underPointer.reset();
 }
 
@@ -58,6 +61,7 @@ void WorldMarkers::Update(std::span<const InterpolatedFigure> _figures, std::opt
                           std::optional<StableId> _selected, const MarkerView& _view)
 {
   m_quads.clear();
+  m_icons.clear();
   m_underPointer.reset();
   if (!_team.has_value())
   {
@@ -70,10 +74,12 @@ void WorldMarkers::Update(std::span<const InterpolatedFigure> _figures, std::opt
   {
     kept.tracked = false;
   }
-  // R-CTRL-381: a Leader marker for each living Leader of the local team, made when it is first seen.
+  // R-CTRL-381: a Leader marker for each living Leader of the local team, made when it is first seen; and, from M3
+  // (ADR-167), of its expedition, whose Leaders leave the settlement's team while they are out (ADR-161).
   for (const InterpolatedFigure& figure : _figures)
   {
-    if (figure.state.kind != FigureKind::Leader || figure.state.team != *_team || figure.state.dead)
+    const bool expedition = _view.expeditionTeam.has_value() && figure.state.team == *_view.expeditionTeam;
+    if (figure.state.kind != FigureKind::Leader || (figure.state.team != *_team && !expedition) || figure.state.dead)
     {
       continue;
     }
@@ -90,6 +96,8 @@ void WorldMarkers::Update(std::span<const InterpolatedFigure> _figures, std::opt
     found->placed = true;
     found->ageSeconds += dt;
     found->tracked = true;
+    found->away =
+      expedition && _view.areas != nullptr && _view.areas->Known() && !_view.areas->Contains(figure.position.x, figure.position.z);
   }
   std::erase_if(m_markers, [](const Marker& _marker) { return !_marker.tracked; });
   // R-CTRL-382 step 1: one bubble-sort pass, farthest first, so the nearest is drawn last; a marker younger than the new
@@ -106,6 +114,11 @@ void WorldMarkers::Update(std::span<const InterpolatedFigure> _figures, std::opt
       std::swap(m_markers[n], m_markers[n + 1]);
     }
   }
+  // ADR-167: the attacks' and claims' markers, under the Leaders'.
+  for (const MarkerTarget& target : _view.targets)
+  {
+    LayTarget(target, _view);
+  }
   for (Marker& kept : m_markers)
   {
     const std::optional<Neuron::ScreenPoint> screen = Neuron::ProjectToScreen(kept.position, _view.frame, _view.size);
@@ -114,6 +127,11 @@ void WorldMarkers::Update(std::span<const InterpolatedFigure> _figures, std::opt
     if (onScreen)
     {
       kept.onScreenSeconds += dt; // R-CTRL-384 rule 1
+      // ADR-167: an away Leader has no figure drawn, so its marker stands at it.
+      if (kept.away)
+      {
+        Draw(kept, kept.leader == _selected, screen->x, screen->y, std::nullopt, _view);
+      }
     }
     else
     {
@@ -124,20 +142,28 @@ void WorldMarkers::Update(std::span<const InterpolatedFigure> _figures, std::opt
 
 void WorldMarkers::Lay(const Marker& _marker, bool _selected, const MarkerView& _view)
 {
-  const auto& marker = m_presentation->ref.ctrl.marker;
-  // R-CTRL-384 rule 5: a Leader marker shows off screen only until it has been seen.
-  if (_marker.onScreenSeconds >= marker.alpha.seenAfterS)
+  // R-CTRL-384 rule 5: a Leader marker shows off screen only until it has been seen; an away one always (ADR-167).
+  if (_marker.onScreenSeconds >= m_presentation->ref.ctrl.marker.alpha.seenAfterS && !_marker.away)
   {
     return;
   }
+  if (const std::optional<std::array<double, 3>> edge = EdgePoint(_marker.position, _view); edge.has_value())
+  {
+    Draw(_marker, _selected, (*edge)[0], (*edge)[1], (*edge)[2], _view);
+  }
+}
+
+std::optional<std::array<double, 3>> WorldMarkers::EdgePoint(const Neuron::Vec3& _position, const MarkerView& _view) const
+{
+  const auto& marker = m_presentation->ref.ctrl.marker;
   // R-CTRL-383: the probe point from ahead of the camera towards the marker, and the ray from the screen's centre
   // through its projection to the screen's edge; the icon lies inset from there towards the centre.
   const Neuron::Vec3 ahead = _view.camera + _view.cameraFront * marker.edgeProbeAhead;
-  const Neuron::Vec3 probe = ahead + Neuron::NormalizedOr(_marker.position - ahead, _view.cameraFront) * marker.edgeProbe;
+  const Neuron::Vec3 probe = ahead + Neuron::NormalizedOr(_position - ahead, _view.cameraFront) * marker.edgeProbe;
   const std::optional<Neuron::ScreenPoint> projected = Neuron::ProjectToScreen(probe, _view.frame, _view.size);
   if (!projected.has_value())
   {
-    return;
+    return std::nullopt;
   }
   const double width = static_cast<double>(_view.size.width);
   const double height = static_cast<double>(_view.size.height);
@@ -148,7 +174,7 @@ void WorldMarkers::Lay(const Marker& _marker, bool _selected, const MarkerView& 
   const double ray = std::hypot(rayX, rayY);
   if (ray < EDGE_RAY_MIN)
   {
-    return;
+    return std::nullopt;
   }
   double reach = std::numeric_limits<double>::infinity();
   if (rayX != 0.0)
@@ -159,12 +185,66 @@ void WorldMarkers::Lay(const Marker& _marker, bool _selected, const MarkerView& 
   {
     reach = std::min(reach, ((rayY > 0.0 ? height : 0.0) - centerY) / rayY);
   }
-  const double edgeX = centerX + rayX * reach;
-  const double edgeY = centerY + rayY * reach;
   const double inwardX = -rayX / ray;
   const double inwardY = -rayY / ray;
-  const double iconX = edgeX + inwardX * marker.edgeInset;
-  const double iconY = edgeY + inwardY * marker.edgeInset;
+  // The compass's arrow points up in its art; it is turned to point out from the centre, towards the marker's place.
+  return std::array<double, 3>{centerX + rayX * reach + inwardX * marker.edgeInset, centerY + rayY * reach + inwardY * marker.edgeInset,
+                               std::atan2(-inwardX, inwardY)};
+}
+
+void WorldMarkers::LayTarget(const MarkerTarget& _target, const MarkerView& _view)
+{
+  const auto& marker = m_presentation->ref.ctrl.marker;
+  const auto& size = marker.size;
+  const double height = static_cast<double>(_view.size.height);
+  const Neuron::Vec3 place = _target.position + UP * marker.lift;
+  // R-CTRL-385: the sizes from the target's height, larger while the camera is near.
+  double scale = 1.0;
+  const double distance = Neuron::Length(place - _view.camera);
+  if (distance < size.nearDistance)
+  {
+    scale *= 2.0 - distance / size.nearDistance;
+  }
+  const double icon = height / size.iconDivisor * scale;
+  const double compass = icon + height / size.compassDivisor * scale;
+  const std::array<float, 4> team = TeamColor(_target.team);
+  const std::optional<Neuron::ScreenPoint> screen = Neuron::ProjectToScreen(place, _view.frame, _view.size);
+  const bool onScreen = screen.has_value() && screen->x >= 0.0 && screen->y >= 0.0 && screen->x <= static_cast<double>(_view.size.width) &&
+                        screen->y <= static_cast<double>(_view.size.height);
+  double x = 0.0;
+  double y = 0.0;
+  std::optional<double> turn;
+  if (onScreen)
+  {
+    x = screen->x;
+    y = screen->y;
+  }
+  else if (const std::optional<std::array<double, 3>> edge = EdgePoint(place, _view); edge.has_value())
+  {
+    x = (*edge)[0];
+    y = (*edge)[1];
+    turn = (*edge)[2];
+  }
+  else
+  {
+    return;
+  }
+  // R-CTRL-386, RND-357: the shadows, then the compass, its empty ring on screen, then the disc.
+  m_quads.push_back(
+    QuadOf(SceneTexture::TeamDiscShadow, Neuron::OverlayBlend::Alpha, x, y, icon + size.shadowPad, 0.0, Shadow(marker.shadowAlpha)));
+  m_quads.push_back(
+    QuadOf(SceneTexture::EdgeCompassShadow, Neuron::OverlayBlend::Alpha, x, y, compass, turn.value_or(0.0), Shadow(marker.shadowAlpha)));
+  m_quads.push_back(QuadOf(turn.has_value() ? SceneTexture::EdgeCompass : SceneTexture::EdgeCompassEmpty, Neuron::OverlayBlend::Additive, x,
+                           y, compass, turn.value_or(0.0), team));
+  m_quads.push_back(QuadOf(SceneTexture::TeamDisc, Neuron::OverlayBlend::Additive, x, y, icon, 0.0, team));
+  m_icons.push_back({static_cast<float>(x), static_cast<float>(y), static_cast<float>(icon), _target.icon});
+}
+
+void WorldMarkers::Draw(const Marker& _marker, bool _selected, double _iconX, double _iconY, std::optional<double> _turn,
+                        const MarkerView& _view)
+{
+  const auto& marker = m_presentation->ref.ctrl.marker;
+  const double height = static_cast<double>(_view.size.height);
   // R-CTRL-385: the sizes from the target's height, larger while the camera is near, and while hovered or selected.
   const auto& size = marker.size;
   double scale = 1.0;
@@ -174,8 +254,8 @@ void WorldMarkers::Lay(const Marker& _marker, bool _selected, const MarkerView& 
     scale *= 2.0 - distance / size.nearDistance;
   }
   double icon = height / size.iconDivisor * scale;
-  const bool hovered = std::abs(static_cast<double>(_view.pointer.x) - iconX) <= icon * 0.5 &&
-                       std::abs(static_cast<double>(_view.pointer.y) - iconY) <= icon * 0.5;
+  const bool hovered = std::abs(static_cast<double>(_view.pointer.x) - _iconX) <= icon * 0.5 &&
+                       std::abs(static_cast<double>(_view.pointer.y) - _iconY) <= icon * 0.5;
   if (hovered || _selected)
   {
     scale *= size.hoverScale;
@@ -187,16 +267,93 @@ void WorldMarkers::Lay(const Marker& _marker, bool _selected, const MarkerView& 
   }
   const double shadow = icon + size.shadowPad;
   const double compass = icon + height / size.compassDivisor * scale;
-  // The compass's arrow points up in its art; it is turned to point out from the centre, towards the Leader.
-  const double turn = std::atan2(-inwardX, inwardY);
   const std::array<float, 4> team = TeamColor(_marker.team);
   m_quads.push_back(
-    QuadOf(SceneTexture::TeamDiscShadow, Neuron::OverlayBlend::Alpha, iconX, iconY, shadow, 0.0, Shadow(marker.shadowAlpha)));
-  m_quads.push_back(
-    QuadOf(SceneTexture::EdgeCompassShadow, Neuron::OverlayBlend::Alpha, iconX, iconY, compass, turn, Shadow(marker.shadowAlpha)));
-  m_quads.push_back(QuadOf(SceneTexture::EdgeCompass, Neuron::OverlayBlend::Additive, iconX, iconY, compass, turn, team));
-  m_quads.push_back(QuadOf(SceneTexture::TeamDisc, Neuron::OverlayBlend::Additive, iconX, iconY, icon, 0.0, team));
-  m_quads.push_back(QuadOf(SceneTexture::IconLeader, Neuron::OverlayBlend::Additive, iconX, iconY, icon, 0.0, WHITE));
+    QuadOf(SceneTexture::TeamDiscShadow, Neuron::OverlayBlend::Alpha, _iconX, _iconY, shadow, 0.0, Shadow(marker.shadowAlpha)));
+  if (_turn.has_value())
+  {
+    m_quads.push_back(
+      QuadOf(SceneTexture::EdgeCompassShadow, Neuron::OverlayBlend::Alpha, _iconX, _iconY, compass, *_turn, Shadow(marker.shadowAlpha)));
+    m_quads.push_back(QuadOf(SceneTexture::EdgeCompass, Neuron::OverlayBlend::Additive, _iconX, _iconY, compass, *_turn, team));
+  }
+  m_quads.push_back(QuadOf(SceneTexture::TeamDisc, Neuron::OverlayBlend::Additive, _iconX, _iconY, icon, 0.0, team));
+  m_quads.push_back(QuadOf(SceneTexture::IconLeader, Neuron::OverlayBlend::Additive, _iconX, _iconY, icon, 0.0, WHITE));
+}
+
+std::vector<MarkerTarget> ConflictTargetsOf(const ValleyStatus& _valley, std::uint8_t _site, const StateReplica::View& _latest,
+                                            const RegionTerrain& _terrain, const TuningMvp& _tuning)
+{
+  std::vector<MarkerTarget> targets;
+  const auto claimOf = [&](StableId _id) { return std::ranges::find(_valley.claims, _id, &ClaimLine::id); };
+  // MVP-043: each battle the steward's settlement is a side of, at its objective, in the other side's colour.
+  for (const BattleLine& battle : _valley.battles)
+  {
+    if (battle.side)
+    {
+      targets.push_back({PositionOf(battle.objective), battle.attacker == _site ? battle.defender : battle.attacker, TargetIcon::Attack});
+    }
+  }
+  for (const ExpeditionLine& expedition : _valley.expeditions)
+  {
+    if (expedition.state == ExpeditionState::Fighting)
+    {
+      continue; // its battle's marker stands for it
+    }
+    if (expedition.target == _site)
+    {
+      // MVP-042: an incoming expedition, where the replica holds its figures, which the seen layer decides (ADR-158).
+      const std::uint8_t team = ExpeditionTeamOf(expedition.attacker);
+      Neuron::Vec3 sum{};
+      std::size_t count = 0;
+      for (const auto& [id, state] : _latest)
+      {
+        if (const auto* figure = std::get_if<ReplicatedFigure>(&state); figure != nullptr && figure->team == team && !figure->dead)
+        {
+          sum = sum + PositionOf(figure->position);
+          ++count;
+        }
+      }
+      if (count > 0)
+      {
+        targets.push_back({sum * (1.0 / static_cast<double>(count)), expedition.attacker, TargetIcon::Attack});
+      }
+    }
+    else if (expedition.attacker == _site)
+    {
+      // Its own expedition's target: the claimed area, or the target's Wellspring, which is public (ADR-158).
+      std::optional<Neuron::Vec3> place;
+      if (const auto claim = claimOf(expedition.claim); expedition.claim != 0 && claim != _valley.claims.end())
+      {
+        place = ClaimAreaCenter(_terrain.layout, _terrain.field, _tuning, claim->area);
+      }
+      for (auto it = _latest.begin(); !place.has_value() && it != _latest.end(); ++it)
+      {
+        const auto* structure = std::get_if<ReplicatedStructure>(&it->second);
+        if (structure != nullptr && structure->kind == StructureKind::Wellspring && structure->owner == expedition.target)
+        {
+          place = PositionOf(structure->position);
+        }
+      }
+      if (place.has_value())
+      {
+        targets.push_back({*place, expedition.target, TargetIcon::Attack});
+      }
+    }
+  }
+  // MVP-053: its own claims, and the claims on the areas it holds, in the claimant's colour.
+  for (const ClaimLine& claim : _valley.claims)
+  {
+    const bool onOurs = claim.area < VALLEY_AREAS && _valley.areas[claim.area].holder == std::optional<std::uint8_t>(_site);
+    if (claim.claimant != _site && !onOurs)
+    {
+      continue;
+    }
+    if (const std::optional<Neuron::Vec3> place = ClaimAreaCenter(_terrain.layout, _terrain.field, _tuning, claim.area); place.has_value())
+    {
+      targets.push_back({*place, claim.claimant, TargetIcon::Claim});
+    }
+  }
+  return targets;
 }
 
 std::vector<Neuron::OverlayQuad> CursorBadge(bool _leaderSelected, bool _workersSelected, std::uint8_t _team, Neuron::PointPx _pointer,

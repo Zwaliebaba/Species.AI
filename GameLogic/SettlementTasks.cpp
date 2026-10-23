@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "Claims.h"
 #include "Construction.h"
 #include "DrawPurpose.h"
 #include "FigureAdvance.h"
@@ -86,8 +87,8 @@ bool IsDropOff(const Structure& _structure, std::uint8_t _team) noexcept
          _structure.owner == std::optional<std::uint8_t>(_team) && _structure.built && _structure.active;
 }
 
-// MVP-031: the carrier's nearest drop-off point of its settlement becomes its target, along a route; with none it is
-// Idle.
+} // namespace
+
 void StartCarrying(RegionSimulation& _region, Figure& _worker, std::uint8_t _team)
 {
   std::optional<std::uint32_t> nearest;
@@ -119,8 +120,6 @@ void StartCarrying(RegionSimulation& _region, Figure& _worker, std::uint8_t _tea
   _worker.routePoint = -1;
   _worker.workerState = WorkerState::Carrying;
 }
-
-} // namespace
 
 Settlement* SettlementOfTeam(RegionSimulation& _region, std::uint8_t _team)
 {
@@ -171,8 +170,14 @@ bool SettlementTaskSearch(Figure& _worker, const FigureContext& _context)
   { return territory != nullptr && territory->Holds(_structure.position.x, _structure.position.z); };
   // The work of each task: its nearest free port, and guard duty's gathering near the Wellspring, which is always open.
   std::array<std::optional<PortChoice>, TASKS> ports;
-  ports[0] = NearestFreePort(region, team, _worker.position, [&](const Structure& _structure, std::uint32_t)
-                             { return _structure.kind == StructureKind::ResourceSite && inTerritory(_structure); });
+  // MVP-053 (ADR-160): the central resource site is gathered by the settlement a claim gave it to.
+  const bool holdsCentral = MovedTo(region, CLAIM_AREA_CENTRAL) == std::optional<std::uint8_t>(settlement->site);
+  ports[0] = NearestFreePort(region, team, _worker.position,
+                             [&](const Structure& _structure, std::uint32_t)
+                             {
+                               return (_structure.kind == StructureKind::ResourceSite && inTerritory(_structure)) ||
+                                      (_structure.kind == StructureKind::ResourceSiteCentral && holdsCentral);
+                             });
   if (!settlement->queue.empty())
   {
     const StructureRef first = settlement->queue.front();

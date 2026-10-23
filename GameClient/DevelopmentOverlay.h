@@ -35,7 +35,8 @@ inline constexpr double DOT_LIFT_WU = 3.0;
                                                 std::optional<std::size_t> _objects);
 
 // R-SIM-415, R-SIM-416: a team's base colour, its colour id its team id outside co-op and Siege, from 0 to 1; white
-// for a slot beyond the eight player colours.
+// for a slot beyond the eight player colours. From M3 (ADR-167) an expedition's team, 4 + its site (ADR-161), takes its
+// settlement's colour.
 [[nodiscard]] std::array<float, 4> TeamColor(std::uint8_t _team) noexcept;
 
 // M1 task T15a, ADR-118: a dot for each living figure at its interpolated position, in its team's colour, until its

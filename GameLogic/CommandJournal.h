@@ -21,8 +21,8 @@ namespace Species
 
 /// What a new world is made from (ADR-109): its simulation key, the seed of its terrain, its first tick, its region
 /// count, whether it is the sandbox of M1 (MVP-005), and whether that sandbox is watched (O77): an AI on each side, and
-/// a steward who commands none; or, for a world that is no sandbox, the site the steward's settlement is founded on,
-/// with the other three sites free (MVP-012, ADR-130).
+/// a steward who commands none; or, for a world that is no sandbox, the site the steward's settlement is founded on
+/// (MVP-012, ADR-130), and how many AI settlements are founded at the other sites (MVP-013, ADR-157).
 struct WorldStart
 {
   Neuron::SipHashKey key;
@@ -33,14 +33,16 @@ struct WorldStart
   bool watched = false;
   std::uint32_t syntheticFigures = 0;      // ADR-126: a sandbox whose sides are a synthetic battle of this many figures; 0: none
   std::optional<std::uint8_t> stewardSite; // MVP-012: the local site of the steward's settlement; none: a world with none
+  std::uint8_t aiSettlements = 0;          // MVP-013 (ADR-157): AI settlements at the other sites in site order, at most three
 };
 
 // A new world: made, its terrain attached to region 0 (ADR-102), and populated as the sandbox when it is one (M1 plan
 // §6), or as a synthetic battle when it names one (ADR-126); a world that is no sandbox has its resource sites placed and,
 // when the start names the steward's site, the steward's settlement founded there (MVP-012, ADR-130), run by a scripted
-// steward when the start is watched (ADR-140). The world server and the journal's replay make every new world through
-// this one function. _tuning and _structures outlive it; a world with
-// a settlement needs _structures.
+// steward when the start is watched (ADR-140); then the start's AI settlements at the other sites in site order, each
+// with one of MVP-057's temperaments, no two alike, dealt by a keyed draw, and each run by a scripted steward (MVP-013,
+// MVP-056, ADR-157). The world server and the journal's replay make every new world through this one function.
+// _tuning and _structures outlive it; a world with a settlement needs _structures.
 [[nodiscard]] std::unique_ptr<WorldSimulation> StartWorld(const WorldStart& _start, std::shared_ptr<const RegionTerrain> _terrain,
                                                           const TuningMvp& _tuning, const StructureRecords* _structures = nullptr);
 

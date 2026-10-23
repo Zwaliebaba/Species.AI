@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "Claims.h"
 #include "RegionSimulation.h"
 #include "ReplicatedState.h"
 #include "Territory.h"
@@ -15,6 +16,8 @@ namespace Species
 
 namespace
 {
+
+constexpr std::uint64_t CONTACT_EVENT_KIND_MAX = static_cast<std::uint64_t>(ContactEventKind::AreaMoved);
 
 // The central resource sites' footprints, the discs that a territory stays wld.resource.wild_clearance outside of.
 struct Wild
@@ -54,11 +57,24 @@ bool WithinBounds(const RegionSimulation& _region, const std::vector<Wild>& _wil
   {
     return false;
   }
-  for (const auto& pair : VALLEY_PAIRS)
+  for (std::size_t pair = 0; pair < VALLEY_PAIRS.size(); ++pair)
   {
-    // The halfway line of a valley border pair: a point no nearer its own site than the neighbour's is the neighbour's.
-    if ((pair[0] == _site || pair[1] == _site) &&
-        Neuron::HorizontalDistance(point, layout.sites[pair[0] == _site ? pair[1] : pair[0]]) <= own)
+    const auto& sites = VALLEY_PAIRS[pair];
+    if (sites[0] != _site && sites[1] != _site)
+    {
+      continue;
+    }
+    // The halfway line of a valley border pair: a point no nearer its own site than the neighbour's is the neighbour's,
+    // except in the neighbour's half that a claim moved to this site; and a point of this site's own half that a claim
+    // moved to the neighbour is the neighbour's (ADR-160).
+    const auto ownSide = static_cast<std::uint8_t>(sites[0] == _site ? 0 : 1);
+    const std::uint8_t neighbor = sites[1 - ownSide];
+    const double other = Neuron::HorizontalDistance(point, layout.sites[neighbor]);
+    const bool lens = other <= tuning.wld.territory.maxRadius;
+    const auto ownHalf = static_cast<std::uint8_t>(pair * 2 + ownSide);
+    const auto neighborHalf = static_cast<std::uint8_t>(pair * 2 + (1 - ownSide));
+    if (other <= own ? !(lens && MovedTo(_region, neighborHalf) == std::optional<std::uint8_t>(_site))
+                     : lens && MovedTo(_region, ownHalf) == std::optional<std::uint8_t>(neighbor))
     {
       return false;
     }
@@ -240,20 +256,100 @@ bool ReachesHalfwayLine(const RegionSimulation& _region, std::uint8_t _site, std
 void WriteContactEvent(Neuron::BitWriter& _writer, const ContactEvent& _event)
 {
   _writer.WriteBits(_event.tick, 64);
-  _writer.WriteBounded(static_cast<std::uint64_t>(_event.kind), static_cast<std::uint64_t>(ContactEventKind::Contact));
+  _writer.WriteBounded(static_cast<std::uint64_t>(_event.kind), CONTACT_EVENT_KIND_MAX);
   _writer.WriteBits(_event.first, 8);
   _writer.WriteBits(_event.second, 8);
   _writer.WriteBounded(_event.pair, VALLEY_PAIRS.size() - 1);
+  if (_event.kind == ContactEventKind::AreaMoved)
+  {
+    _writer.WriteBounded(_event.area, CLAIM_AREA_MAX);
+  }
 }
 
-bool ReadContactEvent(Neuron::BitReader& _reader, ContactEvent& _event)
+bool ReadContactEvent(Neuron::BitReader& _reader, ContactEvent& _event, std::uint32_t _stateVersion)
 {
   _event.tick = _reader.ReadBits(64);
-  _event.kind = static_cast<ContactEventKind>(_reader.ReadBounded(static_cast<std::uint64_t>(ContactEventKind::Contact)));
+  const std::uint64_t kinds = _stateVersion >= STATE_VERSION_WITH_CLAIMS ? CONTACT_EVENT_KIND_MAX : 0;
+  _event.kind = static_cast<ContactEventKind>(_reader.ReadBounded(kinds));
   _event.first = static_cast<std::uint8_t>(_reader.ReadBits(8));
   _event.second = static_cast<std::uint8_t>(_reader.ReadBits(8));
   _event.pair = static_cast<std::uint8_t>(_reader.ReadBounded(VALLEY_PAIRS.size() - 1));
+  _event.area = 0;
+  if (_event.kind == ContactEventKind::AreaMoved)
+  {
+    _event.area = static_cast<std::uint8_t>(_reader.ReadBounded(CLAIM_AREA_MAX));
+    return !_reader.Failed() && _event.area != CLAIM_AREA_CENTRAL && PairOfArea(_event.area) == _event.pair;
+  }
   return !_reader.Failed();
+}
+
+bool InBorderHalf(const RegionSimulation& _region, std::uint8_t _area, double _x, double _z)
+{
+  if (_area >= CLAIM_AREA_CENTRAL)
+  {
+    return false;
+  }
+  const RegionLayout& layout = _region.Terrain()->layout;
+  const TuningMvp& tuning = _region.Tuning();
+  const double band = tuning.wld.region.coastBand;
+  if (_x < layout.originX + band || _z < layout.originZ + band || _x > layout.originX + layout.side - band ||
+      _z > layout.originZ + layout.side - band)
+  {
+    return false;
+  }
+  const auto& sites = VALLEY_PAIRS[PairOfArea(_area)];
+  const std::uint8_t own = OwnSiteOfArea(_area);
+  const std::uint8_t other = sites[0] == own ? sites[1] : sites[0];
+  const Neuron::Vec3 point{_x, 0.0, _z};
+  const double toOwn = Neuron::HorizontalDistance(point, layout.sites[own]);
+  const double toOther = Neuron::HorizontalDistance(point, layout.sites[other]);
+  return toOwn <= tuning.wld.territory.maxRadius && toOther <= tuning.wld.territory.maxRadius && toOwn < toOther;
+}
+
+bool TerritoriesMeet(const RegionSimulation& _region, std::uint8_t _first, std::uint8_t _second)
+{
+  const CellRaster* first = _region.TerritoryOf(_first);
+  const CellRaster* second = _region.TerritoryOf(_second);
+  if (first == nullptr || second == nullptr || first->CellsPerAxis() != second->CellsPerAxis())
+  {
+    return false;
+  }
+  // The lens's bounds, a cell wider each way: a cell of each territory lies within its own site's disc.
+  const RegionLayout& layout = _region.Terrain()->layout;
+  const double reach = _region.Tuning().wld.territory.maxRadius + first->CellSize();
+  const Neuron::Vec3& a = layout.sites[_first];
+  const Neuron::Vec3& b = layout.sites[_second];
+  const double minX = std::max(a.x, b.x) - reach;
+  const double maxX = std::min(a.x, b.x) + reach;
+  const double minZ = std::max(a.z, b.z) - reach;
+  const double maxZ = std::min(a.z, b.z) + reach;
+  if (minX > maxX || minZ > maxZ)
+  {
+    return false;
+  }
+  const auto cellOf = [&](double _coordinate, double _origin)
+  { return static_cast<std::int32_t>(std::floor((_coordinate - _origin) / first->CellSize())); };
+  for (std::int32_t z = cellOf(minZ, layout.originZ); z <= cellOf(maxZ, layout.originZ); ++z)
+  {
+    for (std::int32_t x = cellOf(minX, layout.originX); x <= cellOf(maxX, layout.originX); ++x)
+    {
+      if (!first->HoldsCell(x, z))
+      {
+        continue;
+      }
+      for (std::int32_t dz = -1; dz <= 1; ++dz)
+      {
+        for (std::int32_t dx = -1; dx <= 1; ++dx)
+        {
+          if (second->HoldsCell(x + dx, z + dz))
+          {
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
 }
 
 bool WithinTerritoryBounds(const RegionSimulation& _region, std::uint8_t _site, double _x, double _z)

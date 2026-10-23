@@ -84,7 +84,7 @@ Chosen options: 1 and 4.
   - how the settlement grew is reported;
   - the owner's growth run is recorded and judged in its own section, and later runs stay in that section;
   - a gap open while the plateau may be forming is not judged yet.
-* The owner, on `Release|ARM64`:
+* The owner, on `Release|x64` (O100):
   - `python Build\RunPerformance.py --record playtests/M2.md` judges both rendered scenes;
   - `python Build\RunPerformance.py --saved-world "%LOCALAPPDATA%\Species\saves\world-0001"` records the growth run.
 
@@ -124,3 +124,7 @@ Chosen options: 1 and 4.
   - `Tools/SpeciesPerformance` (`ReadSavedWorld`, `--saved-world`);
   - `Build/RunPerformance.py`;
   - `GameLogic/CommandJournal` (`ConnectSteward`) and `RegionSimulation` (`RemoveScriptedStewards`).
+* **Amendment 2026-10-22 (M3 task T6, [ADR-161](ADR-161-expeditions-battles-the-loss-cap-and-the-respite-at-m3.md)).** A steward who connects also commands its settlement's expedition while one is out.
+* **Amendment 2026-10-22 (M3 task T7, [ADR-162](ADR-162-the-ai-settlements-decisions-at-m3.md)).** A steward who takes a settlement from its scripted steward stops that settlement's AI decisions with it.
+* **Amendment 2026-10-22 (M3 task T8, [ADR-163](ADR-163-the-run-renown-and-the-epilogues-data-at-m3.md)).** The tick each territory first reaches each of its halfway lines is a statistics entry of its own (`HalfwayReached`), so a saved world's contact hour can be read from it.
+* **Amendment 2026-10-23 (owner decision O100).** The owner's runs of the confirmation are on `Release|x64`, the build the reference test machine, now the owner's x64 laptop, measures; `Build\RunPerformance.py` records nothing else.

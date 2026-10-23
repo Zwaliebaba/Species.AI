@@ -53,6 +53,7 @@ public:
                                              // world's steward settlement is run by the scripted steward
     std::uint32_t syntheticFigures = 0;      // ADR-126: the sandbox's sides are a synthetic battle of this many figures, watched
     std::optional<std::uint8_t> stewardSite; // MVP-012: a new world that is no sandbox has the steward's settlement here
+    std::uint8_t aiSettlements = 0;          // MVP-013 (ADR-157): a new world's AI settlements at the other sites
     bool restoreOnly = false;                // ADR-155: a world the steward continues: when no snapshot validates, the world
                                              // opens new without its folder, so that it saves and removes nothing there
     // The calendar time, for the world record alone (ADR-137, PLT-053); none: the record holds no wall times.
@@ -151,12 +152,15 @@ private:
   struct Steward
   {
     StableId id = 0;
-    std::uint64_t commandsReceived = 0;    // the sequence number of the next command (ADR-095)
-    bool terrainSent = false;              // MVP-011: the world's terrain goes to each connection once
-    std::vector<CommandReport> reports;    // the outcomes not yet sent, in the order they were made
-    StateSender state;                     // ADR-111: what its client holds of the replicated state
-    std::vector<std::uint8_t> statusTeams; // MVP-098: the settlements whose status it asked for, by team, not yet sent
-    std::vector<SettlementNotice> notices; // ADR-139: the guaranteed events of its teams not yet sent, in order
+    std::uint64_t commandsReceived = 0;      // the sequence number of the next command (ADR-095)
+    bool terrainSent = false;                // MVP-011: the world's terrain goes to each connection once
+    std::vector<CommandReport> reports;      // the outcomes not yet sent, in the order they were made
+    StateSender state;                       // ADR-111: what its client holds of the replicated state
+    std::vector<std::uint8_t> statusTeams;   // MVP-098: the settlements whose status it asked for, by team, not yet sent
+    std::vector<std::uint8_t> valleyTeams;   // ADR-165: the settlements whose valley status it asked for, not yet sent
+    std::vector<std::uint8_t> epilogueTeams; // ADR-169: the settlements whose epilogue it asked for, not yet sent
+    // ADR-139, ADR-165: the guaranteed events of its teams and the battle results not yet sent, encoded, in order.
+    std::vector<std::vector<std::byte>> notices;
   };
 
   // Each queue's outcomes of the tick, to the steward that sent each command; an AI's are its own (ADR-106).
@@ -171,6 +175,10 @@ private:
   std::optional<WorldHashes> m_lastHashes;
   OpenOutcome m_opened;
   std::optional<CommandJournal> m_journal;
+  // MVP-060 and MVP-063 (ADR-165): whether the run was in its quiet minutes, and had ended, at the last publication, so
+  // that each steward is told once when either begins; a world continued in either is not told again.
+  bool m_runQuiet = false;
+  bool m_runEnded = false;
   // ADR-120: the ticks of the current second, for the development overlay's statistics (Debug builds): when the tick
   // being measured started its step, none outside a tick, and the ticks' summed and longest wall time.
   std::int64_t m_statsTickStart = 0;

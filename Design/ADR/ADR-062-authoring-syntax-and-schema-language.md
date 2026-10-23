@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-10-17
 decision-makers: Species technology lead; the owner for the generated code (O28)
 ---
@@ -87,3 +87,9 @@ Proposed option: "JSON authoring files validated by JSON Schema, with a Species 
 * Amendment 2026-10-17 (owner decision O28): the generator's output is **committed source**. A developer runs the generator when a schema changes; it writes ordinary `.h` files in `AGENTS.md` style directly into the owning project folder, each starting with a comment that names the schema it was generated from and says it is never edited by hand. They are committed, formatted and linted like hand-written code, so no game or engine project needs a tool project to build. CI regenerates them and fails on any difference (a guarded `Build/CheckGeneratedSchemas.py` step in `build.yml`).
 * **Amendment 2026-10-18 (O28, owner decision O29, DAT-054).** The content build tool and the schema code generator are tool projects of the one solution under `Tools/`; the separate solution of the O26 amendment above is superseded. The generator is a project of its own, hand-written and independent of generated code, and the drift check builds it through the solution and compares a regenerated tree with the committed headers. The generator only converts case: the keys and enumerator strings that generate identifiers are American (CONVENTIONS §8), it rejects other spellings and C++ keywords, and a generated declaration is the only declaration of its type. The Code generation bullet states this together with the committed output of O28. The handling of the generated code is the owner's decision O28 and is stated as such in the decision outcome; the syntax and the schema language stay Proposed, with a "Confirmed when" line.
 * **Amendment 2026-10-18 (owner decision O55).** Since O55 the first playable of the "Confirmed when" line is the MVP's M3 build ([MVP scope](../implementation/mvp_scope.md) §3, §5.3), not the skirmish of O20, and the evidence is gathered on that build: the records are the MVP's tuning and content records (MVP-099), loaded by its client and by its headless and integrated servers, which link one server library (MVP-091).
+* **Amendment 2026-10-23 (M3 task T16, owner decision O104, [ADR-174](ADR-174-the-first-playables-confirmations-at-m3.md)).** The M3 build confirms the record:
+  - the MVP's tuning records, `Records/tuning/mvp.json` and the client's `presentation.json`, are authored in this syntax and are parsed and validated by the content build, whose fixtures refuse faults with their file and rule (`Build\CheckContentBuild.py`);
+  - `SpeciesServer.exe`, the client's integrated server and the client load them from the headers that `Tools/SpeciesSchemaGen` writes. The generator refuses a keyword outside the subset;
+  - CI's drift check (`Build\CheckGeneratedSchemas.py`) passes.
+
+  The record is accepted.

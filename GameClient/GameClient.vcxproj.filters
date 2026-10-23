@@ -54,6 +54,9 @@
     <ClInclude Include="LeaderLook.h">
       <Filter>View</Filter>
     </ClInclude>
+    <ClInclude Include="PageSkeleton.h">
+      <Filter>View</Filter>
+    </ClInclude>
     <ClInclude Include="ReplicaTiming.h">
       <Filter>Replication</Filter>
     </ClInclude>
@@ -87,11 +90,17 @@
     <ClInclude Include="WorldMarkers.h">
       <Filter>View</Filter>
     </ClInclude>
+    <ClInclude Include="WorldMenu.h">
+      <Filter>View</Filter>
+    </ClInclude>
     <ClInclude Include="WorldPresentation.h">
       <Filter>Session</Filter>
     </ClInclude>
     <ClInclude Include="WorldSaves.h">
       <Filter>Session</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldSounds.h">
+      <Filter>Presentation</Filter>
     </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Build</Filter>
@@ -128,6 +137,9 @@
     <ClCompile Include="LeaderLook.cpp">
       <Filter>View</Filter>
     </ClCompile>
+    <ClCompile Include="PageSkeleton.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
     <ClCompile Include="ReplicaTiming.cpp">
       <Filter>Replication</Filter>
     </ClCompile>
@@ -161,11 +173,17 @@
     <ClCompile Include="WorldMarkers.cpp">
       <Filter>View</Filter>
     </ClCompile>
+    <ClCompile Include="WorldMenu.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
     <ClCompile Include="WorldPresentation.cpp">
       <Filter>Session</Filter>
     </ClCompile>
     <ClCompile Include="WorldSaves.cpp">
       <Filter>Session</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldSounds.cpp">
+      <Filter>Presentation</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>

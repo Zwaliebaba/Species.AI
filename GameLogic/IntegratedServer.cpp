@@ -92,6 +92,7 @@ std::expected<void, StartFault> IntegratedServer::Start()
   world.watched = m_desc.watched;
   world.syntheticFigures = m_desc.syntheticFigures;
   world.stewardSite = m_desc.stewardSite;
+  world.aiSettlements = m_desc.aiSettlements;
   world.snapshotFolder = m_desc.snapshotFolder;
   world.restoreOnly = m_desc.restoreOnly;
   world.calendar = [clock = m_desc.clock] { return clock->CalendarUtc(); }; // ADR-137: the world record's wall times

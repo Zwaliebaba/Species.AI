@@ -22,6 +22,7 @@
 #include "TuningMvp.h"
 #include "TuningPresentation.h"
 #include "WorldScene.h"
+#include "WorldSounds.h"
 
 #include <cstdint>
 #include <memory>
@@ -46,14 +47,18 @@ public:
     const TuningPresentation* presentation = nullptr;
     const Neuron::LooseContent* content = nullptr;
     const Neuron::PlatformClock* clock = nullptr;
-    bool uiTest = false;    // a Debug build's `--ui-test`: the UI's test screen (ADR-145, ADR-149)
-    DisplayOptions display; // the display options of the settings store (ADR-150)
+    bool uiTest = false;                  // a Debug build's `--ui-test`: the UI's test screen (ADR-145, ADR-149)
+    DisplayOptions display;               // the display options of the settings store (ADR-150)
+    Neuron::AudioEngine* audio = nullptr; // ADR-173: the world's sounds play on it, outliving the presentation; none: none
   };
 
   explicit WorldPresentation(Desc _desc);
 
   // Once per frame, after the session's update: builds the world's surfaces when the session's terrain is new.
   void Update(const ClientSession& _session);
+  // ADR-170: the world has ended for the client, which leaves to the front end: its surfaces, looks and HUD are dropped,
+  // so that the next world builds its own even when its terrain lands at the same address.
+  void LeaveWorld();
   // ADR-152: once per frame, after the session's update: the settlement HUD's model, with the settlement verbs of _view
   // (ADR-153), its status requests and its layout for a client area of _client at _dpiScale.
   void UpdateHud(ClientSession& _session, const SettlementView& _view, Neuron::SizePx _client, float _dpiScale);
@@ -80,6 +85,19 @@ public:
   void CloseFrontEnd()
   {
     m_ui->CloseFrontEnd();
+  }
+  // ADR-170: the world's menu while a world runs, none as it ends; its screen opened over the world on _page, and closed.
+  void AttachWorldMenu(WorldMenu* _menu)
+  {
+    m_ui->AttachWorldMenu(_menu);
+  }
+  void OpenWorldMenu(GamePage _page)
+  {
+    m_ui->OpenWorldMenu(_page);
+  }
+  void CloseWorldMenu()
+  {
+    m_ui->CloseWorldMenu();
   }
   // ADR-146: the en-US strings and their locale, which the front end formats its texts with.
   [[nodiscard]] const Neuron::StringTable& Strings() const noexcept
@@ -133,6 +151,9 @@ public:
   [[nodiscard]] FramePageInputs FramePageOf(const ClientSession& _session, double _framesPerSecond) const;
 
 private:
+  // The world's surfaces and looks dropped, for no terrain.
+  void ClearWorld();
+
   Desc m_desc;
   const RegionTerrain* m_terrain = nullptr; // the terrain the world was built from
   std::shared_ptr<const Neuron::WorldScene> m_world;
@@ -147,6 +168,7 @@ private:
   LeaderLook m_leaders;
   EffectsLook m_effects;
   StructureLook m_structures;
+  SoundSchedule m_sounds; // ADR-173: the effect events' sounds, on the display clock
   TerritoryLook m_territories;
   std::shared_ptr<const Neuron::ViewMask> m_viewMask; // ADR-144: the fog's mask of the steward's areas
   std::optional<std::uint64_t> m_viewMaskRevision;    // the areas' revision it was built from

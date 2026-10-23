@@ -42,6 +42,8 @@ Since O55 the first playable is M3's build, and fourteen Proposed ADRs name it a
 
 *Table 1 — What the ADRs put at M3, and the task that produces each.*
 
+> **Amendment 2026-10-23 (M3 task T16, owner decision O104, [ADR-174](../ADR/ADR-174-the-first-playables-confirmations-at-m3.md)).** No golden-image test is built for the M3 build, and ADR-007's enhanced executor is not added before it. The rows that name them are confirmed or amended on the evidence in hand, and the deferred checks move to before the first external build. ADR-079's latency is measured by the frame bench and judged by `Build\RunPerformance.py`. ADR-002, ADR-004 and ADR-062 are accepted. ADR-006, ADR-015, ADR-078 and ADR-079's M3 part wait for the owner's T16 run: the performance run, and a Debug `--gpu-validation` session through a battle to a save with one forced device removal. The other rows keep their own triggers. `playtests/M3.md` records each row's evidence and verdict.
+
 M1's and M2's records leave these to M3:
 
 | Left by | What M3 builds | Task |
@@ -59,6 +61,8 @@ M1's and M2's records leave these to M3:
 
 *Table 2 — What M1's and M2's records leave to M3.*
 
+> **Amendment 2026-10-23 (M3 task T15, [ADR-173](../ADR/ADR-173-the-first-sound-set-played-at-m3.md); DEC-1009, Open).** ADR-141's `TurretTargetSighted` is not heard at M3. MVP-087's sound set has no group for a turret's sighting, and DEC-1009 asks the owner whether to add one.
+
 ## 3 What M2 has settled, and what still waits
 
 The parts of M3 that cost most rest on what M2 measures. M2's code is written, and its exit waits on the owner's runs (`playtests/M2.md`):
@@ -75,6 +79,8 @@ The parts of M3 that cost most rest on what M2 measures. M2's code is written, a
 
 - **Phase A, T2 to T9**, headless and tested in CI, starts before M2's exit (O98), on a pull request of its own, as M2's phase A did before M1's exit (O86). The tuning of T9 to M2's evidence waits for the owner's M2 runs.
 - **Phase B, T10 to T17**, starts at M2's exit, each task with its run checklist (M0 plan §2).
+
+> **Amendment 2026-10-23 (O101).** Phase B starts before M2's exit, on phase A's pull request, each task still with its run checklist; the owner runs them when M2's exit allows. The tuning to M2's evidence still waits for the owner's M2 runs, and T17 still needs Playtest 1.
 
 **Saved worlds across M3's state changes.** The owner's M2 growth run saves worlds of `WORLD_STATE_VERSION` 10 across sessions. ADR-137 lets a raise refuse its predecessor until M2's exit build, but phase A raises the version while that run may still be going on. So from M3's first raise every raise migrates version 10 and later (MVP-095): the owner's M2 world continues on any later build.
 

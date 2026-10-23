@@ -62,7 +62,7 @@ bool SegmentNear(const Neuron::Vec3& _origin, const Neuron::Vec3& _direction, do
 // R-BLDG-408: the operators of the ports per team; the candidate is the first team in slot order with an operator,
 // replaced by any later team with strictly more; no team when an operator is no friend of the candidate's, or when
 // there is no operator.
-std::optional<std::uint8_t> OwnershipOf(const Structure& _structure)
+std::optional<std::uint8_t> OwnershipOf(const RegionSimulation& _region, const Structure& _structure)
 {
   std::array<std::uint32_t, TEAM_SLOTS_MAX> operators{};
   for (const StructurePort& port : _structure.ports)
@@ -84,7 +84,7 @@ std::optional<std::uint8_t> OwnershipOf(const Structure& _structure)
   {
     return std::nullopt;
   }
-  const TeamMask enemies = RegionSimulation::EnemiesOf(candidate.value_or(0));
+  const TeamMask enemies = _region.EnemiesOf(candidate.value_or(0));
   for (std::size_t team = 0; team < operators.size(); ++team)
   {
     if (operators[team] > 0 && enemies.test(team))
@@ -103,8 +103,7 @@ std::optional<ActorRef> SearchTarget(const RegionSimulation& _region, const Stru
   const auto& gun = _region.Tuning().ref.bldg.turret.gun;
   std::optional<ActorRef> best;
   double bestDistance = 0.0;
-  for (const ActorRef& ref :
-       _region.InRange(_structure.position.x, _structure.position.z, gun.maxRange, RegionSimulation::EnemiesOf(_team)))
+  for (const ActorRef& ref : _region.InRange(_structure.position.x, _structure.position.z, gun.maxRange, _region.EnemiesOf(_team)))
   {
     const Figure* candidate = _region.Resolve(ref);
     if (candidate == nullptr || candidate->dead)
@@ -293,7 +292,7 @@ void AdvanceTurret(RegionSimulation& _region, Structure& _structure)
   if (--turret.recountTicks <= 0)
   {
     turret.recountTicks = static_cast<std::int32_t>(keys.recountTicks);
-    const std::optional<std::uint8_t> team = OwnershipOf(_structure);
+    const std::optional<std::uint8_t> team = OwnershipOf(_region, _structure);
     if (team != turret.team)
     {
       turret.team = team;
@@ -413,7 +412,7 @@ bool AdvanceTurretRound(RegionSimulation& _region, Effect& _round)
   // the round pierces. A Worker is a sphere of ref.sim.ray.sprite_radius (R-SIM-387); a Leader's is its radius, when
   // larger (ADR-133).
   std::uint32_t kills = 0;
-  for (const ActorRef& ref : _region.InRange(middle.x, middle.z, length, RegionSimulation::EnemiesOf(_round.team)))
+  for (const ActorRef& ref : _region.InRange(middle.x, middle.z, length, _region.EnemiesOf(_round.team)))
   {
     Figure* victim = _region.Resolve(ref);
     if (victim == nullptr || victim->dead ||

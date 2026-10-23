@@ -83,18 +83,30 @@ private:
 // wld.territory.max_radius of its site's centre and nearer to it than to either valley neighbour's, so in its home cell
 // or its own valley border areas; at least wld.territory.site_clearance outside the core of every other site; at least
 // wld.resource.wild_clearance outside every central resource site's footprint; and on ground above the shore height.
+// From M3 (ADR-160) a half of a valley border area that a claim moved is its new holder's and no longer its own
+// side's (WLD-086).
 [[nodiscard]] bool WithinTerritoryBounds(const RegionSimulation& _region, std::uint8_t _site, double _x, double _z);
+
+// WLD-062 (ADR-160): the point lies in the half of a valley border area that _area names (CLAIM_AREA_CENTRAL names
+// none): inside the coast bands, within wld.territory.max_radius of both sites of its pair, and no nearer the other
+// site than its own.
+[[nodiscard]] bool InBorderHalf(const RegionSimulation& _region, std::uint8_t _area, double _x, double _z);
+
+// MVP-027 and WLD-064 (ADR-160): the territories of the settlements at _first and _second meet: a cell of one and a cell
+// of the other share a side or a corner. Only the lens of their sites' discs can hold such cells.
+[[nodiscard]] bool TerritoriesMeet(const RegionSimulation& _region, std::uint8_t _first, std::uint8_t _second);
 
 // MVP-027 and WLD-064 (ADR-134): the territory of the settlement at _site reaches the halfway line of the valley border
 // pair VALLEY_PAIRS[_pair]: it holds a cell whose centre lies within a cell's side of the line, inside the lens of the
 // two sites' discs of wld.territory.max_radius.
 [[nodiscard]] bool ReachesHalfwayLine(const RegionSimulation& _region, std::uint8_t _site, std::size_t _pair);
 
-// WLD-066: what a territory event records. The MVP records contact alone; a claim that moves a border area and a border
-// area that returns to its side are B5's.
+// WLD-066: what a territory event records; a value of the saved state that is never renumbered. A border area that
+// returns to its side when its settlement leaves the map is B5's: no MVP settlement leaves.
 enum class ContactEventKind : std::uint8_t
 {
-  Contact = 0 // MVP-027: two settlements came into contact at their valley border pair's halfway line
+  Contact = 0,  // MVP-027: two settlements came into contact at their valley border pair's halfway line
+  AreaMoved = 1 // MVP-053 (ADR-160): a claim battle moved a half of their valley border area from first to second
 };
 
 /// A territory event of the region (WLD-066): its world time as the tick, its kind, its two settlements by local site
@@ -106,12 +118,15 @@ struct ContactEvent
   std::uint8_t first = 0;
   std::uint8_t second = 0;
   std::uint8_t pair = 0;
+  std::uint8_t area = 0; // the half that moved, for AreaMoved (ADR-160)
 
   friend constexpr bool operator==(const ContactEvent& _a, const ContactEvent& _b) noexcept = default;
 };
 
+// The event canonically (ADR-081 item 7), and the values the writer wrote into a snapshot of _stateVersion; a region
+// before version 12 records contact alone, in a kind of no bits (ADR-160).
 void WriteContactEvent(Neuron::BitWriter& _writer, const ContactEvent& _event);
-[[nodiscard]] bool ReadContactEvent(Neuron::BitReader& _reader, ContactEvent& _event);
+[[nodiscard]] bool ReadContactEvent(Neuron::BitReader& _reader, ContactEvent& _event, std::uint32_t _stateVersion);
 
 // MVP-026 (ADR-134): the settlement's territory, the cells within its radius of its Wellspring and within the bounds,
 // connected to the Wellspring's cell by their sides, so that it is one connected area (WLD-060).

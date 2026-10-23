@@ -139,7 +139,7 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 **MVP-044** (MUST) Defender's advantage (O2): inside its own territory, a defending settlement's Workers and Leaders take `mvp.defense.damage_taken_factor` (0.75) of the damage the reference rules give; the defender's turrets fight; and the Essence of every death inside the defender's territory drifts to the defender's Wellspring (MVP-023), within the bound of MVP-046.
 
 **MVP-045** (MUST) A battle ends at the first of:
-- **Objective held**: the attacker has Workers within `mvp.battle.objective_radius` (150 wu) of the objective, and no defender there, for `mvp.battle.objective_hold_s` (30 s). The objective of a raid is the target's Wellspring; of a claim battle, the claimed area's resource site. The attacker wins.
+- **Objective held**: the attacker has Workers within `mvp.battle.objective_radius` (150 wu) of the objective, and no defender there, for `mvp.battle.objective_hold_s` (120 s, O102). The objective of a raid is the target's Wellspring; of a claim battle, the claimed area's resource site. The attacker wins.
 - **Loss cap reached**: the defender's losses reach its loss cap (MVP-046). The attacker wins, and its gain is the capped amount.
 - **Rout**: the attacker has fewer than `mvp.battle.rout_share` (25 %) of the Workers it sent, or it withdraws by command. The defender wins.
 - **Time**: `pil.battle.max_minutes` (20 minutes) pass (PIL-047). The defender wins.
@@ -163,11 +163,17 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-052** (MUST) Every grievance loses `mvp.grievance.fade_share_per_hour` (10 %) of its weight per hour, `pil.conflict.settled_fade_factor` (4) times faster once its cause is removed (contact ended, claim withdrawn or settled; PIL-122). A battle result removes `mvp.grievance.battle_relief_won` (50 %) of the attacker's grievances against the target when the attacker wins, and `mvp.grievance.battle_relief_lost` (25 %) when it loses.
 
-**MVP-053** (MUST) Claims (PIL-120, PIL-121): a settlement may claim the half of a valley border area that a neighbour holds (WLD-062, WLD-086), or the valley's central resource site. A claim on a held area is settled by a claim battle, which moves the area if the claimant wins, or by the claimant's withdrawal. A claim on the central resource site while nobody holds it is held after `mvp.claim.uncontested_minutes` (30 minutes) unless another settlement claims it in that time; then the claim is contested and settled by a claim battle at the site, outside every territory and so with no defender's advantage. A settlement's core and home cell are never claimable (WLD-061).
+**MVP-053** (MUST) Claims (PIL-120, PIL-121): a settlement may claim the half of a valley border area that a neighbour holds (WLD-062, WLD-086), or the valley's central resource site. A claim on a held area is settled by a claim battle, which moves the area if the claimant wins, or by the claimant's withdrawal. A claim on the central resource site while nobody holds it is held after `mvp.claim.uncontested_minutes` (30 minutes) unless another settlement claims it in that time; then the claim is contested and settled by a claim battle at the site, outside every territory and so with no defender's advantage. A settlement's core and home cell are never claimable (WLD-061). No claim may be made on an area until `mvp.claim.cooldown_minutes` (120 minutes) have passed since the last claim on it ended, by a withdrawal, a claim battle or the central site's wait (O102).
+
+> **Amendment 2026-10-23 (M3 task T9; [ADR-164](../ADR/ADR-164-the-command-paths-confirmation-the-valley-run-and-the-valley-at-war-at-m3.md)).** The valley run of seeds 1 to 8 meets two of Playtest 1's six measurable lines (§6.1). Its misses come from claims repeated with nothing to space them, a held half claimed back as soon as it changes hands, and from the battle values of MVP-045. What to change is [DEC-1008](../decisions/species_design.md#dec-1008-the-valley-runs-misses-of-playtest-1s-lines), Open; until it is decided the rules stand as written.
+
+> **Amendment 2026-10-23 (O102; [ADR-160](../ADR/ADR-160-claims-moved-areas-and-tribute-at-m3.md)).** The owner took [DEC-1008](../decisions/species_design.md#dec-1008-the-valley-runs-misses-of-playtest-1s-lines)'s option A: claims are spaced by `mvp.claim.cooldown_minutes` on each area, and `mvp.battle.objective_hold_s` rises to 120 s (MVP-045). The figures in battles and the growth steps are retuned on the owner's M2 evidence (O98).
 
 **MVP-054** (MUST) Easing (PIL-064): a steward eases a grievance that a Cladan holds against its settlement by tribute, sending stores that reduce the grievance's weight by one for every `mvp.relation.tribute_ru_per_weight` (10 ru), or by withdrawing a claim, which removes the claim's cause. Tribute is the reserved term of CONVENTIONS §8.15 used for this one rule; truce and alliance are not built.
 
-**MVP-055** (MUST) An AI settlement declares an attack only on a settlement against which its Cladan's anger is at least its temperament's threshold (MVP-057), or on an area it has claimed (PIL-025), and only when it can field an expedition of at least `mvp.ai.attack_min_share` (60 %) of the target's Workers that it can see. It chooses a raid or a claim battle by its temperament. Its choice of target never reads whether the target's steward is present (PIL-086 holds by construction).
+**MVP-055** (MUST) An AI settlement declares an attack only on a settlement against which its Cladan's anger is at least its temperament's threshold (MVP-057), or on an area it has claimed (PIL-025), and only when it can field an expedition of at least `mvp.ai.attack_min_share` (60 %) of the target's Workers that it can see. It chooses a raid or a claim battle by its temperament. Its choice of target never reads whether the target's steward is present (PIL-086 holds by construction). How it gathers its expedition and how large it makes it, and what each temperament claims (MVP-057), are built as DEC-1006 states until the owner decides.
+
+> **Amendment 2026-10-22 (M3 task T7; [ADR-162](../ADR/ADR-162-the-ai-settlements-decisions-at-m3.md)).** An AI settlement musters its expedition as the steward does (MVP-041): it promotes its Leaders near its Wellspring and declares once the Workers on guard duty have joined them, within `mvp.ai.muster_minutes`. How it chooses its claims, its target and its expedition's size is [DEC-1006](../decisions/species_design.md#dec-1006-how-the-ai-settlements-claim-and-raise-their-expeditions), Open.
 
 **MVP-056** (MUST) AI settlements run the settlement rules of this document as the steward does, through the same command path (MVP-094): priorities, construction placed from a layout that keeps its ports and paths clear, claims, attacks, tribute received and withdrawals. They hold grievances against each other and fight each other, so the valley lives beyond the steward's own settlement.
 
@@ -187,7 +193,9 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-060** (MUST) A world is a run of `mvp.run.length_hours` (8 hours of play at the session pace; 8 world days at the always-on pace). The world shows the time left, and no attack may be declared in its last `mvp.run.quiet_minutes` (15 minutes); battles in progress finish (WLD-221 narrowed to a fixed lifetime).
 
-**MVP-061** (MUST) Settlements earn renown (PIL-125), never by stores taken: `mvp.renown.defense_held` (3) for each battle won as a defender; `mvp.renown.claim_won` (3) for each claim battle won as a claimant; `mvp.renown.grievance_eased` (1) for each 20 weight of grievance eased by tribute or by a withdrawn claim; and `mvp.renown.structure_per_100ru` (1) for each 100 ru of structures completed.
+**MVP-061** (MUST) Settlements earn renown (PIL-125), never by stores taken: `mvp.renown.defense_held` (3) for each battle won as a defender; `mvp.renown.claim_won` (3) for each claim battle won as a claimant; `mvp.renown.grievance_eased` (1) for each 20 weight of grievance eased by tribute or by a withdrawn claim; and `mvp.renown.structure_per_100ru` (1) for each 100 ru of structures completed. Which withdrawn claims count is built as DEC-1007 states until the owner decides.
+
+> **Amendment 2026-10-22 (M3 task T8; [ADR-163](../ADR/ADR-163-the-run-renown-and-the-epilogues-data-at-m3.md)).** A run begins with its world, or, for a world saved before M3 task T8, where it continues. At its end an expedition whose battle has not started ends with no battle, the run waits for the battles in progress, and the world is then read-only: its tick advances and no command is taken. Renown is derived from its four sources, which each settlement's record counts. A claim battle won counts as `claim_won`, a battle won as defender, a raid withdrawn in its battle included, as `defense_held`, and a structure counts what its construction cost, a turret's rebuild its own.
 
 **MVP-062** (MUST) The standing of the four settlements by renown is visible throughout the run, with each settlement's renown broken down by source.
 
@@ -196,6 +204,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 **MVP-064** (MUST) The server records, for every settlement, its strength (MVP-038) and its Worker count every `mvp.stats.sample_minutes` (5 minutes), and every growth step, battle, claim and grievance, so that the epilogue and the playtest measures of §6 come from the run itself.
 
 > **Amendment 2026-10-22 (M2 task T8; [ADR-136](../ADR/ADR-136-settlement-commands-status-and-statistics-at-m2.md)).** The statistics are part of the world's state, saved and replayed with it. A growth step is a structure of the settlement built, its population reaching a new multiple of `mvp.stats.population_step` (10 Workers), or its territory taking in a resource site (the [M2 plan](m2_plan.md) §9, question 1). Each entry records the tick, the Worker count and the strength. Samples fall on the world ticks that are multiples of the sample period.
+
+> **Amendment 2026-10-22 (M3 task T8; [ADR-163](../ADR/ADR-163-the-run-renown-and-the-epilogues-data-at-m3.md)).** The statistics also record, for the settlement each names, the tick its territory first reaches each of its halfway lines, each new grievance with its cause, each claim made and whether it was withdrawn, lost or won (a central site held uncontested is won), and each battle it was a side of, by its result's place.
 
 > **Amendment 2026-10-22 (M2 task T19; [ADR-156](../ADR/ADR-156-the-settlement-drawn-at-its-plateau-and-the-owners-growth-run.md)).** A saved world's statistics are read from its newest snapshot by `SpeciesPerformance.exe --saved-world`, which judges them as the growth scene's, so the owner's growth run of M2 is measured from the run itself (the [M2 plan](m2_plan.md) §5).
 
@@ -243,7 +253,9 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-086** (MUST) The MVP's meshes and textures are produced by development tools under `Tools/` (procedural shape kits and texture generators, or a digital content creation tool with an exporter) and written in the cooked formats the runtime loads (ADR-017, ADR-019), so that the runtime path is the one later content takes. The tools may use pinned third-party code restored by NuGet (O29, O30); nothing of them ships (R14).
 
-**MVP-087** (SHOULD) From M3 the MVP SHOULD play a first sound set through the audio engine (ADR-022 to ADR-027): laser shots (`sfx.weapon.laser_bolt.spawn`), deaths (`sfx.unit.worker.die`), an orb becoming a Worker (`sfx.unit.essence_orb.collected`), a structure completed (`sfx.building.dwelling.complete`), the attack warning (`sfx.unit.worker.attack_horn`), and a battle starting and ending (`sfx.ui.battle.start`, `sfx.ui.battle.end`).
+**MVP-087** (SHOULD) From M3 the MVP SHOULD play a first sound set through the audio engine (ADR-022 to ADR-027): laser shots (`sfx.weapon.laser_bolt.spawn`), deaths (`sfx.unit.worker.die`), an orb becoming a Worker (`sfx.unit.essence_orb.collected`), a structure completed (`sfx.building.dwelling.complete`), the attack warning (`sfx.unit.worker.attack_horn`), and a battle starting and ending (`sfx.ui.battle.start`, `sfx.ui.battle.end`). Its levels, buses and distance are provisional until the owner hears them (DEC-1009).
+
+> **Amendment 2026-10-23 (O98; M3 task T15, [ADR-171](../ADR/ADR-171-the-first-sound-set-synthesized-and-cooked-at-m3.md), [ADR-172](../ADR/ADR-172-the-audio-engine-at-the-mvps-size.md), [ADR-173](../ADR/ADR-173-the-first-sound-set-played-at-m3.md); DEC-1009, Open).** M3 plays the set through the audio engine at the MVP's size. A laser shot, a death, an orb becoming a Worker and a structure completed each play at their event's position on the world bus. The attack warning and a battle's start and end play two-dimensional on the announcer bus. The levels and the distance are table 3's provisional `mvp.sound.*`. No sound plays for a turret sighting its target, since the set has no group for it.
 
 ### 2.10 Seams kept for growth (O50)
 
@@ -399,7 +411,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.conflict.warning_minutes` | 5 | minutes of world time | tick | provisional | MVP-042 | Narrows WLD-102's 10; Playtest 2 checks it is enough when the deputy defends |
 | `mvp.defense.damage_taken_factor` | 0.75 | of reference damage | tick | provisional | MVP-044 | Defending should win most even fights |
 | `mvp.battle.objective_radius` | 150 | wu | — | provisional | MVP-045 | — |
-| `mvp.battle.objective_hold_s` | 30 | seconds | tick | provisional | MVP-045 | — |
+| `mvp.battle.objective_hold_s` | 120 | seconds | tick | provisional | MVP-045 | O102: a claim battle is fought before it is won; 30 until the valley run's sweep |
 | `mvp.battle.rout_share` | 0.25 | of Workers sent | — | provisional | MVP-045 | Battles of 4 to 12 minutes (PIL-047) |
 | `mvp.protection.loss_cap_worker_share` | 0.30 | of Workers at battle start | — | provisional | MVP-046 | Playtest 2: back to strength within a day after a night of attacks (PIL-022) |
 | `mvp.protection.loss_cap_store_share` | 0.25 | of stores | — | provisional | MVP-046 | — |
@@ -414,12 +426,14 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.grievance.battle_relief_won` | 50 | % of the attacker's grievances | — | provisional | MVP-052 | Without relief an AI would attack again at every respite's end |
 | `mvp.grievance.battle_relief_lost` | 25 | % of the attacker's grievances | — | provisional | MVP-052 | — |
 | `mvp.claim.uncontested_minutes` | 30 | minutes | scaled | provisional | MVP-053 | — |
+| `mvp.claim.cooldown_minutes` | 120 | minutes | scaled | provisional | MVP-053 | O102: an area is claimed again at most every 2 hours of play, from the valley run's sweep of 60 and 120 |
 | `mvp.relation.tribute_ru_per_weight` | 10 | ru per weight | — | provisional | MVP-054 | Easing must be affordable but not cheaper than defending |
 | `mvp.temperament.bold_threshold` | 40 | anger | — | provisional | MVP-057 | — |
 | `mvp.temperament.territorial_threshold` | 70 | anger | — | provisional | MVP-057 | — |
 | `mvp.temperament.wary_threshold` | 100 | anger | — | provisional | MVP-057 | — |
 | `mvp.ai.attack_min_share` | 0.60 | of the target's seen Workers | — | provisional | MVP-055 | — |
 | `mvp.ai.decision_ticks` | 50 | ticks | tick | provisional | MVP-058 | ADR-080 item 2's cadence |
+| `mvp.ai.muster_minutes` | 2 | minutes of world time | tick | provisional | MVP-055 | DEC-1006: how long an AI settlement gathers its expedition |
 | `mvp.run.length_hours` | 8 | hours of play | scaled | provisional | MVP-060 | 8 world days at the always-on pace; Playtest 1 judges the arc |
 | `mvp.run.quiet_minutes` | 15 | minutes | scaled | provisional | MVP-060 | — |
 | `mvp.renown.defense_held` | 3 | renown | — | provisional | MVP-061 | — |
@@ -483,6 +497,8 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.hud.bar_button_width` | 96 | HUD units | — | provisional | MVP-101 | The construction bar's entries |
 | `mvp.hud.bar_height` | 34 | HUD units | — | provisional | MVP-101 | — |
 | `mvp.hud.queue_size` | 26 | HUD units | — | provisional | MVP-102 | A queued site's square |
+| `mvp.hud.relations_rows_max` | 14 | rows | — | provisional | MVP-102 | The relations panel's rows at most; its last row says how many more there are (ADR-166) |
+| `mvp.hud.result_width` | 222 | HUD units | — | provisional | MVP-048 | The result card's width, `icon.hud.result_card`'s 400 px display width at a 1080-pixel client (ADR-168) |
 | `mvp.hud.priority_step` | 10 | % | — | provisional | MVP-036 | A priority's arrow moves its share by this much, the other two shares the other way (ADR-153) |
 | `mvp.hud.disabled_alpha` | 0.35 | opacity | — | provisional | MVP-102 | An arrow that cannot move its share |
 | `mvp.hud.palette.accent` | 0.55, 0.6, 1.0, 0.85 | linear RGBA | — | provisional | MVP-102 | O95's provisional palette for RND-403's roles: the accent panel's tint |
@@ -492,6 +508,14 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.hud.palette.negative` | 1.0, 0.3, 0.3, 1.0 | linear RGBA | — | provisional | MVP-102 | Negative captions: growth stopped, idle Workers, a cost the stores cannot pay |
 | `mvp.hud.palette.meter_track` | 1.0, 1.0, 1.0, 0.15 | linear RGBA | — | provisional | MVP-102 | — |
 | `mvp.hud.palette.meter_fill` | 0.3, 0.6, 0.9, 0.9 | linear RGBA | — | provisional | MVP-102 | — |
+| `mvp.sound.min_distance` | 1000 | wu | — | provisional | MVP-087 | A positioned sound's full level within this distance of the camera, falling as 1/d beyond it (AEN-201; DEC-1009, ADR-173); the owner tunes the mix at T15's run |
+| `mvp.sound.laser_shot.level_db` | −12 | dB | — | provisional | MVP-087 | `sfx.weapon.laser_bolt.spawn`, on the world bus; every synthesized member peaks at −1 dBFS (ADR-171) |
+| `mvp.sound.death.level_db` | −9 | dB | — | provisional | MVP-087 | `sfx.unit.worker.die`, a Worker's or a Leader's |
+| `mvp.sound.orb_becomes_worker.level_db` | −6 | dB | — | provisional | MVP-087 | `sfx.unit.essence_orb.collected` |
+| `mvp.sound.structure_completed.level_db` | −6 | dB | — | provisional | MVP-087 | `sfx.building.dwelling.complete`, every structure's |
+| `mvp.sound.attack_warning.level_db` | −6 | dB | — | provisional | MVP-087 | `sfx.unit.worker.attack_horn`, two-dimensional on the announcer bus |
+| `mvp.sound.battle_started.level_db` | −6 | dB | — | provisional | MVP-087 | `sfx.ui.battle.start`, on the announcer bus |
+| `mvp.sound.battle_ended.level_db` | −6 | dB | — | provisional | MVP-087 | `sfx.ui.battle.end`, on the announcer bus |
 
 *Table 3 — The tuning values of the MVP.*
 

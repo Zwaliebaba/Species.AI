@@ -1,6 +1,8 @@
 #include "pch.h"
 
 #include "RegionTerrain.h"
+#include "RelationMessages.h"
+#include "ResourceSites.h"
 #include "Sha256.h"
 #include "TestSupport.h"
 #include "Tuning.h"
@@ -238,6 +240,37 @@ public:
     const Species::ResourceSitePlace& central = places.back();
     Assert::IsTrue(central.siteClass == Species::ResourceSiteClass::Central && !central.site && central.units == 3, L"the central site");
     Assert::IsTrue(central.position.x == layout.valleyCenter.x && central.position.z == layout.valleyCenter.z, L"at the valley's centre");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp053AClaimsAreaCenterIsItsResourceSite)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-053")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"WLD-080")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp053AClaimsAreaCenterIsItsResourceSite)
+  {
+    // ADR-167: a half's centre is the border resource site of the half's own site that faces the half's neighbour, and
+    // the central site's the central resource site, each on the terrain; nothing beyond the central area.
+    const Species::RegionTerrain& region = SeedOne();
+    const std::vector<Species::ResourceSitePlace>& places = region.resourceSites;
+    for (std::uint8_t area = 0; area < Species::CLAIM_AREA_CENTRAL; ++area)
+    {
+      const auto& pair = Species::VALLEY_PAIRS[area / 2U];
+      const std::uint8_t own = pair[area % 2U];
+      const std::uint8_t neighbor = pair[1U - area % 2U];
+      // A site's border resource sites are its 10th and 11th places, towards its neighbour across x and then across z.
+      const std::size_t index = std::size_t{own} * 11 + (neighbor == (own ^ 1U) ? 9 : 10);
+      const std::optional<Neuron::Vec3> center = Species::ClaimAreaCenter(region.layout, region.field, Tuning(), area);
+      Assert::IsTrue(center.has_value(), L"every half has a centre");
+      const Neuron::Vec3 at = center.value_or(Neuron::Vec3{});
+      Assert::AreEqual(places[index].position.x, at.x, 1e-9, L"at its resource site, x");
+      Assert::AreEqual(places[index].position.z, at.z, 1e-9, L"at its resource site, z");
+      Assert::AreEqual(region.field.Height(at.x, at.z), at.y, 1e-12, L"on the terrain");
+    }
+    const Neuron::Vec3 central =
+      Species::ClaimAreaCenter(region.layout, region.field, Tuning(), Species::CLAIM_AREA_CENTRAL).value_or(Neuron::Vec3{});
+    Assert::IsTrue(central.x == places.back().position.x && central.z == places.back().position.z, L"the central resource site");
+    Assert::IsFalse(Species::ClaimAreaCenter(region.layout, region.field, Tuning(), Species::CLAIM_AREA_CENTRAL + 1).has_value(),
+                    L"no area beyond");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Wld082EveryResourceSiteIsWalkableOnACorpusOfSeeds)

@@ -8,6 +8,7 @@
 #include "FontCoverage.h"
 #include "GameFonts.h"
 #include "MeshCooker.h"
+#include "AudioCooker.h"
 #include "PlaceholderTexture.h"
 #include "RecordCooker.h"
 #include "SimulationRecordCooker.h"
@@ -163,6 +164,10 @@ BuildResult CookContent(const std::filesystem::path& _root, BuildReport& _report
     {
       entry = CheckTexture(*row, source.file, source.bytes, _report);
     }
+    else if (row != nullptr && IsSoundCategory(row->category) && source.file.ends_with(".wav"))
+    {
+      entry = CookSound(*row, source.file, source.bytes, _report); // AST-079, AST-080 (ADR-171)
+    }
     else if (row != nullptr)
     {
       _report.Fail(source.file,
@@ -233,13 +238,18 @@ BuildResult CookContent(const std::filesystem::path& _root, BuildReport& _report
       continue;
     }
     ++result.rowsWithoutFile;
-    if (std::optional<Neuron::CookedEntry> standIn = MakePlaceholderTexture(row))
+    std::optional<Neuron::CookedEntry> standIn = MakePlaceholderTexture(row);
+    // A stand-in meets its row as an authored file must, or the build fails with the ways it does not.
+    if (standIn && !CheckTexture(row, row.speciesFilename, standIn->bytes, _report))
     {
-      // A stand-in meets its row as an authored file must, or the build fails with the ways it does not.
-      if (!CheckTexture(row, row.speciesFilename, standIn->bytes, _report))
-      {
-        continue;
-      }
+      continue;
+    }
+    if (!standIn)
+    {
+      standIn = MakePlaceholderSound(row, _report); // O98 (ADR-171): the MVP's sound set, synthesized
+    }
+    if (standIn)
+    {
       if (const auto [at, added] = keys.emplace(standIn->entry.key, row.speciesFilename); !added)
       {
         _report.Fail(row.speciesFilename,
@@ -250,6 +260,7 @@ BuildResult CookContent(const std::filesystem::path& _root, BuildReport& _report
       ++result.placeholders;
     }
   }
+  CheckSoundBank(result.entries, _report); // AST-081 (ADR-171)
   return result;
 }
 

@@ -26,6 +26,7 @@ constexpr std::wstring_view WATCH_OPTION = L"--watch";
 constexpr std::wstring_view WORLD_OPTION = L"--world";
 constexpr std::wstring_view SANDBOX_OPTION = L"--sandbox"; // ADR-155
 constexpr std::wstring_view UI_TEST_OPTION = L"--ui-test";
+constexpr std::wstring_view GPU_VALIDATION_OPTION = L"--gpu-validation"; // ADR-174
 
 // A decimal number of digits only that fits 64 bits, or none.
 std::optional<std::uint64_t> DecimalOf(std::wstring_view _text) noexcept
@@ -117,6 +118,11 @@ StartupOptions ParseArguments(std::span<const std::wstring> _arguments)
     if (_arguments[i] == UI_TEST_OPTION)
     {
       options.uiTest = true;
+      continue;
+    }
+    if (_arguments[i] == GPU_VALIDATION_OPTION)
+    {
+      options.gpuValidation = true;
       continue;
     }
     if (_arguments[i] == RENDER_CHECK_OPTION && i + 1 < _arguments.size())

@@ -36,7 +36,7 @@ struct FrontEndHarness
   Neuron::UiCore ui{[this](Neuron::UiPageId _page) -> std::unique_ptr<Neuron::UiPage>
                     {
                       const auto first = static_cast<Neuron::UiPageId>(Species::GamePage::FrontEndMain);
-                      if (_page >= first && _page <= static_cast<Neuron::UiPageId>(Species::GamePage::FrontEndOptions))
+                      if (_page >= first && _page <= static_cast<Neuron::UiPageId>(Species::GamePage::FrontEndPastRuns))
                       {
                         return frontEnd.MakePage(static_cast<Species::FrontEndPage>(_page - first));
                       }
@@ -107,6 +107,43 @@ struct FrontEndHarness
 TEST_CLASS(FrontEndTests)
 {
 public:
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp063PastRunsOpenTheEpilogueOfAnEndedWorld)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-063")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-372")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp063PastRunsOpenTheEpilogueOfAnEndedWorld)
+  {
+    // ADR-170: Past runs is inactive until a run has ended; its page lists the ended worlds, each choosing its epilogue.
+    FrontEndHarness none;
+    none.Open();
+    none.Click("past_runs");
+    none.Frame({});
+    Assert::AreEqual(std::size_t{1}, none.ui.Stack().size(), L"no ended run, no page");
+
+    FrontEndHarness h;
+    std::vector<Species::SavedWorld> ended(2);
+    ended[0].number = 5;
+    ended[0].seed = 11;
+    ended[0].ended = true;
+    ended[1].number = 2;
+    ended[1].ended = true;
+    h.frontEnd.SetEnded(ended);
+    h.Open();
+    h.Click("past_runs");
+    h.Frame({});
+    Assert::AreEqual(std::size_t{2}, h.ui.Stack().size(), L"the past runs' page");
+    Assert::IsTrue(Neuron::ValidateWindow(*h.ui.Focused()).empty(), L"UI-372: the page passes the validator");
+    Assert::IsTrue(h.CursorOn("world_0"), L"the newest first");
+    h.Click("world_1");
+    const std::optional<Species::FrontEndChoice> choice = h.frontEnd.TakeChoice();
+    Assert::IsTrue(choice.has_value() && choice->kind == Species::FrontEndChoice::Kind::Epilogue &&
+                     choice->world.value_or(Species::SavedWorld{}).number == 2,
+                   L"a world chosen opens its epilogue");
+    h.Click("back");
+    h.Frame({});
+    Assert::AreEqual(std::size_t{1}, h.ui.Stack().size(), L"Back returns to the main page");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp103TheMainPageContinuesOnlyAWorldThatCanBe)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-103")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-372")
@@ -159,22 +196,26 @@ public:
     h.Frame(input);
     h.Down();
     h.Down();
-    Assert::IsTrue(h.CursorOn("start"), L"the site, then Start");
+    h.Down();
+    Assert::IsTrue(h.CursorOn("start"), L"the site, the neighbors, then Start");
     h.Activate();
     // No choice reads as Quit's default, so each check below fails without one.
     Species::FrontEndChoice choice = h.frontEnd.TakeChoice().value_or(Species::FrontEndChoice{});
     Assert::IsTrue(choice.kind == Species::FrontEndChoice::Kind::NewWorld, L"a new world");
     Assert::IsTrue(choice.seed == std::optional<std::uint64_t>(42), L"from the seed typed");
     ExpectEqual(CommittedTuning().mvp.sandbox.stewardSite, choice.site, L"at the default site");
+    ExpectEqual(3, choice.aiSettlements, L"O103: with the three AI settlements by default (MVP-013)");
 
     // An empty field draws the seed; one beyond 64 bits starts nothing.
     Neuron::UiWindow& window = *h.ui.Focused();
     window.SetValue(window.Find("seed"), "");
     h.Click("site");
+    h.Click("neighbors");
     h.Click("start");
     choice = h.frontEnd.TakeChoice().value_or(Species::FrontEndChoice{});
     Assert::IsTrue(choice.kind == Species::FrontEndChoice::Kind::NewWorld && !choice.seed.has_value(), L"no seed: the server draws one");
     ExpectEqual((CommittedTuning().mvp.sandbox.stewardSite + 1) % 4, choice.site, L"at the site stepped to");
+    ExpectEqual(0, choice.aiSettlements, L"O103: and alone, for M2's growth run");
     window.SetValue(window.Find("seed"), "18446744073709551616");
     h.Click("start");
     Assert::IsFalse(h.frontEnd.TakeChoice().has_value(), L"a seed beyond 64 bits starts nothing");

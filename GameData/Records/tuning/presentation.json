@@ -232,7 +232,8 @@
       "frame": {
         "fps_window": 1.0,
         "fps_initial": 60,
-        "delta_clamp": 0.25
+        "delta_clamp": 0.25,
+        "audio_update_period": 0.05
       },
       "match_entry": {
         "camera_border": 200,
@@ -505,6 +506,40 @@
         "title_height": 1.5,
         "back_offset": 2
       }
+    },
+    "aud": {
+      "bus": {
+        "ui": {
+          "level": 0
+        },
+        "announcer": {
+          "level": 0,
+          "duck_world_db": -6,
+          "duck_time": 1
+        },
+        "voice": {
+          "level": -3
+        },
+        "world": {
+          "level": -3
+        },
+        "ambience": {
+          "level": -10
+        },
+        "music": {
+          "level": -6
+        }
+      },
+      "mix": {
+        "floor_db": -100,
+        "master_step_db": 0.32
+      },
+      "rank": {
+        "copy_decay": 0.75
+      },
+      "layer": {
+        "one_shot_patience_updates": 3
+      }
     }
   },
   "mvp": {
@@ -655,7 +690,33 @@
         }
       },
       "priority_step": 10,
-      "disabled_alpha": 0.35
+      "disabled_alpha": 0.35,
+      "relations_rows_max": 14,
+      "result_width": 222
+    },
+    "sound": {
+      "min_distance": 1000,
+      "laser_shot": {
+        "level_db": -12
+      },
+      "death": {
+        "level_db": -9
+      },
+      "orb_becomes_worker": {
+        "level_db": -6
+      },
+      "structure_completed": {
+        "level_db": -6
+      },
+      "attack_warning": {
+        "level_db": -6
+      },
+      "battle_started": {
+        "level_db": -6
+      },
+      "battle_ended": {
+        "level_db": -6
+      }
     }
   },
   "dbg": {
@@ -1144,6 +1205,51 @@
     "repeat": {
       "initial_delay": 0.3,
       "period": 0.3
+    }
+  },
+  "aen": {
+    "update": {
+      "period": 0.01,
+      "schedule_latency": 0.03
+    },
+    "queue": {
+      "command_capacity": 4096
+    },
+    "instances": {
+      "capacity": 1024
+    },
+    "voice": {
+      "budget": 64,
+      "pool_headroom": 8,
+      "bus_cap": {
+        "ui": 4,
+        "announcer": 4,
+        "voice": 16,
+        "world": 32,
+        "ambience": 4,
+        "music": 2
+      },
+      "event_cap": {
+        "world_default": 4,
+        "world_max": 6
+      },
+      "steal_margin_db": 3,
+      "state_hold": 0.25,
+      "steal_fade": 0.02,
+      "max_frequency_ratio": 3.0
+    },
+    "mix": {
+      "limiter": {
+        "release": 6,
+        "loudness": 1000
+      }
+    },
+    "spatial": {
+      "max_distance_default": 1000000000,
+      "max_distance_fade_fraction": 0.1
+    },
+    "rng": {
+      "match_seed": 1
     }
   }
 }

@@ -4,12 +4,14 @@
 #include "FrontEnd.h"
 #include "GameUi.h"
 #include "Log.h"
+#include "PageSkeleton.h"
 #include "UiLook.h"
 
 #include <algorithm>
 #include <array>
 #include <charconv>
 #include <cmath>
+#include <format>
 #include <limits>
 #include <string>
 #include <utility>
@@ -36,130 +38,47 @@ constexpr std::string_view STRING_SEED = "ui.front.seed";
 constexpr std::string_view STRING_SEED_TOO_LARGE = "ui.front.seed_too_large";
 constexpr std::string_view STRING_SITE = "ui.front.site";
 constexpr std::string_view STRING_SITE_OPTION = "ui.front.site_option";
+constexpr std::string_view STRING_NEIGHBORS = "ui.front.neighbors";               // O103
+constexpr std::string_view STRING_NEIGHBORS_OPTION = "ui.front.neighbors_option"; // O103
 constexpr std::string_view STRING_WINDOW = "ui.front.window";
 constexpr std::string_view STRING_ANTI_ALIASING = "ui.front.anti_aliasing";
 constexpr std::string_view STRING_ANTI_ALIASING_OPTION = "ui.front.anti_aliasing_option";
 constexpr std::string_view STRING_VSYNC = "ui.front.vsync";
 constexpr std::string_view STRING_VOLUME = "ui.front.volume";
 constexpr std::string_view STRING_VOLUME_OPTION = "ui.front.volume_option";
+constexpr std::string_view STRING_CONTINUE_ENDED = "ui.front.continue_ended"; // ADR-170
+constexpr std::string_view STRING_PAST_RUNS = "ui.front.past_runs";
+constexpr std::string_view STRING_PAST_RUN = "ui.front.past_run";
+constexpr std::string_view STRING_NO_PAST_RUN = "ui.front.no_past_run";
 
 // ContinueFault's selectors, in its order.
 constexpr std::array<std::string_view, 4> FAULT_SELECTORS{"no_snapshot", "unreadable", "damaged", "version"};
 // The anti-aliasing options, as the settings store spells them and as the string's selector names them (O96).
 constexpr std::array<std::string_view, 3> ANTI_ALIASING_VALUES{ANTI_ALIASING_OFF, ANTI_ALIASING_2X, ANTI_ALIASING_4X};
 constexpr std::array<std::string_view, 3> ANTI_ALIASING_SELECTORS{"off", "two", "four"};
-constexpr std::uint8_t SITE_COUNT = 4;     // WLD-040: the region's settlement sites
+constexpr std::uint8_t SITE_COUNT = 4; // WLD-040: the region's settlement sites
+// O103: the neighbors cycler's options, the AI settlements at the other sites (MVP-013) first, then none.
+constexpr std::array<std::string_view, 2> NEIGHBOR_SELECTORS{"three", "none"};
+constexpr std::array<std::uint8_t, 2> NEIGHBOR_COUNTS{AI_SETTLEMENTS_FULL, 0};
 constexpr std::int64_t PERCENT_FULL = 100; // the volume's 100 %
-constexpr float ROW_TITLE_ROWS = 1.8f;     // R-META-201: the first row half a button and a title below the box's top
-constexpr float NOTICE_ROWS = 2.0f;        // a notice spans two rows of the body text
-
-/// The front end's page skeleton (UI-373 at M2, ADR-155): the page grid's title bar and boxes, the page title in the left
-/// box, a column of rows in the medium font, a notice in the body role below them, and Back at its offset above the
-/// box's bottom.
-class SkeletonPage : public Neuron::UiPage
+/// The front end's page skeleton (ADR-155): the shared skeleton, with the front end for its strings and its Back.
+class SkeletonPage : public PageSkeleton
 {
 public:
   SkeletonPage(FrontEnd& _frontEnd, std::string_view _name)
-    : m_frontEnd(_frontEnd),
-      m_name(_name)
+    : PageSkeleton(*_frontEnd.Settings().presentation, _name),
+      m_frontEnd(_frontEnd)
   {
-  }
-
-  [[nodiscard]] std::string_view Name() const override
-  {
-    return m_name;
-  }
-
-  void Layout(Neuron::UiWindow& _window, const Neuron::UiMetrics& _metrics) override
-  {
-    const TuningPresentation& presentation = *m_frontEnd.Settings().presentation;
-    const Neuron::PageGrid grid = Neuron::ComputePageGrid(_metrics.client, PageGridKeysOf(presentation));
-    const auto& layout = presentation.ref.meta.layout;
-    _window.SetRect(m_titleBar, grid.titleBar);
-    _window.SetRect(m_leftBox, grid.leftBox);
-    _window.SetRect(m_rightBox, grid.rightBox);
-    const Neuron::UiRect& left = grid.leftBox;
-    const auto inset = static_cast<float>(layout.titleInset);
-    _window.SetRect(m_title, Neuron::UiRect::FromSize(left.left + inset, left.top + inset, left.Width() - 2.0f * inset,
-                                                      static_cast<float>(layout.titleHeight) * grid.buttonHeight));
-    _window.SetFontPixels(m_title, grid.fontMedium);
-    float y = left.top + ROW_TITLE_ROWS * grid.buttonHeight + grid.ButtonStep();
-    for (const Neuron::UiHandle row : m_rows)
-    {
-      _window.SetRect(row, Neuron::UiRect::FromSize(grid.ButtonColumnLeft(), y, grid.buttonWidth, grid.buttonHeight));
-      _window.SetFontPixels(row, grid.fontMedium);
-      y += grid.ButtonStep();
-    }
-    _window.SetRect(m_notice, Neuron::UiRect::FromSize(grid.ButtonColumnLeft(), y, grid.buttonWidth, NOTICE_ROWS * grid.buttonHeight));
-    _window.SetFontPixels(m_notice, grid.fontSmall);
-    if (m_back)
-    {
-      _window.SetRect(m_back, Neuron::UiRect::FromSize(grid.ButtonColumnLeft(),
-                                                       left.bottom - static_cast<float>(layout.backOffset) * grid.buttonHeight,
-                                                       grid.buttonWidth, grid.buttonHeight));
-      _window.SetFontPixels(m_back, grid.fontMedium);
-    }
   }
 
 protected:
-  // The skeleton with its title; the page adds its rows, then Finish.
-  void Begin(Neuron::UiWindow& _window, std::string _title)
-  {
-    m_titleBar = Add(_window, Neuron::UiWidgetKind::FillBox, "title_bar", {});
-    m_leftBox = Add(_window, Neuron::UiWidgetKind::FillBox, "left_box", {});
-    m_rightBox = Add(_window, Neuron::UiWidgetKind::FillBox, "right_box", {});
-    m_title = Add(_window, Neuron::UiWidgetKind::PageTitle, "title", std::move(_title));
-  }
-  Neuron::UiHandle Row(Neuron::UiWindow& _window, Neuron::UiWidgetDesc _desc)
-  {
-    const Neuron::UiHandle row = _window.Add(std::move(_desc));
-    m_rows.push_back(row);
-    return row;
-  }
-  Neuron::UiHandle Row(Neuron::UiWindow& _window, Neuron::UiWidgetKind _kind, std::string _id, std::string _text)
-  {
-    Neuron::UiWidgetDesc desc;
-    desc.kind = _kind;
-    desc.id = std::move(_id);
-    desc.text = std::move(_text);
-    return Row(_window, std::move(desc));
-  }
-  // The notice and, when _back, the Back button as the back action; the navigation order is the rows, then Back.
+  // The notice and, when _back, the Back button; the navigation order is the rows, then Back.
   void Finish(Neuron::UiWindow& _window, bool _back, Neuron::UiHandle _initialFocus = {})
   {
-    Neuron::UiWidgetDesc notice;
-    notice.id = "notice";
-    notice.role = Neuron::FontRole::Body;
-    m_notice = _window.Add(std::move(notice));
-    std::vector<Neuron::UiHandle> order = m_rows;
-    if (_back)
-    {
-      m_back = Add(_window, Neuron::UiWidgetKind::PageButton, "back", m_frontEnd.Text(STRING_BACK));
-      _window.SetBackAction(m_back);
-      order.push_back(m_back);
-    }
-    _window.SetNavigation(std::move(order), _initialFocus);
-  }
-  static Neuron::UiHandle Add(Neuron::UiWindow& _window, Neuron::UiWidgetKind _kind, std::string _id, std::string _text)
-  {
-    Neuron::UiWidgetDesc desc;
-    desc.kind = _kind;
-    desc.id = std::move(_id);
-    desc.text = std::move(_text);
-    return _window.Add(std::move(desc));
+    PageSkeleton::Finish(_window, _back ? std::optional<std::string>(m_frontEnd.Text(STRING_BACK)) : std::nullopt, _initialFocus);
   }
 
   FrontEnd& m_frontEnd;
-  Neuron::UiHandle m_notice;
-  Neuron::UiHandle m_back;
-
-private:
-  std::string_view m_name;
-  Neuron::UiHandle m_titleBar;
-  Neuron::UiHandle m_leftBox;
-  Neuron::UiHandle m_rightBox;
-  Neuron::UiHandle m_title;
-  std::vector<Neuron::UiHandle> m_rows;
 };
 
 /// MVP-103's main page: Continue, New world, Options and Quit, with why the last Continue failed. It is the root, so the
@@ -182,9 +101,10 @@ public:
     resume.inactive = !latest.has_value();
     if (latest.has_value() && latest->seed.has_value())
     {
+      // ADR-170: a world whose run has ended continues read-only, on its epilogue.
       const std::string seed = std::to_string(*latest->seed);
       const std::array arguments{Neuron::FormatArgument{"seed", std::string_view(seed)}};
-      resume.text = m_frontEnd.Text(STRING_CONTINUE_WORLD, arguments);
+      resume.text = m_frontEnd.Text(latest->ended ? STRING_CONTINUE_ENDED : STRING_CONTINUE_WORLD, arguments);
     }
     else
     {
@@ -192,6 +112,12 @@ public:
     }
     m_continue = Row(_window, std::move(resume));
     m_newWorld = Row(_window, Neuron::UiWidgetKind::PageButton, "new_world", m_frontEnd.Text(STRING_NEW_WORLD));
+    Neuron::UiWidgetDesc pastRuns;
+    pastRuns.kind = Neuron::UiWidgetKind::PageButton;
+    pastRuns.id = "past_runs";
+    pastRuns.text = m_frontEnd.Text(STRING_PAST_RUNS);
+    pastRuns.inactive = m_frontEnd.Ended().empty();
+    m_pastRuns = Row(_window, std::move(pastRuns));
     m_options = Row(_window, Neuron::UiWidgetKind::PageButton, "options", m_frontEnd.Text(STRING_OPTIONS));
     m_quit = Row(_window, Neuron::UiWidgetKind::PageButton, "quit", m_frontEnd.Text(STRING_QUIT));
     Finish(_window, false, latest.has_value() ? m_continue : m_newWorld);
@@ -223,6 +149,10 @@ public:
       {
         _navigator.Request({Neuron::UiPageRequest::Kind::Push, static_cast<Neuron::UiPageId>(GamePage::FrontEndNewWorld)});
       }
+      else if (event.widget == m_pastRuns)
+      {
+        _navigator.Request({Neuron::UiPageRequest::Kind::Push, static_cast<Neuron::UiPageId>(GamePage::FrontEndPastRuns)});
+      }
       else if (event.widget == m_options)
       {
         _navigator.Request({Neuron::UiPageRequest::Kind::Push, static_cast<Neuron::UiPageId>(GamePage::FrontEndOptions)});
@@ -239,8 +169,64 @@ public:
 private:
   Neuron::UiHandle m_continue;
   Neuron::UiHandle m_newWorld;
+  Neuron::UiHandle m_pastRuns;
   Neuron::UiHandle m_options;
   Neuron::UiHandle m_quit;
+};
+
+/// MVP-063 (ADR-170): the ended worlds, the newest first and at most PAST_RUNS_MAX, each opening on its epilogue.
+class PastRunsPage final : public SkeletonPage
+{
+public:
+  explicit PastRunsPage(FrontEnd& _frontEnd)
+    : SkeletonPage(_frontEnd, "past runs")
+  {
+  }
+
+  void Enter(Neuron::UiWindow& _window) override
+  {
+    Begin(_window, m_frontEnd.Text(STRING_PAST_RUNS));
+    const std::vector<SavedWorld>& ended = m_frontEnd.Ended();
+    m_worlds.clear();
+    for (std::size_t index = 0; index < ended.size() && index < PAST_RUNS_MAX; ++index)
+    {
+      const SavedWorld& world = ended[index];
+      const std::string seed = world.seed.has_value() ? std::to_string(*world.seed) : std::string("?");
+      const std::array arguments{Neuron::FormatArgument{"number", std::int64_t{world.number}},
+                                 Neuron::FormatArgument{"seed", std::string_view(seed)}};
+      m_worlds.push_back(
+        Row(_window, Neuron::UiWidgetKind::PageButton, std::format("world_{}", index), m_frontEnd.Text(STRING_PAST_RUN, arguments)));
+    }
+    Finish(_window, true);
+    if (ended.empty())
+    {
+      _window.SetText(m_notice, m_frontEnd.Text(STRING_NO_PAST_RUN));
+    }
+  }
+
+  void Update(Neuron::UiWindow& _window, std::span<const Neuron::UiEvent> _events, Neuron::UiNavigator& _navigator) override
+  {
+    for (const Neuron::UiEvent& event : _events)
+    {
+      if (event.kind != Neuron::UiEventKind::Click)
+      {
+        continue;
+      }
+      if (const auto chosen = std::ranges::find(m_worlds, event.widget); chosen != m_worlds.end())
+      {
+        FrontEndChoice choice{FrontEndChoice::Kind::Epilogue};
+        choice.world = m_frontEnd.Ended()[static_cast<std::size_t>(chosen - m_worlds.begin())];
+        m_frontEnd.Choose(choice);
+      }
+      else if (event.widget == m_back)
+      {
+        Back(_window, _navigator);
+      }
+    }
+  }
+
+private:
+  std::vector<Neuron::UiHandle> m_worlds;
 };
 
 /// MVP-005 and MVP-012: the new world's seed, typed or drawn, and its steward's site, then Start.
@@ -274,6 +260,16 @@ public:
     site.selected =
       static_cast<std::size_t>(std::clamp<std::int64_t>(m_frontEnd.Settings().tuning->mvp.sandbox.stewardSite, 0, SITE_COUNT - 1));
     m_site = Row(_window, std::move(site));
+    Neuron::UiWidgetDesc neighbors;
+    neighbors.kind = Neuron::UiWidgetKind::Cycler;
+    neighbors.id = "neighbors";
+    neighbors.text = m_frontEnd.Text(STRING_NEIGHBORS);
+    for (const std::string_view selector : NEIGHBOR_SELECTORS)
+    {
+      const std::array arguments{Neuron::FormatArgument{"count", selector}};
+      neighbors.options.push_back(m_frontEnd.Text(STRING_NEIGHBORS_OPTION, arguments));
+    }
+    m_neighbors = Row(_window, std::move(neighbors));
     m_start = Row(_window, Neuron::UiWidgetKind::PageButton, "start", m_frontEnd.Text(STRING_START));
     Finish(_window, true);
   }
@@ -299,6 +295,7 @@ public:
         FrontEndChoice choice{FrontEndChoice::Kind::NewWorld};
         choice.seed = *seed;
         choice.site = static_cast<std::uint8_t>(_window.Selected(m_site));
+        choice.aiSettlements = NEIGHBOR_COUNTS.at(_window.Selected(m_neighbors));
         m_frontEnd.Choose(choice);
       }
       else if (event.widget == m_back)
@@ -311,6 +308,7 @@ public:
 private:
   Neuron::UiHandle m_seed;
   Neuron::UiHandle m_site;
+  Neuron::UiHandle m_neighbors;
   Neuron::UiHandle m_start;
 };
 
@@ -439,6 +437,11 @@ void FrontEnd::SetContinueFault(std::optional<ContinueFault> _fault)
   m_fault = _fault;
 }
 
+void FrontEnd::SetEnded(std::vector<SavedWorld> _ended)
+{
+  m_ended = std::move(_ended);
+}
+
 std::unique_ptr<Neuron::UiPage> FrontEnd::MakePage(FrontEndPage _page)
 {
   switch (_page)
@@ -449,6 +452,8 @@ std::unique_ptr<Neuron::UiPage> FrontEnd::MakePage(FrontEndPage _page)
     return std::make_unique<NewWorldPage>(*this);
   case FrontEndPage::Options:
     return std::make_unique<OptionsPage>(*this);
+  case FrontEndPage::PastRuns:
+    return std::make_unique<PastRunsPage>(*this);
   }
   return nullptr;
 }

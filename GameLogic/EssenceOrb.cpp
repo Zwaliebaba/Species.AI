@@ -45,14 +45,16 @@ Settlement* SettlementOf(RegionSimulation& _region, std::uint8_t _site)
 }
 
 // MVP-025: below the population limit the orb becomes a Worker at its Wellspring's door, as R-ECON-043 has a Spawn
-// Node's Workers appear; true when it has.
+// Node's Workers appear, and the Worker's sound plays there (MVP-087, ADR-173); true when it has.
 bool BecomeWorker(RegionSimulation& _region, const Settlement& _settlement)
 {
   if (Population(_region, _settlement) >= PopulationLimitOf(_region, _settlement))
   {
     return false;
   }
-  static_cast<void>(_region.SpawnAtDoor(_settlement));
+  const std::uint32_t slot = _region.SpawnAtDoor(_settlement);
+  const Figure& worker = _region.TeamAt(_settlement.team).figures.At(slot);
+  _region.Emit({EffectEventKind::OrbBecameWorker, _settlement.team, worker.id, worker.position, {}, 0.0});
   return true;
 }
 
