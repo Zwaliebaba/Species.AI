@@ -11,7 +11,9 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <numbers>
 #include <string_view>
+#include <utility>
 
 namespace ContentBuild
 {
@@ -58,6 +60,189 @@ using Shape = std::function<float(double, double)>; // the shape's cover of a po
 float Disk(double _u, double _v, double _cx, double _cy, double _radius) noexcept
 {
   return std::hypot(_u - _cx, _v - _cy) <= _radius ? 1.0f : 0.0f;
+}
+
+// ADR-177: the parts a glyph's own stand-in is drawn from, each true where it covers the point (_u, _v).
+bool InBox(double _u, double _v, double _left, double _top, double _right, double _bottom) noexcept
+{
+  return _u >= _left && _u <= _right && _v >= _top && _v <= _bottom;
+}
+
+bool InRing(double _u, double _v, double _cx, double _cy, double _inner, double _outer) noexcept
+{
+  const double r = std::hypot(_u - _cx, _v - _cy);
+  return r >= _inner && r <= _outer;
+}
+
+// Within _halfWidth of the segment from (_ax, _ay) to (_bx, _by).
+bool NearSegment(double _u, double _v, double _ax, double _ay, double _bx, double _by, double _halfWidth) noexcept
+{
+  const double dx = _bx - _ax;
+  const double dy = _by - _ay;
+  const double t = std::clamp(((_u - _ax) * dx + (_v - _ay) * dy) / (dx * dx + dy * dy), 0.0, 1.0);
+  return std::hypot(_u - (_ax + t * dx), _v - (_ay + t * dy)) <= _halfWidth;
+}
+
+bool InTriangle(double _u, double _v, double _ax, double _ay, double _bx, double _by, double _cx, double _cy) noexcept
+{
+  const auto side = [_u, _v](double _x0, double _y0, double _x1, double _y1)
+  { return (_x1 - _x0) * (_v - _y0) - (_y1 - _y0) * (_u - _x0); };
+  const double ab = side(_ax, _ay, _bx, _by);
+  const double bc = side(_bx, _by, _cx, _cy);
+  const double ca = side(_cx, _cy, _ax, _ay);
+  return (ab >= 0.0 && bc >= 0.0 && ca >= 0.0) || (ab <= 0.0 && bc <= 0.0 && ca <= 0.0);
+}
+
+// A star of _points points round (_cx, _cy), from _outer to _inner, its first point up.
+bool InStar(double _u, double _v, double _cx, double _cy, double _outer, double _inner, int _points) noexcept
+{
+  const double step = std::numbers::pi / _points;
+  for (int k = 0; k < 2 * _points; ++k)
+  {
+    const double a0 = -std::numbers::pi / 2.0 + k * step;
+    const double a1 = a0 + step;
+    const double r0 = k % 2 == 0 ? _outer : _inner;
+    const double r1 = k % 2 == 0 ? _inner : _outer;
+    if (InTriangle(_u, _v, _cx, _cy, _cx + r0 * std::cos(a0), _cy + r0 * std::sin(a0), _cx + r1 * std::cos(a1), _cy + r1 * std::sin(a1)))
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+float Cover(bool _covered) noexcept
+{
+  return _covered ? 1.0f : 0.0f;
+}
+
+/// ADR-177: a glyph row's own stand-in, by the stem of its file, so that the HUD's icons and buttons tell apart before
+/// the owner draws them; any other glyph keeps the ring round a dot (ADR-140).
+struct GlyphStandIn
+{
+  std::string_view stem;
+  float (*cover)(double, double);
+};
+
+constexpr std::array<GlyphStandIn, 20> GLYPH_STAND_INS{{
+  // cursor.pointer: an arrow pointing down, which the HUD flips for up (UI-076).
+  {"Pointer", [](double _u, double _v)
+   { return Cover(InBox(_u, _v, 0.40, 0.12, 0.60, 0.52) || InTriangle(_u, _v, 0.18, 0.45, 0.82, 0.45, 0.50, 0.88)); }},
+  // cursor.place: a placing frame of four corners round a dot.
+  {"Place",
+   [](double _u, double _v)
+   {
+     const double du = std::abs(_u - 0.5);
+     const double dv = std::abs(_v - 0.5);
+     const bool corner = du <= 0.34 && dv <= 0.34 && ((du >= 0.26 && dv >= 0.10) || (dv >= 0.26 && du >= 0.10));
+     return Cover(corner || std::hypot(_u - 0.5, _v - 0.5) <= 0.06);
+   }},
+  // icon.hud.resource: a crystal.
+  {"Resource", [](double _u, double _v) { return Cover(std::abs(_u - 0.5) / 0.26 + std::abs(_v - 0.5) / 0.40 <= 1.0); }},
+  // icon.hud.growth: a plus in a ring.
+  {"Growth",
+   [](double _u, double _v) {
+     return Cover(InRing(_u, _v, 0.5, 0.5, 0.31, 0.41) || InBox(_u, _v, 0.44, 0.28, 0.56, 0.72) || InBox(_u, _v, 0.28, 0.44, 0.72, 0.56));
+   }},
+  // icon.hud.priority, gathering: a basket.
+  {"PriorityGather", [](double _u, double _v)
+   { return Cover((InRing(_u, _v, 0.5, 0.42, 0.22, 0.34) && _v >= 0.42) || InBox(_u, _v, 0.12, 0.36, 0.88, 0.44)); }},
+  // icon.hud.priority, construction: a hammer.
+  {"PriorityConstruct",
+   [](double _u, double _v) { return Cover(InBox(_u, _v, 0.20, 0.16, 0.80, 0.38) || InBox(_u, _v, 0.43, 0.38, 0.57, 0.88)); }},
+  // icon.hud.priority, guard duty: a shield.
+  {"PriorityGuard",
+   [](double _u, double _v)
+   {
+     const double half = _v <= 0.50 ? 0.32 : 0.32 * (0.88 - _v) / 0.38;
+     return Cover(_v >= 0.14 && _v <= 0.88 && std::abs(_u - 0.5) <= half);
+   }},
+  // icon.hud.dwelling: a house with a door.
+  {"Dwelling",
+   [](double _u, double _v)
+   {
+     const bool body = InBox(_u, _v, 0.24, 0.48, 0.76, 0.86) && !InBox(_u, _v, 0.43, 0.64, 0.57, 0.86);
+     return Cover(body || InTriangle(_u, _v, 0.12, 0.50, 0.88, 0.50, 0.50, 0.14));
+   }},
+  // icon.hud.storehouse: a crate.
+  {"Storehouse",
+   [](double _u, double _v)
+   {
+     const bool outline = InBox(_u, _v, 0.16, 0.22, 0.84, 0.84) && !InBox(_u, _v, 0.24, 0.30, 0.76, 0.76);
+     return Cover(outline || InBox(_u, _v, 0.16, 0.49, 0.84, 0.57));
+   }},
+  // icon.power.gun_turret: a turret's base and barrel.
+  {"GunTurret",
+   [](double _u, double _v) { return Cover(std::hypot(_u - 0.5, _v - 0.66) <= 0.22 || NearSegment(_u, _v, 0.5, 0.62, 0.82, 0.20, 0.07)); }},
+  // icon.hud.contact: two rings that meet.
+  {"Contact", [](double _u, double _v) { return Cover(InRing(_u, _v, 0.36, 0.5, 0.18, 0.26) || InRing(_u, _v, 0.64, 0.5, 0.18, 0.26)); }},
+  // icon.hud.claim: a flag on its pole.
+  {"Claim", [](double _u, double _v)
+   { return Cover(InBox(_u, _v, 0.22, 0.12, 0.30, 0.88) || InTriangle(_u, _v, 0.30, 0.14, 0.30, 0.52, 0.84, 0.33)); }},
+  // icon.hud.attack: two crossed blades.
+  {"Attack", [](double _u, double _v)
+   { return Cover(NearSegment(_u, _v, 0.2, 0.2, 0.8, 0.8, 0.07) || NearSegment(_u, _v, 0.8, 0.2, 0.2, 0.8, 0.07)); }},
+  // icon.hud.battle: crossed blades in a ring.
+  {"Battle",
+   [](double _u, double _v)
+   {
+     return Cover(InRing(_u, _v, 0.5, 0.5, 0.35, 0.43) || NearSegment(_u, _v, 0.32, 0.32, 0.68, 0.68, 0.06) ||
+                  NearSegment(_u, _v, 0.68, 0.32, 0.32, 0.68, 0.06));
+   }},
+  // icon.hud.tribute: a stack of coins.
+  {"Tribute",
+   [](double _u, double _v) {
+     return Cover(InBox(_u, _v, 0.20, 0.64, 0.80, 0.78) || InBox(_u, _v, 0.27, 0.45, 0.73, 0.59) || InBox(_u, _v, 0.34, 0.26, 0.66, 0.40));
+   }},
+  // icon.hud.withdraw: an arrow pointing back, to the left.
+  {"Withdraw", [](double _u, double _v)
+   { return Cover(InBox(_u, _v, 0.42, 0.42, 0.86, 0.58) || InTriangle(_u, _v, 0.12, 0.50, 0.48, 0.20, 0.48, 0.80)); }},
+  // icon.hud.respite: a pause.
+  {"Respite", [](double _u, double _v) { return Cover(InBox(_u, _v, 0.26, 0.20, 0.42, 0.80) || InBox(_u, _v, 0.58, 0.20, 0.74, 0.80)); }},
+  // icon.hud.renown: a star.
+  {"Renown", [](double _u, double _v) { return Cover(InStar(_u, _v, 0.5, 0.54, 0.42, 0.18, 5)); }},
+  // icon.hud.run_clock: a clock.
+  {"RunClock",
+   [](double _u, double _v)
+   {
+     return Cover(InRing(_u, _v, 0.5, 0.5, 0.33, 0.41) || NearSegment(_u, _v, 0.5, 0.5, 0.5, 0.26, 0.045) ||
+                  NearSegment(_u, _v, 0.5, 0.5, 0.68, 0.5, 0.045));
+   }},
+  // icon.hud.deputy: two rank chevrons.
+  {"Deputy",
+   [](double _u, double _v)
+   {
+     const auto chevron = [_u, _v](double _top)
+     { return NearSegment(_u, _v, 0.20, _top + 0.22, 0.50, _top, 0.06) || NearSegment(_u, _v, 0.50, _top, 0.80, _top + 0.22, 0.06); };
+     return Cover(chevron(0.24) || chevron(0.48));
+   }},
+}};
+
+// The stem of a file under GameData/: its name without its folder or extension.
+std::string_view StemOf(std::string_view _filename) noexcept
+{
+  const std::size_t slash = _filename.find_last_of('/');
+  std::string_view name = slash == std::string_view::npos ? _filename : _filename.substr(slash + 1);
+  return name.substr(0, name.find_last_of('.'));
+}
+
+// ADR-177: the glyph row's own stand-in, and a derived variant's its base's (`<stem>Shadow`), if it has one.
+std::optional<Shape> GlyphShapeOf(std::string_view _filename)
+{
+  constexpr std::string_view SHADOW = "Shadow";
+  std::string_view stem = StemOf(_filename);
+  if (stem.ends_with(SHADOW))
+  {
+    stem.remove_suffix(SHADOW.size());
+  }
+  for (const GlyphStandIn& standIn : GLYPH_STAND_INS)
+  {
+    if (standIn.stem == stem)
+    {
+      return Shape(standIn.cover);
+    }
+  }
+  return std::nullopt;
 }
 
 std::optional<Shape> ShapeOf(std::string_view _kind)
@@ -308,7 +493,14 @@ std::optional<Neuron::CookedEntry> MakePlaceholderTexture(const ManifestRow& _ro
   {
     return std::nullopt;
   }
-  const std::optional<Shape> shape = ShapeOf(_row.placeholder);
+  std::optional<Shape> shape = ShapeOf(_row.placeholder);
+  if (_row.placeholder == GLYPH || _row.placeholder == DERIVED)
+  {
+    if (std::optional<Shape> own = GlyphShapeOf(_row.speciesFilename); own.has_value())
+    {
+      shape = std::move(own);
+    }
+  }
   const bool bc7 = _row.targetFormat.find("BC7_UNORM_SRGB") != std::string::npos;
   const bool bc4 = _row.targetFormat.find("BC4_UNORM") != std::string::npos;
   const std::optional<PixelSize> display = PixelSizeAfter(_row.spec);
