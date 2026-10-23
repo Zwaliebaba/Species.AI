@@ -132,6 +132,8 @@ struct Respite
 [[nodiscard]] const Settlement* SettlementOfSide(const RegionSimulation& _region, std::uint8_t _team) noexcept;
 // The expedition of the settlement at _site, or none; and the battle of an expedition, or none.
 [[nodiscard]] const Expedition* ExpeditionOf(const RegionSimulation& _region, std::uint8_t _site) noexcept;
+// MVP-045: the objective of the expedition's battle: the target's Wellspring, or the claimed area's resource site.
+[[nodiscard]] Neuron::Vec3 ObjectiveOf(const RegionSimulation& _region, const Expedition& _expedition);
 [[nodiscard]] const Battle* BattleOf(const RegionSimulation& _region, StableId _expedition) noexcept;
 // MVP-047: the settlement at _site is under a respite at the region's next tick.
 [[nodiscard]] bool UnderRespite(const RegionSimulation& _region, std::uint8_t _site) noexcept;

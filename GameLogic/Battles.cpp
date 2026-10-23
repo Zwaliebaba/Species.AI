@@ -119,14 +119,6 @@ Neuron::Vec3 WellspringOf(const RegionSimulation& _region, std::uint8_t _site)
   return wellspring != nullptr ? wellspring->position : _region.Terrain()->layout.sites[_site];
 }
 
-// MVP-045: the objective of the expedition's battle: the target's Wellspring, or the claimed area's resource site.
-Neuron::Vec3 ObjectiveOf(const RegionSimulation& _region, const Expedition& _expedition)
-{
-  const Claim* claim = ClaimNamed(_region, _expedition.claim);
-  const Structure* site = claim != nullptr ? SiteOfArea(_region, claim->area) : nullptr;
-  return site != nullptr ? site->position : WellspringOf(_region, _expedition.target);
-}
-
 // A point at _distance from _from towards _toward, on the ground.
 Neuron::Vec3 Toward(const RegionSimulation& _region, const Neuron::Vec3& _from, const Neuron::Vec3& _toward, double _distance)
 {
@@ -371,6 +363,13 @@ void EndBattle(RegionSimulation& _region, std::size_t _index, BattleEnd _end, st
 }
 
 } // namespace
+
+Neuron::Vec3 ObjectiveOf(const RegionSimulation& _region, const Expedition& _expedition)
+{
+  const Claim* claim = ClaimNamed(_region, _expedition.claim);
+  const Structure* site = claim != nullptr ? SiteOfArea(_region, claim->area) : nullptr;
+  return site != nullptr ? site->position : WellspringOf(_region, _expedition.target);
+}
 
 bool IsSettlementSide(const RegionSimulation& _region, std::uint8_t _team) noexcept
 {

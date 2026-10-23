@@ -130,3 +130,4 @@ GameLogicTests `RunTests`:
   - `GameShared/RelationMessages` (`AttackRefusal::Quiet`);
   - `Tools/SpeciesPerformance/GrowthScene`;
   - `GameLogicTests/RunTests`, `StateHashTests`, `StatisticsTests`, `TestSupport` (`RegionStateOf`).
+* **Amendment 2026-10-23 (M3 task T9, [ADR-164](ADR-164-the-command-paths-confirmation-the-valley-run-and-the-valley-at-war-at-m3.md)).** The growth scene, the region of four scripted settlements, the valley at war and the frame bench's grown settlement set their run's end at the largest tick, since they measure settlements, not a run's end. The valley run keeps its run.

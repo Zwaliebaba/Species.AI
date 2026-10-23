@@ -12,6 +12,7 @@
 #include "TestSupport.h"
 #include "Territory.h"
 #include "Upkeep.h"
+#include "ValleyAtWar.h"
 #include "WorldSimulation.h"
 #include "WorldSnapshot.h"
 
@@ -20,6 +21,7 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -758,6 +760,50 @@ public:
     Assert::IsFalse(region.Commands().Submit(STEWARD, sequence++,
                                              Neuron::EncodeMessage(Species::DeclareAttackCommand{0, {leader, 0, 0}, TARGET_SITE, 0})),
                     L"another settlement's attack is not the steward's to declare");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp015TheValleyAtWarHoldsTwoBattlesInProgress)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-015")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-056")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp015TheValleyAtWarHoldsTwoBattlesInProgress)
+  {
+    // ADR-164: the measurement scene of the region at the MVP's bound fills four settlements to their population and
+    // starts the two raids of ValleyRaidsOf at once, one on the steward's settlement, which a scripted steward runs with a
+    // Territorial settlement's decisions, and holds both battles in progress; its run never ends.
+    Species::ValleyAtWarDesc desc;
+    desc.key = SETTLED_TEST_KEY;
+    desc.terrain = ValleyTerrain();
+    desc.tuning = &FastTuning();
+    desc.structures = &TestRecords();
+    desc.population = 60;
+    desc.expedition = 10;
+    desc.settleTicks = 2'000;
+    const std::unique_ptr<Species::WorldSimulation> world = Species::StartValleyAtWar(desc);
+    const Species::RegionSimulation& region = world->Region(0);
+    const auto steward = static_cast<std::uint8_t>(FastTuning().mvp.sandbox.stewardSite);
+    const std::array<Species::ValleyRaid, 2> raids = Species::ValleyRaidsOf(steward);
+    Assert::IsTrue(raids[0].defender == steward && raids[1].attacker != steward && raids[1].defender != steward &&
+                     raids[0].attacker != raids[1].attacker && raids[0].attacker != raids[1].defender,
+                   L"the steward's neighbour raids it, and the other pair raids itself");
+    ExpectEqual(2, static_cast<std::int64_t>(region.Battles().size()), L"two battles in progress");
+    for (const Species::Settlement& settlement : region.Settlements())
+    {
+      Assert::IsTrue(Species::Population(region, settlement) <= 60 && Species::Population(region, settlement) >= 50,
+                     L"each settlement at its population of 60, its expedition among it, less the battles' first losses");
+    }
+    for (const Species::ValleyRaid& raid : raids)
+    {
+      Assert::IsTrue(std::ranges::any_of(region.Battles(), [&](const Species::Battle& _battle)
+                                         { return _battle.attacker == raid.attacker && _battle.defender == raid.defender; }),
+                     L"each raid's battle");
+    }
+    Assert::IsTrue(
+      region.CommanderOf(steward).ai &&
+        std::ranges::any_of(region.SettlementAis(), [steward](const Species::SettlementAi& _ai) { return _ai.team == steward; }) &&
+        region.SettlementAt(steward)->cladan.temperament == Species::Temperament::Territorial,
+      L"the steward's settlement run by its scripted steward with a Territorial settlement's decisions");
+    Assert::IsTrue(world->RunState().endTick == std::numeric_limits<std::uint64_t>::max(), L"a run that never ends");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp095ExpeditionsAndBattlesAreSavedAndAVersion12RegionHasNone)

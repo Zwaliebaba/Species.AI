@@ -382,6 +382,64 @@ public:
                    L"and when the battle is over its Leaders are demoted");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp053AnAiSettlementDefendsAClaimedHalfFromItsWarning)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-053")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-049")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-042")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp053AnAiSettlementDefendsAClaimedHalfFromItsWarning)
+  {
+    // ADR-164 (amending ADR-162): a claim battle's objective is the claimed half's resource site, away from the holder's
+    // home, so the holder defends from the warning: its battle core steps with the site as its objective, and its Leaders
+    // take their Workers there before the claimant is released.
+    static const Species::TuningMvp TUNING = []
+    {
+      Species::TuningMvp tuning = FastTuning();
+      tuning.mvp.conflict.warningMinutes = 2.0; // 1,200 ticks
+      return tuning;
+    }();
+    const std::unique_ptr<Species::WorldSimulation> world = ValleyWorld(SETTLED_TEST_KEY, TUNING);
+    Species::RegionSimulation& region = world->Region(0);
+    ReachAll(region);
+    const std::uint8_t holder = NeighborOf(STEWARD_SITE, 1).value_or(0);
+    Strengthen(region, holder, 60);
+    const std::uint8_t half = 3; // pair 1's half nearer the holder
+    const Species::StableId claim = Species::MakeClaim(region, STEWARD_SITE, half).value_or(0);
+    Assert::IsTrue(claim != 0, L"the steward claims the holder's half");
+    Species::Expedition probe;
+    probe.target = holder;
+    probe.claim = claim;
+    const Neuron::Vec3 objective = Species::ObjectiveOf(region, probe);
+    const Species::Settlement& steward = SettlementAt(region, STEWARD_SITE);
+    const Neuron::Vec3 home = region.ResolveStructure(steward.wellspringSlot, steward.wellspringId)->position;
+    const Neuron::Vec3 across{home.x - objective.x, 0.0, home.z - objective.z};
+    Species::RegionSimulation::Spawn spawn;
+    spawn.team = STEWARD_SITE;
+    spawn.kind = Species::FigureKind::Leader;
+    spawn.position = objective + across * (800.0 / Neuron::Length(across));
+    const std::uint32_t slot = region.SpawnFigures(spawn).front();
+    const Species::StableId leader = region.TeamAt(STEWARD_SITE).figures.At(slot).id;
+    SettlementAt(region, STEWARD_SITE).storesMilliRu = Species::MilliRuOf(10'000.0);
+    Assert::IsTrue(Species::DeclareAttack(region, STEWARD_SITE, {leader, 0, 0}, holder, claim).has_value(), L"declared for the claim");
+    StepTicks(*world, 1);
+    Assert::IsTrue(AiOf(region, holder).defending && region.Battles().empty(), L"the holder defends from the warning");
+    const auto atSite = [&]
+    {
+      const double radius = 2.0 * TUNING.mvp.battle.objectiveRadius;
+      std::size_t count = 0;
+      const Species::SlicedPool<Species::Figure>& figures = region.TeamAt(holder).figures;
+      for (std::uint32_t at = 0; at < figures.Capacity(); ++at)
+      {
+        count +=
+          figures.Used(at) && !figures.At(at).dead && Neuron::HorizontalDistance(figures.At(at).position, objective) <= radius ? 1 : 0;
+      }
+      return count;
+    };
+    ExpectEqual(0, static_cast<std::int64_t>(atSite()), L"none of its figures at the site at first");
+    Assert::IsTrue(StepUntil(*world, 1'150, [&] { return atSite() >= 5; }), L"its Leaders bring Workers to the site within the warning");
+    Assert::IsTrue(region.Battles().empty(), L"before the claimant is released");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp095TheDecisionsAreSavedAndAVersion13RegionMakesThemAfresh)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-095")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-076")

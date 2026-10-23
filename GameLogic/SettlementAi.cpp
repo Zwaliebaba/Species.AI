@@ -17,6 +17,7 @@
 #include <array>
 #include <cmath>
 #include <limits>
+#include <optional>
 #include <vector>
 
 namespace Species
@@ -53,9 +54,20 @@ Neuron::Vec3 WellspringOf(const RegionSimulation& _region, const Settlement& _se
   return wellspring != nullptr ? wellspring->position : _region.Terrain()->layout.sites[_settlement.site];
 }
 
-bool Defends(const RegionSimulation& _region, std::uint8_t _site) noexcept
+// The objective of a claim battle declared on the settlement, from its warning to its end: the claimed area's resource
+// site, which its defense must hold against the claimant (ADR-164).
+std::optional<Neuron::Vec3> ClaimDefenseOf(const RegionSimulation& _region, std::uint8_t _site)
 {
-  return std::ranges::any_of(_region.Battles(), [_site](const Battle& _battle) { return _battle.defender == _site; });
+  const auto found = std::ranges::find_if(_region.Expeditions(), [_site](const Expedition& _expedition)
+                                          { return _expedition.target == _site && _expedition.claim != 0; });
+  return found != _region.Expeditions().end() ? std::optional(ObjectiveOf(_region, *found)) : std::nullopt;
+}
+
+// Whether the settlement defends: a battle in which it is the defender, or a claim on it declared and in its warning.
+bool Defends(const RegionSimulation& _region, std::uint8_t _site)
+{
+  return std::ranges::any_of(_region.Battles(), [_site](const Battle& _battle) { return _battle.defender == _site; }) ||
+         ClaimDefenseOf(_region, _site).has_value();
 }
 
 // A fresh battle core of the steward's for _team, its first main cycle drawn as an AI's is (R-BOT-009).
@@ -74,7 +86,7 @@ void StepCores(RegionSimulation& _region, ScriptedSteward& _steward, SettlementA
       _ai.defense = FreshCore(_region, _steward, _settlement.team);
       _ai.defending = true;
     }
-    StepBattleCore(_region, _ai.defense, _steward.nextSequence, std::nullopt);
+    StepBattleCore(_region, _ai.defense, _steward.nextSequence, ClaimDefenseOf(_region, _settlement.site));
   }
   else
   {

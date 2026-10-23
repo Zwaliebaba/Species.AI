@@ -188,6 +188,7 @@
     <ClInclude Include="TickDraws.h" />
     <ClInclude Include="Turret.h" />
     <ClInclude Include="Upkeep.h" />
+    <ClInclude Include="ValleyAtWar.h" />
     <ClInclude Include="Weapons.h" />
     <ClInclude Include="WorldRecord.h" />
     <ClInclude Include="WorldServer.h" />
@@ -237,6 +238,7 @@
     <ClCompile Include="TickDraws.cpp" />
     <ClCompile Include="Turret.cpp" />
     <ClCompile Include="Upkeep.cpp" />
+    <ClCompile Include="ValleyAtWar.cpp" />
     <ClCompile Include="Weapons.cpp" />
     <ClCompile Include="WorldRecord.cpp" />
     <ClCompile Include="WorldServer.cpp" />

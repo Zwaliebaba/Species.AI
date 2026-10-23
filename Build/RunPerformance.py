@@ -4,6 +4,7 @@ reference test machine.
   python Build/RunPerformance.py [--skip-build] [--tool <SpeciesPerformance.exe>] [--bench <SpeciesFrameBench.exe>]
                                  [--headless-only] [--record <file>] [--quick]
   python Build/RunPerformance.py --saved-world <world folder> [--skip-build] [--tool <SpeciesPerformance.exe>] [--record <file>]
+  python Build/RunPerformance.py --valley [--skip-build] [--tool <SpeciesPerformance.exe>] [--record <file>] [--quick]
   python Build/RunPerformance.py --self-test --tool <SpeciesPerformance.exe> [--bench <SpeciesFrameBench.exe> --warp]
 
 --tuning-source <GameData> makes the tool read the authored tuning record instead of the cooked one beside it, for a
@@ -33,7 +34,10 @@ budgets (ADR-138); M2's run is recorded with --record playtests/M2.md. --quick r
 runs, and records nothing. --saved-world runs no scene: from M2 task T19 it reads the growth of the steward's own world
 from the server's statistics in the newest snapshot of the folder it names (the owner's growth run of the M2 plan §5,
 ADR-156), judges it as the growth scene is, and records it in playtests/M2.md unless --record names another file; the
-machine is neither read nor pinned for it. --self-test is CI's: it runs the given tool with --quick, and the bench too when one is
+machine is neither read nor pinned for it. --valley runs the valley run alone (M3 task T9, ADR-164): the corpus of seeds,
+each valley's four settlements driven by a policy for a run, judged against Playtest 1's measurable lines and recorded
+in playtests/M3.md unless --record names another file; it fails (exit code 1) when a line is missed, and neither reads
+nor pins the machine, since a valley run's figures are the simulation's, the same on every machine. --self-test is CI's: it runs the given tool with --quick, and the bench too when one is
 given (--warp draws it on the WARP adapter), then proves the record's rules on fixtures in a temporary folder, and
 writes nothing into the checkout.
 """
@@ -52,6 +56,8 @@ SOLUTION = os.path.join(ROOT, 'Species.slnx')
 RECORD = os.path.join(ROOT, 'playtests', 'M1.md')
 SAVED_WORLD_RECORD = os.path.join(ROOT, 'playtests', 'M2.md')  # ADR-156: the owner's growth run is M2's evidence
 SAVED_WORLD_SECTION = "## The owner's growth run"
+VALLEY_RECORD = os.path.join(ROOT, 'playtests', 'M3.md')  # ADR-164: the valley run predicts Playtest 1's measured lines
+VALLEY_SECTION = '## The valley run'
 CONFIGURATION = 'Release'
 PLATFORM = 'ARM64'  # O69, ADR-094: the reference test machine measures the ARM64 development build natively
 
@@ -70,9 +76,9 @@ DISPLAY_MARK = re.compile(r'<!-- reference-display (\{.*?\}) -->')  # O75: the r
 FRAME_TOLERANCE_MS = 1.0  # O75: 60 frames per second is a 99th-percentile frame interval of 16.7 ms and 1 ms of tolerance
 RENDERED_SIZE = (1920, 1080)  # MVP-085
 RENDERED_REFRESH_HZ = 60  # O75: the rendered scenes run on a 60 Hz display, at 1,920 x 1,080 (O85)
-# The rendered scenes judged against the frame budget: the sandbox's battle (O75) and, from M2 task T19, the steward's
-# settlement at its plateau (ADR-156); the rest are reported.
-JUDGED_SCENES = ('sandbox-drawn', 'settlement-drawn')
+# The rendered scenes judged against the frame budget: the sandbox's battle (O75), from M2 task T19 the steward's
+# settlement at its plateau (ADR-156), and from M3 task T9 the valley at war (ADR-164); the rest are reported.
+JUDGED_SCENES = ('sandbox-drawn', 'settlement-drawn', 'valley-drawn')
 SECTION = '## Performance'
 
 # ADR-080 item 2's cost budgets, item 3's region step budget and item 7's integrated server budget, and the travel
@@ -129,7 +135,12 @@ def figures_of(result):
     out.append(('settlement-at-work', 'work_figure_us', per_figure_tick(scenes['settlement-at-work'], ['sim.teams.advance_ungrouped'])))
   if 'empty-region' in scenes:
     out.append(('empty-region', 'region_fixed_us', scenes['empty-region']['step_us']['mean']))
-  for name in ('region-bound', 'region-bound-settled'):
+  if 'valley-battles' in scenes:
+    # M3 task T9 (ADR-164): an AI settlement's decisions, its economy and its battle cores, per settlement per tick.
+    s = scenes['valley-battles']
+    if s['ais'] and s['ticks']:
+      out.append(('valley-battles', 'ai_us', marker_us(s, 'sim.stewards.step') / (s['ticks'] * s['ais'])))
+  for name in ('region-bound', 'region-bound-settled', 'valley-battles'):
     if name in scenes:
       out.append((name, 'region_step_ms', scenes[name]['step_us']['p95'] / 1000.0))
   edges = result.get('travel') or []
@@ -204,8 +215,9 @@ def travel_factor(result):
   return max(medians) if medians else None
 
 
-def run_tool(tool, quick, out, tuning_source=None):
-  args = [tool, '--out', out] + (['--quick'] if quick else []) + (['--tuning-source', tuning_source] if tuning_source else [])
+def run_tool(tool, quick, out, tuning_source=None, scenes=None):
+  args = ([tool, '--out', out] + (['--quick'] if quick else []) + (['--tuning-source', tuning_source] if tuning_source else []) +
+          (['--scenes', scenes] if scenes else []))
   completed = subprocess.run(args, capture_output=True, text=True)
   if completed.returncode != 0:
     raise SystemExit(f'RunPerformance: {os.path.basename(tool)} failed:\n{completed.stdout}{completed.stderr}')
@@ -327,6 +339,10 @@ def rendered_rows(frames, tick_period_s=None):
       played = f'{grown["ticks"] * tick_period_s / 3600.0:.2f} hours of play' if tick_period_s else f'{grown["ticks"]} ticks'
       rows.append((name, 'the settlement drawn (ADR-156)', f'{grown["workers"]} Workers and {grown["structures"]} structures after '
                    f'{played}', '—', 'reported'))
+    valley = scene.get('valley')
+    if valley:
+      rows.append((name, 'the valley at war drawn (ADR-164)', f'{valley["battles"]} battles in progress and {valley["figures"]} figures '
+                   f'after {valley["ticks"]} ticks', '2 battles', 'reported'))
     seconds = scene['interval_ms']['mean'] * scene['frames'] / 1000.0
     if seconds > 0:
       rows.append((name, 'server ticks per second while drawn (MVP-085)', f'{scene["ticks"] / seconds:.2f}',
@@ -524,6 +540,81 @@ def record_saved_world(path, saved, build_id, when):
   return 0
 
 
+def valley_rows(result):
+  """ADR-164: the valley run against Playtest 1's measurable lines (the MVP scope's table 5): each seed's figures, then the
+  corpus judged, as (figure, measured, target, result). A battle is [start hour, minutes, attacker, defender, claim,
+  figures, end, attacker won] and a claim [claimant, area, hour made, hour ended or None]; a claim is a conflict between
+  neighbours with an end state, judged when it ended or was made 7 hours of play before the run's end, PIL-123's 7 world
+  days at the session pace (MVP-070)."""
+  runs = result.get('valley') or []
+  rows = []
+  for run in runs:
+    figures = 'none' if run['steward_figures_median'] is None else (
+      f'{run["steward_figures_median"]} typical, {run["steward_figures_least"]} least')
+    contact = 'none' if run['contact_h'] is None else f'{run["contact_h"]:.2f} h'
+    rows.append((f'seed {run["seed"]}', f'{run["steward_battles"]} of the steward\'s battles ({figures}); {run["battles"]} battles, '
+                 f'{run["battles_4_to_12"] * 100:.0f} % of 4 to 12 min, the longest {run["longest_battle_min"]:.1f} min; '
+                 f'{len(run["claim_list"])} claims; the strongest {run["strongest_to_median"]:.2f} times the median; the largest '
+                 f'gap {run["step_gap_min"]:.1f} min; first contact {contact}; Workers {run["workers"]}', '—', 'reported'))
+  if not runs:
+    return rows
+  hours = max(run['ticks'] for run in runs) * result['tick_period_s'] / 3600.0
+  steward_figures = sorted(b[5] for run in runs for b in run['battle_list'] if run['steward_site'] in (b[2], b[3]))
+  lengths = [b[1] for run in runs for b in run['battle_list']]
+  judged = [c for run in runs for c in run['claim_list'] if c[3] is not None or c[2] + 7.0 <= hours]
+  settled = [c for c in judged if c[3] is not None and c[3] - c[2] <= 7.0]
+  per_run = [run['steward_battles'] for run in runs]
+  gaps = [run['step_gap_min'] for run in runs]
+  strongest = [run['strongest_to_median'] for run in runs]
+  within = sum(1 for m in lengths if 4.0 <= m <= 12.0)
+  typical = steward_figures[len(steward_figures) // 2] if steward_figures else None
+
+  def met(ok):
+    return 'met' if ok else 'missed'
+
+  rows += [
+    ('the largest gap between the steward\'s growth steps in hour 0 to 5, the most of any seed', f'{max(gaps):.1f} min', '20 min',
+     met(max(gaps) <= 20.0)),
+    ('figures in the steward\'s battles, typical and least', 'no battle' if typical is None else
+     f'{typical} typical, {steward_figures[0]} least over {len(steward_figures)} battles', '300 to 450, never below 200',
+     met(typical is not None and 300 <= typical <= 450 and steward_figures[0] >= 200)),
+    ('battle length', f'{within / max(len(lengths), 1):.0%} of {len(lengths)} within 4 to 12 min, the longest '
+     f'{max(lengths, default=0.0):.1f} min', '90 %, none above 20 min',
+     met(bool(lengths) and within >= 0.9 * len(lengths) and max(lengths) <= 20.0)),
+    ('conflicts that reach an end state within 7 hours of play', f'{len(settled)} of {len(judged)} claims', '60 %',
+     met(bool(judged) and len(settled) >= 0.6 * len(judged))),
+    ('the strongest settlement\'s strength at the end against the median, the most of any seed', f'{max(strongest):.2f} times',
+     '3 times', met(max(strongest) <= 3.0)),
+    ('battles of the steward\'s settlement in a run, the fewest and the most of any seed', f'{min(per_run)} to {max(per_run)}', '4 to 10',
+     met(min(per_run) >= 4 and max(per_run) <= 10)),
+  ]
+  return rows
+
+
+def record_valley(path, result, build_id, when):
+  """Writes the valley run into the record's section of its own; returns 0 when every line is met, 1 otherwise."""
+  text = open(path, encoding='utf-8').read() if os.path.exists(path) else f'# {os.path.splitext(os.path.basename(path))[0]}\n'
+  if VALLEY_SECTION not in text:
+    text = text.rstrip('\n') + (f'\n\n{VALLEY_SECTION}\n\nWritten by `Build/RunPerformance.py --valley` (ADR-164): the valley run of the M3 '
+                                'plan §4 on its corpus of seeds, every settlement driven by a policy for a run, read against '
+                                'Playtest 1\'s measurable lines (the MVP scope\'s table 5).\n')
+  rows = valley_rows(result)
+  table = '\n'.join(f'| {figure} | {measured} | {target} | {status} |' for figure, measured, target, status in rows)
+  seeds = [run['seed'] for run in result['valley']]
+  section = (f'### Seeds {seeds[0]} to {seeds[-1]}, run {when}, build {build_id}, {result["configuration"]}|{result["platform"]}\n\n'
+             f'| Figure | Measured | Target | Result |\n|---|---|---|---|\n{table}\n')
+  head, marker, rest = text.partition(VALLEY_SECTION)
+  following = rest.find('\n## ')
+  if following < 0:
+    text = text.rstrip('\n') + '\n\n' + section
+  else:
+    text = head + marker + rest[:following].rstrip('\n') + '\n\n' + section + rest[following:]
+  with open(path, 'w', encoding='utf-8', newline='\n') as f:
+    f.write(text)
+  print(f'RunPerformance: the valley run recorded in {shown(path)}')
+  return 0 if all(status != 'missed' for _, _, _, status in rows) else 1
+
+
 def run_bench(bench, quick, out, warp=False):
   args = [bench, '--out', out] + (['--quick'] if quick else []) + (['--warp'] if warp else [])
   completed = subprocess.run(args, capture_output=True, text=True)
@@ -568,8 +659,32 @@ FRAMES_FIXTURE = {
               'longest': [{'interval': 33.4, 'work': 6.5, 'latency_wait': 26.0, 'fence_wait': 0.5, 'present': 0.4, 'gpu': 14.0},
                           {'interval': 16.9, 'work': 7.0, 'latency_wait': 9.5, 'fence_wait': 0.1, 'present': 0.3, 'gpu': None}],
               'figures_alive': {'min': figures, 'max': figures}, 'figures_on_screen': {'mean': figures * 0.8, 'max': figures},
-              'grown': {'ticks': 154000, 'workers': 300, 'structures': 40} if name == 'settlement-drawn' else None}
-             for name, figures in (('sandbox-drawn', 400), ('figures-max-drawn', 1500), ('settlement-drawn', 300))],
+              'grown': {'ticks': 154000, 'workers': 300, 'structures': 40} if name == 'settlement-drawn' else None,
+              'valley': {'ticks': 3100, 'battles': 2, 'figures': 1204} if name == 'valley-drawn' else None}
+             for name, figures in (('sandbox-drawn', 400), ('figures-max-drawn', 1500), ('settlement-drawn', 300), ('valley-drawn', 1204))],
+}
+
+
+# ADR-164: a valley run of two seeds as SpeciesPerformance writes it, its figures made up: seed 1 meets every line, and
+# seed 2's steward fights 3 battles.
+VALLEY_FIXTURE = {
+  'tool': 'SpeciesPerformance', 'configuration': 'Release', 'platform': 'ARM64', 'tick_period_s': 0.1,
+  'valley': [
+    {'seed': 1, 'ticks': 288000, 'steward_site': 0, 'policy': 2, 'run_ended': True, 'contact_h': 2.4, 'steward_battles': 5,
+     'steward_figures_median': 380, 'steward_figures_least': 260, 'battles': 9, 'battles_4_to_12': 1.0, 'longest_battle_min': 11.0,
+     'claims_judged': 2, 'claims_settled': 1.0, 'strongest_to_median': 1.6, 'step_gap_min': 14.0, 'step_us': 900.0,
+     'step_us_max': 4000.0, 'workers': [250, 240, 230, 260], 'renown': [12, 8, 5, 9],
+     'battle_list': [[3.0, 8.0, 1, 0, 0, 380, 0, 0], [4.0, 9.0, 0, 1, 0, 400, 0, 1], [5.0, 6.0, 2, 3, 0, 300, 0, 0],
+                     [5.5, 7.0, 1, 0, 1, 260, 0, 0], [6.0, 11.0, 0, 1, 0, 420, 0, 1], [6.5, 5.0, 3, 2, 0, 310, 0, 0],
+                     [7.0, 6.0, 1, 0, 0, 350, 0, 0], [7.2, 5.0, 2, 3, 0, 300, 0, 0], [7.4, 4.5, 3, 2, 0, 280, 0, 0]],
+     'claim_list': [[1, 0, 2.5, 4.0], [0, 1, 3.0, 5.5], [2, 6, 7.5, None]]},
+    {'seed': 2, 'ticks': 288000, 'steward_site': 0, 'policy': 2, 'run_ended': True, 'contact_h': None, 'steward_battles': 3,
+     'steward_figures_median': 330, 'steward_figures_least': 300, 'battles': 3, 'battles_4_to_12': 1.0, 'longest_battle_min': 10.0,
+     'claims_judged': 0, 'claims_settled': 0.0, 'strongest_to_median': 1.2, 'step_gap_min': 16.0, 'step_us': 800.0,
+     'step_us_max': 3000.0, 'workers': [240, 230, 220, 250], 'renown': [6, 4, 3, 5],
+     'battle_list': [[3.0, 10.0, 1, 0, 0, 330, 0, 0], [5.0, 8.0, 0, 1, 0, 340, 0, 1], [6.0, 7.0, 1, 0, 0, 300, 0, 0]],
+     'claim_list': []},
+  ],
 }
 
 
@@ -585,7 +700,7 @@ def self_test(tool, tuning_source, bench=None, warp=False):
     if bench:
       frames = run_bench(bench, True, os.path.join(folder, 'frames.json'), warp)
       drawn = {scene['name']: scene['frames'] for scene in frames['scenes']}
-      if sorted(drawn) != ['figures-max-drawn', 'sandbox-drawn', 'settlement-drawn'] or min(drawn.values()) == 0:
+      if sorted(drawn) != ['figures-max-drawn', 'sandbox-drawn', 'settlement-drawn', 'valley-drawn'] or min(drawn.values()) == 0:
         sys.exit(f'RunPerformance: the bench\'s quick run drew {drawn}')
       print(f'RunPerformance: the bench\'s quick run drew {drawn}')
     path = os.path.join(folder, 'M1.md')
@@ -608,6 +723,23 @@ def self_test(tool, tuning_source, bench=None, warp=False):
     def recorded(*phrases):
       text = open(path, encoding='utf-8').read()
       return all(phrase in text for phrase in phrases)
+
+    # ADR-164: the valley run's lines over the corpus, and its record.
+    valley_quick = run_tool(tool, True, os.path.join(folder, 'valley.json'), tuning_source, 'valley')
+    valley_path = os.path.join(folder, 'M3.md')
+
+    def valley_judged():
+      rows = {figure: status for figure, _, _, status in valley_rows(VALLEY_FIXTURE)}
+      one = dict(VALLEY_FIXTURE, valley=VALLEY_FIXTURE['valley'][:1])
+      return (rows['battles of the steward\'s settlement in a run, the fewest and the most of any seed'] == 'missed' and
+              rows['conflicts that reach an end state within 7 hours of play'] == 'met' and
+              all(status in ('met', 'reported') for _, _, _, status in valley_rows(one)) and
+              record_valley(valley_path, one, 'fixture', 'first') == 0 and record_valley(valley_path, VALLEY_FIXTURE, 'fixture', 'second') == 1)
+
+    def valley_recorded():
+      text = open(valley_path, encoding='utf-8').read()
+      return (text.count(VALLEY_SECTION) == 1 and text.index('Seeds 1 to 1, run first') < text.index('Seeds 1 to 2, run second') and
+              '2 of 2 claims' in text and '3 to 5' in text)
 
     # O85: a record of its own, whose first rendered run draws a 1,920 x 1,080 window on a larger 60 Hz panel.
     panel = os.path.join(folder, 'M1-panel.md')
@@ -677,6 +809,10 @@ def self_test(tool, tuning_source, bench=None, warp=False):
       ('a rendered run reports how the settlement grew', lambda: recorded('the settlement drawn (ADR-156)')),
       ('the owner\'s growth run is recorded and judged in its own section (ADR-156)', grown_recorded),
       ('a gap open while the plateau may be forming is not judged yet (ADR-156)', forming_judged),
+      ('the quick valley run runs one seed (ADR-164)', lambda: [run['seed'] for run in valley_quick['valley']] == [1]),
+      ('the valley run is judged over its corpus and recorded (ADR-164)', valley_judged),
+      ('the valley run keeps its runs in its own section (ADR-164)', valley_recorded),
+      ('a rendered run reports the valley at war drawn (ADR-164)', lambda: recorded('the valley at war drawn (ADR-164)')),
       ('a rendered run at another size is not judged',
        lambda: record(path, reference, within, frames_like(frames, 25.0, (1280, 720)), 'fixture', 'small') == 0),
     ]
@@ -696,8 +832,10 @@ def main():
   parser.add_argument('--bench', help='the SpeciesFrameBench.exe to run (default: the Release|ARM64 build)')
   parser.add_argument('--headless-only', action='store_true', help='run the headless scenes alone')
   parser.add_argument('--warp', action='store_true', help='with --self-test: draw the bench on the WARP adapter (a Debug build)')
-  parser.add_argument('--record', help='the record to write (default: playtests/M1.md, or playtests/M2.md with --saved-world)')
+  parser.add_argument('--record', help='the record to write (default: playtests/M1.md, playtests/M2.md with --saved-world or '
+                      'playtests/M3.md with --valley)')
   parser.add_argument('--saved-world', help='a saved world\'s folder: read its growth rather than run the scenes (ADR-156)')
+  parser.add_argument('--valley', action='store_true', help='run the valley run alone and judge Playtest 1\'s lines (ADR-164)')
   parser.add_argument('--quick', action='store_true')
   parser.add_argument('--self-test', action='store_true')
   parser.add_argument('--tuning-source')
@@ -718,6 +856,15 @@ def main():
     if args.quick:
       return 0
     return record_saved_world(args.record or SAVED_WORLD_RECORD, saved, identity(), datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))
+  if args.valley:
+    with tempfile.TemporaryDirectory() as folder:
+      result = run_tool(tool, args.quick, os.path.join(folder, 'valley.json'), args.tuning_source, 'valley')
+    for figure, measured, target, status in valley_rows(result):
+      print(f'RunPerformance: the valley run: {figure}: {measured} against {target}: {status}')
+    if args.quick:
+      print('RunPerformance: a quick run measures nothing and records nothing')
+      return 0
+    return record_valley(args.record or VALLEY_RECORD, result, identity(), datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))
   with tempfile.TemporaryDirectory() as folder:
     result = run_tool(tool, args.quick, os.path.join(folder, 'result.json'), args.tuning_source)
     frames = None

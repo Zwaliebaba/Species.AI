@@ -27,6 +27,9 @@
     <ClInclude Include="TravelScene.h">
       <Filter>Scenes</Filter>
     </ClInclude>
+    <ClInclude Include="ValleyScene.h">
+      <Filter>Scenes</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Build</Filter>
     </ClInclude>
@@ -51,6 +54,9 @@
       <Filter>Program</Filter>
     </ClCompile>
     <ClCompile Include="TravelScene.cpp">
+      <Filter>Scenes</Filter>
+    </ClCompile>
+    <ClCompile Include="ValleyScene.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
   </ItemGroup>

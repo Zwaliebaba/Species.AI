@@ -147,6 +147,9 @@
     <ClInclude Include="Upkeep.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="ValleyAtWar.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="Weapons.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -288,6 +291,9 @@
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="Upkeep.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="ValleyAtWar.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="Weapons.cpp">
