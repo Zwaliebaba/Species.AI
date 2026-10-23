@@ -242,7 +242,8 @@ FramePage BuildFramePage(const FramePageInputs& _inputs, const TuningPresentatio
   const TuningPresentation::Dbg::Profile::View& view = _presentation.dbg.profile.view;
   const auto graphHeight = static_cast<float>(view.graphHeight);
   const auto graphWidth = static_cast<float>(std::max<std::int64_t>(_presentation.dbg.profile.frameHistory, 1));
-  const float graphTop = top - LINE_GAP_PIXELS + GRAPH_GAP_PIXELS;
+  // On a whole pixel, as its guides are, since the development role's line height need not be one (ADR-176).
+  const float graphTop = std::round(top - LINE_GAP_PIXELS + GRAPH_GAP_PIXELS);
   const float graphBottom = graphTop + graphHeight;
   page.rects.push_back({PAGE_LEFT_PIXELS, graphTop, graphWidth, graphHeight, GRAPH_BACKDROP_COLOR});
   right = std::max(right, PAGE_LEFT_PIXELS + graphWidth);

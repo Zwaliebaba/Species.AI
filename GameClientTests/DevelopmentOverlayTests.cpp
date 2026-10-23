@@ -11,6 +11,7 @@
 
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <optional>
 #include <string>
@@ -189,7 +190,7 @@ public:
     const float lineHeight =
       text.Metrics(Neuron::FontRole::Development, static_cast<float>(CommittedPresentation().dbg.overlay.textSize)).heightPixels;
     Assert::IsTrue(page.lines[0].corner == Neuron::OverlayCorner::TopLeft && page.lines[0].insetX == 10.0f &&
-                     page.lines[0].insetY == 10.0f && page.lines[1].insetY == 10.0f + lineHeight + 2.0f,
+                     page.lines[0].insetY == 10.0f && std::abs(page.lines[1].insetY - (10.0f + lineHeight + 2.0f)) < 1e-3f,
                    L"from the top-left corner, a line and two pixels apart");
     // ADR-176: the backdrop; DBG-089: the graph's backdrop, a line per frame of the history and a guide line per mark.
     Assert::AreEqual(std::size_t{1 + 1 + 200 + 3}, page.rects.size());
