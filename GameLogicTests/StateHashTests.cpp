@@ -73,13 +73,21 @@ public:
     // Changed by M2 task T4: each region writes its settlements and its structure pool after its bot nodes (ADR-130):
     // none, and an empty pool, in this world. Changed by M2 task T6: each region writes its territory events after its
     // structures (ADR-134), none here. Changed by M2 task T8: each region writes its statistics after its territory
-    // events (ADR-136), none here.
+    // events (ADR-136), none here. Changed by M3 task T4: each region writes its grievances' count, in 16 bits, after its
+    // scripted stewards (ADR-159), none here; the scripted stewards' count of M2 task T10 fit in the last byte's padding.
+    // Changed by M3 task T5: each region writes its claims' and its moved areas' counts after its grievances (ADR-160),
+    // none here. Changed by M3 task T6: each region writes its expeditions', battles', battle results' and respites'
+    // counts after its moved areas (ADR-161), none here. Changed by M3 task T7: each region writes its AI settlements'
+    // decisions' count after its respites (ADR-162), none here. Changed by M3 task T8: the world owner writes its run
+    // after its commands, ending 8 hours after tick 0, and each region its settlements' renown count after its AI
+    // settlements' decisions (ADR-163), none here. Changed by O102 (DEC-1008): each region writes the count of the areas
+    // whose last claim has ended after its renown (ADR-160), none here.
     const GoldenRun one = Run600Ticks(1, 0);
-    Assert::IsTrue(one.last == 0x2cec33f81fa63998, L"the hash after 600 ticks of one region");
-    Assert::IsTrue(one.chain == 0x9ddfcceff2a3515a, L"the chain of 600 tick hashes of one region");
+    Assert::IsTrue(one.last == 0xfb8e7adc0c2aa9bf, L"the hash after 600 ticks of one region");
+    Assert::IsTrue(one.chain == 0x0baa8f7079fd6af5, L"the chain of 600 tick hashes of one region");
     const GoldenRun three = Run600Ticks(3, 0);
-    Assert::IsTrue(three.last == 0x6bb2813bf9c6c6de, L"the hash after 600 ticks of three regions");
-    Assert::IsTrue(three.chain == 0x24b3b5312be719b7, L"the chain of 600 tick hashes of three regions");
+    Assert::IsTrue(three.last == 0x1db1e3248a5c73ff, L"the hash after 600 ticks of three regions");
+    Assert::IsTrue(three.chain == 0xb4077591dadeb5a3, L"the chain of 600 tick hashes of three regions");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp093TheHashesAgreeAtAnyWorkerCount)

@@ -136,6 +136,76 @@ CommandResult CheckAnswered(const Neuron::MessageHeader& _header, Neuron::BitRea
   return _reader.Finish() ? CommandResult::Applied : CommandResult::Malformed;
 }
 
+// ADR-165: the settlement at _site, when the steward commands it.
+const Settlement* CommandedAt(const RegionSimulation& _region, StableId _steward, std::optional<std::uint8_t> _site)
+{
+  const Settlement* settlement = _site ? _region.SettlementAt(*_site) : nullptr;
+  return settlement != nullptr && _region.CommanderOf(settlement->team).sender == _steward ? settlement : nullptr;
+}
+
+bool IsClaimNotice(NoticeKind _kind) noexcept
+{
+  return _kind == NoticeKind::ClaimMade || _kind == NoticeKind::ClaimWithdrawn || _kind == NoticeKind::ClaimLost ||
+         _kind == NoticeKind::ClaimWon;
+}
+
+// MVP-102 (ADR-165): the notice of a valley event for the steward, when it concerns a settlement the steward commands:
+// the one that acted, else the other one concerned, else, for a claim on the central resource site, one whose own claim
+// on it stands.
+std::optional<SettlementNotice> NoticeOf(const RegionSimulation& _region, const ValleyEvent& _event, StableId _steward, std::uint64_t _tick)
+{
+  const Settlement* ours = CommandedAt(_region, _steward, _event.site);
+  const Settlement* concerned = ours != nullptr ? ours : CommandedAt(_region, _steward, _event.other);
+  if (concerned == nullptr && IsClaimNotice(_event.kind) && _event.detail == CLAIM_AREA_CENTRAL)
+  {
+    for (const Claim& claim : _region.Claims())
+    {
+      concerned = claim.area == CLAIM_AREA_CENTRAL ? CommandedAt(_region, _steward, claim.claimant) : nullptr;
+      if (concerned != nullptr)
+      {
+        break;
+      }
+    }
+  }
+  if (concerned == nullptr)
+  {
+    return std::nullopt;
+  }
+  SettlementNotice notice;
+  notice.tick = _tick;
+  notice.kind = _event.kind;
+  notice.team = concerned->team;
+  notice.subject = _event.subject;
+  notice.position = QuantizePosition(_event.position);
+  notice.other = ours != nullptr ? _event.other : std::optional<std::uint8_t>(_event.site);
+  notice.ours = ours != nullptr;
+  notice.detail = _event.detail;
+  return notice;
+}
+
+// MVP-048 (ADR-165): the result of the battle a BattleEnded event names, with the area its claim's end named in the
+// same tick, as the steward sees it; none when the region holds no such result.
+std::optional<BattleResultNotice> ResultFor(const RegionSimulation& _region, const ValleyEvent& _ended, StableId _steward)
+{
+  const auto result =
+    std::ranges::find(_region.BattleResults().rbegin(), _region.BattleResults().rend(), _ended.subject, &BattleResult::expedition);
+  if (result == _region.BattleResults().rend())
+  {
+    return std::nullopt;
+  }
+  std::optional<std::uint8_t> area;
+  for (const ValleyEvent& event : _region.ValleyEvents())
+  {
+    if ((event.kind == NoticeKind::ClaimWon || event.kind == NoticeKind::ClaimLost) && event.subject == result->claim && result->claim != 0)
+    {
+      area = event.detail;
+    }
+  }
+  const bool side =
+    CommandedAt(_region, _steward, result->attacker) != nullptr || CommandedAt(_region, _steward, result->defender) != nullptr;
+  return ResultNoticeOf(_region, *result, area, side);
+}
+
 } // namespace
 
 WorldServer::WorldServer(const Desc& _desc)
@@ -154,13 +224,18 @@ std::uint64_t WorldServer::Open()
   if (!m_desc.snapshotFolder.empty())
   {
     // PIL-131 (ADR-137): a world that froze cleanly left a marker naming its final snapshot. It goes as the world opens,
-    // so that a stop that leaves none is unclean.
-    const std::optional<std::uint64_t> cleanTick = CleanStopTick(m_desc.snapshotFolder / CLEAN_STOP_FILE_NAME);
-    if (!Neuron::RemoveFile(m_desc.snapshotFolder / CLEAN_STOP_FILE_NAME))
+    // so that a stop that leaves none is unclean; ADR-155: a world that is only continued keeps it until it continues.
+    const std::filesystem::path marker = m_desc.snapshotFolder / CLEAN_STOP_FILE_NAME;
+    const std::optional<std::uint64_t> cleanTick = CleanStopTick(marker);
+    const auto removeMarker = [&marker]
     {
-      Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Error, "the marker of a clean stop could not be removed");
-    }
-    // MVP-075: the newest snapshot that validates; a refused one is logged and the next older one tried.
+      if (!Neuron::RemoveFile(marker))
+      {
+        Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Error, "the marker of a clean stop could not be removed");
+      }
+    };
+    // MVP-075: the newest snapshot that validates; a refused one is logged, kept with its reason, and the next older one
+    // tried.
     const Neuron::SnapshotStore store(m_desc.snapshotFolder, SnapshotsKept());
     for (const std::filesystem::path& snapshot : store.Snapshots())
     {
@@ -170,6 +245,7 @@ std::uint64_t WorldServer::Open()
       {
         Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "the snapshot {} is refused: {}",
                     snapshot.filename().string(), Neuron::SnapshotErrorText(restored.error()));
+        m_opened.refusals.push_back({snapshot, restored.error()});
         continue;
       }
       // The terrain is not state: the restored world builds it again from its seed (ADR-102).
@@ -178,9 +254,15 @@ std::uint64_t WorldServer::Open()
       {
         Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "the snapshot {} is refused: its seed gives no terrain",
                     snapshot.filename().string());
+        m_opened.refusals.push_back({snapshot, std::nullopt});
         continue;
       }
+      removeMarker();
+      m_opened.restored = true;
       Adopt(std::move(*restored), std::move(terrain));
+      // ADR-165: a world that continues in its quiet minutes, or ended, tells no steward again.
+      m_runEnded = m_world->RunState().ended;
+      m_runQuiet = m_runEnded || m_world->Region(0).InQuietMinutes();
       // MVP-075, PIL-131: a world that did not freeze cleanly at this snapshot lost what it ran after it, a freeze of
       // cause "unclean stop" from the snapshot's tick.
       if (cleanTick != m_world->NextTick())
@@ -196,6 +278,17 @@ std::uint64_t WorldServer::Open()
       Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Info, "the world opens from {} at tick {}",
                   snapshot.filename().string(), m_world->NextTick());
       return m_world->NextTick();
+    }
+    if (m_desc.restoreOnly)
+    {
+      // ADR-155: nothing to continue; the world opens new without its folder, which keeps every snapshot it refused.
+      Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning,
+                  "no snapshot of {} can be continued; the world opens new and saves nothing there", m_desc.snapshotFolder.string());
+      m_desc.snapshotFolder.clear();
+    }
+    else
+    {
+      removeMarker();
     }
   }
   // MVP-005: a seed the steward gave, or one the server draws.
@@ -218,8 +311,8 @@ bool WorldServer::StartNew(std::uint64_t _seed, std::uint64_t _firstTick)
   // A new world draws its simulation key from the system's cryptographic generator (ADR-082 item 1), and holds the
   // seed that passed (MVP-011), which gives the same terrain at its first attempt. Its journal starts with it.
   CommandJournal journal;
-  journal.start = WorldStart{Neuron::DrawSecretKey(), terrain->seed,           _firstTick,        m_desc.regionCount, m_desc.sandbox,
-                             m_desc.watched,          m_desc.syntheticFigures, m_desc.stewardSite};
+  journal.start = WorldStart{Neuron::DrawSecretKey(), terrain->seed,           _firstTick,         m_desc.regionCount,  m_desc.sandbox,
+                             m_desc.watched,          m_desc.syntheticFigures, m_desc.stewardSite, m_desc.aiSettlements};
   std::unique_ptr<WorldSimulation> world = StartWorld(journal.start, terrain, m_desc.tuning, &m_desc.structures);
   Adopt(std::move(world), std::move(terrain));
   m_journal = std::move(journal);
@@ -276,6 +369,8 @@ void WorldServer::Adopt(std::unique_ptr<WorldSimulation> _world, std::shared_ptr
   _world->Region(0).AttachTerrain(_terrain);
   m_world = std::move(_world);
   m_terrain = std::move(_terrain);
+  m_runQuiet = false;
+  m_runEnded = false;
 }
 
 std::filesystem::path WorldServer::JournalPath(const std::filesystem::path& _folder, std::uint64_t _tick)
@@ -303,7 +398,8 @@ CommandJournal WorldServer::RestoredJournal() const
   CommandJournal journal;
   journal.start =
     WorldStart{m_world->SimulationKey(), m_world->WorldSeed(), m_world->NextTick(),     static_cast<std::uint16_t>(m_world->RegionCount()),
-               m_desc.sandbox,           m_desc.watched,       m_desc.syntheticFigures, m_desc.stewardSite};
+               m_desc.sandbox,           m_desc.watched,       m_desc.syntheticFigures, m_desc.stewardSite,
+               m_desc.aiSettlements};
   journal.restored = true;
   return journal;
 }
@@ -407,27 +503,55 @@ void WorldServer::Receive(Neuron::ConnectionId _connection, const Neuron::Receiv
     return;
   }
 #endif
-  // MVP-098 (ADR-136): a status request is read, not queued, by a steward who commands the settlement's team; the status
-  // goes after the next tick, which the outcome names.
-  if (!reader.Failed() && header.type == ReadSettlementStatusCommand::TYPE)
+  // MVP-098 (ADR-136, ADR-165): a request for a settlement's status or its valley's is read, not queued, by a steward who
+  // commands the settlement's team; the status goes after the next tick, which the outcome names.
+  // From M3 task T14 (ADR-169) the epilogue is asked for the same way.
+  if (!reader.Failed() && (header.type == ReadSettlementStatusCommand::TYPE || header.type == ReadValleyStatusCommand::TYPE ||
+                           header.type == ReadEpilogueCommand::TYPE))
   {
-    ReadSettlementStatusCommand request;
-    CommandResult result = CheckAnswered(header, reader, _message.bytes.size(), request);
+    const bool valley = header.type == ReadValleyStatusCommand::TYPE;
+    const bool epilogue = header.type == ReadEpilogueCommand::TYPE;
+    std::uint8_t team = 0;
+    CommandResult result = CommandResult::Applied;
+    if (valley)
+    {
+      ReadValleyStatusCommand request;
+      result = CheckAnswered(header, reader, _message.bytes.size(), request);
+      team = request.team;
+    }
+    else if (epilogue)
+    {
+      ReadEpilogueCommand request;
+      result = CheckAnswered(header, reader, _message.bytes.size(), request);
+      team = request.team;
+    }
+    else
+    {
+      ReadSettlementStatusCommand request;
+      result = CheckAnswered(header, reader, _message.bytes.size(), request);
+      team = request.team;
+    }
     const RegionSimulation& region = m_world->Region(0);
-    if (result == CommandResult::Applied && !region.MayCommand(steward.id, request.team, false))
+    if (result == CommandResult::Applied && !region.MayCommand(steward.id, team, false))
     {
       result = CommandResult::NotPermitted;
     }
     else if (result == CommandResult::Applied &&
-             std::ranges::find(region.Settlements(), request.team, &Settlement::team) == region.Settlements().end())
+             std::ranges::find(region.Settlements(), team, &Settlement::team) == region.Settlements().end())
     {
       result = CommandResult::NoEffect;
     }
     if (result == CommandResult::Applied)
     {
-      steward.statusTeams.push_back(request.team);
+      (epilogue ? steward.epilogueTeams : valley ? steward.valleyTeams : steward.statusTeams).push_back(team);
     }
     steward.reports.push_back({sequence, m_world->NextTick(), result, 0});
+    return;
+  }
+  // MVP-063 (ADR-163): a world whose run has ended is read-only, and takes no command into a queue.
+  if (m_world->RunState().ended)
+  {
+    steward.reports.push_back({sequence, m_world->NextTick(), CommandResult::NotPermitted, 0});
     return;
   }
   Neuron::CommandQueue& region = m_world->Region(0).Commands();
@@ -496,9 +620,23 @@ void WorldServer::Step(std::uint64_t _tick, Neuron::WorkerPool& _workers)
 void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender)
 {
   CollectAllReports();
-  // ADR-111: the whole battle of the MVP's one region, until the seen layer of M3 narrows it (MVP-097).
+  // ADR-111: the MVP's one region, which ViewForSteward narrows to each steward's seen layers (MVP-097, ADR-158).
   const RegionSimulation& region = m_world->Region(0);
   const std::vector<ReplicatedObject> objects = CollectReplicatedObjects(region);
+  // MVP-060 and MVP-063 (ADR-165): the run's quiet minutes and its end, each told once to every steward as it begins.
+  const bool ended = m_world->RunState().ended;
+  const bool quiet = !ended && region.InQuietMinutes();
+  std::vector<NoticeKind> runNotices;
+  if (quiet && !m_runQuiet)
+  {
+    runNotices.push_back(NoticeKind::RunQuiet);
+  }
+  if (ended && !m_runEnded)
+  {
+    runNotices.push_back(NoticeKind::RunEnded);
+  }
+  m_runQuiet = m_runQuiet || quiet;
+  m_runEnded = ended;
   for (auto& [connection, steward] : m_stewards)
   {
     // ADR-095: each outcome on the reliable channel, in order; one the backlog refuses waits with those after it.
@@ -515,12 +653,38 @@ void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender
     {
       if (event.kind == EffectEventKind::StructureCompleted && region.CommanderOf(event.team).sender == steward.id)
       {
-        steward.notices.push_back(NoticeOf(region, event, _tick));
+        steward.notices.push_back(Neuron::EncodeMessage(NoticeOf(region, event, _tick)));
       }
     }
+    // ADR-165: the valley's events of the settlements it commands, each battle's result to every steward after its end,
+    // and the run's.
+    for (const ValleyEvent& event : region.ValleyEvents())
+    {
+      if (const std::optional<SettlementNotice> notice = NoticeOf(region, event, steward.id, _tick))
+      {
+        steward.notices.push_back(Neuron::EncodeMessage(*notice));
+      }
+      if (event.kind == NoticeKind::BattleEnded)
+      {
+        if (const std::optional<BattleResultNotice> result = ResultFor(region, event, steward.id))
+        {
+          steward.notices.push_back(Neuron::EncodeMessage(*result));
+        }
+      }
+    }
+    for (const NoticeKind kind : runNotices)
+    {
+      const auto commanded = std::ranges::find_if(region.Settlements(), [&](const Settlement& _settlement)
+                                                  { return region.CommanderOf(_settlement.team).sender == steward.id; });
+      SettlementNotice notice;
+      notice.tick = _tick;
+      notice.kind = kind;
+      notice.team = commanded != region.Settlements().end() ? commanded->team : std::uint8_t{0};
+      notice.ours = true;
+      steward.notices.push_back(Neuron::EncodeMessage(notice));
+    }
     std::size_t noticed = 0;
-    while (noticed < steward.notices.size() &&
-           _sender.Send(connection, Neuron::Channel::Reliable, Neuron::EncodeMessage(steward.notices[noticed])).has_value())
+    while (noticed < steward.notices.size() && _sender.Send(connection, Neuron::Channel::Reliable, steward.notices[noticed]).has_value())
     {
       ++noticed;
     }
@@ -538,6 +702,34 @@ void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender
       ++answered;
     }
     steward.statusTeams.erase(steward.statusTeams.begin(), steward.statusTeams.begin() + static_cast<std::ptrdiff_t>(answered));
+    // ADR-165: each valley status requested, after the settlement's.
+    std::size_t valleys = 0;
+    while (valleys < steward.valleyTeams.size())
+    {
+      const auto settlement = std::ranges::find(region.Settlements(), steward.valleyTeams[valleys], &Settlement::team);
+      if (settlement != region.Settlements().end() &&
+          !_sender.Send(connection, Neuron::Channel::Reliable, Neuron::EncodeMessage(ValleyStatusOf(region, *settlement, _tick, ended)))
+             .has_value())
+      {
+        break;
+      }
+      ++valleys;
+    }
+    steward.valleyTeams.erase(steward.valleyTeams.begin(), steward.valleyTeams.begin() + static_cast<std::ptrdiff_t>(valleys));
+    // ADR-169: each epilogue requested, after the valley's.
+    std::size_t epilogues = 0;
+    while (epilogues < steward.epilogueTeams.size())
+    {
+      const auto settlement = std::ranges::find(region.Settlements(), steward.epilogueTeams[epilogues], &Settlement::team);
+      if (settlement != region.Settlements().end() &&
+          !_sender.Send(connection, Neuron::Channel::Reliable, Neuron::EncodeMessage(EpilogueOf(region, *settlement, _tick, ended)))
+             .has_value())
+      {
+        break;
+      }
+      ++epilogues;
+    }
+    steward.epilogueTeams.erase(steward.epilogueTeams.begin(), steward.epilogueTeams.begin() + static_cast<std::ptrdiff_t>(epilogues));
     if (!steward.terrainSent && m_terrain)
     {
       // MVP-011: the seed and digest go once on the reliable channel, with the team the steward commands (ADR-119); a
@@ -555,16 +747,9 @@ void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender
         steward.state.Sent(*datagram, std::move(outgoing));
       }
     }
-    // ADR-084 item 5: the tick's droppable events, a team's selections and orders to its commander only (ADR-106).
-    std::vector<EffectEvent> events;
-    for (const EffectEvent& event : region.Events())
-    {
-      if (!IsCommandersEvent(event.kind) || region.CommanderOf(event.team).sender == steward.id)
-      {
-        events.push_back(event);
-      }
-    }
-    for (const PresentationEvents& message : PackPresentationEvents(_tick, events))
+    // ADR-084 item 5: the tick's droppable events, a team's selections and orders to its commander only (ADR-106), and
+    // another team's only where the steward's settlements see (ADR-158).
+    for (const PresentationEvents& message : PackPresentationEvents(_tick, EventsForSteward(region.Events(), region, steward.id)))
     {
       static_cast<void>(_sender.Send(connection, Neuron::Channel::State, Neuron::EncodeMessage(message)));
     }

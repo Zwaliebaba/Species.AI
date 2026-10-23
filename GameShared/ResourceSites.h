@@ -46,6 +46,13 @@ struct ResourceSitePlace
 [[nodiscard]] std::vector<ResourceSitePlace> PlaceResourceSites(const RegionLayout& _layout, const Neuron::TerrainField& _field,
                                                                 const TuningMvp& _tuning);
 
+// MVP-053 (ADR-167): the centre of a claim's area on the ground, where PlaceResourceSites puts its resource site: for a
+// half of a valley border area (VALLEY_PAIRS index × 2 + side) the centroid of the half that lies nearer its side's
+// site, and for the central resource site (CLAIM_AREA_CENTRAL) the valley's centre. None for an area beyond the central
+// one, or a half whose two discs do not overlap.
+[[nodiscard]] std::optional<Neuron::Vec3> ClaimAreaCenter(const RegionLayout& _layout, const Neuron::TerrainField& _field,
+                                                          const TuningMvp& _tuning, std::uint8_t _area);
+
 // WLD-163 check 7 with the MVP's one resource kind (O57): the home resource sites of every local site yield the same
 // within wld.resource.home_yield_tolerance, the difference between the largest and the smallest total at most that
 // share of the largest. A resource site that stands at or below the shore height or on ground steeper than walkable

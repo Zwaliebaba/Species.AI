@@ -27,6 +27,9 @@
     <ClInclude Include="CommandMessages.h">
       <Filter>Messages</Filter>
     </ClInclude>
+    <ClInclude Include="ContinueFault.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="EffectEvent.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -54,6 +57,9 @@
     <ClInclude Include="RegionTerrain.h">
       <Filter>World</Filter>
     </ClInclude>
+    <ClInclude Include="RelationMessages.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
     <ClInclude Include="ReplicatedState.h">
       <Filter>Replication</Filter>
     </ClInclude>
@@ -74,6 +80,9 @@
     </ClInclude>
     <ClInclude Include="StateUpdate.h">
       <Filter>Replication</Filter>
+    </ClInclude>
+    <ClInclude Include="StructureCost.h">
+      <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="StructureKind.h">
       <Filter>Simulation</Filter>
@@ -110,6 +119,9 @@
     <ClCompile Include="RegionTerrain.cpp">
       <Filter>World</Filter>
     </ClCompile>
+    <ClCompile Include="RelationMessages.cpp">
+      <Filter>Messages</Filter>
+    </ClCompile>
     <ClCompile Include="ReplicatedState.cpp">
       <Filter>Replication</Filter>
     </ClCompile>
@@ -127,6 +139,9 @@
     </ClCompile>
     <ClCompile Include="StateUpdate.cpp">
       <Filter>Replication</Filter>
+    </ClCompile>
+    <ClCompile Include="StructureCost.cpp">
+      <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="StructureRecords.cpp">
       <Filter>Records</Filter>

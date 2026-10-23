@@ -173,16 +173,25 @@
     <ClCompile Include="CrowdLookTests.cpp" />
     <ClCompile Include="DevelopmentOverlayTests.cpp" />
     <ClCompile Include="EffectsLookTests.cpp" />
+    <ClCompile Include="ClientSettingsTests.cpp" />
+    <ClCompile Include="FrontEndTests.cpp" />
+    <ClCompile Include="GameUiTests.cpp" />
+    <ClCompile Include="InputBindingsTests.cpp" />
     <ClCompile Include="LeaderLookTests.cpp" />
     <ClCompile Include="RoutePreviewTests.cpp" />
     <ClCompile Include="SettlementCameraTests.cpp" />
+    <ClCompile Include="SettlementHudTests.cpp" />
+    <ClCompile Include="SettlementVerbsTests.cpp" />
     <ClCompile Include="StewardAreasTests.cpp" />
     <ClCompile Include="StructureLookTests.cpp" />
     <ClCompile Include="TerritoryLookTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />
     <ClCompile Include="UiLookTests.cpp" />
     <ClCompile Include="WorldMarkersTests.cpp" />
+    <ClCompile Include="WorldMenuTests.cpp" />
     <ClCompile Include="WorldPresentationTests.cpp" />
+    <ClCompile Include="WorldSavesTests.cpp" />
+    <ClCompile Include="WorldSoundsTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

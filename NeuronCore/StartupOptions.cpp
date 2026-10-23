@@ -17,13 +17,16 @@ namespace Neuron
 namespace
 {
 
+constexpr std::wstring_view USER_DATA_OPTION = L"--user-data";
 #if ENGINE_DEVELOPMENT
 constexpr std::wstring_view LOOSE_CONTENT_OPTION = L"--loose-content";
 constexpr std::wstring_view SEED_OPTION = L"--seed";
 constexpr std::wstring_view RENDER_CHECK_OPTION = L"--render-check";
 constexpr std::wstring_view WATCH_OPTION = L"--watch";
 constexpr std::wstring_view WORLD_OPTION = L"--world";
+constexpr std::wstring_view SANDBOX_OPTION = L"--sandbox"; // ADR-155
 constexpr std::wstring_view UI_TEST_OPTION = L"--ui-test";
+constexpr std::wstring_view GPU_VALIDATION_OPTION = L"--gpu-validation"; // ADR-174
 
 // A decimal number of digits only that fits 64 bits, or none.
 std::optional<std::uint64_t> DecimalOf(std::wstring_view _text) noexcept
@@ -75,6 +78,12 @@ StartupOptions ParseArguments(std::span<const std::wstring> _arguments)
   StartupOptions options;
   for (std::size_t i = 0; i < _arguments.size(); ++i)
   {
+    if (_arguments[i] == USER_DATA_OPTION && i + 1 < _arguments.size())
+    {
+      options.userDataDirectory = std::filesystem::path(_arguments[i + 1]);
+      ++i;
+      continue;
+    }
 #if ENGINE_DEVELOPMENT
     if (_arguments[i] == LOOSE_CONTENT_OPTION && i + 1 < _arguments.size())
     {
@@ -101,9 +110,19 @@ StartupOptions ParseArguments(std::span<const std::wstring> _arguments)
       options.world = true;
       continue;
     }
+    if (_arguments[i] == SANDBOX_OPTION)
+    {
+      options.sandbox = true;
+      continue;
+    }
     if (_arguments[i] == UI_TEST_OPTION)
     {
       options.uiTest = true;
+      continue;
+    }
+    if (_arguments[i] == GPU_VALIDATION_OPTION)
+    {
+      options.gpuValidation = true;
       continue;
     }
     if (_arguments[i] == RENDER_CHECK_OPTION && i + 1 < _arguments.size())

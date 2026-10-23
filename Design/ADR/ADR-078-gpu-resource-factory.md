@@ -89,3 +89,9 @@ Proposed option: "A renderer-owned factory interface". **Default while Proposed:
 * Source: Direct3D 12 command lists are not free-threaded, several can be recorded at once, and any thread may submit to any command queue, whose runtime serialises the submissions in order (https://learn.microsoft.com/windows/win32/direct3d12/design-philosophy-of-command-queues-and-command-lists, checked 2026-10-18).
 * **Amendment 2026-10-18 (owner decision O55).** Since O55 the first playable of the "Confirmed when" line is the MVP's M3 build ([MVP scope](../implementation/mvp_scope.md) §3, §5.3), not the skirmish of O20, and the evidence is gathered on that build: the first textured draw is that build's, and the forced device removal of ADR-008 runs during a session in a world in place of a match.
 * **Amendment 2026-10-19 (owner decision O60, ADR-090).** The programs are `Species.exe` and `SpeciesServer.exe` and the content build tool `SpeciesContentBuild.exe`, and engine code is in namespace `Neuron`; this record's names follow.
+* **Amendment 2026-10-23 (M3 task T16, owner decision O104, [ADR-174](ADR-174-the-first-playables-confirmations-at-m3.md)).** M3's evidence:
+  - `Build\CheckProjectFiles.py` rule 14 refuses `d3d12.h` outside the renderer project, with a fixture;
+  - `GpuResourceFactoryTests` check the descriptions, uploads from several threads, the release after the frames in flight, and a rebuild that keeps ids and heap indices;
+  - every texture the client draws is created through the factory (RND-009).
+
+  The forced removal of ADR-008 moves to the owner's T16 run: Ctrl+Shift+F11 once in a battle of the `--gpu-validation` session, after which the picture comes back and the session continues. Until the golden images exist (O104), the owner's eye stands in for the golden image before and after. That run confirms the record.

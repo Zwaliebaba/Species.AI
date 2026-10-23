@@ -20,7 +20,8 @@ enum class BlendState : std::uint8_t
   Alpha,
   Additive,
   Darkening,
-  Ink // UI-180 (ADR-145): source alpha, one minus source colour
+  Ink,  // UI-180 (ADR-145): source alpha, one minus source colour
+  Ghost // RND-058, RND-365 (ADR-153): one, source colour; the placement ghost models
 };
 
 // RND-059: the depth variants; a pass with depth testing off never writes depth (RND-056).
@@ -50,7 +51,8 @@ enum class VertexLayout : std::uint8_t
   QuadInstance,
   MeshInstanced, // a cooked mesh's vertices in slot 0 and MeshInstance in slot 1
   TriangleVertex,
-  OverlayQuadInstance
+  OverlayQuadInstance,
+  UiQuadInstance // ADR-149: the UI's quads, with a vertical gradient
 };
 
 // The targets an entry draws into: the scene targets at their sample count with the depth buffer bound, or the back

@@ -2,6 +2,7 @@
 
 #include "Construction.h"
 #include "RegionSimulation.h"
+#include "StructureCost.h"
 
 #include <algorithm>
 #include <cmath>
@@ -101,14 +102,9 @@ std::expected<Structure, PlacementRefusal> Candidate(const RegionSimulation& _re
 
 std::int64_t CostMilliRu(const RegionSimulation& _region, const Settlement& _settlement, StructureKind _kind)
 {
-  const auto& cost = _region.Tuning().mvp.cost;
-  if (_kind != StructureKind::Dwelling)
-  {
-    return MilliRuOf(_kind == StructureKind::Storehouse ? cost.storehouseRu : _kind == StructureKind::Turret ? cost.turretRu : 0.0);
-  }
   std::int64_t dwellings = 0;
   const SlicedPool<Structure>& structures = _region.Structures();
-  for (std::uint32_t slot = 0; slot < structures.Capacity(); ++slot)
+  for (std::uint32_t slot = 0; _kind == StructureKind::Dwelling && slot < structures.Capacity(); ++slot)
   {
     if (structures.Used(slot) && structures.At(slot).kind == StructureKind::Dwelling &&
         structures.At(slot).owner == std::optional<std::uint8_t>(_settlement.team))
@@ -116,7 +112,7 @@ std::int64_t CostMilliRu(const RegionSimulation& _region, const Settlement& _set
       ++dwellings;
     }
   }
-  return MilliRuOf(cost.dwellingRu * std::pow(cost.dwellingEscalation, static_cast<double>(dwellings)));
+  return StructureCostMilliRu(_region.Tuning(), _kind, dwellings);
 }
 
 std::int64_t RequiredWorkTicks(const Structure& _structure, const TuningMvp& _tuning) noexcept
@@ -146,15 +142,19 @@ std::uint32_t ActiveCount(const RegionSimulation& _region, std::uint8_t _team, S
 
 std::uint32_t Population(const RegionSimulation& _region, const Settlement& _settlement)
 {
-  if (_settlement.team >= _region.TeamCount())
-  {
-    return 0;
-  }
+  // ADR-161: the figures of its expedition are still its own.
   std::uint32_t population = 0;
-  const SlicedPool<Figure>& figures = _region.TeamAt(_settlement.team).figures;
-  for (std::uint32_t slot = 0; slot < figures.Capacity(); ++slot)
+  for (const std::uint8_t team : {_settlement.team, ExpeditionTeamOf(_settlement.site)})
   {
-    population += figures.Used(slot) && !figures.At(slot).dead ? 1U : 0U;
+    if (team >= _region.TeamCount())
+    {
+      continue;
+    }
+    const SlicedPool<Figure>& figures = _region.TeamAt(team).figures;
+    for (std::uint32_t slot = 0; slot < figures.Capacity(); ++slot)
+    {
+      population += figures.Used(slot) && !figures.At(slot).dead ? 1U : 0U;
+    }
   }
   return population;
 }

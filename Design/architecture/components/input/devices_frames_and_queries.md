@@ -103,6 +103,8 @@ Caption: Diagram 4.1-A, one frame of input: the back-ends deliver ordered events
 
 **INP-113** (MUST) The router forwards the editing keys to the UI framework's text service as editing commands (`EditCommand`, [core_and_widgets](../ui_framework/core_and_widgets.md) UI-038, UI-067), in the order of their key events among the characters and with the modifier state: `left` and `right` move the caret (`CaretLeft`, `CaretRight`), `home` and `end` move it to the start and the end (`CaretHome`, `CaretEnd`), `delete` deletes forward (`DeleteForward`), and Ctrl with `a`, `c`, `x` or `v` gives `SelectAll`, `Copy`, `Cut` or `Paste`. A held editing key repeats with the operating system's auto-repeat, as characters do; Backspace, Enter and Escape arrive as characters (UI-066). The UI core routes the commands only to a text-edit target (UI-038), and the key events of these keys still enter the event queue (INP-112).
 
+> **Amendment 2026-10-22 (M2 task T18, [ADR-154](../../../ADR/ADR-154-text-input-and-the-page-text-field-at-m2.md)).** At M2 the characters are the keyboard and mouse back-end's `WM_CHAR` messages, joined into Unicode scalar values (`JoinUtf16`), which the router forwards once a frame and drops while the window has no focus. Input-method composition and INP-113's editing commands wait; Backspace, Enter and Escape reach the text field as characters.
+
 ### 4.3 Event queue
 
 **INP-115** (MUST) The router keeps one ordered event queue per frame (ADR-029). An event is a press, a release (keyboard events carry the auto-repeat flag), an axis sample (a stick, a trigger, pointer movement, raw movement or the wheel), or a device connection or disconnection; every event carries its device identity and its timestamp. Events are applied in queue order.

@@ -39,10 +39,22 @@
     <ClInclude Include="EffectsLook.h">
       <Filter>View</Filter>
     </ClInclude>
+    <ClInclude Include="ClientSettings.h">
+      <Filter>Session</Filter>
+    </ClInclude>
+    <ClInclude Include="FrontEnd.h">
+      <Filter>View</Filter>
+    </ClInclude>
+    <ClInclude Include="GameUi.h">
+      <Filter>View</Filter>
+    </ClInclude>
     <ClInclude Include="InputBindings.h">
       <Filter>Input</Filter>
     </ClInclude>
     <ClInclude Include="LeaderLook.h">
+      <Filter>View</Filter>
+    </ClInclude>
+    <ClInclude Include="PageSkeleton.h">
       <Filter>View</Filter>
     </ClInclude>
     <ClInclude Include="ReplicaTiming.h">
@@ -53,6 +65,12 @@
     </ClInclude>
     <ClInclude Include="SettlementCamera.h">
       <Filter>View</Filter>
+    </ClInclude>
+    <ClInclude Include="SettlementHud.h">
+      <Filter>View</Filter>
+    </ClInclude>
+    <ClInclude Include="SettlementVerbs.h">
+      <Filter>Input</Filter>
     </ClInclude>
     <ClInclude Include="SettlementView.h">
       <Filter>View</Filter>
@@ -72,8 +90,17 @@
     <ClInclude Include="WorldMarkers.h">
       <Filter>View</Filter>
     </ClInclude>
+    <ClInclude Include="WorldMenu.h">
+      <Filter>View</Filter>
+    </ClInclude>
     <ClInclude Include="WorldPresentation.h">
       <Filter>Session</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldSaves.h">
+      <Filter>Session</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldSounds.h">
+      <Filter>Presentation</Filter>
     </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Build</Filter>
@@ -95,10 +122,22 @@
     <ClCompile Include="EffectsLook.cpp">
       <Filter>View</Filter>
     </ClCompile>
+    <ClCompile Include="ClientSettings.cpp">
+      <Filter>Session</Filter>
+    </ClCompile>
+    <ClCompile Include="FrontEnd.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="GameUi.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
     <ClCompile Include="InputBindings.cpp">
       <Filter>Input</Filter>
     </ClCompile>
     <ClCompile Include="LeaderLook.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="PageSkeleton.cpp">
       <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="ReplicaTiming.cpp">
@@ -109,6 +148,12 @@
     </ClCompile>
     <ClCompile Include="SettlementCamera.cpp">
       <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="SettlementHud.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="SettlementVerbs.cpp">
+      <Filter>Input</Filter>
     </ClCompile>
     <ClCompile Include="SettlementView.cpp">
       <Filter>View</Filter>
@@ -128,8 +173,17 @@
     <ClCompile Include="WorldMarkers.cpp">
       <Filter>View</Filter>
     </ClCompile>
+    <ClCompile Include="WorldMenu.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
     <ClCompile Include="WorldPresentation.cpp">
       <Filter>Session</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldSaves.cpp">
+      <Filter>Session</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldSounds.cpp">
+      <Filter>Presentation</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>

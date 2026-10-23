@@ -26,6 +26,7 @@
 #include <string_view>
 #include <thread>
 #include <utility>
+#include <variant>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -368,6 +369,16 @@ public:
     Assert::IsTrue(std::filesystem::exists(desc.snapshotFolder / Species::WorldServer::CLEAN_STOP_FILE_NAME), L"stopped cleanly");
     const std::vector<std::uint64_t> after = firstTicks(1);
     Assert::IsTrue(after.front() > before.back(), L"the world continues after the ticks it ran");
+    // ADR-155: a world to continue that has no snapshot starts no server, and its folder is left as it was.
+    desc.snapshotFolder = folder.Path() / L"empty";
+    desc.restoreOnly = true;
+    Species::IntegratedServer refused(desc);
+    std::unique_ptr<Neuron::Transport> client = refused.Connect();
+    const auto started = refused.Start();
+    const auto* fault = started.has_value() ? nullptr : std::get_if<Species::ContinueFault>(&started.error());
+    Assert::IsTrue(fault != nullptr && *fault == Species::ContinueFault::NoSnapshot, L"nothing to continue");
+    Assert::IsFalse(std::filesystem::exists(desc.snapshotFolder) && !std::filesystem::is_empty(desc.snapshotFolder), L"and nothing saved");
+    refused.Stop();
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp099AServerWithoutItsTuningDoesNotStart)
@@ -387,7 +398,8 @@ public:
     std::unique_ptr<Neuron::Transport> client = server.Connect();
     const auto started = server.Start();
     Assert::IsFalse(started.has_value(), L"no record, no server");
-    Assert::IsTrue(started.error().fault == Neuron::AssetFault::Missing, L"a missing record");
+    const auto* fault = started.has_value() ? nullptr : std::get_if<Neuron::AssetError>(&started.error());
+    Assert::IsTrue(fault != nullptr && fault->fault == Neuron::AssetFault::Missing, L"a missing record");
     server.Stop();
     Assert::IsFalse(client->Receive().has_value(), L"no tick ran");
   }
@@ -410,7 +422,8 @@ public:
     std::unique_ptr<Neuron::Transport> client = server.Connect();
     const auto started = server.Start();
     Assert::IsFalse(started.has_value(), L"no structure records, no server");
-    Assert::IsTrue(started.error().fault == Neuron::AssetFault::Missing && started.error().key == "meshes/wellspring@sim",
+    const auto* fault = started.has_value() ? nullptr : std::get_if<Neuron::AssetError>(&started.error());
+    Assert::IsTrue(fault != nullptr && fault->fault == Neuron::AssetFault::Missing && fault->key == "meshes/wellspring@sim",
                    L"the first missing record");
     server.Stop();
     Assert::IsFalse(client->Receive().has_value(), L"no tick ran");
@@ -433,7 +446,8 @@ public:
     Species::IntegratedServer server(desc);
     const auto started = server.Start();
     Assert::IsFalse(started.has_value(), L"no server");
-    Assert::IsTrue(started.error().fault == Neuron::AssetFault::Damaged && started.error().key == "meshes/resourcesite@sim",
+    const auto* fault = started.has_value() ? nullptr : std::get_if<Neuron::AssetError>(&started.error());
+    Assert::IsTrue(fault != nullptr && fault->fault == Neuron::AssetFault::Damaged && fault->key == "meshes/resourcesite@sim",
                    L"the resource site's record");
     server.Stop();
   }

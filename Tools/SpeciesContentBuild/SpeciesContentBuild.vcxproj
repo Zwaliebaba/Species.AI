@@ -173,6 +173,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AssetManifest.h" />
+    <ClInclude Include="AudioCooker.h" />
     <ClInclude Include="BuildReport.h" />
     <ClInclude Include="CmoFile.h" />
     <ClInclude Include="CollisionCooker.h" />
@@ -185,6 +186,7 @@
     <ClInclude Include="SimulationRecordCooker.h" />
     <ClInclude Include="StringTableCooker.h" />
     <ClInclude Include="TextureCheck.h" />
+    <ClInclude Include="WavFile.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
@@ -192,6 +194,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="AssetManifest.cpp" />
+    <ClCompile Include="AudioCooker.cpp" />
     <ClCompile Include="BuildReport.cpp" />
     <ClCompile Include="CmoFile.cpp" />
     <ClCompile Include="CollisionCooker.cpp" />
@@ -205,6 +208,7 @@
     <ClCompile Include="SpeciesContentBuild.cpp" />
     <ClCompile Include="StringTableCooker.cpp" />
     <ClCompile Include="TextureCheck.cpp" />
+    <ClCompile Include="WavFile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\NeuronCore\NeuronCore.vcxproj">

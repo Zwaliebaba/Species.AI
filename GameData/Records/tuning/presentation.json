@@ -232,7 +232,8 @@
       "frame": {
         "fps_window": 1.0,
         "fps_initial": 60,
-        "delta_clamp": 0.25
+        "delta_clamp": 0.25,
+        "audio_update_period": 0.05
       },
       "match_entry": {
         "camera_border": 200,
@@ -295,6 +296,10 @@
             "r": 255,
             "g": 0,
             "b": 0
+          },
+          "place_hotspot": {
+            "x": 0.5,
+            "y": 0.5
           }
         },
         "circle_particles": 30,
@@ -342,6 +347,9 @@
           "hover_scale": 1.2
         },
         "shadow_alpha": 0.9
+      },
+      "panel": {
+        "canvas_height": 600
       }
     },
     "unit": {
@@ -480,6 +488,58 @@
         "rest_force": 0.2,
         "bounce_factor": 0.5
       }
+    },
+    "meta": {
+      "layout": {
+        "horizontal_split": 0.26,
+        "vertical_split": 0.6,
+        "gap": 0.05,
+        "widescreen_aspect": 1.4,
+        "widescreen_inset": 0.08,
+        "font_large": 0.095,
+        "font_medium": 0.04,
+        "font_small": 0.022,
+        "button_width": 0.9,
+        "button_height": 1.3,
+        "button_gap": 0.1,
+        "title_inset": 10,
+        "title_height": 1.5,
+        "back_offset": 2
+      }
+    },
+    "aud": {
+      "bus": {
+        "ui": {
+          "level": 0
+        },
+        "announcer": {
+          "level": 0,
+          "duck_world_db": -6,
+          "duck_time": 1
+        },
+        "voice": {
+          "level": -3
+        },
+        "world": {
+          "level": -3
+        },
+        "ambience": {
+          "level": -10
+        },
+        "music": {
+          "level": -6
+        }
+      },
+      "mix": {
+        "floor_db": -100,
+        "master_step_db": 0.32
+      },
+      "rank": {
+        "copy_decay": 0.75
+      },
+      "layer": {
+        "one_shot_patience_updates": 3
+      }
     }
   },
   "mvp": {
@@ -516,7 +576,8 @@
       "world_hotspot": {
         "x": 0.113,
         "y": 0.082
-      }
+      },
+      "place_size": 48
     },
     "selection": {
       "disc_size_factor": 0.8,
@@ -527,7 +588,8 @@
       "rise_depth_factor": 1.0,
       "inactive_brightness": 0.35,
       "flash_size": 40,
-      "flash_seconds": 0.5
+      "flash_seconds": 0.5,
+      "ghost_brightness": 0.5
     },
     "wellspring": {
       "glow_blobs": 5,
@@ -565,6 +627,96 @@
     "view_fog": {
       "strength": 0.85,
       "edge_width": 64
+    },
+    "hud": {
+      "status_period": 1,
+      "notice_seconds": 6,
+      "notice_fade": 1,
+      "notices_max": 5,
+      "margin": 8,
+      "padding": 6,
+      "panel_width": 236,
+      "row_height": 17,
+      "icon_size": 13,
+      "meter_height": 4,
+      "text_size": 11,
+      "card_width": 200,
+      "card_height": 20,
+      "bar_button_width": 96,
+      "bar_height": 34,
+      "queue_size": 26,
+      "palette": {
+        "accent": {
+          "r": 0.55,
+          "g": 0.6,
+          "b": 1.0,
+          "a": 0.85
+        },
+        "neutral": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.75,
+          "a": 0.75
+        },
+        "text": {
+          "r": 1.0,
+          "g": 1.0,
+          "b": 1.0,
+          "a": 1.0
+        },
+        "positive": {
+          "r": 0.6,
+          "g": 1.0,
+          "b": 0.4,
+          "a": 1.0
+        },
+        "negative": {
+          "r": 1.0,
+          "g": 0.3,
+          "b": 0.3,
+          "a": 1.0
+        },
+        "meter_track": {
+          "r": 1.0,
+          "g": 1.0,
+          "b": 1.0,
+          "a": 0.15
+        },
+        "meter_fill": {
+          "r": 0.3,
+          "g": 0.6,
+          "b": 0.9,
+          "a": 0.9
+        }
+      },
+      "priority_step": 10,
+      "disabled_alpha": 0.35,
+      "relations_rows_max": 14,
+      "result_width": 222
+    },
+    "sound": {
+      "min_distance": 1000,
+      "laser_shot": {
+        "level_db": -12
+      },
+      "death": {
+        "level_db": -9
+      },
+      "orb_becomes_worker": {
+        "level_db": -6
+      },
+      "structure_completed": {
+        "level_db": -6
+      },
+      "attack_warning": {
+        "level_db": -6
+      },
+      "battle_started": {
+        "level_db": -6
+      },
+      "battle_ended": {
+        "level_db": -6
+      }
     }
   },
   "dbg": {
@@ -719,7 +871,9 @@
     "screen": {
       "flash_count_threshold": 0.1,
       "flash_onsets": 3,
-      "flash_window": 1
+      "flash_window": 1,
+      "reduced_motion_scale": 0.25,
+      "reduced_flash_scale": 0.25
     },
     "particle": {
       "size_divisor": 16,
@@ -900,12 +1054,202 @@
         "g": 1,
         "b": 1,
         "a": 0
+      },
+      "text_normal": {
+        "r": 255,
+        "g": 255,
+        "b": 255,
+        "a": 255
+      },
+      "check_box": {
+        "r": 0.3,
+        "g": 0.3,
+        "b": 0.3,
+        "a": 1
+      },
+      "fe_caption": {
+        "r": 0.6,
+        "g": 1.0,
+        "b": 0.4,
+        "a": 1
+      },
+      "fe_caption_focus": {
+        "r": 1.0,
+        "g": 0.3,
+        "b": 0.3,
+        "a": 1
+      },
+      "fe_caption_inactive": {
+        "r": 0.5,
+        "g": 0.5,
+        "b": 0.5,
+        "a": 1
+      },
+      "fe_caption_alt": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 0.3,
+        "a": 1
+      },
+      "fe_focus_band": {
+        "r": 0.75,
+        "g": 0.75,
+        "b": 1.0,
+        "a": 0.5
+      },
+      "fe_row_band": {
+        "r": 1,
+        "g": 1,
+        "b": 1,
+        "a": 0.1
+      },
+      "fe_title_outline": {
+        "r": 0.75,
+        "g": 1.0,
+        "b": 0.45,
+        "a": 1
+      },
+      "fe_title_shadow": {
+        "r": 1.0,
+        "g": 0.9,
+        "b": 0.9,
+        "a": 0
+      },
+      "fe_beam_top": {
+        "r": 0.6,
+        "g": 1.0,
+        "b": 0.4,
+        "a": 0.8
+      },
+      "fe_beam_bottom": {
+        "r": 0.3,
+        "g": 0.5,
+        "b": 0.2,
+        "a": 0.7
+      },
+      "fe_beam_outline": {
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "a": 0.5
+      },
+      "fe_box_tint": {
+        "r": 0.8,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.9
+      },
+      "fe_box_glow": {
+        "r": 0.3,
+        "g": 0.6,
+        "b": 0.9,
+        "a": 0.4
+      },
+      "fe_box_outline": {
+        "r": 0.8,
+        "g": 0.7,
+        "b": 1.0,
+        "a": 0.8
+      },
+      "fe_box_inner_alpha": 0.4,
+      "fe_box_shadow_edge": {
+        "r": 1,
+        "g": 1,
+        "b": 1,
+        "a": 0
       }
     },
     "glyph": {
       "page_size": 1024,
       "page_count": 8,
       "subpixel_steps": 4
+    },
+    "scale": {
+      "ui_default": 1.0,
+      "text_default": 1.0
+    },
+    "page_button": {
+      "caption_inset": 0.05
+    },
+    "page_title": {
+      "size_factor": 1.5,
+      "fit_margin": 1.05
+    },
+    "fill_box": {
+      "shadow_width": 0.01,
+      "blur_tile": 64,
+      "glow_motion": {
+        "u": 0.01,
+        "v": 0.02
+      },
+      "outline_width": 2,
+      "inner_inset": 3
+    },
+    "check": {
+      "box_size": 0.75,
+      "box_right": 1.5,
+      "tick_inset": 0.05,
+      "tick_size": 0.65
+    },
+    "field": {
+      "caret_blink_period": 1.0,
+      "caret_duty": 0.5,
+      "caret_margin": 2
+    },
+    "page_field": {
+      "caret_width": 5,
+      "caret_offset": 0.95
+    }
+  },
+  "inp": {
+    "repeat": {
+      "initial_delay": 0.3,
+      "period": 0.3
+    }
+  },
+  "aen": {
+    "update": {
+      "period": 0.01,
+      "schedule_latency": 0.03
+    },
+    "queue": {
+      "command_capacity": 4096
+    },
+    "instances": {
+      "capacity": 1024
+    },
+    "voice": {
+      "budget": 64,
+      "pool_headroom": 8,
+      "bus_cap": {
+        "ui": 4,
+        "announcer": 4,
+        "voice": 16,
+        "world": 32,
+        "ambience": 4,
+        "music": 2
+      },
+      "event_cap": {
+        "world_default": 4,
+        "world_max": 6
+      },
+      "steal_margin_db": 3,
+      "state_hold": 0.25,
+      "steal_fade": 0.02,
+      "max_frequency_ratio": 3.0
+    },
+    "mix": {
+      "limiter": {
+        "release": 6,
+        "loudness": 1000
+      }
+    },
+    "spatial": {
+      "max_distance_default": 1000000000,
+      "max_distance_fade_fraction": 0.1
+    },
+    "rng": {
+      "match_seed": 1
     }
   }
 }

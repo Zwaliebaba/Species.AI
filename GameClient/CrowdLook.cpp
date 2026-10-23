@@ -5,7 +5,6 @@
 #include "DevelopmentOverlay.h"
 #include "FigureKind.h"
 #include "Log.h"
-#include "SettlementView.h"
 #include "StableId.h"
 #include "TuningMvp.h"
 #include "TuningPresentation.h"
@@ -239,19 +238,20 @@ std::array<double, 2> ScreenDirection(const Neuron::Vec3& _from, const Neuron::V
   return length > 0.0 ? std::array<double, 2>{direction[0] / length, direction[1] / length} : std::array<double, 2>{0.0, 0.0};
 }
 
-double WorkerDetail(const TuningPresentation& _presentation, double _distance) noexcept
+double WorkerDetail(const TuningPresentation& _presentation, std::int64_t _entityDetail, double _distance) noexcept
 {
-  const double limit = _presentation.rnd.crowd.workerDetailDistance.first; // rnd.option.entity_detail.default is 1
+  const auto& distances = _presentation.rnd.crowd.workerDetailDistance;
+  const double limit = _entityDetail >= 3 ? distances.third : _entityDetail == 2 ? distances.second : distances.first;
   return std::clamp(1.0 - (_distance * _distance) / (limit * limit), 0.0, 1.0);
 }
 
-double WorkerCardHalfSize(const TuningPresentation& _presentation, StableId _id, double _distance) noexcept
+double WorkerCardHalfSize(const TuningPresentation& _presentation, double _scaleFactor, StableId _id, double _distance) noexcept
 {
   const auto& worker = _presentation.ref.unit.worker;
   double half = worker.cardHalfWidth * (1.0 + worker.cardVariation * static_cast<double>(VariationOf(_id)));
   if (_distance > worker.cardScaleStart)
   {
-    half *= 1.0 + WORKER_DISTANCE_SCALE_FACTOR * (_distance - worker.cardScaleStart) / worker.cardScaleDivisor;
+    half *= 1.0 + _scaleFactor * (_distance - worker.cardScaleStart) / worker.cardScaleDivisor;
   }
   return half;
 }
@@ -275,8 +275,8 @@ void AppendWorkerBatches(std::span<const InterpolatedFigure> _figures, const Neu
       continue;
     }
     const double distance = Neuron::Length(figure.position - _view.camera);
-    const double detail = WorkerDetail(_presentation, distance);
-    const double half = WorkerCardHalfSize(_presentation, figure.id, distance);
+    const double detail = WorkerDetail(_presentation, _view.entityDetail, distance);
+    const double half = WorkerCardHalfSize(_presentation, _view.workerScaleFactor, figure.id, distance);
     largestHalf = std::max(largestHalf, half);
     const bool airborne = !state.onGround;
     const bool drowning = state.task == static_cast<std::uint8_t>(WorkerState::Drowning);
@@ -430,7 +430,8 @@ void AppendSelectionDiscs(std::span<const InterpolatedFigure> _figures, const Ne
     const Neuron::Vec3 at{figure.position.x, _field.Height(figure.position.x, figure.position.z), figure.position.z};
     const Neuron::Vec3 normal = Neuron::NormalizedOr(_field.Normal(at.x, at.z), WORLD_UP);
     const Neuron::Vec3 right = Neuron::NormalizedOr(Cross(normal, WORLD_Z), {1.0, 0.0, 0.0});
-    const double half = selection.discSizeFactor * WorkerCardHalfSize(_presentation, figure.id, Neuron::Length(at - _view.camera));
+    const double half =
+      selection.discSizeFactor * WorkerCardHalfSize(_presentation, _view.workerScaleFactor, figure.id, Neuron::Length(at - _view.camera));
     Neuron::SceneQuad disc;
     disc.position = at;
     disc.halfWidth = static_cast<float>(half);

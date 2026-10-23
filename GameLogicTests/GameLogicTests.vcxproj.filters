@@ -26,10 +26,19 @@
     <ClCompile Include="ActorGridTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="BattleTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="BotTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="ClaimTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="CombatTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandPathTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="CommandTests.cpp">
@@ -50,10 +59,16 @@
     <ClCompile Include="RegionSimulationTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="RelationTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="ReplicationTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="RouteTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="RunTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="SandboxTests.cpp">
@@ -63,6 +78,9 @@
       <Filter>Persistence</Filter>
     </ClCompile>
     <ClCompile Include="ScriptedStewardTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="SettlementAiTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="SettlementCommandTests.cpp">
@@ -96,6 +114,9 @@
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="UpkeepTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="ValleyTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="WeaponTests.cpp">

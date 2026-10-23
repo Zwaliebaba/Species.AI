@@ -144,6 +144,38 @@ The type, ownership and lifetime of every UI object are listed in [core_and_widg
 | R6 | integration | Every page and options screen is driven to every widget with the pointer only, the keyboard only and the gamepad only. | UI-016 |
 | R7 | unit | A handle kept after its widget was removed resolves to nothing, and a click sent to it does nothing. | UI-012 |
 
+### 7.1 XAG conformance
+
+ADR-064's per-guideline conformance table of XAG 3.2, reviewed at each milestone. The state is that of the MVP's M3 build ([ADR-174](../../../ADR/ADR-174-the-first-playables-confirmations-at-m3.md)). "Met" and "partly met" name what the build has. "Waits" names the build or decision that brings the rest.
+
+| XAG | Guideline | M3 build | State |
+|---|---|---|---|
+| 101 | Text display | UI-171's minimum size at every height with the DPI scale, tested (`UiTextTests`, `UiLayoutTests`, `UiLookTests`); the outline of UI-192; the text and UI scales are settings (`interface.text_scale`, `interface.ui_scale`, ADR-150), not yet on the options page (O96) | partly met; waits for the options pages |
+| 102 | Contrast | the outline under every text; no contrast test, as the HUD's text sits on the owner's panel art and DEC-1005's provisional palette; no high-contrast mode | waits for the final palette and the golden images (O104) |
+| 103 | Additional channels for visual and audio cues | every sound of MVP-087 has a visual counterpart: a flash, a notice card, or the warning's countdown (ADR-166, ADR-173); a Cladan is named in text as well as shown in its colour, but its figures carry colour alone | partly met |
+| 104 | Subtitles and captions | the MVP has no speech; the warning and the battles' starts and ends, the cues that carry information, have their cards | met for the MVP's cues |
+| 105 | Audio customization | the master volume (O96); the buses of ADR-172 have no setting each | partly met |
+| 106 | Screen narration | not built; each widget carries an accessible name (`UiWidget::accessibleName`); whether menus are narrated is §8's open decision 2 | waits for the design |
+| 107 | Input | every action is bound by `binding.*` lines in `settings.txt`, applied at the next start (ADR-151); `latch` binds a held action as a toggle; no rebinding page | partly met |
+| 108 | Game difficulty options | none in the MVP | waits for the design |
+| 109 | Object clarity | the owner's likeness review judges the picture (T17) | not assessed |
+| 110 | Haptic feedback | no gamepad in the MVP | not applicable |
+| 111 | Audio description | no cinematics | not applicable |
+| 112 | UI navigation | the pages are navigated by the keyboard with authored neighbors (ADR-149); the HUD by the pointer; no gamepad | partly met |
+| 113 | UI focus handling | the focus is shown and moves in UI-372's order, checked by the tests (ADR-149) | met for the pages |
+| 114 | UI context | no help or tooltips | not met |
+| 115 | Error messages and destructive actions | a refused placement or conflict command shows its reason (ADR-153, ADR-167); an attack is declared by a second press after the first shows its cost (ADR-167) | partly met |
+| 116 | Time limits | the run's length and the attack warning are timed by the design (MVP-060, MVP-042) | not assessed |
+| 117 | Visual distractions | `interface.reduced_motion` scales the camera's shake (DEC-964) | met for the camera |
+| 118 | Photosensitivity | VFX-235's onset limit and `interface.reduced_flash` (DEC-964), tested (`EffectsLookTests`); no capture-based test | partly met; waits for the golden images' captures (O104) |
+| 119 | Speech-to-text and text-to-speech chat | no chat | not applicable |
+| 120 | Communication experiences | no other players | not applicable |
+| 121 | Accessible feature documentation | none | waits for the first external build |
+| 122 | Accessible customer support | none | waits for the first external build |
+| 123 | Advanced best practices | not reviewed | not assessed |
+
+*Table 7.1-A — XAG 3.2 conformance at the MVP's M3 build.*
+
 ## 8 Open decisions
 
 - **DEC-007** (Resolved): presentation never writes simulation state (UI-002).

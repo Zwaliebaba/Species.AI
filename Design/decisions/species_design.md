@@ -12,6 +12,12 @@ This file records the decisions of the Species design and of the MVP built from 
 | [DEC-1001](#dec-1001-the-provisional-looks-of-the-settlement) | The provisional looks of the settlement | Open | MVP |
 | [DEC-1002](#dec-1002-the-provisional-looks-of-the-territories) | The provisional looks of the territories | Open | MVP |
 | [DEC-1003](#dec-1003-the-weight-and-width-of-the-text-in-bahnschrift) | The weight and width of the text in Bahnschrift | Open | UI, MVP |
+| [DEC-1004](#dec-1004-the-publishers-folder-of-the-user-data-root) | The publisher's folder of the user-data root | Open | PLT, MVP |
+| [DEC-1005](#dec-1005-the-provisional-layout-and-palette-of-the-settlement-hud) | The provisional layout and palette of the settlement HUD | Open | MVP, UI |
+| [DEC-1006](#dec-1006-how-the-ai-settlements-claim-and-raise-their-expeditions) | How the AI settlements claim and raise their expeditions | Open | MVP |
+| [DEC-1007](#dec-1007-renown-for-a-withdrawn-claim) | Renown for a withdrawn claim | Open | MVP, PIL |
+| [DEC-1008](#dec-1008-the-valley-runs-misses-of-playtest-1s-lines) | The valley run's misses of Playtest 1's lines | Resolved | MVP, PIL |
+| [DEC-1009](#dec-1009-the-first-sound-sets-mix-and-the-turrets-sighting) | The first sound set's mix and the turret's sighting | Open | MVP, AEN |
 
 ## 1 World and sites
 
@@ -77,3 +83,115 @@ This file records the decisions of the Species design and of the MVP built from 
   - C — Bahnschrift's own narrower widths (SemiCondensed or Condensed) for some roles, in place of a horizontal scale.
 - Recommendation: A. Bahnschrift is drawn narrow already, and condensing it again to 0.6 would make small text hard to read. A width or weight per role is one family name or one key, so a later choice changes no code.
 - Decide by: the owner's run of M2 task T14's DirectWrite step; the HUD of T16 uses the answer.
+
+### DEC-1005 The provisional layout and palette of the settlement HUD
+- Status: Open
+- Affects: implementation/mvp_scope.md (MVP-102, and table 3's `mvp.hud.*`); architecture/components/renderer/visual_language.md (RND-403); ADR-152
+- Specified behaviour: MVP-102 lists what the HUD shows, and the MVP assets give its icons and panel strips, but no layout or palette exists; the owner approves the HUD layout (MVP assets §1) and chose a provisional palette for M2 (O95). The client builds the following until the owner decides.
+  - **Where the panels go.**
+    - The settlement panel, top left: the stores, the Workers, growth, the upkeep, the three priorities and the idle Workers by reason, each on a row with its icon, with a meter under the stores, the Workers and each priority.
+    - The construction bar, bottom centre, with a site's square for each queued site above it.
+    - The notification cards, top right, newest first.
+    - The world's panel, bottom left, with the seed.
+  - **Measures.** In the HUD space of RND-377, as table 3's `mvp.hud.*` measures state, times the UI scale.
+  - **The palette** (`mvp.hud.palette.*`), drafted from the front end's colours (`ui.palette.fe_*`) for RND-403's roles: a blue accent panel, a grey neutral panel, white text, green positive and red negative captions, and blue meters.
+- Options:
+  - A — as stated, with the owner retuning the keys after M2 task T16's run;
+  - B — a layout and palette the owner sets before the run.
+- Recommendation: A. Every measure and colour is a key of the client's presentation record, so a retune changes no code, and the layout is reviewed for likeness at M2's end (PIL-027).
+- Decide by: the owner's run of M2 task T16; the likeness review of PIL-027 judges the result.
+
+### DEC-1009 The first sound set's mix and the turret's sighting
+- Status: Open
+- Affects: implementation/mvp_scope.md (MVP-087, and table 3's `mvp.sound.*`); implementation/m3_plan.md (§2's row of ADR-141); ADR-141, ADR-173
+- Specified behaviour: MVP-087 names the seven groups of the first sound set, but not their levels, buses or distances. The M3 plan also expects ADR-141's `TurretTargetSighted` heard, though the asset manifest has no group for a turret's sighting. The client builds the following until the owner decides.
+  - **Levels.** Each event plays at its `mvp.sound.<event>.level_db`:
+    - a laser shot at −12 dB;
+    - a death at −9 dB;
+    - an orb becoming a Worker, a structure completed, the attack warning, and a battle's start and end at −6 dB.
+
+    Every synthesized member peaks at −1 dBFS (ADR-171), so these levels alone set the balance between the groups.
+  - **Distance.** A positioned sound keeps its full level within `mvp.sound.min_distance` (1,000 wu) of the camera and falls as 1/d beyond it (AEN-201). With the reference's 100 wu (`ref.aud.layer.min_distance_default`), a battle seen from the settlement view's usual distance of about 1,000 to 2,500 wu would be 20 to 28 dB down.
+  - **Buses.** These play positioned on the world bus:
+    - the laser shot;
+    - the death;
+    - the orb;
+    - the structure.
+
+    The attack warning (two-dimensional, as its manifest row has it at the MVP) and the battle's start and end play on the announcer bus. It ducks the world bus by `ref.aud.bus.announcer.duck_world_db` for `ref.aud.bus.announcer.duck_time` (AEN-216).
+  - **Caps.** The laser shot and the death take `aen.voice.event_cap.world_max` (6). The other world sounds take `aen.voice.event_cap.world_default` (4).
+  - **The turret's sighting.** No sound plays for `TurretTargetSighted` at M3, since no group exists for it.
+- Options:
+  - A — as stated: the owner retunes the keys after M3 task T15's run, and the turret's sighting waits for a sound set that has its group;
+  - B — as A, with a group for the turret's sighting added to the MVP's set: a manifest row, its synthesized stand-in and an eighth event;
+  - C — levels and a distance that the owner sets before the run.
+- Recommendation: A. Every level and the distance are keys of the client's presentation record, so a retune changes no code. The turret's sighting is one of many reference sounds the MVP leaves out, and MVP-087 lists the set the owner chose (O98).
+- Decide by: the owner's run of M3 task T15.
+
+## 3 Platform
+
+### DEC-1004 The publisher's folder of the user-data root
+- Status: Open
+- Affects: architecture/components/platform_layer.md (PLT-016, PLT-017); ADR-071, ADR-150
+- Specified behaviour: PLT-016 places the user-data root at `%LOCALAPPDATA%\<Studio>\Species\`, where `<Studio>` is the publisher's name compiled into the build. O49 deferred the publisher to before the first external build, so no name exists. Until the owner decides, the client builds the following.
+  - The root is `%LOCALAPPDATA%\Species\`: the Local AppData known folder, then the product's folder, with no publisher's folder between them.
+  - `--user-data <directory>` replaces it in every build, as PLT-025 states.
+  - When a publisher is named, the root moves under its folder. The settings file is never migrated (R-META-409), so a player's settings and saved worlds stay in the old folder unless a one-time move is built with the change.
+- Options:
+  - A — as stated, with a one-time move of the old folder when the publisher is named;
+  - B — a placeholder publisher's folder now, such as the owner's name, which the publisher's name replaces later, with the same move;
+  - C — the publisher's folder named `Species` until O49 is decided, giving `%LOCALAPPDATA%\Species\Species\`.
+- Recommendation: A. Only the owner's machines hold user data before an external build, and a folder named for nobody would need the same move as no folder.
+- Decide by: O49's publisher decision, before the first external build.
+
+## 4 Relations and conflict
+
+### DEC-1006 How the AI settlements claim and raise their expeditions
+- Status: Open
+- Affects: implementation/mvp_scope.md (MVP-041, MVP-055, MVP-057, and table 3's `mvp.ai.muster_minutes`); ADR-162
+- Specified behaviour: MVP-057 gives each temperament its claims in a few words, and MVP-055 says when an AI settlement may attack but not how it gathers its expedition or how large it makes it. Until the owner decides, the AI settlements build the following.
+  - **Claims**, one a decision at most, each only when its claim would not be refused:
+    - Bold claims the central resource site from its first decision, and again whenever it has no claim on it and does not hold it.
+    - Territorial claims each half of its border areas that a valley neighbour holds, as soon as the neighbour holds it.
+    - Wary claims nothing until it has been attacked: until its Cladan holds an attack's grievance, or it has defended a battle. It then claims the halves held by a settlement that attacked it.
+  - **The target**: among the settlements it may attack (MVP-055), the one its Cladan holds most anger against, the lower site on a tie. Bold raids when its anger allows; the others fight the claim battle when they hold a claim on what the target holds.
+  - **The size**: it may attack when the Workers it can field reach `mvp.ai.attack_min_share` of the target's Workers it sees, at least one. It can field its Workers beyond `mvp.protection.worker_floor`, at most `mvp.expedition.size_max`, and it means to send all of them.
+  - **The muster** (MVP-041): it promotes one Leader for each `ref.sim.team.formation_size_upgrade` Workers it means to send, at most three, from the Workers nearest its Wellspring, and forms them up there, so that the Workers on guard duty join them. It declares once all it means to send follow them, or after `mvp.ai.muster_minutes` (2) with at least the fewest it may send; otherwise it gives the attack up. It does not change its priorities to raise more guards.
+  - **After a battle**: its Leaders outside a muster are demoted, and their Workers go back to their tasks.
+- Options:
+  - A — as stated;
+  - B — as stated, with the expedition the fewest it may send rather than all it can field, so that the settlement's economy keeps more Workers;
+  - C — as stated, with the guard share raised for the muster's length, so that the expedition draws more Workers than those already on guard duty.
+- Recommendation: A for M3's headless phase. The valley run of M3 task T9 measures the battles' sizes and lengths against Playtest 1's lines, and the lever it changes then is this one or `muster_minutes`.
+- Decide by: the valley run of M3 task T9, before Playtest 1.
+
+### DEC-1007 Renown for a withdrawn claim
+- Status: Open
+- Affects: implementation/mvp_scope.md (MVP-061); gdd/00_vision_pillars_and_core_loops.md (PIL-125); ADR-163
+- Specified behaviour: MVP-061 gives `mvp.renown.grievance_eased` for each 20 weight of grievance eased by tribute or by a withdrawn claim. A claim costs nothing and gives its holder a grievance of `mvp.grievance.claim_weight` (30), so a claim made and withdrawn at once would earn renown for a grievance that its own claimant created a moment before, as often as it is repeated. Until the owner decides, the server builds the following.
+  - A withdrawn claim eases, towards its claimant's renown, the weight its grievance holds at the withdrawal, but only once the claim has stood `mvp.claim.uncontested_minutes` (30) since it was made.
+  - A claim withdrawn sooner still removes its grievance's cause (PIL-122), and earns no renown.
+  - Tribute eases the weight it removes, whenever it is sent.
+- Options:
+  - A — as stated;
+  - B — the scope's rule as written, every withdrawal crediting its grievance's weight, accepting that a steward can repeat it;
+  - C — no renown for a withdrawn claim, only for tribute.
+- Recommendation: A. It keeps the scope's reward for backing down from a real claim and closes the repetition, with no new key.
+- Decide by: Playtest 1, whose renown standing (MVP-062) shows whether easing is worth what it costs.
+
+### DEC-1008 The valley run's misses of Playtest 1's lines
+- Status: Resolved
+- Affects: implementation/mvp_scope.md (MVP-045, MVP-053, MVP-055, §6.1's table 5, and table 3's `mvp.battle.objective_hold_s`, `mvp.battle.rout_share`, `mvp.ai.attack_min_share` and `mvp.conflict.attack_cost_ru`); ADR-162; ADR-164; DEC-1006
+- Specified behaviour: the rules and values stand as they are until the owner decides. The valley run of M3 task T9 runs seeds 1 to 8 for a run each, with the steward's settlement under its scripted steward and a Territorial settlement's decisions (`playtests/M3.md`, "The valley run"). It meets two of Playtest 1's six measurable lines: every conflict reached an end state within 7 hours of play (158 of 158 claims), and the strongest settlement ended at most 1.40 times the median. It misses four:
+  - **The steward's battles in a run**: 11 to 22, against 4 to 10. Claims repeat with nothing to space them. A Territorial settlement claims each half its neighbour holds as soon as the neighbour holds it, so a half that changes hands is claimed back at once. One claimant claimed one area up to 7 times in a run, and 86 of the steward's 141 battles were claim battles.
+  - **Battle length**: 13 % of 263 battles within 4 to 12 minutes, against 90 %. None ran above 20, since `pil.battle.max_minutes` ends a battle there. Of 150 claim battles, 80 ended within a minute, by the objective held for `mvp.battle.objective_hold_s` (30 s) or by a rout at `mvp.battle.rout_share`. Of 113 raids, 40 ran to the 20-minute limit.
+  - **The figures in the steward's battles**: 249 typical and 79 at the least, against 300 to 450 and never below 200. They are counted as the most of both sides on the battlefield at once. An expedition is what its settlement can field when its muster ends (DEC-1006), and a claim battle at a border area draws only the defenders that reach the claimed site.
+  - **The largest gap between the steward's growth steps in hours 0 to 5**: up to 76.6 minutes on four seeds, and 15.3 to 21.0 on the others, against 20. The first contact comes at 1.4 to 2.1 hours, and from then on the claims cost the steward attacks at `mvp.conflict.attack_cost_ru` (300 ru) and Workers.
+  - **The steward's policy is not the cause.** The same corpus with the Wary decisions in place of the Territorial misses the same four lines: 9 to 21 battles, the steward the defender in 60 of 121; 13 % of 250 battles within 4 to 12 minutes; 309 figures typical and 116 at the least; and a gap of up to 88.2 minutes. The AI settlements' claims on the steward's halves give it battles whatever it does.
+- Options:
+  - A — space the claims: no claim may be made on an area until a new key, `mvp.claim.cooldown_minutes`, has passed since the last claim on it ended. Raise `mvp.battle.objective_hold_s` so that a claim battle is fought before it is won. Retune the figures and the growth steps on M2's evidence (O98).
+  - B — keep the rules and retune only the values (`objective_hold_s`, `rout_share`, `attack_min_share`, `attack_cost_ru`), accepting the battles that repeated claims bring.
+  - C — narrow DEC-1006's Territorial rule: claim a held half only while its anger towards the holder is at least its threshold.
+- Recommendation: A. The repeated claims are a rule's gap, not a value's, and no value of the present keys spaces them; the battle and growth values wait for M2's evidence, as O98 has it.
+- Decide by: M3 task T9's tuning, after the owner's M2 runs and before Playtest 1.
+- Resolution (2026-10-23, owner decision O102): option A. No claim may be made on an area until `mvp.claim.cooldown_minutes` have passed since the last claim on it ended, and `mvp.battle.objective_hold_s` rises. The owner gave no values, so the valley run swept them on seeds 1 to 4 for a run each: a cooldown of 60 or 120 minutes against a hold of 30, 120 or 180 s. The cooldown of 120 minutes cut the claims from 57 to 48 against 60 minutes, and a hold of 120 s raised the claim battles' median length from 1.0 to 2.9 minutes and the battles within 4 to 12 minutes from 17 % to 27 %, the most of the four; a hold of 180 s gave no more. Both values are provisional (MVP-053, MVP-045). Four lines stay missed, the steward's battles at 12 to 19 a run among them: those battles are now mostly raids (38 of 61), and many battles end in a rout or at `pil.battle.max_minutes`, which `mvp.battle.rout_share`, the loss cap and the AI's expeditions decide (DEC-1006). Those values are retuned on the owner's M2 evidence, as the option states; the valley run of seeds 1 to 8 on the chosen values is in `playtests/M3.md`.

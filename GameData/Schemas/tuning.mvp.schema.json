@@ -942,10 +942,20 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "minutes",
               "x-species-presence": "required"
+            },
+            "cooldown_minutes": {
+              "type": "number",
+              "description": "mvp.claim.cooldown_minutes (MVP-053, ADR-160, DEC-1008)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "minutes",
+              "x-species-presence": "required"
             }
           },
           "required": [
-            "uncontested_minutes"
+            "uncontested_minutes",
+            "cooldown_minutes"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -1033,11 +1043,21 @@
               "x-species-type": "ticks",
               "x-species-unit": "ticks",
               "x-species-presence": "required"
+            },
+            "muster_minutes": {
+              "type": "number",
+              "description": "mvp.ai.muster_minutes (MVP-055, ADR-162)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "minutes of world time",
+              "x-species-presence": "required"
             }
           },
           "required": [
             "attack_min_share",
-            "decision_ticks"
+            "decision_ticks",
+            "muster_minutes"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -5632,6 +5652,26 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "scale": {
+          "type": "object",
+          "description": "the wld.scale.* keys",
+          "properties": {
+            "battles_per_region_max": {
+              "type": "integer",
+              "description": "wld.scale.battles_per_region_max (WLD-285, MVP-015)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "battles in progress in one region",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "battles_per_region_max"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
@@ -5642,7 +5682,83 @@
         "territory",
         "travel",
         "resource",
-        "view"
+        "view",
+        "scale"
+      ],
+      "additionalProperties": false,
+      "x-species-type": "object",
+      "x-species-presence": "required"
+    },
+    "pil": {
+      "type": "object",
+      "description": "the pil.* keys",
+      "properties": {
+        "battle": {
+          "type": "object",
+          "description": "the pil.battle.* keys",
+          "properties": {
+            "min_respite_minutes": {
+              "type": "number",
+              "description": "pil.battle.min_respite_minutes (PIL-087)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "minutes from a battle's start",
+              "x-species-presence": "required"
+            },
+            "max_minutes": {
+              "type": "number",
+              "description": "pil.battle.max_minutes (PIL-047)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "minutes of world time",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "min_respite_minutes",
+            "max_minutes"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "conflict": {
+          "type": "object",
+          "description": "the pil.conflict.* keys",
+          "properties": {
+            "unprovoked_cost_factor": {
+              "type": "number",
+              "description": "pil.conflict.unprovoked_cost_factor (PIL-063)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times the attack cost",
+              "x-species-presence": "required"
+            },
+            "settled_fade_factor": {
+              "type": "number",
+              "description": "pil.conflict.settled_fade_factor (PIL-122)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times the fading rate of a grievance whose cause remains",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "unprovoked_cost_factor",
+            "settled_fade_factor"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        }
+      },
+      "required": [
+        "battle",
+        "conflict"
       ],
       "additionalProperties": false,
       "x-species-type": "object",
@@ -5654,7 +5770,8 @@
     "version",
     "mvp",
     "ref",
-    "wld"
+    "wld",
+    "pil"
   ],
   "additionalProperties": false
 }

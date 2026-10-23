@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <span>
 #include <vector>
 
 namespace Species
@@ -19,8 +20,9 @@ namespace Species
 /// holds it, and its surroundings up to wld.view.settlement_margin beyond it. They are cells of mvp.territory.cell_size
 /// over the region's square widened by the margin on each side, so that the surroundings of a territory near the coast
 /// reach past the square: a cell is in the areas when its centre lies within the margin of the centre of a territory
-/// cell. M2 has no battle, so no battlefield joins them. Until a chunk of the steward's territory arrives they are
-/// unknown, and every point is inside. Frame thread only.
+/// cell. From M3 task T12 (ADR-167) the battlefield of each battle the steward's settlement is a side of joins them for
+/// the battle's duration: a cell whose centre lies within its radius of its centre. Until a chunk of the steward's
+/// territory arrives they are unknown, and every point is inside. Frame thread only.
 class StewardAreas
 {
 public:
@@ -29,10 +31,21 @@ public:
     double x = 0.0;
     double z = 0.0;
   };
+  // WLD-244: a battlefield, its centre and radius in wu.
+  struct Field
+  {
+    double x = 0.0;
+    double z = 0.0;
+    double radius = 0.0;
 
-  // Reads the territory of the settlement of _team in _latest, and rebuilds the areas when its chunks differ from those
-  // they were built from. None for _team, or no settlement of it, leaves them unknown.
-  void Update(const StateReplica::View& _latest, std::optional<std::uint8_t> _team, const RegionLayout& _layout, const TuningMvp& _tuning);
+    friend bool operator==(const Field&, const Field&) = default;
+  };
+
+  // Reads the territory of the settlement of _team in _latest, and rebuilds the areas when its chunks, or _fields, the
+  // battlefields that join them, differ from those they were built from. None for _team, or no settlement of it, leaves
+  // them unknown.
+  void Update(const StateReplica::View& _latest, std::optional<std::uint8_t> _team, const RegionLayout& _layout, const TuningMvp& _tuning,
+              std::span<const Field> _fields = {});
   // Forgets the areas, as at a new world.
   void Clear() noexcept;
 
@@ -81,8 +94,12 @@ private:
   [[nodiscard]] std::int32_t CellOf(double _coordinate, double _origin) const noexcept;
   [[nodiscard]] std::size_t Index(std::int32_t _x, std::int32_t _z) const noexcept;
   void Rebuild(const RegionLayout& _layout, const TuningMvp& _tuning);
+  // The cells within _margin of a territory cell, over the territory's box of cells from (_minX, _minZ) to (_maxX, _maxZ)
+  // widened by the margin, in the raster's cells.
+  void MarkNearTerritory(std::int32_t _minX, std::int32_t _minZ, std::int32_t _maxX, std::int32_t _maxZ, double _margin);
 
   std::vector<ReplicatedCells> m_chunks; // the territory's chunks the areas were built from, in id order
+  std::vector<Field> m_fields;           // the battlefields they were built with
   std::uint8_t m_site = 0;
   std::vector<std::uint8_t> m_territory; // 1: a cell of the territory
   std::vector<std::uint8_t> m_inside;    // 1: a cell of the areas

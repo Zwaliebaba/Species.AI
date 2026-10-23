@@ -18,13 +18,19 @@ namespace Neuron
 namespace
 {
 
+// ADR-149: an image of one channel, a BC4 or R8 mask, draws white with its channel as its alpha.
+bool IsMask(DXGI_FORMAT _format) noexcept
+{
+  return _format == DXGI_FORMAT_BC4_UNORM || _format == DXGI_FORMAT_BC4_SNORM || _format == DXGI_FORMAT_R8_UNORM;
+}
+
 // The catalogue entries of the UI (ADR-145), by source and blend; an empty key is a pair the UI does not draw.
 std::string_view EntryOf(UiSource _source, UiBlend _blend) noexcept
 {
   switch (_source)
   {
   case UiSource::Solid:
-    return _blend == UiBlend::Alpha ? "ui_solid_alpha" : _blend == UiBlend::Additive ? "ui_solid_additive" : "";
+    return _blend == UiBlend::Alpha ? "ui_solid_alpha" : _blend == UiBlend::Additive ? "ui_solid_additive" : "ui_solid_ink";
   case UiSource::Glyphs:
     return _blend == UiBlend::Alpha ? "ui_glyphs_alpha" : _blend == UiBlend::Additive ? "ui_glyphs_additive" : "ui_glyphs_ink";
   case UiSource::Image:
@@ -67,6 +73,7 @@ void UiRenderer::Show(const std::shared_ptr<const GlyphAtlas>& _atlas, const std
         {
           Log(LogCategory::Render, LogLevel::Error, "the {} cannot be used: {}", name, described.error());
           m_imageResources.push_back(GpuResourceId{});
+          m_imageMasks.push_back(false);
           continue;
         }
         const auto created = m_factory.CreateTexture(described->desc);
@@ -74,9 +81,11 @@ void UiRenderer::Show(const std::shared_ptr<const GlyphAtlas>& _atlas, const std
         {
           Log(LogCategory::Render, LogLevel::Error, "the {} was not created", name);
           m_imageResources.push_back(GpuResourceId{});
+          m_imageMasks.push_back(false);
           continue;
         }
         m_imageResources.push_back(*created);
+        m_imageMasks.push_back(IsMask(described->desc.format));
         m_uploads.push_back({*created, std::move(described->levels)});
       }
     }
@@ -202,6 +211,7 @@ void UiRenderer::ReleaseImages()
     }
   }
   m_imageResources.clear();
+  m_imageMasks.clear();
   m_uploads.clear();
   m_pending.clear();
   m_images.reset();
@@ -243,6 +253,7 @@ void UiRenderer::Record(ID3D12GraphicsCommandList* _commands, UploadRing& _ring,
   {
     ID3D12PipelineState* pipeline = batch.quads.empty() ? nullptr : _catalog.Find(EntryOf(batch.source, batch.blend));
     std::uint32_t texture = 0;
+    bool mask = false;
     if (batch.source == UiSource::Glyphs)
     {
       const std::optional<std::uint32_t> page = GlyphHeapIndex(batch.image);
@@ -259,6 +270,7 @@ void UiRenderer::Record(ID3D12GraphicsCommandList* _commands, UploadRing& _ring,
         continue;
       }
       texture = m_factory.HeapIndex(m_imageResources[batch.image]);
+      mask = m_imageMasks[batch.image];
     }
     if (pipeline == nullptr)
     {
@@ -285,20 +297,22 @@ void UiRenderer::Record(ID3D12GraphicsCommandList* _commands, UploadRing& _ring,
     m_instances.clear();
     for (const UiQuad& quad : batch.quads)
     {
+      const std::array<float, 4>& to = quad.colorTo.value_or(quad.color);
       m_instances.push_back({Float4(quad.rectangle[0], quad.rectangle[1], quad.rectangle[2], quad.rectangle[3]),
                              Float4(quad.uv[0], quad.uv[1], quad.uv[2], quad.uv[3]),
-                             Float4(quad.color[0], quad.color[1], quad.color[2], quad.color[3])});
+                             Float4(quad.color[0], quad.color[1], quad.color[2], quad.color[3]), Float4(to[0], to[1], to[2], to[3]),
+                             Uint4{quad.across ? UI_GRADIENT_ACROSS : 0u, 0, 0, 0}});
     }
-    const std::uint64_t bytes = m_instances.size() * sizeof(TextGlyphInstance);
+    const std::uint64_t bytes = m_instances.size() * sizeof(UiQuadInstance);
     const UploadAllocation allocation = _ring.Allocate(bytes, sizeof(Float4));
     if (allocation.cpu == nullptr)
     {
       break; // the ring is full this frame
     }
     std::memcpy(allocation.cpu, m_instances.data(), static_cast<std::size_t>(bytes));
-    const D3D12_VERTEX_BUFFER_VIEW view{allocation.gpu, static_cast<UINT>(bytes), static_cast<UINT>(sizeof(TextGlyphInstance))};
+    const D3D12_VERTEX_BUFFER_VIEW view{allocation.gpu, static_cast<UINT>(bytes), static_cast<UINT>(sizeof(UiQuadInstance))};
     const DrawConstants draw{Float3x4(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f),
-                             Float4(1.0f, 1.0f, 1.0f, 1.0f), Uint4{texture, 0, 0, 0}};
+                             Float4(1.0f, 1.0f, 1.0f, 1.0f), Uint4{texture, mask ? 1u : 0u, 0, 0}};
     _commands->SetPipelineState(pipeline);
     _commands->SetGraphicsRoot32BitConstants(ROOT_DRAW_CONSTANTS, DRAW_CONSTANT_DWORDS, &draw, 0);
     _commands->IASetVertexBuffers(0, 1, &view);

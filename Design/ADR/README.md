@@ -15,9 +15,9 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | Number | Title | Status | Date |
 |---|---|---|---|
 | [ADR-001](ADR-001-direct3d-12-renderer-on-the-agility-sdk.md) | Direct3D 12 renderer on the Agility SDK | Accepted | 2026-10-17 |
-| [ADR-002](ADR-002-minimum-gpu-capability.md) | Minimum GPU capability: feature level 12_1, Shader Model 6.6, Resource Binding Tier 3 and wave operations | Proposed | 2026-10-17 |
+| [ADR-002](ADR-002-minimum-gpu-capability.md) | Minimum GPU capability: feature level 12_1, Shader Model 6.6, Resource Binding Tier 3 and wave operations | Accepted | 2026-10-17 |
 | [ADR-003](ADR-003-shader-language-compiler-and-material-shaders.md) | Shader language, compiler and material shader set | Accepted | 2026-10-17 |
-| [ADR-004](ADR-004-frame-graph-from-the-ordered-pass-table.md) | Frame graph built from the ordered pass table | Proposed | 2026-10-17 |
+| [ADR-004](ADR-004-frame-graph-from-the-ordered-pass-table.md) | Frame graph built from the ordered pass table | Accepted | 2026-10-17 |
 | [ADR-005](ADR-005-pipeline-state-catalogue.md) | Pipeline state catalogue derived from the pass table | Accepted | 2026-10-17 |
 | [ADR-006](ADR-006-root-signature-and-bindless-resource-access.md) | Root signature and bindless resource access | Proposed | 2026-10-17 |
 | [ADR-007](ADR-007-barrier-model.md) | Barrier model: Enhanced Barriers with a resource-state fallback | Proposed | 2026-10-17 |
@@ -62,7 +62,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-059](ADR-059-content-build-and-validators.md) | Content build: one declarative, incremental, validating content build tool | Accepted | 2026-10-17 |
 | [ADR-060](ADR-060-content-identity-by-hash.md) | Content identity: SHA-256 over cooked content, produced by the content build | Accepted | 2026-10-17 |
 | [ADR-061](ADR-061-data-schemas-and-versioning.md) | Data schemas: one schema per record type, text for authoring, versioned binary for runtime | Accepted | 2026-10-17 |
-| [ADR-062](ADR-062-authoring-syntax-and-schema-language.md) | Authoring syntax and schema language: JSON validated by JSON Schema, with a Species code generator | Proposed | 2026-10-17 |
+| [ADR-062](ADR-062-authoring-syntax-and-schema-language.md) | Authoring syntax and schema language: JSON validated by JSON Schema, with a Species code generator | Accepted | 2026-10-17 |
 | [ADR-063](ADR-063-localisation.md) | Localisation: UTF-8 string tables keyed by string id, BCP 47 language tags, ICU formatting and per-key fallback | Accepted | 2026-10-17 |
 | [ADR-064](ADR-064-accessibility-baseline-xag.md) | Accessibility baseline: Xbox Accessibility Guidelines 3.2 as the checklist, with engine features built in from the start | Proposed | 2026-10-17 |
 | [ADR-065](ADR-065-crash-reporting.md) | Crash reporting: Windows Error Reporting for the client, with registered context, a symbol store and no upload of credentials | Proposed | 2026-10-17 |
@@ -148,6 +148,33 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-145](ADR-145-the-ui-pass-and-gamefont-text-at-m2.md) | The UI pass and GameFont's text at M2 | Proposed | 2026-10-22 |
 | [ADR-146](ADR-146-the-string-table-and-its-formatting-at-m2.md) | The string table and its formatting at M2 | Proposed | 2026-10-22 |
 | [ADR-147](ADR-147-the-directwrite-text-system-at-m2.md) | The DirectWrite text system at M2 | Proposed | 2026-10-22 |
+| [ADR-148](ADR-148-the-frame-starts-at-the-latency-wait.md) | The frame starts at the latency wait | Proposed | 2026-10-22 |
+| [ADR-149](ADR-149-the-ui-core-pages-focus-and-layout-at-m2.md) | The UI core: pages, focus and layout at M2 | Proposed | 2026-10-22 |
+| [ADR-150](ADR-150-the-settings-store-and-user-data-root-at-m2.md) | The settings store and the user-data root at M2 | Proposed | 2026-10-22 |
+| [ADR-151](ADR-151-the-rest-of-the-input-router-at-m2.md) | The rest of the input router at M2 | Proposed | 2026-10-22 |
+| [ADR-152](ADR-152-the-settlement-hud-at-m2.md) | The settlement HUD at M2 | Proposed | 2026-10-22 |
+| [ADR-153](ADR-153-the-settlement-verbs-at-m2.md) | The settlement verbs at M2 | Proposed | 2026-10-22 |
+| [ADR-154](ADR-154-text-input-and-the-page-text-field-at-m2.md) | Text input and the page text field at M2 | Proposed | 2026-10-22 |
+| [ADR-155](ADR-155-the-front-end-and-saved-worlds-at-m2.md) | The front end and saved worlds at M2 | Proposed | 2026-10-22 |
+| [ADR-156](ADR-156-the-settlement-drawn-at-its-plateau-and-the-owners-growth-run.md) | The settlement drawn at its plateau and the owner's growth run | Proposed | 2026-10-22 |
+| [ADR-157](ADR-157-the-four-settlements-and-their-peace-at-m3.md) | The four settlements and their peace at M3 | Proposed | 2026-10-22 |
+| [ADR-158](ADR-158-the-seen-layer-and-its-readers-at-m3.md) | The seen layer and its readers at M3 | Proposed | 2026-10-22 |
+| [ADR-159](ADR-159-grievances-anger-and-their-fade-at-m3.md) | Grievances, anger and their fade at M3 | Proposed | 2026-10-22 |
+| [ADR-160](ADR-160-claims-moved-areas-and-tribute-at-m3.md) | Claims, moved areas and tribute at M3 | Proposed | 2026-10-22 |
+| [ADR-161](ADR-161-expeditions-battles-the-loss-cap-and-the-respite-at-m3.md) | Expeditions, battles, the loss cap and the respite at M3 | Proposed | 2026-10-22 |
+| [ADR-162](ADR-162-the-ai-settlements-decisions-at-m3.md) | The AI settlements' decisions at M3 | Proposed | 2026-10-22 |
+| [ADR-163](ADR-163-the-run-renown-and-the-epilogues-data-at-m3.md) | The run, renown and the epilogue's data at M3 | Proposed | 2026-10-22 |
+| [ADR-164](ADR-164-the-command-paths-confirmation-the-valley-run-and-the-valley-at-war-at-m3.md) | The command path's confirmation, the valley run and the valley at war at M3 | Proposed | 2026-10-23 |
+| [ADR-165](ADR-165-the-valleys-status-notices-and-battle-results-at-m3.md) | The valley's status, notices and battle results at M3 | Proposed | 2026-10-23 |
+| [ADR-166](ADR-166-the-relations-panel-and-the-notifications-of-m3.md) | The relations panel and the notifications of M3 | Proposed | 2026-10-23 |
+| [ADR-167](ADR-167-the-conflict-verbs-and-markers-at-m3.md) | The conflict verbs and markers at M3 | Proposed | 2026-10-23 |
+| [ADR-168](ADR-168-the-battle-result-card-at-m3.md) | The battle result card at M3 | Proposed | 2026-10-23 |
+| [ADR-169](ADR-169-the-epilogue-the-standing-and-the-time-left-at-m3.md) | The epilogue, the standing and the time left at M3 | Proposed | 2026-10-23 |
+| [ADR-170](ADR-170-the-world-menu-the-epilogue-page-and-leaving-at-m3.md) | The world's menu, the epilogue's page and leaving at M3 | Proposed | 2026-10-23 |
+| [ADR-171](ADR-171-the-first-sound-set-synthesized-and-cooked-at-m3.md) | The first sound set, synthesized and cooked, at M3 | Proposed | 2026-10-23 |
+| [ADR-172](ADR-172-the-audio-engine-at-the-mvps-size.md) | The audio engine at the MVP's size | Proposed | 2026-10-23 |
+| [ADR-173](ADR-173-the-first-sound-set-played-at-m3.md) | The first sound set played at M3 | Proposed | 2026-10-23 |
+| [ADR-174](ADR-174-the-first-playables-confirmations-at-m3.md) | The first playable's confirmations at M3 | Proposed | 2026-10-23 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

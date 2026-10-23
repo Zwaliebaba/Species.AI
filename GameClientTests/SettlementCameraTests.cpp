@@ -2,6 +2,7 @@
 
 #include "Picking.h"
 #include "RegionTerrain.h"
+#include "RelationMessages.h"
 #include "SettlementCamera.h"
 #include "SettlementView.h"
 #include "StewardAreas.h"
@@ -405,12 +406,45 @@ public:
     place(3, 13, 0, Species::FigureKind::Leader, false, {6.0, 0.0, 0.0});
     place(4, 14, 0, Species::FigureKind::Leader, false, {0.0, 0.0, 0.0});
     const Neuron::Ray ray = Neuron::PickRayAt(pointer.x, pointer.y, frame, VIEW, 1.0);
-    const auto hovered = Species::LeaderUnderRay(figures, 0, ray, frame, VIEW, CommittedPresentation());
+    const auto hovered = Species::LeaderUnderRay(figures, 0, ray, frame, VIEW, CommittedPresentation(), 2.0);
     Assert::IsTrue(hovered == Species::StableId{14}, L"the own living Leader centred under the pointer");
-    Assert::IsFalse(Species::LeaderUnderRay(figures, 2, ray, frame, VIEW, CommittedPresentation()).has_value(), L"no Leader of team 2");
+    Assert::IsFalse(Species::LeaderUnderRay(figures, 2, ray, frame, VIEW, CommittedPresentation(), 2.0).has_value(),
+                    L"no Leader of team 2");
     // Far off the pointer, no sphere is met.
     const Neuron::Ray elsewhere = Neuron::PickRayAt(10.0, 10.0, frame, VIEW, 1.0);
-    Assert::IsFalse(Species::LeaderUnderRay(figures, 0, elsewhere, frame, VIEW, CommittedPresentation()).has_value());
+    Assert::IsFalse(Species::LeaderUnderRay(figures, 0, elsewhere, frame, VIEW, CommittedPresentation(), 2.0).has_value());
+    // ADR-167: with team 1 as the expedition's, its Leader is hovered too, the one centred under the pointer winning.
+    figures[4].state.dead = true;
+    figures[3].position = at + Neuron::Vec3{30.0, 0.0, 0.0};
+    Assert::IsTrue(Species::LeaderUnderRay(figures, 0, ray, frame, VIEW, CommittedPresentation(), 2.0, std::uint8_t{1}) ==
+                     Species::StableId{10},
+                   L"the expedition's Leader under the pointer");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp049APressOnAnExpeditionLeaderCommandsItsTeam)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-049")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp049APressOnAnExpeditionLeaderCommandsItsTeam)
+  {
+    // ADR-167: the battle verbs command the settlement's team until a press on a Leader of its expedition, then the
+    // expedition's until a press on one of the settlement's Leaders or the expedition's end.
+    constexpr std::uint8_t TEAM = 2;
+    const std::uint8_t expedition = Species::ExpeditionTeamOf(TEAM);
+    std::vector<Species::InterpolatedFigure> figures(3);
+    figures[0].id = 20;
+    figures[0].state = {.team = TEAM, .kind = Species::FigureKind::Leader};
+    figures[1].id = 21;
+    figures[1].state = {.team = expedition, .kind = Species::FigureKind::Leader};
+    figures[2].id = 22;
+    figures[2].state = {.team = 1, .kind = Species::FigureKind::Leader};
+    ExpectEqual(TEAM, Species::BattleTeamOf(figures, TEAM, expedition, TEAM, std::nullopt), L"the settlement's, with no press");
+    ExpectEqual(expedition, Species::BattleTeamOf(figures, TEAM, expedition, TEAM, Species::StableId{21}), L"a press on its Leader");
+    ExpectEqual(expedition, Species::BattleTeamOf(figures, TEAM, expedition, expedition, std::nullopt), L"kept");
+    ExpectEqual(expedition, Species::BattleTeamOf(figures, TEAM, expedition, expedition, Species::StableId{22}), L"another's Leader");
+    ExpectEqual(TEAM, Species::BattleTeamOf(figures, TEAM, expedition, expedition, Species::StableId{20}), L"back on a press on its own");
+    figures[1].state.dead = true;
+    ExpectEqual(TEAM, Species::BattleTeamOf(figures, TEAM, expedition, expedition, std::nullopt), L"the expedition's end");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl352ACursorSitsOnItsHotspot)
@@ -430,6 +464,10 @@ public:
     const Neuron::CursorQuad unavailable = Species::CursorAt(Species::CursorKind::Unavailable, {500, 300}, CommittedPresentation());
     Assert::IsTrue(unavailable.image == 2 && unavailable.sidePixels == 60.0f && unavailable.left == 470.0f, L"60 px, centred");
     Assert::IsTrue(unavailable.color[0] == 1.0f && unavailable.color[1] == 0.0f && unavailable.color[2] == 0.0f, L"red");
+    // ADR-153: the placement cursor, mvp.cursor.place_size, centred on ref.ctrl.cursor.set.place_hotspot, white.
+    const Neuron::CursorQuad place = Species::CursorAt(Species::CursorKind::Place, {500, 300}, CommittedPresentation());
+    Assert::IsTrue(place.image == 3 && place.sidePixels == 48.0f && place.left == 476.0f && place.top == 276.0f, L"48 px, centred");
+    Assert::IsTrue(place.color[0] == 1.0f && place.color[1] == 1.0f && place.color[2] == 1.0f, L"white");
   }
 };
 

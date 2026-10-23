@@ -4,7 +4,6 @@
 #include "FigureKind.h"
 #include "FxRng.h"
 #include "LeaderLook.h"
-#include "SettlementView.h"
 #include "StableId.h"
 
 #include <algorithm>
@@ -124,9 +123,8 @@ void LeaderLook::Draw(std::span<const InterpolatedFigure> _figures, const Neuron
     const double distance = Neuron::Length(figure.position - _view.camera);
     const std::uint64_t counter = CounterOf(figure.id);
     // R-UNIT-190: scaled with the camera's distance and turned towards the camera, as a Worker card is (R-UNIT-142).
-    const double scale = distance > worker.cardScaleStart
-                           ? 1.0 + WORKER_DISTANCE_SCALE_FACTOR * (distance - worker.cardScaleStart) / worker.cardScaleDivisor
-                           : 1.0;
+    const double scale =
+      distance > worker.cardScaleStart ? 1.0 + _view.workerScaleFactor * (distance - worker.cardScaleStart) / worker.cardScaleDivisor : 1.0;
     largestScale = std::max(largestScale, scale);
     const Neuron::Vec3 heading{std::sin(figure.yawRadians), 0.0, std::cos(figure.yawRadians)};
     const Neuron::Vec3 toCamera =
@@ -189,7 +187,7 @@ void LeaderLook::Draw(std::span<const InterpolatedFigure> _figures, const Neuron
     const Neuron::Vec3 socket = figure.position + body.axisX * socketModel.x + body.axisY * socketModel.y + body.axisZ * socketModel.z;
     const double size =
       leader.bannerSize * (distance > worker.cardScaleStart
-                             ? 1.0 + WORKER_DISTANCE_SCALE_FACTOR * (distance - worker.cardScaleStart) / leader.bannerGrowthDivisor
+                             ? 1.0 + _view.workerScaleFactor * (distance - worker.cardScaleStart) / leader.bannerGrowthDivisor
                              : 1.0);
     largestBanner = std::max(largestBanner, size);
     const Neuron::Vec3 streaming = heading * -1.0;

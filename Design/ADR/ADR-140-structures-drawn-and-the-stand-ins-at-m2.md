@@ -167,3 +167,4 @@ Chosen options: 1 and 3.
   - `Build/CheckWorldFrame.py`.
 * ADR-108, ADR-113 and ADR-122 are amended with this record.
 * **Amendment 2026-10-22 (M2 task T12's second step, [ADR-141](ADR-141-the-turrets-shots-drawn-at-m2.md)).** The turret's rounds, muzzle flashes, casings and hits are drawn as ADR-141 records; this record's turret draws its head and barrels as before.
+* **Amendment 2026-10-23 (M3 task T15, [ADR-171](ADR-171-the-first-sound-set-synthesized-and-cooked-at-m3.md)).** The stand-ins also cover the MVP's sound rows: each `synthesised tone` row of the MVP with no authored file is synthesized by a recipe of its group's role and cooked as a resident sound, flagged as a placeholder.

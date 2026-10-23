@@ -103,7 +103,7 @@ Neuron::TerrainLook TerrainLookOf(const TuningMvp& _tuning, const TuningPresenta
   return look;
 }
 
-Neuron::SeaLook SeaLookOf(const TuningMvp& _tuning, const TuningPresentation& _presentation) noexcept
+Neuron::SeaLook SeaLookOf(const TuningMvp& _tuning, const TuningPresentation& _presentation, std::int64_t _seaDetail) noexcept
 {
   const TuningPresentation::Ter::Sea& sea = _presentation.ter.sea;
   Neuron::SeaLook look;
@@ -133,7 +133,7 @@ Neuron::SeaLook SeaLookOf(const TuningMvp& _tuning, const TuningPresentation& _p
   look.brightnessScale = sea.wave.brightnessScale;
   look.mixOther = sea.wave.colorMix.other;
   look.mixOwn = sea.wave.colorMix.own;
-  look.detail = 1; // rnd.option.sea_detail.default (RND-442): the settings store holds it once it exists
+  look.detail = static_cast<std::uint32_t>(std::clamp<std::int64_t>(_seaDetail, 0, 3)); // render.sea_detail (RND-442, ADR-150)
   return look;
 }
 
@@ -188,7 +188,8 @@ Neuron::WorldLook WorldLookOf(const TuningMvp& _tuning, const TuningPresentation
 }
 
 std::shared_ptr<const Neuron::WorldScene> BuildWorldScene(const RegionTerrain& _terrain, const TuningMvp& _tuning,
-                                                          const TuningPresentation& _presentation, const Neuron::LooseContent& _content)
+                                                          const TuningPresentation& _presentation, const Neuron::LooseContent& _content,
+                                                          std::int64_t _seaDetail)
 {
   auto ramp = ReadTexture(_content, RAMP_KEY);
   auto gradient = ReadTexture(_content, SHORE_WAVE_GRADIENT_KEY);
@@ -210,7 +211,7 @@ std::shared_ptr<const Neuron::WorldScene> BuildWorldScene(const RegionTerrain& _
   const Neuron::Vec3 origin{heights.OriginX(), 0.0, heights.OriginZ()};
   auto scene = std::make_shared<Neuron::WorldScene>();
   scene->terrain = Neuron::BuildTerrainSurface(_terrain.field, *rampImage, TerrainLookOf(_tuning, _presentation));
-  scene->seaLook = SeaLookOf(_tuning, _presentation);
+  scene->seaLook = SeaLookOf(_tuning, _presentation, _seaDetail);
   scene->sea = Neuron::BuildSeaSurface(_terrain.field, scene->seaLook, scene->terrain.colorChainEnd, *gradientImage,
                                        static_cast<std::uint32_t>(_presentation.rnd.sea.waveTableRow));
   scene->look = WorldLookOf(_tuning, _presentation, origin);
@@ -229,8 +230,11 @@ WorldPresentation::WorldPresentation(Desc _desc)
     m_territories(*_desc.presentation, *_desc.tuning),
     m_profile(ProfileDescOf(*_desc.presentation)),
     m_presentationClock(_desc.presentation->ref.sim.frame.deltaClamp),
-    m_text(std::make_unique<Neuron::TextSystem>(TextSystemDesc(*_desc.presentation)))
+    m_text(std::make_unique<Neuron::TextSystem>(TextSystemDesc(*_desc.presentation))),
+    m_ui(std::make_unique<GameUi>(*_desc.presentation)),
+    m_hud(std::make_unique<SettlementHud>(*_desc.presentation, *_desc.tuning))
 {
+  m_ui->SetScales(m_desc.display.uiScale, m_desc.display.textScale);
   m_cursorImages = LoadCursorImages(*m_desc.content);
   m_sceneTextures = LoadSceneTextures(*m_desc.content);
   m_sceneMeshes = LoadSceneMeshes(*m_desc.content);
@@ -240,6 +244,58 @@ WorldPresentation::WorldPresentation(Desc _desc)
   m_locale = std::make_unique<Neuron::MessageLocale>(UI_LANGUAGE);
   Neuron::Log(Neuron::LogCategory::Ui, Neuron::LogLevel::Info, "text is drawn in {}, the development overlay in {}",
               m_text->FaceFamily(Neuron::FontRole::Body), m_text->FaceFamily(Neuron::FontRole::Development));
+#if ENGINE_DEVELOPMENT
+  if (m_desc.uiTest)
+  {
+    m_ui->OpenTestScreen();
+  }
+#endif
+}
+
+void WorldPresentation::SetDisplay(const DisplayOptions& _display)
+{
+  m_desc.display = _display;
+  m_ui->SetScales(_display.uiScale, _display.textScale);
+}
+
+void WorldPresentation::UpdateHud(ClientSession& _session, const SettlementView& _view, Neuron::SizePx _client, float _dpiScale)
+{
+  const double seconds = std::chrono::duration<double>(m_desc.clock->Now() - m_start).count();
+  m_hud->Update(_session, seconds, UiMetricsOf(*m_desc.presentation, _client, _dpiScale, m_desc.display.uiScale, m_desc.display.textScale),
+                _view.Settlement().ForHud(), _view.Markers().IconPlaces());
+  // ADR-173: the warning of an attack and a battle's start and end, two-dimensional, as their notices arrive.
+  if (m_desc.audio != nullptr)
+  {
+    std::vector<SoundCue> cues;
+    for (const SettlementNotice& notice : m_hud->Arrived())
+    {
+      if (const std::optional<SoundCue> cue = CueOf(notice); cue.has_value())
+      {
+        cues.push_back(*cue);
+      }
+    }
+    PlayCues(*m_desc.audio, cues);
+  }
+}
+
+void WorldPresentation::LeaveWorld()
+{
+  ClearWorld();
+  m_hud = std::make_unique<SettlementHud>(*m_desc.presentation, *m_desc.tuning);
+}
+
+void WorldPresentation::ClearWorld()
+{
+  m_terrain = nullptr;
+  m_world.reset();
+  m_firstDisplayTick.reset();
+  m_leaders = LeaderLook{};
+  m_effects.Clear();
+  m_structures.Clear();
+  m_sounds.Clear();
+  m_territories.Clear();
+  m_viewMask.reset();
+  m_viewMaskRevision.reset();
 }
 
 void WorldPresentation::Update(const ClientSession& _session)
@@ -249,20 +305,14 @@ void WorldPresentation::Update(const ClientSession& _session)
   {
     return;
   }
+  ClearWorld();
   m_terrain = terrain;
-  m_firstDisplayTick.reset();
-  m_effects.Clear();
-  m_structures.Clear();
-  m_territories.Clear();
-  m_viewMask.reset();
-  m_viewMaskRevision.reset();
   if (terrain == nullptr)
   {
-    m_world.reset();
     return;
   }
   const Neuron::Nanoseconds before = m_desc.clock->Now();
-  m_world = BuildWorldScene(*terrain, *m_desc.tuning, *m_desc.presentation, *m_desc.content);
+  m_world = BuildWorldScene(*terrain, *m_desc.tuning, *m_desc.presentation, *m_desc.content, m_desc.display.seaDetail);
   const auto milliseconds = std::chrono::duration<double, std::milli>(m_desc.clock->Now() - before).count();
   if (m_world != nullptr)
   {
@@ -280,6 +330,7 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
   inputs.world = m_world;
   inputs.background = Rgb(background.r, background.g, background.b);
   inputs.presentationSeconds = std::chrono::duration<double>(m_desc.clock->Now() - m_start).count();
+  inputs.brightness = static_cast<float>(m_desc.display.brightness); // render.brightness (RND-275, ADR-150)
   // The player camera's pose (ADR-119), and the game cursor in every frame, since the system pointer is hidden (O65).
   inputs.camera = _view.Pose();
   if (m_cursorImages != nullptr)
@@ -300,6 +351,12 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
   }
   // ADR-123: the presentation events are taken every frame, and dropped while no world is drawn.
   const std::vector<ReceivedEvent> events = _session.TakeEvents();
+  // ADR-173: the listener is the camera, before its shake, and the events' sounds play with their draws.
+  if (m_desc.audio != nullptr && m_terrain != nullptr && displayTick.has_value())
+  {
+    static_cast<void>(m_desc.audio->SetListener(ListenerOf(inputs.camera)));
+    PlayCues(*m_desc.audio, m_sounds.Due(events, *displayTick));
+  }
   // M1 task T16 (ADR-121): the crowds, on the presentation clock (VFX-016; no world is held at M1, at game speed 1).
   m_presentationClock.Advance(m_desc.clock->Now(), false, 1.0);
   if (m_terrain != nullptr && m_sceneTextures != nullptr)
@@ -309,7 +366,10 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     crowd.cameraFront = Neuron::ViewDirection(inputs.camera);
     crowd.scaledSeconds = m_presentationClock.ScaledSeconds();
     crowd.unscaledSeconds = m_presentationClock.UnscaledSeconds();
-    crowd.localTeam = _session.CommandedTeam();
+    // ADR-167: the team the battle verbs command, the settlement's or its expedition's, shows its selection.
+    crowd.localTeam = _view.BattleTeam().has_value() ? _view.BattleTeam() : _session.CommandedTeam();
+    crowd.entityDetail = m_desc.display.entityDetail;
+    crowd.workerScaleFactor = m_desc.display.workerScaleFactor;
     const double fraction = _session.InterpolationFraction();
     std::vector<InterpolatedFigure> figures = InterpolateFigures(_session.Replica(), fraction);
     // M1 task T16c (ADR-123): the events and per-tick emitters first, then the shooters' recoil on the figures drawn.
@@ -321,6 +381,8 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     effectsView.fraction = fraction;
     effectsView.scaledSeconds = m_presentationClock.ScaledSeconds();
     effectsView.unscaledSeconds = m_presentationClock.UnscaledSeconds();
+    effectsView.reducedFlash = m_desc.display.reducedFlash;
+    effectsView.reducedMotion = m_desc.display.reducedMotion;
     effectsView.unscaledStep = m_presentationClock.UnscaledStepSeconds();
     effectsView.realSeconds = m_presentationClock.RealSeconds();
     if (displayTick.has_value())
@@ -364,6 +426,11 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
       std::vector<InterpolatedStructure> shown = InterpolateStructures(_session.Replica(), fraction);
       EraseOutside(areas, shown, [](const InterpolatedStructure& _structure) { return PositionOf(_structure.state.position); });
       m_structures.Draw(shown, *m_sceneMeshes, m_terrain->field, structureView, structures);
+      // M2 task T17 (ADR-153): the placement ghost in pass 12.
+      if (const std::optional<StructureGhost>& ghost = _view.Settlement().Ghost(); ghost.has_value())
+      {
+        AppendGhost(*ghost, *m_sceneMeshes, *m_desc.presentation, structures.meshes);
+      }
       inputs.sceneMeshes = m_sceneMeshes;
       inputs.meshBatches.insert(inputs.meshBatches.end(), std::make_move_iterator(structures.meshes.begin()),
                                 std::make_move_iterator(structures.meshes.end()));
@@ -375,6 +442,7 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     AppendOrbBatches(orbs, *m_desc.presentation, inputs.quadBatches);
     // M2 task T13 (ADR-143): every settlement's territory line and the border areas' spots, in pass 10a.
     m_territories.Update(_session.Replica().Latest(), *m_terrain);
+    m_territories.SetValley(_session.LatestValleyStatus()); // M3 task T11 (ADR-166): the areas' holders and claims
     m_territories.AppendBatches(inputs.quadBatches);
     // M1 task T17b (ADR-125): the route preview in pass 12, the world markers in pass 16 and the badge in pass 20, its
     // count in the UI's batches of pass 20 (ADR-145).
@@ -387,7 +455,8 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     inputs.cursorBadge = _view.Badge();
     if (const std::optional<BadgeLabel>& count = _view.BadgeCountLabel(); count.has_value())
     {
-      AppendBadgeCount(*count, *m_text, *m_desc.presentation, _view.ViewSize().height, _dpiScale, inputs.uiCursor);
+      AppendBadgeCount(*count, *m_text, *m_desc.presentation, _view.ViewSize().height, _dpiScale,
+                       m_desc.display.textScale.value_or(m_desc.presentation->ui.scale.textDefault), inputs.uiCursor);
     }
     if (displayTick.has_value())
     {
@@ -408,10 +477,14 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
       inputs.camera.rollRadians += effects.shakeRollRadians;
     }
   }
+  // ADR-149: the UI's windows in pass 19, over the world.
+  // ADR-152: the settlement HUD in pass 19 under the UI's windows (UI-460).
+  m_hud->Draw(*m_text, *m_strings, *m_locale, inputs.ui);
+  m_ui->Draw(*m_text, inputs.presentationSeconds, inputs.ui);
 #if ENGINE_DEVELOPMENT
-  if (m_desc.uiTest)
+  if (const std::optional<Neuron::UiRect> area = m_ui->TestSampleArea(); area.has_value())
   {
-    AppendUiTestPage(*m_text, *m_desc.presentation, *m_strings, *m_locale, _view.ViewSize(), _dpiScale, inputs.ui);
+    AppendUiTestPage(*m_text, *m_desc.presentation, *m_strings, *m_locale, *area, _dpiScale, inputs.ui);
   }
   // DBG-095, DBG-096, ADR-120: while the overlay is shown, the frame-rate line, whose objects are counted while a world
   // exists, and the frame page, its text in the development role (ADR-147).
@@ -436,6 +509,40 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
 #endif
   // ADR-145, ADR-147: the glyph atlas and the UI's images, which the batches read, after every text of the frame is laid
   // out.
+  inputs.glyphs = m_text->Atlas();
+  inputs.uiImages = m_uiImages;
+  return inputs;
+}
+
+Neuron::FrameInputs WorldPresentation::FrontEndFrame(Neuron::PointPx _pointer, Neuron::SizePx _client, double _framesPerSecond,
+                                                     float _dpiScale)
+{
+  m_text->BeginFrame(++m_frames);
+  const TuningPresentation::Rnd::Frame::ClearColorNoMatch& background = m_desc.presentation->rnd.frame.clearColorNoMatch;
+  Neuron::FrameInputs inputs;
+  inputs.background = Rgb(background.r, background.g, background.b);
+  inputs.presentationSeconds = std::chrono::duration<double>(m_desc.clock->Now() - m_start).count();
+  inputs.brightness = static_cast<float>(m_desc.display.brightness);
+  // O65, UI-465: the system pointer is hidden, and the world cursor draws the standard pointer over the pages.
+  if (m_cursorImages != nullptr)
+  {
+    inputs.cursorImages = m_cursorImages;
+    inputs.cursor = CursorAt(CursorKind::World, _pointer, *m_desc.presentation);
+  }
+  m_ui->Draw(*m_text, inputs.presentationSeconds, inputs.ui);
+#if ENGINE_DEVELOPMENT
+  // DBG-095: the frame-rate line while the overlay is shown.
+  if (m_overlayShown)
+  {
+    const auto textSize = static_cast<float>(m_desc.presentation->dbg.overlay.textSize);
+    const std::vector<Neuron::OverlayLine> lines{FrameRateLine(*m_desc.presentation, _framesPerSecond, std::nullopt)};
+    Neuron::AppendOverlayLines(inputs.overlayText, *m_text, lines, _client, textSize, _dpiScale);
+  }
+#else
+  static_cast<void>(_framesPerSecond);
+  static_cast<void>(_client);
+  static_cast<void>(_dpiScale);
+#endif
   inputs.glyphs = m_text->Atlas();
   inputs.uiImages = m_uiImages;
   return inputs;

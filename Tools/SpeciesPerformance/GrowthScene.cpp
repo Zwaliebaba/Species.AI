@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <utility>
 
 namespace Performance
@@ -82,6 +83,9 @@ GrowthRun RunGrowth(std::uint64_t _seed, const Species::TuningMvp& _tuning, cons
   start.seed = terrain->seed;
   start.stewardSite = site;
   std::unique_ptr<Species::WorldSimulation> world = Species::StartWorld(start, terrain, _tuning, &_records);
+  // ADR-163: the scene measures growth, not a run's end, so its world's run never ends and the world measured after it
+  // still steps.
+  world->SetRunEnd(std::numeric_limits<std::uint64_t>::max());
   Species::RegionSimulation& region = world->Region(0);
   static_cast<void>(region.AddScriptedSteward(site));
   const std::int64_t sampleTicks = std::max<std::int64_t>(1, Species::SampleTicks(_tuning));
@@ -195,6 +199,50 @@ std::optional<SnapshotCost> MeasureSnapshot(const Species::WorldSimulation& _wor
   }
   cost.saveNanoseconds = Neuron::MarkerClockNanoseconds() - saving;
   return cost;
+}
+
+std::optional<SavedWorldRun> ReadSavedWorld(const std::filesystem::path& _folder, const Species::TuningMvp& _tuning,
+                                            const Species::StructureRecords& _records)
+{
+  const Neuron::SnapshotStore store(_folder, 1);
+  for (const std::filesystem::path& path : store.Snapshots())
+  {
+    auto restored = Neuron::SnapshotStore::Load(path).and_then([&](const Neuron::SnapshotContents& _contents)
+                                                               { return Species::RestoreWorld(_contents, _tuning, &_records); });
+    if (!restored)
+    {
+      continue;
+    }
+    const Species::WorldSimulation& world = **restored;
+    const Species::RegionSimulation& region = world.Region(0);
+    const auto steward = std::ranges::find_if(region.Settlements(), &Species::Settlement::stewarded);
+    if (steward == region.Settlements().end())
+    {
+      return std::nullopt;
+    }
+    SavedWorldRun saved;
+    saved.snapshot = path;
+    saved.run.seed = world.WorldSeed();
+    saved.run.ticks = world.NextTick();
+    for (const Species::StatisticEntry& entry : region.Statistics())
+    {
+      if (entry.site != steward->team)
+      {
+        continue;
+      }
+      saved.run.largestWorkers = std::max(saved.run.largestWorkers, entry.workers);
+      if (Species::IsGrowthStep(entry.kind))
+      {
+        saved.run.steps.push_back(entry);
+      }
+      else if (entry.kind == Species::StatisticKind::Sample)
+      {
+        saved.samples.push_back(entry); // M3's battles, claims, grievances and halfway lines are no sample (ADR-163)
+      }
+    }
+    return saved;
+  }
+  return std::nullopt;
 }
 
 } // namespace Performance

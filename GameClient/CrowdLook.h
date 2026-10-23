@@ -88,6 +88,10 @@ struct CrowdView
   double scaledSeconds = 0.0;               // the presentation clock's readings (VFX-009)
   double unscaledSeconds = 0.0;
   std::optional<std::uint8_t> localTeam; // the team the client commands
+  // The display options of RND-442 that the crowds read, from the settings store (ADR-150): render.entity_detail, 1 to
+  // 3 (RND-446), and render.worker_scale_factor, the Worker distance scale factor (R-UNIT-142, R-UNIT-191).
+  std::int64_t entityDetail = 1;
+  double workerScaleFactor = 2.0;
 };
 
 // RND-216 (ADR-125): the direction from _from to _to on the screen, x to the camera's right and y up, from the points'
@@ -96,10 +100,13 @@ struct CrowdView
 [[nodiscard]] std::array<double, 2> ScreenDirection(const Neuron::Vec3& _from, const Neuron::Vec3& _to, const Neuron::Vec3& _camera,
                                                     const Neuron::Vec3& _cameraFront) noexcept;
 
-// RND-314: the high-detail factor of a Worker _distance wu from the camera, at entity detail 1, the option's default.
-[[nodiscard]] double WorkerDetail(const TuningPresentation& _presentation, double _distance) noexcept;
-// R-UNIT-142, RND-314: a Worker card's half-size, with the variation of its unit id and the distance scale.
-[[nodiscard]] double WorkerCardHalfSize(const TuningPresentation& _presentation, StableId _id, double _distance) noexcept;
+// RND-314, RND-446: the high-detail factor of a Worker _distance wu from the camera at the entity detail _entityDetail,
+// 1 to 3.
+[[nodiscard]] double WorkerDetail(const TuningPresentation& _presentation, std::int64_t _entityDetail, double _distance) noexcept;
+// R-UNIT-142, RND-314: a Worker card's half-size, with the variation of its unit id and the distance scale grown by the
+// Worker distance scale factor _scaleFactor.
+[[nodiscard]] double WorkerCardHalfSize(const TuningPresentation& _presentation, double _scaleFactor, StableId _id,
+                                        double _distance) noexcept;
 
 // VFX-117, VFX-118, RND-314 to RND-318, R-UNIT-142 to R-UNIT-147 and O75: the Worker layers of pass 7d, in their order:
 // the ground shadows, the bodies, the side strips, the corpse fragments and the control glows, a batch per layer and

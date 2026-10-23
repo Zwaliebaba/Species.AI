@@ -5,6 +5,7 @@
 #include "MessageCodec.h"
 #include "PlatformClock.h"
 #include "RegionTerrain.h"
+#include "RelationMessages.h"
 #include "ReplicaTiming.h"
 #include "ServerStats.h"
 #include "SettlementMessages.h"
@@ -114,9 +115,29 @@ public:
   // ADR-139: the guaranteed events received and not yet taken, in the order they arrived, for the HUD's notifications
   // (MVP-102).
   [[nodiscard]] std::vector<SettlementNotice> TakeNotices();
+  // ADR-165: the battle results received and not yet taken, in the order they arrived (MVP-048).
+  [[nodiscard]] std::vector<BattleResultNotice> TakeBattleResults();
   // ADR-139: the settlement of the team this client commands in the replica's latest view; none in the sandbox, or
   // before it arrives.
   [[nodiscard]] std::optional<ReplicatedSettlement> OwnSettlement() const;
+  // MVP-098 (ADR-152): the latest settlement status the server answered a ReadSettlementStatusCommand with; none before
+  // the first.
+  [[nodiscard]] const std::optional<SettlementStatus>& LatestStatus() const noexcept
+  {
+    return m_status;
+  }
+  // MVP-098 (ADR-165): the latest valley status the server answered a ReadValleyStatusCommand with; none before the first.
+  [[nodiscard]] const std::optional<ValleyStatus>& LatestValleyStatus() const noexcept
+  {
+    return m_valleyStatus;
+  }
+  // MVP-063 (ADR-169): the latest epilogue the server answered a ReadEpilogueCommand with; none before the first.
+  [[nodiscard]] const std::optional<Epilogue>& LatestEpilogue() const noexcept
+  {
+    return m_epilogue;
+  }
+  // MVP-005: the seed of the world whose terrain the client built; none before it.
+  [[nodiscard]] std::optional<std::uint64_t> WorldSeed() const noexcept;
   // MVP-011: the client refused the world, because the terrain it built from the server's seed differs, and closed.
   [[nodiscard]] bool Refused() const noexcept
   {
@@ -149,6 +170,10 @@ private:
   std::optional<ServerStats> m_serverStats;
   std::vector<CommandReport> m_reports;
   std::vector<SettlementNotice> m_notices;
+  std::optional<SettlementStatus> m_status;
+  std::optional<ValleyStatus> m_valleyStatus;
+  std::optional<Epilogue> m_epilogue;
+  std::vector<BattleResultNotice> m_results;
   std::uint64_t m_commandsSent = 0; // the reliable messages sent, which the server numbers from 0
   bool m_refused = false;
   std::string m_shownTitle;

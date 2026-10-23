@@ -303,7 +303,7 @@ bool AdvanceLaserBolt(RegionSimulation& _region, LaserBolt& _bolt)
   // Step 7: the enemies within the step's length of its middle; a hit is within the hit height of the bolt and the hit
   // radius of the step's leg in the horizontal plane, the first in actor-grid result order.
   const Neuron::Vec3 middle = (legStart + next) * 0.5;
-  for (const ActorRef& ref : _region.InRange(middle.x, middle.z, Neuron::Length(next - legStart), RegionSimulation::EnemiesOf(_bolt.team)))
+  for (const ActorRef& ref : _region.InRange(middle.x, middle.z, Neuron::Length(next - legStart), _region.EnemiesOf(_bolt.team)))
   {
     Figure* victim = _region.Resolve(ref);
     if (victim == nullptr || std::abs(victim->position.y - next.y) >= laser.hitHeight ||

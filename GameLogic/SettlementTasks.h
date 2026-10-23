@@ -26,6 +26,10 @@ struct TaskCounts
 
 [[nodiscard]] TaskCounts CountTasks(const RegionSimulation& _region, const Settlement& _settlement, StableId _searching);
 
+// MVP-031: the Worker, which carries a load, walks to the nearest drop-off point of the settlement of _team; with none it
+// stands idle. From M3 task T6 (ADR-161) a won raid's survivors carry the stores home this way.
+void StartCarrying(RegionSimulation& _region, Figure& _worker, std::uint8_t _team);
+
 // MVP-031, MVP-033, MVP-036 and MVP-037 (ADR-135): the settlement's part of an idle Worker's task search, after its
 // orders and its Leader search. Each task that has work keeps its share, and the shares of those with none go to the
 // others in proportion to theirs:

@@ -110,7 +110,7 @@ public:
     const TextureContent textures;
     const auto content = Neuron::LooseContent::Mount(textures.Folder());
     Assert::IsTrue(content.has_value());
-    const auto first = Species::BuildWorldScene(*region, CommittedTuning(), CommittedPresentation(), *content);
+    const auto first = Species::BuildWorldScene(*region, CommittedTuning(), CommittedPresentation(), *content, 1);
     Assert::IsTrue(first != nullptr, L"every texture of the world frame is in the content under its key");
     Assert::IsTrue(first->terrain.triangles > 100'000, L"the valley's facets");
     Assert::AreEqual(std::size_t{25}, first->terrain.chunks.size(), L"the region's 25 chunks of 1,024 wu");
@@ -118,7 +118,7 @@ public:
     Assert::AreEqual(std::size_t{400}, first->sea.waveColors.size(), L"the shore-wave gradient's row");
     Assert::IsTrue(!first->seaTile.empty() && !first->terrainGrid.empty() && !first->skyCloud.empty() && !first->beamShort.empty());
     // TER-185: the same field gives the same colours.
-    const auto second = Species::BuildWorldScene(*region, CommittedTuning(), CommittedPresentation(), *content);
+    const auto second = Species::BuildWorldScene(*region, CommittedTuning(), CommittedPresentation(), *content, 1);
     Assert::IsTrue(second != nullptr);
     bool same = true;
     for (std::size_t c = 0; c < first->terrain.chunks.size(); ++c)

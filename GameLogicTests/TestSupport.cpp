@@ -1,9 +1,12 @@
 #include "pch.h"
 
+#include "BitReader.h"
+#include "BitWriter.h"
 #include "Check.h"
 #include "CommandJournal.h"
 #include "Files.h"
 #include "PlatformThread.h"
+#include "RegionSimulation.h"
 #include "SimulationRecord.h"
 #include "TerrainField.h"
 #include "TestSupport.h"
@@ -17,6 +20,7 @@
 #include <mutex>
 #include <stop_token>
 #include <system_error>
+#include <utility>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -260,6 +264,73 @@ std::unique_ptr<Species::WorldSimulation> SettledWorld(std::uint8_t _site)
   start.seed = ValleyTerrain()->seed;
   start.stewardSite = _site;
   return Species::StartWorld(start, ValleyTerrain(), CommittedTuning(), &TestRecords());
+}
+
+std::vector<std::byte> RegionStateOf(const Species::RegionSimulation& _region, std::uint32_t _version)
+{
+  // The counts' bounds of the sections each version appended: version 11's grievances, version 12's claims and moved
+  // areas, version 13's expeditions, battles, battle results and respites. Its statistics must be empty below version 15,
+  // whose kinds were written narrower.
+  constexpr std::array<std::pair<std::uint32_t, std::uint64_t>, 7> COUNTS{
+    {{11, 65'535}, {12, 36}, {12, 9}, {13, 4}, {13, 4}, {13, 65'535}, {13, 4}}};
+  Neuron::BitWriter current;
+  _region.WriteState(current);
+  std::size_t bits = current.BitCount();
+  for (const auto& [version, bound] : COUNTS)
+  {
+    bits -= version > _version ? Neuron::BitsFor(bound) : 0;
+  }
+  // Version 16's claim ends, the last section, version 15's renown and version 14's AI settlements' decisions before it,
+  // go whole.
+  if (_version < Species::STATE_VERSION_WITH_CLAIM_COOLDOWN)
+  {
+    Neuron::BitWriter ends;
+    ends.WriteBounded(_region.ClaimEnds().size(), Species::CLAIM_AREA_MAX + 1);
+    for (const Species::ClaimEnd& end : _region.ClaimEnds())
+    {
+      Species::WriteClaimEnd(ends, end);
+    }
+    bits -= ends.BitCount();
+  }
+  if (_version < Species::STATE_VERSION_WITH_RENOWN)
+  {
+    Neuron::BitWriter renown;
+    renown.WriteBounded(_region.Renown().size(), 4);
+    for (const Species::SettlementRenown& settlement : _region.Renown())
+    {
+      Species::WriteSettlementRenown(renown, settlement);
+    }
+    bits -= renown.BitCount();
+  }
+  if (_version < Species::STATE_VERSION_WITH_SETTLEMENT_AI)
+  {
+    Neuron::BitWriter decisions;
+    decisions.WriteBounded(_region.SettlementAis().size(), 4);
+    for (const Species::SettlementAi& ai : _region.SettlementAis())
+    {
+      Species::WriteSettlementAi(decisions, ai);
+    }
+    bits -= decisions.BitCount();
+  }
+  Neuron::BitReader whole(current.Bytes());
+  Neuron::BitWriter older;
+  for (std::size_t done = 0; done < bits;)
+  {
+    const auto chunk = static_cast<std::uint32_t>(std::min<std::size_t>(64, bits - done));
+    older.WriteBits(whole.ReadBits(chunk), chunk);
+    done += chunk;
+  }
+  return older.Take();
+}
+
+std::unique_ptr<Species::WorldSimulation> ValleyWorld(const Neuron::SipHashKey& _key, const Species::TuningMvp& _tuning)
+{
+  Species::WorldStart start;
+  start.key = _key;
+  start.seed = ValleyTerrain()->seed;
+  start.stewardSite = std::uint8_t{2};
+  start.aiSettlements = 3;
+  return Species::StartWorld(start, ValleyTerrain(), _tuning, &TestRecords());
 }
 
 std::vector<Neuron::CookedEntry> StructureRecordEntries()

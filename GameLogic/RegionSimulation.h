@@ -3,9 +3,11 @@
 #include "ActorGrid.h"
 #include "ActorGridCache.h"
 #include "AiController.h"
+#include "Battles.h"
 #include "BitReader.h"
 #include "BitWriter.h"
 #include "BotNavigation.h"
+#include "Claims.h"
 #include "CommandQueue.h"
 #include "EffectEvent.h"
 #include "EssenceOrb.h"
@@ -13,9 +15,12 @@
 #include "Movement.h"
 #include "ObstacleGrid.h"
 #include "RegionTerrain.h"
+#include "Relations.h"
+#include "Renown.h"
 #include "RouteStore.h"
 #include "ScriptedSteward.h"
 #include "Settlement.h"
+#include "SettlementAi.h"
 #include "Statistics.h"
 #include "SlicedPool.h"
 #include "StableId.h"
@@ -84,6 +89,9 @@ public:
   // effects, its structures and then its bot navigation nodes, and its Essence orbs (R-SIM-218 steps 3 to 5);
   // then each AI, whose commands execute at the next tick (ADR-107).
   void Step(std::uint64_t _tick);
+  // MVP-063 (ADR-163): a tick of a world whose run has ended: the region's tick advances, its presentation events are
+  // cleared, and nothing else changes.
+  void Pass(std::uint64_t _tick);
 
   // The team slots 0 to _index, made when they do not exist yet.
   Team& EnsureTeam(std::uint8_t _index);
@@ -140,8 +148,12 @@ public:
   // region. Called between ticks.
   StableId AddAi(std::uint8_t _team);
   // ADR-138: a scripted steward runs the settlement of _team from now on as its AI commander; its sender id is a new
-  // stable id of the region. Called between ticks.
+  // stable id of the region. For an AI settlement it also makes the settlement's decisions (ADR-162). Called between
+  // ticks.
   StableId AddScriptedSteward(std::uint8_t _team);
+  // ADR-156: the scripted stewards of _team stop, and their decisions with them, as a steward takes its settlement.
+  // Called between ticks.
+  void RemoveScriptedStewards(std::uint8_t _team);
   [[nodiscard]] const std::vector<ScriptedSteward>& ScriptedStewards() const noexcept
   {
     return m_scripted;
@@ -163,9 +175,11 @@ public:
   // The arrival check of a battle command (ADR-087 item 2): _sender commands _team, and is an AI when _aiOnly.
   [[nodiscard]] bool MayCommand(Neuron::SenderId _sender, std::uint8_t _team, bool _aiOnly) const noexcept;
 
-  // R-SIM-311: a team's friends and enemies. The MVP has no alliance, so each team is its own only friend.
+  // R-SIM-311: a team's friends and enemies. The MVP has no alliance, so each team is its own only friend. A team's
+  // enemies are every other team, except that a settlement's team has no other settlement's for one: the settlements
+  // are at peace outside battles (PIL-041, ADR-157).
   [[nodiscard]] static TeamMask FriendsOf(std::uint8_t _team) noexcept;
-  [[nodiscard]] static TeamMask EnemiesOf(std::uint8_t _team) noexcept;
+  [[nodiscard]] TeamMask EnemiesOf(std::uint8_t _team) const noexcept;
   // R-SIM-309 and R-SIM-311: the exact query over the teams of _teams.
   [[nodiscard]] std::vector<ActorRef> InRange(double _x, double _z, double _range, const TeamMask& _teams) const;
   // R-SIM-311: the nearest live enemy of _team with _minRange² ≤ d² < the best so far, within _maxRange.
@@ -269,6 +283,96 @@ public:
   {
     return m_contacts;
   }
+  // MVP-050 (ADR-159): the grievances of the region's Cladans, in their order.
+  [[nodiscard]] const std::vector<Grievance>& Grievances() const noexcept
+  {
+    return m_grievances;
+  }
+  [[nodiscard]] std::vector<Grievance>& Grievances() noexcept
+  {
+    return m_grievances;
+  }
+  // MVP-053 (ADR-160): the region's claims in the order they were made, and the areas claims have moved, in their order.
+  [[nodiscard]] const std::vector<Claim>& Claims() const noexcept
+  {
+    return m_claims;
+  }
+  [[nodiscard]] std::vector<Claim>& Claims() noexcept
+  {
+    return m_claims;
+  }
+  [[nodiscard]] const std::vector<AreaHolding>& Holdings() const noexcept
+  {
+    return m_holdings;
+  }
+  [[nodiscard]] std::vector<AreaHolding>& Holdings() noexcept
+  {
+    return m_holdings;
+  }
+  [[nodiscard]] const std::vector<ClaimEnd>& ClaimEnds() const noexcept
+  {
+    return m_claimEnds;
+  }
+  [[nodiscard]] std::vector<ClaimEnd>& ClaimEnds() noexcept
+  {
+    return m_claimEnds;
+  }
+  // WLD-066 (ADR-160): a territory event that is no first contact, a claim's move of a border area.
+  void RecordContactEvent(const ContactEvent& _event)
+  {
+    m_contacts.push_back(_event);
+  }
+  // MVP-041 to MVP-048 (ADR-161): the region's expeditions in the order declared, its battles in progress in the order
+  // started, its battle results in the order they ended, and its respites in the order started.
+  [[nodiscard]] const std::vector<Expedition>& Expeditions() const noexcept
+  {
+    return m_expeditions;
+  }
+  [[nodiscard]] std::vector<Expedition>& Expeditions() noexcept
+  {
+    return m_expeditions;
+  }
+  [[nodiscard]] const std::vector<Battle>& Battles() const noexcept
+  {
+    return m_battles;
+  }
+  [[nodiscard]] std::vector<Battle>& Battles() noexcept
+  {
+    return m_battles;
+  }
+  [[nodiscard]] const std::vector<BattleResult>& BattleResults() const noexcept
+  {
+    return m_results;
+  }
+  [[nodiscard]] std::vector<BattleResult>& BattleResults() noexcept
+  {
+    return m_results;
+  }
+  [[nodiscard]] const std::vector<Respite>& Respites() const noexcept
+  {
+    return m_respites;
+  }
+  [[nodiscard]] std::vector<Respite>& Respites() noexcept
+  {
+    return m_respites;
+  }
+  // MVP-055 to MVP-058 (ADR-162): the decisions of the AI settlements its scripted stewards run, in their order.
+  [[nodiscard]] const std::vector<SettlementAi>& SettlementAis() const noexcept
+  {
+    return m_settlementAis;
+  }
+  [[nodiscard]] std::vector<SettlementAi>& SettlementAis() noexcept
+  {
+    return m_settlementAis;
+  }
+  // ADR-161: the figure at slot _slot of team _from moves to team _to, registered in the actor grid there, and leaves
+  // its old team's selection; returns its new slot. The caller remaps what named its old slot.
+  std::uint32_t MoveFigure(std::uint8_t _from, std::uint32_t _slot, std::uint8_t _to);
+  // ADR-161: the actor grid cache forgets every query, when the teams' enemies change.
+  void ForgetCachedEnemies() noexcept
+  {
+    m_cache.Clear();
+  }
   // MVP-064: the server's statistics of the region's settlements in the order they were recorded (ADR-136).
   [[nodiscard]] const std::vector<StatisticEntry>& Statistics() const noexcept
   {
@@ -276,6 +380,29 @@ public:
   }
   // An entry appended to the statistics while they hold fewer than STATISTICS_MAX; a full record takes no more.
   void RecordStatistic(const StatisticEntry& _entry);
+  // ADR-163: the territory of the settlement at _site has reached the halfway line of valley border pair _pair, as the
+  // statistics record.
+  [[nodiscard]] bool HalfwayReached(std::uint8_t _site, std::size_t _pair) const noexcept;
+  // MVP-061 (ADR-163): the renown of the region's settlements, one for each, in their order.
+  [[nodiscard]] const std::vector<SettlementRenown>& Renown() const noexcept
+  {
+    return m_renown;
+  }
+  [[nodiscard]] std::vector<SettlementRenown>& Renown() noexcept
+  {
+    return m_renown;
+  }
+  // MVP-060 (ADR-163): the tick the world's run ends at, which the world owner gives its regions; never, for a region of
+  // no world. In the last mvp.run.quiet_minutes before it, no attack may be declared.
+  void SetRunEnd(std::uint64_t _endTick) noexcept
+  {
+    m_runEndTick = _endTick;
+  }
+  [[nodiscard]] std::uint64_t RunEndTick() const noexcept
+  {
+    return m_runEndTick;
+  }
+  [[nodiscard]] bool InQuietMinutes() const noexcept;
   // The structure in _slot while it still holds that slot with id _id, or null (R-SIM-325's rule for handles).
   [[nodiscard]] Structure* ResolveStructure(std::uint32_t _slot, StableId _id) noexcept;
   [[nodiscard]] const Structure* ResolveStructure(std::uint32_t _slot, StableId _id) const noexcept;
@@ -295,12 +422,12 @@ public:
   // WLD-080 to WLD-085: a structure for each resource site of the region's terrain, in its order, belonging to no
   // settlement (WLD-084).
   void PlaceResourceSites();
-  // MVP-012, MVP-013 and MVP-020: a settlement at the free local site _site, run by a steward or an AI. Its team slot is
-  // its site and its Cladan's colour too; its Wellspring stands at the site's centre facing out along the site's
+  // MVP-012, MVP-013 and MVP-020: a settlement at the free local site _site, run by a steward or an AI with the temperament
+  // _temperament (MVP-057). Its team slot is its site and its Cladan's colour too; its Wellspring stands at the site's centre facing out along the site's
   // outward diagonal; its stores are empty, its territory has the founding radius, and its first
   // mvp.settlement.start_workers Workers leave the Wellspring's door one after another (R-ECON-043). Its draws are the
   // next tick's. It needs the terrain and the records.
-  const Settlement& FoundSettlement(std::uint8_t _site, bool _stewarded);
+  const Settlement& FoundSettlement(std::uint8_t _site, bool _stewarded, Temperament _temperament = Temperament::None);
   // R-ECON-043 for a Wellspring (MVP-021): one Worker of the settlement appears at its Wellspring's door socket with no
   // position spread and the velocity (door front + j) × ref.econ.spawn_node.door_speed, each component of j drawn from
   // U[-ref.econ.spawn_node.door_jitter, +ref.econ.spawn_node.door_jitter), and airborne. Returns its slot.
@@ -329,6 +456,16 @@ public:
   [[nodiscard]] const std::vector<EffectEvent>& Events() const noexcept
   {
     return m_events;
+  }
+  // ADR-165: a guaranteed event of the valley in the tick being stepped, for the stewards' notices (MVP-102).
+  void Raise(const ValleyEvent& _event)
+  {
+    m_valleyEvents.push_back(_event);
+  }
+  // The valley events of the last step, in the order the rules raised them; a step clears the list first.
+  [[nodiscard]] const std::vector<ValleyEvent>& ValleyEvents() const noexcept
+  {
+    return m_valleyEvents;
   }
 
   // Every mutable value of the region, canonically (ADR-083 item 4): what its hash covers and its snapshot holds.
@@ -386,6 +523,8 @@ public:
 #endif
 
 private:
+  // ADR-163: the halfway lines the entry records reached.
+  void NoteHalfway(const StatisticEntry& _entry) noexcept;
   void StepSlice(std::uint32_t _slice);
   // R-SIM-218 step 2: each team's share of slice _slice of _slices, in team order.
   void AdvanceTeams(std::uint32_t _slice, std::uint32_t _slices, const MovementContext& _context);
@@ -405,7 +544,8 @@ private:
   // region's terrain is attached and after a snapshot is read.
   void RecomputeTerritories();
   // MVP-027 and WLD-064: a contact event for each valley border pair whose two settlements both reach its halfway line
-  // and have no contact yet; contact never ends in the MVP.
+  // and have no contact yet; the event is recorded once, and the relations read whether a pair is in contact now
+  // (ADR-159).
   void RecordContacts();
   // MVP-097: every settlement's seen layer, made once per step.
   void UpdateSeenLayers();
@@ -435,13 +575,26 @@ private:
   const StructureRecords* m_records;
   SlicedPool<Structure> m_structures;
   std::vector<Settlement> m_settlements;
-  std::vector<CellRaster> m_territories;    // by settlement, derived, never state
-  std::vector<CellRaster> m_seen;           // by settlement, derived, never state
-  std::uint64_t m_seenUpdates = 0;          // never state
-  std::vector<ContactEvent> m_contacts;     // WLD-066, state from version 9
-  std::vector<StatisticEntry> m_statistics; // MVP-064, state from version 9
-  std::vector<ScriptedSteward> m_scripted;  // ADR-138, state from version 10
-  std::vector<EffectEvent> m_events;        // presentation, never state
+  std::vector<CellRaster> m_territories;                                  // by settlement, derived, never state
+  std::vector<CellRaster> m_seen;                                         // by settlement, derived, never state
+  std::uint64_t m_seenUpdates = 0;                                        // never state
+  std::vector<ContactEvent> m_contacts;                                   // WLD-066, state from version 9
+  std::vector<StatisticEntry> m_statistics;                               // MVP-064, state from version 9
+  std::vector<ScriptedSteward> m_scripted;                                // ADR-138, state from version 10
+  std::vector<Grievance> m_grievances;                                    // MVP-050 (ADR-159), state from version 11
+  std::vector<Claim> m_claims;                                            // MVP-053 (ADR-160), state from version 12
+  std::vector<AreaHolding> m_holdings;                                    // MVP-053 (ADR-160), state from version 12
+  std::vector<Expedition> m_expeditions;                                  // MVP-041 (ADR-161), state from version 13
+  std::vector<Battle> m_battles;                                          // MVP-043 (ADR-161), state from version 13
+  std::vector<BattleResult> m_results;                                    // MVP-048 (ADR-161), state from version 13
+  std::vector<Respite> m_respites;                                        // MVP-047 (ADR-161), state from version 13
+  std::vector<SettlementAi> m_settlementAis;                              // MVP-055 (ADR-162), state from version 14
+  std::vector<SettlementRenown> m_renown;                                 // MVP-061 (ADR-163), state from version 15
+  std::vector<ClaimEnd> m_claimEnds;                                      // O102 (DEC-1008), state from version 16
+  std::uint64_t m_runEndTick = std::numeric_limits<std::uint64_t>::max(); // the world owner's (ADR-163), not region state
+  std::uint16_t m_halfwayReached = 0;      // a bit for each site and pair, from the statistics (ADR-163), not region state
+  std::vector<EffectEvent> m_events;       // presentation, never state
+  std::vector<ValleyEvent> m_valleyEvents; // the stewards' notices (ADR-165), never state
 #if ENGINE_DEVELOPMENT
   AdvanceObserver m_advanceObserver;
 #endif

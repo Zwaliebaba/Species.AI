@@ -183,6 +183,7 @@
     <ClCompile Include="MeshAssetTests.cpp" />
     <ClCompile Include="MessageCodecTests.cpp" />
     <ClCompile Include="MessagePatternTests.cpp" />
+    <ClCompile Include="SettingsStoreTests.cpp" />
     <ClCompile Include="PlatformClockTests.cpp" />
     <ClCompile Include="PlatformLogSinkTests.cpp" />
     <ClCompile Include="PlatformMessageTests.cpp" />
@@ -192,6 +193,8 @@
     <ClCompile Include="Sha256Tests.cpp" />
     <ClCompile Include="SimRngTests.cpp" />
     <ClCompile Include="SipHashTests.cpp" />
+    <ClCompile Include="SoundAssetTests.cpp" />
+    <ClCompile Include="SpscQueueTests.cpp" />
     <ClCompile Include="StartupOptionsTests.cpp" />
     <ClCompile Include="StringTableAssetTests.cpp" />
     <ClCompile Include="TerrainFieldTests.cpp" />

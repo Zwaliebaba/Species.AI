@@ -5,16 +5,24 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 namespace Neuron
 {
 
+// UI-007 (ADR-154): a UTF-16 code unit of a character message as a Unicode scalar value. A high surrogate is held in
+// _pendingHigh until its low half arrives; a low half with no high one before it gives none, and so does a high half
+// that a unit other than a low half follows.
+[[nodiscard]] std::optional<char32_t> JoinUtf16(char16_t& _pendingHigh, char16_t _unit) noexcept;
+
 /// The keyboard and mouse back-end (ADR-028, INP-105, INP-108 to INP-111) of M1: the window's key, button, pointer and
 /// wheel messages as the router's events, in arrival order, with their pump timestamps. Each modifier covers both its
 /// keys, so it is released only when neither is held. It is also the router's pointer host, through the window, and it
-/// takes the window's close request for the quit (PLT-009, INP-076). Main thread only; the window outlives it.
-class KeyboardMouseBackEnd final : public WindowInputSink, public DeviceBackEnd, public PointerHost
+/// takes the window's close request for the quit (PLT-009, INP-076), and, from M2 task T18, its text source: each
+/// character message as a Unicode scalar value, a surrogate pair joined (UI-007, ADR-154). Main thread only; the window
+/// outlives it.
+class KeyboardMouseBackEnd final : public WindowInputSink, public DeviceBackEnd, public PointerHost, public TextSource
 {
 public:
   explicit KeyboardMouseBackEnd(AppWindow& _window) noexcept;
@@ -26,6 +34,8 @@ public:
 
   void WarpPointer(PointPx _clientPosition) override;
   void ConfinePointer(bool _on) override;
+
+  void TakeText(std::vector<TextCharacter>& _out) override;
 
   // PLT-009: the window was asked to close since the previous call.
   [[nodiscard]] bool TakeCloseRequest() noexcept;
@@ -42,6 +52,8 @@ private:
 
   AppWindow& m_window;
   std::vector<InputEvent> m_pending;
+  std::vector<TextCharacter> m_text;
+  char16_t m_highSurrogate = 0; // the first half of a surrogate pair, until its second arrives (JoinUtf16)
   std::array<bool, KEY_CODE_COUNT> m_keysHeld{};
   std::array<bool, MOUSE_BUTTON_COUNT> m_buttonsHeld{};
   // The left and right keys of shift, control and alt, by modifier: bit 0 the left key, bit 1 the right one.

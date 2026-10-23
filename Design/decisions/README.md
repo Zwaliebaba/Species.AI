@@ -347,3 +347,9 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 | DEC-1001 | [The provisional looks of the settlement](species_design.md#dec-1001-the-provisional-looks-of-the-settlement) | Open | species_design.md |
 | DEC-1002 | [The provisional looks of the territories](species_design.md#dec-1002-the-provisional-looks-of-the-territories) | Open | species_design.md |
 | DEC-1003 | [The weight and width of the text in Bahnschrift](species_design.md#dec-1003-the-weight-and-width-of-the-text-in-bahnschrift) | Open | species_design.md |
+| DEC-1004 | [The publisher's folder of the user-data root](species_design.md#dec-1004-the-publishers-folder-of-the-user-data-root) | Open | species_design.md |
+| DEC-1005 | [The provisional layout and palette of the settlement HUD](species_design.md#dec-1005-the-provisional-layout-and-palette-of-the-settlement-hud) | Open | species_design.md |
+| DEC-1006 | [How the AI settlements claim and raise their expeditions](species_design.md#dec-1006-how-the-ai-settlements-claim-and-raise-their-expeditions) | Open | species_design.md |
+| DEC-1007 | [Renown for a withdrawn claim](species_design.md#dec-1007-renown-for-a-withdrawn-claim) | Open | species_design.md |
+| DEC-1008 | [The valley run's misses of Playtest 1's lines](species_design.md#dec-1008-the-valley-runs-misses-of-playtest-1s-lines) | Resolved | species_design.md |
+| DEC-1009 | [The first sound set's mix and the turret's sighting](species_design.md#dec-1009-the-first-sound-sets-mix-and-the-turrets-sighting) | Open | species_design.md |

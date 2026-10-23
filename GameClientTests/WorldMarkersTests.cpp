@@ -4,7 +4,9 @@
 #include "DevelopmentOverlay.h"
 #include "FrameView.h"
 #include "Geometry.h"
+#include "RelationMessages.h"
 #include "StableId.h"
+#include "StewardAreas.h"
 #include "TestSupport.h"
 #include "WorldMarkers.h"
 
@@ -175,6 +177,88 @@ public:
     const std::vector<Neuron::OverlayQuad>& quads = markers.Quads();
     Assert::IsTrue(quads.size() == 10, L"both off screen");
     Assert::IsTrue(quads[4].centerX < 960.0f && quads[9].centerX > 960.0f, L"the farther, on the left, first; the nearer last");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(O98AnAwayExpeditionLeaderIsMarkedOverTheFog)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-041")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"WLD-244")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(O98AnAwayExpeditionLeaderIsMarkedOverTheFog)
+  {
+    // ADR-167: the expedition's Leaders have markers; outside the steward's areas the marker stands at its Leader on
+    // screen, with no compass, and stays at the screen's edge off screen however long it has been seen. Inside the areas
+    // it is a Leader marker as M1's.
+    Species::WorldMarkers markers(CommittedPresentation());
+    const std::uint8_t expedition = Species::ExpeditionTeamOf(OWN);
+    Species::StewardAreas areas;
+    Species::StateReplica::View replica;
+    Species::ReplicatedSettlement settlement;
+    settlement.site = OWN;
+    settlement.team = OWN;
+    replica.emplace(Species::SettlementObjectId(OWN), settlement);
+    // A territory far from the camera, so that every place the test uses lies outside the areas.
+    replica.emplace(Species::CellChunkObjectId(Species::CellLayer::Territory, OWN, 0, 0),
+                    Species::ReplicatedCells{Species::CellLayer::Territory, OWN, 0, 0, 1});
+    Species::RegionLayout layout;
+    layout.side = 5'120.0;
+    areas.Update(replica, OWN, layout, CommittedTuning());
+    Assert::IsFalse(areas.Contains(Ahead().x, Ahead().z), L"the test's places are outside the areas");
+    Species::MarkerView view = ViewOf(0.6);
+    view.expeditionTeam = expedition;
+    view.areas = &areas;
+    markers.Update(std::vector{LeaderAt(1, Ahead(), expedition)}, OWN, std::nullopt, view);
+    const std::vector<Neuron::OverlayQuad> onScreen = markers.Quads();
+    Assert::IsTrue(onScreen.size() == 3, L"on screen: the shadow, the disc and the icon");
+    Assert::IsTrue(onScreen[1].texture == static_cast<std::uint16_t>(Species::SceneTexture::TeamDisc), L"no compass");
+    Assert::IsTrue(onScreen[1].color == Species::TeamColor(OWN), L"in its settlement's colour");
+    // Seen for 1.8 s, it still shows off screen.
+    markers.Update(std::vector{LeaderAt(1, Ahead(), expedition)}, OWN, std::nullopt, view);
+    markers.Update(std::vector{LeaderAt(1, Ahead(), expedition)}, OWN, std::nullopt, view);
+    markers.Update(std::vector{LeaderAt(1, BehindRight(), expedition)}, OWN, std::nullopt, view);
+    Assert::IsTrue(markers.Quads().size() == 5, L"held at the edge with its compass");
+    // Inside the areas (none known: every point inside) it is M1's Leader marker, whose banner pass 7b draws.
+    view.areas = nullptr;
+    markers.Update(std::vector{LeaderAt(1, Ahead(), expedition)}, OWN, std::nullopt, view);
+    Assert::IsTrue(markers.Quads().empty(), L"on screen its banner is its icon");
+    view.expeditionTeam.reset();
+    markers.Update(std::vector{LeaderAt(1, Ahead(), expedition)}, OWN, std::nullopt, view);
+    ExpectEqual(0, static_cast<std::int64_t>(markers.Count()), L"another team's Leader has none");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp042AnAttacksMarkerIsADiscWithItsIcon)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-042")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"RND-357")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp042AnAttacksMarkerIsADiscWithItsIcon)
+  {
+    // ADR-167: on screen the shadows, the empty compass ring and the disc in the other settlement's colour, its icon's
+    // place for the HUD; off screen held at the edge with the compass turned towards it; always, under the Leaders'.
+    Species::WorldMarkers markers(CommittedPresentation());
+    const std::vector<Species::MarkerTarget> targets{{Ahead(), 1, Species::TargetIcon::Attack}};
+    Species::MarkerView view = ViewOf(0.1);
+    view.targets = targets;
+    markers.Update(std::vector{LeaderAt(2, BehindRight())}, OWN, std::nullopt, view);
+    const std::vector<Neuron::OverlayQuad> quads = markers.Quads();
+    Assert::IsTrue(quads.size() == 4 + 5, L"the target's four layers, then the Leader's five");
+    Assert::IsTrue(quads[2].texture == static_cast<std::uint16_t>(Species::SceneTexture::EdgeCompassEmpty), L"the empty ring on screen");
+    Assert::IsTrue(quads[3].texture == static_cast<std::uint16_t>(Species::SceneTexture::TeamDisc), L"the disc");
+    Assert::IsTrue(quads[3].color == Species::TeamColor(1), L"in the other settlement's colour");
+    Assert::IsTrue(markers.IconPlaces().size() == 1, L"one icon for the HUD");
+    const Species::MarkerIconPlace& icon = markers.IconPlaces().front();
+    Assert::IsTrue(icon.icon == Species::TargetIcon::Attack, L"the attack's icon");
+    Assert::AreEqual(quads[3].centerX, icon.x, 1e-3f, L"over the disc, x");
+    Assert::AreEqual(quads[3].centerY, icon.y, 1e-3f, L"over the disc, y");
+    Assert::AreEqual(quads[3].halfSize * 2.0f, icon.side, 1e-3f, L"the disc's size");
+    const std::vector<Species::MarkerTarget> behind{{BehindRight(), 2, Species::TargetIcon::Claim}};
+    view.targets = behind;
+    for (int frame = 0; frame < 20; ++frame)
+    {
+      markers.Update({}, OWN, std::nullopt, view);
+    }
+    Assert::IsTrue(markers.Quads().size() == 4, L"off screen, however long");
+    Assert::IsTrue(markers.Quads()[2].texture == static_cast<std::uint16_t>(Species::SceneTexture::EdgeCompass), L"the compass");
+    Assert::AreEqual(1'920.0f - 50.0f, markers.IconPlaces().front().x, 1.0f, L"held 50 px in from the right edge");
+    Assert::IsTrue(markers.IconPlaces().front().icon == Species::TargetIcon::Claim, L"the claim's icon");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl366TheBadgeShowsTheSelection)

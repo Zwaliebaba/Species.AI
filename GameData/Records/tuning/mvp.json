@@ -1,7 +1,7 @@
 {
   "schema": "tuning.mvp",
   "version": "1.0",
-  "notes": "The MVP tuning values of Design/implementation/mvp_scope.md table 3, and the reference keys the simulation reads (ADR-079, MVP-099), each at its reference value. All provisional (MVP-003).",
+  "notes": "The MVP tuning values of Design/implementation/mvp_scope.md table 3, the reference keys the simulation reads (ADR-079, MVP-099), each at its reference value, and the pillar keys its rules cite. All provisional (MVP-003).",
   "mvp": {
     "pace": {
       "session_factor": 24
@@ -97,7 +97,7 @@
     },
     "battle": {
       "objective_radius": 150,
-      "objective_hold_s": 30,
+      "objective_hold_s": 120,
       "rout_share": 0.25
     },
     "protection": {
@@ -117,7 +117,8 @@
       "battle_relief_lost": 25
     },
     "claim": {
-      "uncontested_minutes": 30
+      "uncontested_minutes": 30,
+      "cooldown_minutes": 120
     },
     "relation": {
       "tribute_ru_per_weight": 10
@@ -129,7 +130,8 @@
     },
     "ai": {
       "attack_min_share": 0.6,
-      "decision_ticks": 50
+      "decision_ticks": 50,
+      "muster_minutes": 2
     },
     "run": {
       "length_hours": 8,
@@ -661,6 +663,19 @@
     },
     "travel": {
       "valley_path_factor": 1.05
+    },
+    "scale": {
+      "battles_per_region_max": 2
+    }
+  },
+  "pil": {
+    "battle": {
+      "min_respite_minutes": 2,
+      "max_minutes": 20
+    },
+    "conflict": {
+      "unprovoked_cost_factor": 2,
+      "settled_fade_factor": 4
     }
   }
 }

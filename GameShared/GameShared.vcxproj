@@ -145,6 +145,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="CommandMessages.h" />
+    <ClInclude Include="ContinueFault.h" />
     <ClInclude Include="EffectEvent.h" />
     <ClInclude Include="EffectKind.h" />
     <ClInclude Include="FigureKind.h" />
@@ -154,6 +155,7 @@
     <ClInclude Include="OrbState.h" />
     <ClInclude Include="PresentationEvents.h" />
     <ClInclude Include="RegionTerrain.h" />
+    <ClInclude Include="RelationMessages.h" />
     <ClInclude Include="ReplicatedState.h" />
     <ClInclude Include="ResourceSites.h" />
     <ClInclude Include="ServerStats.h" />
@@ -161,6 +163,7 @@
     <ClInclude Include="StableId.h" />
     <ClInclude Include="StateReplica.h" />
     <ClInclude Include="StateUpdate.h" />
+    <ClInclude Include="StructureCost.h" />
     <ClInclude Include="StructureKind.h" />
     <ClInclude Include="StructureRecords.h" />
     <ClInclude Include="Tuning.h" />
@@ -174,12 +177,14 @@
     <ClCompile Include="Navigation.cpp" />
     <ClCompile Include="PresentationEvents.cpp" />
     <ClCompile Include="RegionTerrain.cpp" />
+    <ClCompile Include="RelationMessages.cpp" />
     <ClCompile Include="ReplicatedState.cpp" />
     <ClCompile Include="ResourceSites.cpp" />
     <ClCompile Include="ServerStats.cpp" />
     <ClCompile Include="SettlementMessages.cpp" />
     <ClCompile Include="StateReplica.cpp" />
     <ClCompile Include="StateUpdate.cpp" />
+    <ClCompile Include="StructureCost.cpp" />
     <ClCompile Include="StructureRecords.cpp" />
     <ClCompile Include="Tuning.cpp" />
     <ClCompile Include="WorldTerrain.cpp" />

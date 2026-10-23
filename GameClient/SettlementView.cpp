@@ -9,6 +9,7 @@
 #include <array>
 #include <cmath>
 #include <limits>
+#include <numbers>
 #include <string>
 #include <utility>
 #include <variant>
@@ -21,12 +22,15 @@ namespace
 {
 
 // The cursors' content keys, in CursorKind order (Design/implementation/mvp_assets.md §6).
-constexpr std::array<std::string_view, 3> CURSOR_KEYS{"textures/cursor/world", "textures/cursor/highlight", "textures/cursor/unavailable"};
+constexpr std::array<std::string_view, 4> CURSOR_KEYS{"textures/cursor/world", "textures/cursor/highlight", "textures/cursor/unavailable",
+                                                      "textures/cursor/place"};
 
 constexpr float COLOR_LEVELS = 255.0f; // ref.ctrl.cursor.set.unavailable_color: RGB from 0 to 255
 #if ENGINE_DEVELOPMENT
 // ADR-125: how far the render check's script orders its Leader, and puts the pointer beyond its Workers, wu.
 constexpr double SCRIPT_REACH = 300.0;
+// ADR-153: how far along +x from the Wellspring the render check draws the placement ghost, wu.
+constexpr double SCRIPT_GHOST_REACH = 120.0;
 #endif
 
 } // namespace
@@ -52,22 +56,23 @@ std::shared_ptr<const Neuron::CursorImages> LoadCursorImages(const Neuron::Loose
 }
 
 std::optional<StableId> LeaderUnderRay(std::span<const InterpolatedFigure> _figures, std::uint8_t _ownTeam, const Neuron::Ray& _ray,
-                                       const Neuron::FrameView& _frame, Neuron::SizePx _view, const TuningPresentation& _presentation)
+                                       const Neuron::FrameView& _frame, Neuron::SizePx _view, const TuningPresentation& _presentation,
+                                       double _scaleFactor, std::optional<std::uint8_t> _expeditionTeam)
 {
   const TuningPresentation::Ref::Unit& unit = _presentation.ref.unit;
   std::optional<StableId> best;
   double bestScore = std::numeric_limits<double>::infinity();
   for (const InterpolatedFigure& figure : _figures)
   {
-    if (figure.state.dead || figure.state.kind != FigureKind::Leader || figure.state.team != _ownTeam)
+    if (figure.state.dead || figure.state.kind != FigureKind::Leader ||
+        (figure.state.team != _ownTeam && std::optional<std::uint8_t>(figure.state.team) != _expeditionTeam))
     {
       continue;
     }
     // R-UNIT-192: the sphere above the Leader, scaled with the camera's distance as its figure is (R-UNIT-142).
     const Neuron::Vec3 center = figure.position + Neuron::Vec3{0.0, unit.leader.pickCenterLift, 0.0};
     const double distance = Neuron::Length(center - _frame.camera);
-    const double scale =
-      1.0 + WORKER_DISTANCE_SCALE_FACTOR * std::max(0.0, distance - unit.worker.cardScaleStart) / unit.worker.cardScaleDivisor;
+    const double scale = 1.0 + _scaleFactor * std::max(0.0, distance - unit.worker.cardScaleStart) / unit.worker.cardScaleDivisor;
     const std::optional<double> along = Neuron::RaySphere(_ray, center, unit.leader.pickRadius * scale);
     if (!along)
     {
@@ -88,6 +93,27 @@ std::optional<StableId> LeaderUnderRay(std::span<const InterpolatedFigure> _figu
     }
   }
   return best;
+}
+
+std::uint8_t BattleTeamOf(std::span<const InterpolatedFigure> _figures, std::uint8_t _team, std::uint8_t _expeditionTeam,
+                          std::uint8_t _current, std::optional<StableId> _pressed) noexcept
+{
+  const auto living = [_expeditionTeam](const InterpolatedFigure& _figure)
+  { return _figure.state.team == _expeditionTeam && !_figure.state.dead; };
+  if (std::ranges::none_of(_figures, living))
+  {
+    return _team;
+  }
+  if (_pressed.has_value())
+  {
+    const auto pressed = std::ranges::find(_figures, *_pressed, &InterpolatedFigure::id);
+    if (pressed != _figures.end() && pressed->state.kind == FigureKind::Leader &&
+        (pressed->state.team == _team || pressed->state.team == _expeditionTeam))
+    {
+      return pressed->state.team;
+    }
+  }
+  return _current == _expeditionTeam ? _expeditionTeam : _team;
 }
 
 Neuron::CursorQuad CursorAt(CursorKind _kind, Neuron::PointPx _pointer, const TuningPresentation& _presentation) noexcept
@@ -116,6 +142,12 @@ Neuron::CursorQuad CursorAt(CursorKind _kind, Neuron::PointPx _pointer, const Tu
     quad.color = {static_cast<float>(set.unavailableColor.r) / COLOR_LEVELS, static_cast<float>(set.unavailableColor.g) / COLOR_LEVELS,
                   static_cast<float>(set.unavailableColor.b) / COLOR_LEVELS, 1.0f};
     break;
+  case CursorKind::Place:
+    // R-CTRL-350 table 2.1-A: white, centred on the pointer.
+    side = sizes.placeSize;
+    hotspotX = set.placeHotspot.x;
+    hotspotY = set.placeHotspot.y;
+    break;
   }
   quad.sidePixels = static_cast<float>(side);
   quad.left = static_cast<float>(_pointer.x) - static_cast<float>(side * hotspotX);
@@ -127,6 +159,7 @@ SettlementView::SettlementView(const Desc& _desc)
   : m_desc(_desc),
     m_camera(*_desc.presentation, _desc.planes),
     m_verbs(*_desc.presentation),
+    m_settlement(*_desc.tuning, *_desc.presentation),
     m_preview(*_desc.presentation, *_desc.tuning),
     m_markers(*_desc.presentation)
 {
@@ -180,7 +213,8 @@ void SettlementView::UpdatePreview(const VerbFrame& _frame, std::span<const Inte
   }
 }
 
-void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _router, double _dtSeconds, Neuron::SizePx _view, bool _focused)
+void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _router, double _dtSeconds, Neuron::SizePx _view, bool _focused,
+                            const SettlementHud* _hud)
 {
   // CAM-060 and CAM-063 as amended: a new terrain is a world entered, over the steward's site (mvp.sandbox.steward_site
   // while the sandbox is the only world, ADR-109).
@@ -191,8 +225,12 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
     m_camera.LeaveWorld();
     m_areas.Clear();
     m_verbs.Reset();
+    m_settlement.Reset();
     m_preview.Reset();
     m_markers.Clear();
+    m_battleTeam.reset();
+    m_fields.clear();
+    m_targets.clear();
 #if ENGINE_DEVELOPMENT
     m_scriptStep = 0;
 #endif
@@ -213,11 +251,25 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
   }
   m_pointer = _router.Pointer().positionPixels;
   m_viewSize = _view;
-  // WLD-244 (ADR-142): the steward's areas from the territory the replica holds; a sandbox has none.
+  // WLD-244 (ADR-142): the steward's areas from the territory the replica holds; a sandbox has none. From M3 (ADR-167)
+  // the battlefield of each battle its settlement is a side of joins them while the valley status lists it.
   const std::optional<std::uint8_t> ownTeam = _session.CommandedTeam();
+  const std::optional<ValleyStatus>& valley = _session.LatestValleyStatus();
+  m_fields.clear();
+  if (valley.has_value())
+  {
+    for (const BattleLine& battle : valley->battles)
+    {
+      if (battle.side)
+      {
+        const Neuron::Vec3 center = PositionOf(battle.fieldCenter);
+        m_fields.push_back({center.x, center.z, static_cast<double>(battle.fieldRadius) / POSITION_STEPS_PER_UNIT});
+      }
+    }
+  }
   if (terrain != nullptr)
   {
-    m_areas.Update(_session.Replica().Latest(), ownTeam, terrain->layout, *m_desc.tuning);
+    m_areas.Update(_session.Replica().Latest(), ownTeam, terrain->layout, *m_desc.tuning, m_fields);
   }
   if (m_camera.InWorld() && terrain != nullptr)
   {
@@ -250,7 +302,11 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
       m_camera.UpdatePointerGround(m_pointer, _view, terrain->field);
     }
   }
-  // The hover over the client's own Leaders (R-CTRL-055), and the cursor it gives.
+  // The hover over the client's own Leaders (R-CTRL-055), and from M3 its expedition's (ADR-167), and the cursor it gives.
+  const PlacementView placement =
+    PlacementViewOf(_session.Replica().Latest(), m_camera.InWorld() ? ownTeam : std::nullopt, _session.LatestStatus());
+  const std::optional<std::uint8_t> expeditionTeam =
+    placement.settlement.has_value() ? std::optional<std::uint8_t>(ExpeditionTeamOf(placement.settlement->site)) : std::nullopt;
   m_hovered.reset();
   std::vector<InterpolatedFigure> figures;
   if (m_camera.InWorld() && ownTeam.has_value())
@@ -259,16 +315,18 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
     const Neuron::Ray ray = Neuron::PickRayAt(static_cast<double>(m_pointer.x), static_cast<double>(m_pointer.y), frame, _view,
                                               m_desc.presentation->cam.pick.rowOffset);
     figures = InterpolateFigures(_session.Replica(), _session.InterpolationFraction());
-    m_hovered = LeaderUnderRay(figures, *ownTeam, ray, frame, _view, *m_desc.presentation);
+    m_hovered = LeaderUnderRay(figures, *ownTeam, ray, frame, _view, *m_desc.presentation, m_desc.workerScaleFactor, expeditionTeam);
   }
   // ADR-119 (O76): unavailable while the pointer's ray misses the terrain or its ground point lies outside the region.
   const auto& ground = m_camera.PointerGround();
   const bool onRegion = ground.has_value() && ground->onTerrain && ground->position.x >= m_region.minX &&
                         ground->position.x <= m_region.maxX && ground->position.z >= m_region.minZ && ground->position.z <= m_region.maxZ;
   // M1 task T17 (ADR-124): the battle verbs follow the camera (R-CTRL-020 step 8), with the outcomes of their commands.
-  for (const CommandReport& report : _session.TakeReports())
+  m_reports = _session.TakeReports();
+  for (const CommandReport& report : m_reports)
   {
     m_verbs.Reported(report);
+    m_settlement.Reported(report);
   }
   VerbFrame verbs;
   verbs.realStepSeconds = _dtSeconds;
@@ -295,14 +353,71 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
     controls.demote = _router.Query(ActionOf(GameAction::OrderDemote));
   }
   const std::optional<std::uint8_t> verbTeam = m_camera.InWorld() ? ownTeam : std::nullopt;
+  // M2 task T17 (ADR-153): the settlement verbs take a press over the HUD of the last frame and the presses of placing
+  // before the battle verbs, so a placement never orders and an order never places.
+  SettlementFrame settlementFrame;
+  settlementFrame.primaryDown = verbs.controls.primaryDown;
+  settlementFrame.secondaryDown = verbs.controls.secondaryDown;
+  settlementFrame.ground = verbs.ground;
+  settlementFrame.realStepSeconds = _dtSeconds;
+  if (advancing && _hud != nullptr)
+  {
+    settlementFrame.hudZone = _hud->ZoneAt(m_pointer);
+  }
+  // M3 task T12 (ADR-167): the conflict verbs read the relations rows of the HUD's last layout, which its buttons' zones
+  // index, the valley status, and the Leaders that would lead an expedition.
+  if (_hud != nullptr)
+  {
+    settlementFrame.relations = _hud->RelationRows();
+  }
+  if (placement.settlement.has_value() && verbTeam.has_value())
+  {
+    ConflictView& conflict = settlementFrame.conflict;
+    conflict.valley = valley;
+    conflict.site = placement.settlement->site;
+    conflict.leaders = ExpeditionLeadersOf(_session.Replica().Latest(), *verbTeam, m_verbs.SelectedLeader());
+    conflict.storesMilliRu = static_cast<std::int64_t>(placement.settlement->storesMilliRu);
+  }
+  const SettlementVerbResult settled = m_settlement.Update(settlementFrame, verbTeam, placement, m_areas);
+  verbs.controls.primaryDown = verbs.controls.primaryDown && !settled.tookPrimary;
+  verbs.controls.secondaryDown = verbs.controls.secondaryDown && !settled.tookSecondary;
+  for (const SettlementCommand& command : settled.commands)
+  {
+    const std::optional<std::uint64_t> sequence =
+      std::visit([&_session](const auto& _command) { return _session.SendCommand(_command); }, command);
+    if (sequence.has_value())
+    {
+      m_settlement.Sent(*sequence, command);
+    }
+  }
+  // MVP-049 (ADR-167): the battle verbs command the expedition's team from a press on one of its Leaders, and the
+  // settlement's again from a press on one of its own or at the expedition's end; a change drops the verbs' state.
+  std::optional<std::uint8_t> battleTeam = verbTeam;
+  if (verbTeam.has_value() && expeditionTeam.has_value())
+  {
+    const std::optional<StableId> pressed = verbs.controls.primaryDown ? verbs.leaderUnderPointer : std::nullopt;
+    battleTeam = BattleTeamOf(figures, *verbTeam, *expeditionTeam, m_battleTeam.value_or(*verbTeam), pressed);
+  }
+  if (battleTeam != m_battleTeam && m_battleTeam.has_value())
+  {
+    m_verbs.Reset();
+  }
+  m_battleTeam = battleTeam;
 #if ENGINE_DEVELOPMENT
   if (m_desc.scriptedVerbs && verbTeam.has_value())
   {
     ScriptVerbs(verbs, figures, *verbTeam);
+    // ADR-153: in a settlement world, a dwelling's ghost beside the Wellspring, so that `cursor_ghost` reaches the GPU.
+    if (placement.wellspring.has_value() && terrain != nullptr)
+    {
+      Neuron::Vec3 at = *placement.wellspring + Neuron::Vec3{SCRIPT_GHOST_REACH, 0.0, 0.0};
+      at.y = terrain->field.Height(at.x, at.z);
+      m_settlement.ScriptGhost({StructureKind::Dwelling, at, std::numbers::pi * 0.5, *verbTeam});
+    }
   }
 #endif
   bool ordered = false;
-  for (const BattleCommand& command : m_verbs.Update(verbs, verbTeam, _session.Replica(), figures))
+  for (const BattleCommand& command : m_verbs.Update(verbs, battleTeam, _session.Replica(), figures))
   {
     const std::optional<std::uint64_t> sequence =
       std::visit([&_session](const auto& _command) { return _session.SendCommand(_command); }, command);
@@ -325,8 +440,14 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
   m_selectedWorkers = 0;
   if (verbTeam.has_value())
   {
-    const std::uint8_t team = verbTeam.value_or(0);
-    UpdatePreview(verbs, figures, team);
+    const std::uint8_t team = battleTeam.value_or(0);
+    // ADR-153: no route is previewed while placing or with the pointer over the HUD, where no press orders.
+    VerbFrame previewFrame = verbs;
+    if (m_settlement.Placing().has_value() || settlementFrame.hudZone.has_value())
+    {
+      previewFrame.ground.reset();
+    }
+    UpdatePreview(previewFrame, figures, team);
     MarkerView markers;
     markers.frame = m_camera.View(_view);
     markers.camera = m_camera.Pose().position;
@@ -334,6 +455,15 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
     markers.size = _view;
     markers.pointer = m_pointer;
     markers.realStepSeconds = _dtSeconds;
+    // M3 task T12 (ADR-167): its expedition's Leaders, away under the fog or not, and the attacks' and claims' markers.
+    markers.expeditionTeam = expeditionTeam;
+    markers.areas = &m_areas;
+    m_targets.clear();
+    if (valley.has_value() && placement.settlement.has_value() && terrain != nullptr)
+    {
+      m_targets = ConflictTargetsOf(*valley, placement.settlement->site, _session.Replica().Latest(), *terrain, *m_desc.tuning);
+    }
+    markers.targets = m_targets;
     m_markers.Update(figures, verbTeam, m_verbs.SelectedLeader(), markers);
     m_badge = CursorBadge(m_verbs.LeaderSelected(), m_verbs.WorkersSelected(), team, m_pointer, _view, *m_desc.presentation);
     m_badgeCount = BadgeCount(m_badge, !m_verbs.LeaderSelected() && m_verbs.WorkersSelected() ? m_selectedWorkers : 0);
@@ -344,12 +474,19 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
     m_markers.Clear();
   }
   // ADR-119, O76: unavailable off the region and, from T17, while the preview finds no walkable route; the highlight
-  // marks an own Leader under the pointer and, by O78, the Worker a secondary press would promote.
-  if (m_camera.InWorld() && (!onRegion || (m_preview.Shown() && !m_preview.Walkable())))
+  // marks an own Leader under the pointer and, by O78, the Worker a secondary press would promote. ADR-153: the pointer
+  // over the HUD is the standard pointer (UI-465); and while placing, the placement cursor, unavailable while the client
+  // foresees a refusal.
+  const bool inWorld = m_camera.InWorld() && !settlementFrame.hudZone.has_value();
+  if (inWorld && m_settlement.Placing().has_value())
+  {
+    m_cursor = onRegion && !m_settlement.Foreseen().has_value() ? CursorKind::Place : CursorKind::Unavailable;
+  }
+  else if (inWorld && (!onRegion || (m_preview.Shown() && !m_preview.Walkable())))
   {
     m_cursor = CursorKind::Unavailable;
   }
-  else if (m_hovered.has_value() || m_verbs.PromotableWorker().has_value())
+  else if (!settlementFrame.hudZone.has_value() && (m_hovered.has_value() || m_verbs.PromotableWorker().has_value()))
   {
     m_cursor = CursorKind::Highlight;
   }

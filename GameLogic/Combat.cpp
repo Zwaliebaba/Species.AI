@@ -82,7 +82,7 @@ void GrenadeDecision(Figure& _worker, const Neuron::Vec3& _threat, const FigureC
   // Step 3 for the MVP's targets, Workers and Leaders: the crowd rule, counted over whole cells (DEC-094).
   const std::uint8_t team = _context.self.team;
   const ActorGrid& grid = region.Grid();
-  if (grid.CountInCells(_threat.x, _threat.z, worker.grenadeCrowdRadius, RegionSimulation::EnemiesOf(team)) > worker.grenadeCrowdEnemies &&
+  if (grid.CountInCells(_threat.x, _threat.z, worker.grenadeCrowdRadius, region.EnemiesOf(team)) > worker.grenadeCrowdEnemies &&
       grid.CountInCells(_threat.x, _threat.z, worker.grenadeCrowdRadius, RegionSimulation::FriendsOf(team)) < worker.grenadeCrowdFriends)
   {
     ThrowGrenade(region, team, _worker.position, _threat);
@@ -156,7 +156,7 @@ bool ThreatSearch(Figure& _worker, const FigureContext& _context)
     formationLeader != nullptr ? _worker.position + formationLeader->front * (worker.formationSearchOffset * range) : _worker.position;
   std::optional<ActorRef> nearest;
   std::uint32_t enemies = 0;
-  if (region.Grid().AnyInCells(center.x, center.z, range, RegionSimulation::EnemiesOf(team)))
+  if (region.Grid().AnyInCells(center.x, center.z, range, region.EnemiesOf(team)))
   {
     double best = std::numeric_limits<double>::infinity();
     for (const ActorRef& ref : region.CachedEnemies(center.x, center.z, range, team))

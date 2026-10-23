@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "DevelopmentOverlay.h"
+#include "RelationMessages.h"
 #include "TuningMvp.h"
 #include "TuningPresentation.h"
 
@@ -114,11 +115,15 @@ Neuron::OverlayLine FrameRateLine(const TuningPresentation& _presentation, doubl
 
 std::array<float, 4> TeamColor(std::uint8_t _team) noexcept
 {
-  if (_team >= TEAM_BASE_COLORS.size())
+  // ADR-167: an expedition's team (ADR-161) takes its settlement's colour, its site's.
+  const std::size_t team = _team;
+  const std::size_t color =
+    team >= EXPEDITION_TEAM_FIRST && team < EXPEDITION_TEAM_FIRST + VALLEY_SETTLEMENTS_MAX ? team - EXPEDITION_TEAM_FIRST : team;
+  if (color >= TEAM_BASE_COLORS.size())
   {
     return {1.0f, 1.0f, 1.0f, 1.0f};
   }
-  const std::array<std::uint8_t, 3>& levels = TEAM_BASE_COLORS[_team];
+  const std::array<std::uint8_t, 3>& levels = TEAM_BASE_COLORS[color];
   return {static_cast<float>(levels[0]) / COLOR_LEVELS, static_cast<float>(levels[1]) / COLOR_LEVELS,
           static_cast<float>(levels[2]) / COLOR_LEVELS, 1.0f};
 }

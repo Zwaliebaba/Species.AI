@@ -147,7 +147,9 @@
     <ClInclude Include="ActorGrid.h" />
     <ClInclude Include="ActorGridCache.h" />
     <ClInclude Include="AiController.h" />
+    <ClInclude Include="Battles.h" />
     <ClInclude Include="BotNavigation.h" />
+    <ClInclude Include="Claims.h" />
     <ClInclude Include="Combat.h" />
     <ClInclude Include="CommandJournal.h" />
     <ClInclude Include="Construction.h" />
@@ -164,11 +166,14 @@
     <ClInclude Include="OrderMarkers.h" />
     <ClInclude Include="RegionCommands.h" />
     <ClInclude Include="RegionSimulation.h" />
+    <ClInclude Include="Relations.h" />
+    <ClInclude Include="Renown.h" />
     <ClInclude Include="RouteStore.h" />
     <ClInclude Include="Sandbox.h" />
     <ClInclude Include="ScriptedSteward.h" />
     <ClInclude Include="SeenLayer.h" />
     <ClInclude Include="Settlement.h" />
+    <ClInclude Include="SettlementAi.h" />
     <ClInclude Include="SettlementCommands.h" />
     <ClInclude Include="SettlementTasks.h" />
     <ClInclude Include="SlicedPool.h" />
@@ -183,6 +188,7 @@
     <ClInclude Include="TickDraws.h" />
     <ClInclude Include="Turret.h" />
     <ClInclude Include="Upkeep.h" />
+    <ClInclude Include="ValleyAtWar.h" />
     <ClInclude Include="Weapons.h" />
     <ClInclude Include="WorldRecord.h" />
     <ClInclude Include="WorldServer.h" />
@@ -194,7 +200,9 @@
     <ClCompile Include="ActorGrid.cpp" />
     <ClCompile Include="ActorGridCache.cpp" />
     <ClCompile Include="AiController.cpp" />
+    <ClCompile Include="Battles.cpp" />
     <ClCompile Include="BotNavigation.cpp" />
+    <ClCompile Include="Claims.cpp" />
     <ClCompile Include="Combat.cpp" />
     <ClCompile Include="CommandJournal.cpp" />
     <ClCompile Include="Construction.cpp" />
@@ -210,11 +218,14 @@
     <ClCompile Include="OrderMarkers.cpp" />
     <ClCompile Include="RegionCommands.cpp" />
     <ClCompile Include="RegionSimulation.cpp" />
+    <ClCompile Include="Relations.cpp" />
+    <ClCompile Include="Renown.cpp" />
     <ClCompile Include="RouteStore.cpp" />
     <ClCompile Include="Sandbox.cpp" />
     <ClCompile Include="ScriptedSteward.cpp" />
     <ClCompile Include="SeenLayer.cpp" />
     <ClCompile Include="Settlement.cpp" />
+    <ClCompile Include="SettlementAi.cpp" />
     <ClCompile Include="SettlementCommands.cpp" />
     <ClCompile Include="SettlementTasks.cpp" />
     <ClCompile Include="StableIdCounter.cpp" />
@@ -227,6 +238,7 @@
     <ClCompile Include="TickDraws.cpp" />
     <ClCompile Include="Turret.cpp" />
     <ClCompile Include="Upkeep.cpp" />
+    <ClCompile Include="ValleyAtWar.cpp" />
     <ClCompile Include="Weapons.cpp" />
     <ClCompile Include="WorldRecord.cpp" />
     <ClCompile Include="WorldServer.cpp" />

@@ -171,6 +171,9 @@
     <ClInclude Include="MessageCodec.h" />
     <ClInclude Include="MessagePattern.h" />
     <ClInclude Include="NativeWindowHandle.h" />
+    <ClInclude Include="SettingsFile.h" />
+    <ClInclude Include="SettingsStore.h" />
+    <ClInclude Include="UserData.h" />
     <ClInclude Include="PlatformClock.h" />
     <ClInclude Include="PlatformError.h" />
     <ClInclude Include="PlatformLogSink.h" />
@@ -185,6 +188,8 @@
     <ClInclude Include="SimRng.h" />
     <ClInclude Include="SimulationRecord.h" />
     <ClInclude Include="SipHash.h" />
+    <ClInclude Include="SoundAsset.h" />
+    <ClInclude Include="SpscQueue.h" />
     <ClInclude Include="StartupOptions.h" />
     <ClInclude Include="StreamFraming.h" />
     <ClInclude Include="StringTableAsset.h" />
@@ -223,6 +228,9 @@
     <ClCompile Include="MeshAsset.cpp" />
     <ClCompile Include="MessageCodec.cpp" />
     <ClCompile Include="MessagePattern.cpp" />
+    <ClCompile Include="SettingsFile.cpp" />
+    <ClCompile Include="SettingsStore.cpp" />
+    <ClCompile Include="UserData.cpp" />
     <ClCompile Include="PlatformClock.cpp" />
     <ClCompile Include="PlatformLogSink.cpp" />
     <ClCompile Include="PlatformMessage.cpp" />
@@ -236,6 +244,7 @@
     <ClCompile Include="SimRng.cpp" />
     <ClCompile Include="SimulationRecord.cpp" />
     <ClCompile Include="SipHash.cpp" />
+    <ClCompile Include="SoundAsset.cpp" />
     <ClCompile Include="StartupOptions.cpp" />
     <ClCompile Include="StreamFraming.cpp" />
     <ClCompile Include="StringTableAsset.cpp" />

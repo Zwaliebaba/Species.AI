@@ -135,3 +135,7 @@ Chosen option: 1, because it meets the frame page of DBG-096 and the budget rows
 The frame page's other rows wait for their components: the render page for GPU timestamps, and the audio share of DBG-097 (`dbg.overlay.audio_share_warning`) for audio. The DBG-099 world layers and the profile view of DBG-086 to DBG-089 also wait. This ADR is confirmed by the owner's T15 run, as the M1 plan's table 2 states.
 
 * **Amendment 2026-10-22 (M2 task T14, owner decision O92, [ADR-147](ADR-147-the-directwrite-text-system-at-m2.md)).** The frame page's lines and the frame-time graph's rectangles keep their unscaled insets. They are now scaled by the window's DPI scale instead of the whole-number scale. Their line height is the development role's at `dbg.overlay.text_size`.
+* **Amendment 2026-10-22 ([ADR-148](ADR-148-the-frame-starts-at-the-latency-wait.md), owner decision O93).** A frame starts at `FrameRenderer::BeginFrame`, which waits for the frame-latency object and the cap before the frame's input step.
+  * **The history.** A frame's time runs from one frame's start to the next, and its work is that time less the waits in it: its fence and present, and the next frame's wait to begin.
+  * **The wait step** holds both the begin waits and the render waits.
+  * **The GPU time.** The renderer now reads each frame's GPU time from two timestamps (`FrameTiming`). The frame page does not show it yet; its GPU rows still wait for the render page.

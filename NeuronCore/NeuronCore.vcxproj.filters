@@ -114,6 +114,15 @@
     <ClInclude Include="NativeWindowHandle.h">
       <Filter>Platform</Filter>
     </ClInclude>
+    <ClInclude Include="SettingsFile.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="SettingsStore.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="UserData.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
     <ClInclude Include="PlatformClock.h">
       <Filter>Platform</Filter>
     </ClInclude>
@@ -155,6 +164,12 @@
     </ClInclude>
     <ClInclude Include="SipHash.h">
       <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundAsset.h">
+      <Filter>Content</Filter>
+    </ClInclude>
+    <ClInclude Include="SpscQueue.h">
+      <Filter>Platform</Filter>
     </ClInclude>
     <ClInclude Include="StartupOptions.h">
       <Filter>Platform</Filter>
@@ -266,6 +281,15 @@
     <ClCompile Include="MessagePattern.cpp">
       <Filter>Content</Filter>
     </ClCompile>
+    <ClCompile Include="SettingsFile.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="SettingsStore.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="UserData.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
     <ClCompile Include="PlatformClock.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
@@ -304,6 +328,9 @@
     </ClCompile>
     <ClCompile Include="SipHash.cpp">
       <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundAsset.cpp">
+      <Filter>Content</Filter>
     </ClCompile>
     <ClCompile Include="StartupOptions.cpp">
       <Filter>Platform</Filter>

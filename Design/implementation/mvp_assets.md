@@ -19,10 +19,10 @@ The generators are development tools under `Tools/`, projects of the one solutio
 | made by the owner | the owner's own tools, exported as DDS in each row's runtime format and as CMO meshes (O61, O64) | the glows, beams, flares, the wire grid, the cloud tile, the front-end highlight beam, the icon halo and the marker masks; the terrain ramp, the shore-wave gradient and the sea tile; the Worker cards, the Leader banners and their tint masks, the Leader figure and the grenade; the world, highlight and unavailable cursors with their shadows, the compass rings, the order trail, the route arrow and the flag pointer; the Workers and Leader icons and the two panel strips | made them; the rows follow the files (§6) | 39 | 48 |
 | panel generator | texture generator under `Tools/` | the front-end fill, the meter strip and the notification and battle-result cards, in the new palette (RND-403) | chooses the palette; approves the HUD layout | 4 | 4 |
 | mesh kit | parametric low-poly mesh kit under `Tools/`, writing CMO (O64, ADR-019) | structures and projectiles from recipes of boxes, cylinders, cones and prisms, with named sockets (ADR-021) and tint weights (ADR-020); each collision asset from its own simpler recipe at its render member's bounds, never from the render triangles (AST-044) | approves or redesigns each silhouette's recipe, drafted by the implementing session (O86; `Tools/SpeciesMeshKit`, ADR-128); the M2 structures' approved as drafted (O87) | 16 | 18 |
-| synthesised | sound synthesiser under `Tools/`, rendering patches to 48 kHz WAV | laser shots, the orb, the war horn, the structure-complete sound, battle start and end | designs each patch; approves the set | 6 | 17 |
+| synthesised | sound synthesiser under `Tools/`, rendering patches to 48 kHz WAV | laser shots, the orb, the war horn, the structure-complete sound, battle start and end, and the Worker death group since O98 | designs each patch; approves the set | 7 | 25 |
 | hand-drawn card | an image editor | the carried-load overlay, cut-out art at its exact size | draws it | 1 | 1 |
 | hand-drawn icon art | the owner's tools, exported as DDS in each row's runtime format (O64) | the placement cursor and its shadow, the pointer arrow, the turret icon, the check-box tick and the HUD icons | draws them | 20 | 22 |
-| recorded | a microphone | the Worker death group: eight short voices of a small crowd figure | records them | 1 | 8 |
+| recorded, not at the MVP (O98) | a microphone | a recorded Worker death group may later replace the synthesized one, with no change of code | records them | 0 | 0 |
 | written by hand | a text editor | the en-US string table (O91) | writes it | 1 | 1 |
 | the owner's bitmap font sheet, retired by O92 | none since O92: DirectWrite draws the Windows fonts of the two font ids | the game face GameFont and the development face EditorFont, one 16 px glyph sheet and a glyph table each (O62, O63), until O92 | drew both sheets (§6); nothing since O92 | 0 | 0 |
 
@@ -174,7 +174,7 @@ MVP-087, from M3: one sample group per sound, the smallest that suits it. The wa
 | Asset id | What it is | Format and budget | New or existing | First needed | Produced by |
 |---|---|---|---|---|---|
 | `sfx.weapon.laser_bolt.spawn` | Laser shots: every laser bolt fired | 10 variants, mono, positional, 0.2-0.7 s | existing | M3 | synthesised |
-| `sfx.unit.worker.die` | Deaths of Workers and Leaders | 8 variants, mono, positional, 0.4-1.3 s | existing | M3 | recorded |
+| `sfx.unit.worker.die` | Deaths of Workers and Leaders | 8 variants, mono, positional, 0.4-1.3 s | existing | M3 | synthesised (O98) |
 | `sfx.unit.essence_orb.collected` | An orb becomes a Worker at its Wellspring | 1 file, mono, positional, about 2.0 s | existing | M3 | synthesised |
 | `sfx.building.dwelling.complete` | A structure is completed | 1 file, mono, positional, 1.5-2.5 s | new | M3 | synthesised |
 | `sfx.unit.worker.attack_horn` | The attack warning: the war horn, played two-dimensional | 3 variants, mono, 3.0-4.4 s | existing | M3 | synthesised |
@@ -193,8 +193,8 @@ MVP-087, from M3: one sample group per sound, the smallest that suits it. The wa
 | Effects | 7 | 7 | 0 | 7 | 5 | 2 | 0 | 0 | 0 | 0 | 7 |
 | UI and text | 30 | 34 | 22 | 12 | 4 | 19 | 10 | 1 | 6 | 20 | 8 |
 | Cursors and markers | 17 | 17 | 0 | 17 | 14 | 3 | 0 | 0 | 0 | 3 | 14 |
-| Audio | 7 | 25 | 3 | 22 | 0 | 0 | 25 | 0 | 17 | 8 | 0 |
-| **Total** | **90** | **123** | **36** | **87** | **44** | **43** | **35** | **1** | **41** | **32** | **50** |
+| Audio | 7 | 25 | 3 | 22 | 0 | 0 | 25 | 0 | 25 | 0 | 0 |
+| **Total** | **90** | **123** | **36** | **87** | **44** | **43** | **35** | **1** | **49** | **24** | **50** |
 
 *Table 9 — The MVP's assets by category, by the milestone that first needs them, and by how they are made; every count is of files except the asset ids. "Made by the owner" counts the files in `GameData/` (§6); "Hand-made" counts those the owner has still to make.*
 
@@ -211,14 +211,14 @@ MVP-087, from M3: one sample group per sound, the smallest that suits it. The wa
 
 - **The carried-load overlay** (1 file) for M2; the Worker's front and side cards and its four hurt poses are made (§6), and their silhouette is the first feature of the likeness review.
 - **Icon art** (22 files): the placement cursor and its shadow, the pointer arrow, the turret icon, the check-box tick and the 17 new HUD icon files (15 asset ids): 12 files for M2, the nine relations and run icons for M3 and the deputy icon for M4; the M1 cursors, markers, banners and icons are made (§6).
-- **The Worker death group** (8 files) for M3, recorded; a synthesised set may stand in for it.
+- **The Worker death group** (8 files) for M3, synthesized with the rest of the first sound set (O98); a recorded group may replace it later.
 - **The faces' missing marks**: no longer needed. Since O92 Bahnschrift draws the punctuation marks, £ and °, so the en-US strings may use them ([GameAssets.md §17](../assets/GameAssets.md#17-fonts)).
 - **The en-US string table** (O91), grown at each milestone; the names of the resource (Crystal), the dwelling and the storehouse are confirmed (O57).
 
 **What the owner approves:**
 
 - **The generated glyph tables** of the two faces (§6), and **the recipes of the generated assets**: the panel palette, the mesh-kit silhouettes of the Wellspring, the dwelling, the storehouse, the resource sites and the turret (approved as drafted, O87), and the synthesiser patches.
-- **The likeness review** of PIL-027, by the owner or counsel outside the clean room: the Worker and Leader silhouettes at the end of M1, the game face, the structure silhouettes and the HUD layout at the end of M2 (O70), and the HUD's additions at the end of M3, each result recorded in the manifest.
+- **The likeness review** of PIL-027, by the owner or counsel outside the clean room: the Worker and Leader silhouettes at the end of M1, the game face (the game's text in Bahnschrift since O92, O97), the structure silhouettes and the HUD layout at the end of M2 (O70), and the HUD's additions at the end of M3, each result recorded in the manifest.
 - **Each asset before it replaces its placeholder**, as the art lead signs off a new Species design ([art and audio briefs](../assets/art_and_audio_briefs.md) §2.8).
 - **Each third-party package that a tool project uses**, recorded in an ADR with its licence (`AGENTS.md` §2).
 

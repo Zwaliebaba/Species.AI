@@ -29,6 +29,9 @@
     <ClCompile Include="RegionTerrainTests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
+    <ClCompile Include="RelationMessageTests.cpp">
+      <Filter>Messages</Filter>
+    </ClCompile>
     <ClCompile Include="SettlementMessageTests.cpp">
       <Filter>Messages</Filter>
     </ClCompile>

@@ -17,6 +17,8 @@
 #include "StructureRecords.h"
 #include "TravelScene.h"
 #include "Tuning.h"
+#include "ValleyAtWar.h"
+#include "ValleyScene.h"
 #include "WorkerPool.h"
 #include "WorldSimulation.h"
 
@@ -41,9 +43,14 @@
 // scenes it times the generation of a corpus of valleys with their land route graphs (WLD-165, ADR-104), and a log call
 // while eight threads flood the logger (DBG T2, ADR-091). From M2 task T10 it runs the growth scene of a corpus of
 // seeds with the scripted steward and measures the settlement at work at its plateau and the region with four
-// (ADR-138); these read the structure records of the content folder.
+// (ADR-138); these read the structure records of the content folder. From M2 task T19, --saved-world runs no scene: it
+// reads the growth of the steward's own world from the server's statistics in its newest snapshot, for the owner's
+// growth run (ADR-156). From M3 task T9 it measures the valley at war, four settlements with two battles in progress,
+// and, only when named, runs the valley run of the corpus, each settlement driven by a policy for a run, reporting
+// Playtest 1's measurable lines (ADR-164).
 //
 //   SpeciesPerformance.exe [--quick] [--scenes <name,...>] [--out <file.json>] [--content <folder> | --tuning-source <GameData>]
+//   SpeciesPerformance.exe --saved-world <world folder> [--out <file.json>] [--content <folder> | --tuning-source <GameData>]
 //
 // --quick runs every scene for a few ticks, to show that it runs; its figures measure nothing. The tuning record is
 // the cooked one of the loose-content folder beside the executable, as the programs read it, unless an option names
@@ -98,6 +105,12 @@ constexpr std::uint64_t GROWTH_SEED_COUNT = 8;
 constexpr std::uint64_t GROWTH_TICKS_QUICK = 600;
 constexpr double SECONDS_PER_HOUR = 3600.0;
 
+// The valley run's corpus (the M3 plan §4, ADR-164): the valleys of these seeds, each run for mvp.run.length_hours with
+// the steward's settlement under the Territorial decisions; the quick run takes the first seed's first minute.
+constexpr std::uint64_t VALLEY_SEED_FIRST = 1;
+constexpr std::uint64_t VALLEY_SEED_COUNT = 8;
+constexpr std::uint64_t VALLEY_TICKS_QUICK = 600;
+
 // DBG T2: 10⁶ debug records between the flood's threads.
 constexpr std::uint64_t LOG_FLOOD_RECORDS = 1'000'000;
 constexpr std::uint64_t LOG_FLOOD_RECORDS_QUICK = 8'000;
@@ -116,11 +129,18 @@ struct Options
   std::filesystem::path out;
   std::filesystem::path content;
   std::filesystem::path tuningSource;
+  std::filesystem::path savedWorld; // ADR-156: a saved world's folder to read rather than the scenes
 };
 
 bool Wanted(const Options& _options, std::string_view _scene)
 {
   return _options.scenes.empty() || std::ranges::find(_options.scenes, _scene) != _options.scenes.end();
+}
+
+// A scene run only when named, as the valley run of a whole corpus is (ADR-164).
+bool Named(const Options& _options, std::string_view _scene)
+{
+  return std::ranges::find(_options.scenes, _scene) != _options.scenes.end();
 }
 
 std::expected<Species::TuningMvp, std::string> LoadTuning(const Options& _options)
@@ -317,6 +337,45 @@ std::string GrowthJson(const std::vector<Performance::GrowthRun>& _runs, double 
   return std::format("[{}\n    ]", runs);
 }
 
+// ADR-164: each valley run with Playtest 1's lines as it reads them, and its battles and claims.
+std::string ValleyJson(const std::vector<Performance::ValleyRun>& _runs, const Species::TuningMvp& _tuning)
+{
+  const double tickSeconds = _tuning.ref.sim.tickPeriod;
+  const auto hours = [tickSeconds](std::uint64_t _tick) { return static_cast<double>(_tick) * tickSeconds / SECONDS_PER_HOUR; };
+  const auto orNull = [](const std::optional<std::uint32_t>& _value) { return _value ? std::to_string(*_value) : std::string("null"); };
+  std::string runs;
+  for (const Performance::ValleyRun& run : _runs)
+  {
+    const Performance::ValleyLines lines = Performance::JudgeValley(run, _tuning);
+    std::string battles;
+    for (const Performance::ValleyBattle& battle : run.battles)
+    {
+      battles += std::format("{}[{:.3f}, {:.2f}, {}, {}, {}, {}, {}, {}]", battles.empty() ? "" : ", ", hours(battle.startTick),
+                             static_cast<double>(battle.endTick - battle.startTick) * tickSeconds / 60.0, battle.attacker, battle.defender,
+                             battle.claim ? 1 : 0, battle.figures, static_cast<int>(battle.end), battle.attackerWon ? 1 : 0);
+    }
+    std::string claims;
+    for (const Performance::ValleyClaim& claim : run.claims)
+    {
+      claims += std::format("{}[{}, {}, {:.3f}, {}]", claims.empty() ? "" : ", ", claim.claimant, claim.area, hours(claim.madeTick),
+                            claim.endTick ? std::format("{:.3f}", hours(claim.endTick.value_or(0))) : std::string("null"));
+    }
+    runs += std::format(
+      "{}\n      {{\"seed\": {}, \"ticks\": {}, \"steward_site\": {}, \"policy\": {}, \"run_ended\": {}, \"contact_h\": {},\n"
+      "       \"steward_battles\": {}, \"steward_figures_median\": {}, \"steward_figures_least\": {}, \"battles\": {}, "
+      "\"battles_4_to_12\": {:.3f}, \"longest_battle_min\": {:.2f}, \"claims_judged\": {}, \"claims_settled\": {:.3f}, "
+      "\"strongest_to_median\": {:.3f}, \"step_gap_min\": {:.2f}, \"step_us\": {:.3f}, \"step_us_max\": {:.3f},\n"
+      "       \"workers\": [{}, {}, {}, {}], \"renown\": [{}, {}, {}, {}],\n       \"battle_list\": [{}],\n       \"claim_list\": [{}]}}",
+      runs.empty() ? "" : ",", run.seed, run.ticks, run.stewardSite, static_cast<int>(run.stewardPolicy), run.runEnded ? "true" : "false",
+      run.firstContactTick ? std::format("{:.3f}", hours(run.firstContactTick.value_or(0))) : std::string("null"), lines.stewardBattles,
+      orNull(lines.stewardFiguresMedian), orNull(lines.stewardFiguresLeast), lines.battles, lines.battlesWithinFourToTwelve,
+      lines.longestBattleMinutes, lines.claimsJudged, lines.claimsSettled, lines.strongestToMedian, lines.largestStepGapMinutes,
+      run.meanStepMicroseconds, run.largestStepMicroseconds, run.workers[0], run.workers[1], run.workers[2], run.workers[3], run.renown[0],
+      run.renown[1], run.renown[2], run.renown[3], battles, claims);
+  }
+  return std::format("[{}\n    ]", runs);
+}
+
 std::string GenerationJson(const std::vector<Performance::GenerationSample>& _samples)
 {
   std::string samples;
@@ -353,6 +412,68 @@ std::string LogFloodJson(const std::optional<Performance::LogFlood>& _flood)
                      static_cast<double>(slowest) / perThread, _flood->written, _flood->dropped);
 }
 
+// The JSON of _text, written to _options' file or to standard output.
+int Write(const Options& _options, const std::string& _text)
+{
+  if (_options.out.empty())
+  {
+    std::fwrite(_text.data(), 1, _text.size(), stdout);
+    return 0;
+  }
+  std::ofstream file(_options.out, std::ios::binary);
+  file << _text;
+  if (!file)
+  {
+    Print(stderr, std::format("{} cannot be written", _options.out.string()));
+    return 1;
+  }
+  return 0;
+}
+
+// ADR-156: the growth of the steward's own world, judged as the growth scene's (the M2 plan §5): its growth steps as
+// [tick, kind, detail, Workers], and its samples as [tick, Workers, strength in ru].
+int RunSavedWorld(const Options& _options, const Species::TuningMvp& _tuning)
+{
+  const auto records = LoadRecords(_options);
+  if (!records)
+  {
+    Print(stderr, std::format("the structure records cannot be read: {}", records.error()));
+    return 1;
+  }
+  const std::optional<Performance::SavedWorldRun> saved = Performance::ReadSavedWorld(_options.savedWorld, _tuning, *records);
+  if (!saved)
+  {
+    Print(stderr, std::format("no snapshot in {} restores to a world with the steward's settlement", _options.savedWorld.string()));
+    return 1;
+  }
+  const double tickPeriod = _tuning.ref.sim.tickPeriod;
+  const auto hours = [tickPeriod](std::uint64_t _tick) { return static_cast<double>(_tick) * tickPeriod / SECONDS_PER_HOUR; };
+  const Performance::GrowthJudgement judgement = Performance::JudgeGrowth(saved->run, tickPeriod);
+  std::string steps;
+  for (const Species::StatisticEntry& step : saved->run.steps)
+  {
+    steps +=
+      std::format("{}[{}, {}, {}, {}]", steps.empty() ? "" : ", ", step.tick, static_cast<int>(step.kind), step.detail, step.workers);
+  }
+  std::string samples;
+  for (const Species::StatisticEntry& sample : saved->samples)
+  {
+    samples += std::format("{}[{}, {}, {:.3f}]", samples.empty() ? "" : ", ", sample.tick, sample.workers,
+                           static_cast<double>(sample.strengthMilliRu) / 1000.0);
+  }
+  const std::string json =
+    std::format("{{\n  \"tool\": \"{}\",\n  \"configuration\": \"{}\",\n  \"platform\": \"{}\",\n  \"tick_period_s\": {},\n"
+                "  \"saved_world\": {{\"snapshot\": \"{}\", \"seed\": {}, \"ticks\": {}, \"hours\": {:.3f}, \"largest_workers\": {}, "
+                "\"plateau_h\": {}, \"gap_minutes\": {:.2f}, \"gap_from_h\": {:.3f}, \"gap_met\": {}, \"plateau_met\": {},\n"
+                "    \"steps\": [{}],\n    \"samples\": [{}]}}\n}}\n",
+                PRODUCT_NAME, CONFIGURATION, PLATFORM, tickPeriod, saved->snapshot.filename().string(), saved->run.seed, saved->run.ticks,
+                hours(saved->run.ticks), saved->run.largestWorkers,
+                judgement.plateauTick ? std::format("{:.3f}", hours(*judgement.plateauTick)) : std::string("null"),
+                hours(judgement.largestGapTicks) * 60.0, hours(judgement.gapFromTick), judgement.gapMet ? "true" : "false",
+                judgement.plateauMet ? "true" : "false", steps, samples);
+  return Write(_options, json);
+}
+
 int Run(const Options& _options)
 {
   const auto tuning = LoadTuning(_options);
@@ -360,6 +481,10 @@ int Run(const Options& _options)
   {
     Print(stderr, std::format("the tuning record cannot be read: {}", tuning.error()));
     return 1;
+  }
+  if (!_options.savedWorld.empty())
+  {
+    return RunSavedWorld(_options, *tuning);
   }
   auto generated = Species::GenerateRegionTerrain(SCENE_SEED, *tuning);
   if (!generated)
@@ -444,6 +569,13 @@ int Run(const Options& _options)
           {
             Print(stderr, std::format("the snapshot cannot be saved in {}", folder.string()));
           }
+          else if (const auto saved = Performance::ReadSavedWorld(folder, *tuning, *records);
+                   !saved || saved->run.steps != growth.back().steps)
+          {
+            // ADR-156: the snapshot read as a saved world gives the run's own growth steps.
+            Print(stderr, "the snapshot read as a saved world does not give the run's growth steps");
+            return 1;
+          }
           std::error_code ignored;
           std::filesystem::remove_all(folder, ignored);
         }
@@ -461,6 +593,7 @@ int Run(const Options& _options)
       start.seed = terrain->seed;
       start.stewardSite = std::uint8_t{0};
       const auto world = Species::StartWorld(start, terrain, *tuning, &*records);
+      world->SetRunEnd(std::numeric_limits<std::uint64_t>::max()); // ADR-163: measured after the run's length, still running
       Species::RegionSimulation& region = world->Region(0);
       for (std::uint8_t site = 0; site < 4; ++site)
       {
@@ -476,6 +609,42 @@ int Run(const Options& _options)
         world->Step(tick, serial);
       }
       runs.push_back(Performance::MeasureWorld("region-bound-settled", *world, ticks(1000, 3)));
+    }
+  }
+  // M3 task T9 (ADR-164): the region at M3's bound, four settlements with two battles in progress, measured as the region
+  // bound is; and, only when named, the valley run of the corpus (the M3 plan §4).
+  std::vector<Performance::ValleyRun> valleys;
+  if (Wanted(_options, "valley-battles") || Named(_options, "valley"))
+  {
+    const auto records = LoadRecords(_options);
+    if (!records)
+    {
+      Print(stderr, std::format("the structure records cannot be read: {}", records.error()));
+      return 1;
+    }
+    if (Wanted(_options, "valley-battles"))
+    {
+      Species::ValleyAtWarDesc desc;
+      desc.key = SCENE_KEY;
+      desc.terrain = terrain;
+      desc.tuning = &*tuning;
+      desc.structures = &*records;
+      desc.settleTicks = ticks(desc.settleTicks, 20);
+      const auto world = Species::StartValleyAtWar(desc);
+      Print(stdout, std::format("valley-battles: {} battles in progress", world->Region(0).Battles().size()));
+      runs.push_back(Performance::MeasureWorld("valley-battles", *world, ticks(1000, 3)));
+    }
+    if (Named(_options, "valley"))
+    {
+      // ADR-164: the steward's settlement's stated conflict policy is a Territorial settlement's decisions.
+      valleys = Performance::RunValleys(VALLEY_SEED_FIRST, _options.quick ? 1 : VALLEY_SEED_COUNT, *tuning, *records,
+                                        ticks(Species::RunTicks(*tuning), VALLEY_TICKS_QUICK), Species::Temperament::Territorial);
+      for (const Performance::ValleyRun& valley : valleys)
+      {
+        const Performance::ValleyLines lines = Performance::JudgeValley(valley, *tuning);
+        Print(stdout, std::format("the valley of seed {}: {} battles, {} of them the steward's, {} claims judged", valley.seed,
+                                  lines.battles, lines.stewardBattles, lines.claimsJudged));
+      }
     }
   }
   std::optional<double> drawNanoseconds;
@@ -515,25 +684,17 @@ int Run(const Options& _options)
   const std::string json = std::format(
     "{{\n  \"tool\": \"{}\",\n  \"configuration\": \"{}\",\n  \"platform\": \"{}\",\n  \"quick\": {},\n"
     "  \"seed\": {},\n  \"tick_period_s\": {},\n  \"valley_path_factor\": {},\n  \"draw_ns\": {},\n  \"scenes\": [{}\n  ],\n"
-    "  \"travel\": {},\n  \"generation\": {},\n  \"growth\": {},\n  \"snapshot\": {},\n  \"log\": {}\n}}\n",
+    "  \"travel\": {},\n  \"generation\": {},\n  \"growth\": {},\n  \"valley\": {},\n  \"snapshot\": {},\n  \"log\": {}\n}}\n",
     PRODUCT_NAME, CONFIGURATION, PLATFORM, _options.quick ? "true" : "false", SCENE_SEED, tuning->ref.sim.tickPeriod,
     tuning->wld.travel.valleyPathFactor, drawNanoseconds ? std::format("{:.4f}", *drawNanoseconds) : std::string("null"), scenes,
-    TravelJson(travel), GenerationJson(generation), GrowthJson(growth, tuning->ref.sim.tickPeriod),
+    TravelJson(travel), GenerationJson(generation), GrowthJson(growth, tuning->ref.sim.tickPeriod), ValleyJson(valleys, *tuning),
     snapshot ? std::format("{{\"bytes\": {}, \"encode_ms\": {:.3f}, \"save_ms\": {:.3f}}}", snapshot->bytes,
                            static_cast<double>(snapshot->encodeNanoseconds) / 1e6, static_cast<double>(snapshot->saveNanoseconds) / 1e6)
              : std::string("null"),
     LogFloodJson(logFlood));
-  if (_options.out.empty())
+  if (const int code = Write(_options, json); code != 0 || _options.out.empty())
   {
-    std::fwrite(json.data(), 1, json.size(), stdout);
-    return 0;
-  }
-  std::ofstream file(_options.out, std::ios::binary);
-  file << json;
-  if (!file)
-  {
-    Print(stderr, std::format("{} cannot be written", _options.out.string()));
-    return 1;
+    return code;
   }
   Print(stdout, std::format("{} scenes, {} travel edges and {} valleys generated into {}", runs.size(), travel.size(), generation.size(),
                             _options.out.string()));
@@ -573,6 +734,10 @@ std::optional<Options> ParseOptions(std::span<const std::string_view> _arguments
     {
       options.tuningSource = std::filesystem::path(_arguments[++i]);
     }
+    else if (argument == "--saved-world" && hasValue)
+    {
+      options.savedWorld = std::filesystem::path(_arguments[++i]);
+    }
     else
     {
       Print(stderr, std::format("unknown option {}", argument));
@@ -597,8 +762,8 @@ int main(int _argc, char** _argv)
     const std::optional<Options> options = ParseOptions(values);
     if (!options)
     {
-      Print(stderr, "usage: SpeciesPerformance.exe [--quick] [--scenes <name,...>] [--out <file>] [--content <folder> | --tuning-source "
-                    "<GameData>]");
+      Print(stderr, "usage: SpeciesPerformance.exe [--quick] [--scenes <name,...>] [--saved-world <world folder>] [--out <file>] "
+                    "[--content <folder> | --tuning-source <GameData>]");
       return 2;
     }
     return Run(*options);

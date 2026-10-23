@@ -59,6 +59,10 @@ ClientSession::ClientSession(Desc _desc)
     });
   m_dispatcher.Register<ServerStats>([this](const ServerStats& _stats) { m_serverStats = _stats; });
   m_dispatcher.Register<SettlementNotice>([this](const SettlementNotice& _notice) { m_notices.push_back(_notice); });
+  m_dispatcher.Register<SettlementStatus>([this](const SettlementStatus& _status) { m_status = _status; });
+  m_dispatcher.Register<ValleyStatus>([this](const ValleyStatus& _status) { m_valleyStatus = _status; });
+  m_dispatcher.Register<Epilogue>([this](const Epilogue& _epilogue) { m_epilogue = _epilogue; });
+  m_dispatcher.Register<BattleResultNotice>([this](const BattleResultNotice& _result) { m_results.push_back(_result); });
   m_dispatcher.Register<CommandReport>(
     [this](const CommandReport& _report)
     {
@@ -83,6 +87,11 @@ std::vector<SettlementNotice> ClientSession::TakeNotices()
   return std::exchange(m_notices, {});
 }
 
+std::vector<BattleResultNotice> ClientSession::TakeBattleResults()
+{
+  return std::exchange(m_results, {});
+}
+
 std::optional<ReplicatedSettlement> ClientSession::OwnSettlement() const
 {
   if (!m_commandedTeam)
@@ -97,6 +106,11 @@ std::optional<ReplicatedSettlement> ClientSession::OwnSettlement() const
     }
   }
   return std::nullopt;
+}
+
+std::optional<std::uint64_t> ClientSession::WorldSeed() const noexcept
+{
+  return m_terrain ? std::optional<std::uint64_t>(m_terrain->seed) : std::nullopt;
 }
 
 bool ClientSession::RequestSandboxRestart(bool _newSeed)

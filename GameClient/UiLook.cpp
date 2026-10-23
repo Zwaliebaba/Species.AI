@@ -21,8 +21,21 @@ namespace
 {
 
 // The content keys of the UI's images (AST-014; Design/implementation/mvp_assets.md), in UiImage's order.
-constexpr std::array<std::string_view, static_cast<std::size_t>(UiImage::Count)> UI_IMAGE_KEYS{"textures/uitex/panelaccent",
-                                                                                               "textures/uitex/panelneutral"};
+constexpr std::array<std::string_view, static_cast<std::size_t>(UiImage::Count)> UI_IMAGE_KEYS{
+  "textures/uitex/panelaccent",       "textures/uitex/panelneutral",
+  "textures/uitex/menuhighlight",     "textures/uitex/fillblur",
+  "textures/fx/glowcloudy",           "textures/uitex/iconcheck",
+  "textures/icon/hud/meter",          "textures/icon/hud/notificationcard",
+  "textures/icon/hud/resource",       "textures/icon/hud/growth",
+  "textures/icon/hud/prioritygather", "textures/icon/hud/priorityconstruct",
+  "textures/icon/hud/priorityguard",  "textures/icon/hud/dwelling",
+  "textures/icon/hud/storehouse",     "textures/icon/power/workers",
+  "textures/icon/power/gunturret",    "textures/cursor/pointer",
+  "textures/icon/hud/contact",        "textures/icon/hud/claim",
+  "textures/icon/hud/attack",         "textures/icon/hud/battle",
+  "textures/icon/hud/tribute",        "textures/icon/hud/withdraw",
+  "textures/icon/hud/respite",        "textures/icon/hud/renown",
+  "textures/icon/hud/runclock",       "textures/icon/hud/resultcard"};
 
 // The test page's measures, in pixels; its own, not the game's.
 constexpr float PAGE_MARGIN = 24.0f;
@@ -92,23 +105,110 @@ Neuron::TextSystem::Desc TextSystemDesc(const TuningPresentation& _presentation)
   return desc;
 }
 
-float UiTextPixels(const TuningPresentation& _presentation, double _sizePixels, std::uint32_t _clientHeight, float _dpiScale) noexcept
+Neuron::UiStyle UiStyleOf(const TuningPresentation& _presentation)
+{
+  const TuningPresentation::Ui& ui = _presentation.ui;
+  const auto color = [](const auto& _rgba) { return Rgba(_rgba.r, _rgba.g, _rgba.b, _rgba.a); };
+  const auto index = [](UiImage _image) { return static_cast<std::uint16_t>(_image); };
+  Neuron::UiStyle style;
+  style.textOutline = color(ui.palette.textOutline);
+  style.caption = color(ui.palette.feCaption);
+  style.captionFocus = color(ui.palette.feCaptionFocus);
+  style.captionInactive = color(ui.palette.feCaptionInactive);
+  style.captionAlternative = color(ui.palette.feCaptionAlt);
+  style.focusBand = color(ui.palette.feFocusBand);
+  style.rowBand = color(ui.palette.feRowBand);
+  style.titleOutline = color(ui.palette.feTitleOutline);
+  style.titleShadow = color(ui.palette.feTitleShadow);
+  style.beamTop = color(ui.palette.feBeamTop);
+  style.beamBottom = color(ui.palette.feBeamBottom);
+  style.beamOutline = color(ui.palette.feBeamOutline);
+  style.boxTint = color(ui.palette.feBoxTint);
+  style.boxGlow = color(ui.palette.feBoxGlow);
+  style.boxOutline = color(ui.palette.feBoxOutline);
+  style.boxInnerAlpha = static_cast<float>(ui.palette.feBoxInnerAlpha);
+  style.boxShadowEdge = color(ui.palette.feBoxShadowEdge);
+  style.checkBox = color(ui.palette.checkBox);
+  // ui.palette.text_normal is RGBA8.
+  const auto& normal = ui.palette.textNormal;
+  style.labelText = Rgba(normal.r / 255.0, normal.g / 255.0, normal.b / 255.0, normal.a / 255.0);
+  style.menuHighlight = index(UiImage::MenuHighlight);
+  style.fillBlur = index(UiImage::FillBlur);
+  style.glowCloudy = index(UiImage::GlowCloudy);
+  style.checkTick = index(UiImage::IconCheck);
+  style.captionInset = static_cast<float>(ui.pageButton.captionInset);
+  style.titleSizeFactor = static_cast<float>(ui.pageTitle.sizeFactor);
+  style.titleFitMargin = static_cast<float>(ui.pageTitle.fitMargin);
+  style.boxShadowWidth = static_cast<float>(ui.fillBox.shadowWidth);
+  style.boxBlurTilePixels = static_cast<float>(ui.fillBox.blurTile);
+  style.glowMotion = {static_cast<float>(ui.fillBox.glowMotion.u), static_cast<float>(ui.fillBox.glowMotion.v)};
+  style.boxOutlinePixels = static_cast<float>(ui.fillBox.outlineWidth);
+  style.boxInnerInsetPixels = static_cast<float>(ui.fillBox.innerInset);
+  style.textOutlinePixels = static_cast<float>(ui.text.outlineOffset);
+  style.checkBoxSize = static_cast<float>(ui.check.boxSize);
+  style.checkBoxRight = static_cast<float>(ui.check.boxRight);
+  style.checkTickInset = static_cast<float>(ui.check.tickInset);
+  style.checkTickSize = static_cast<float>(ui.check.tickSize);
+  // ADR-154: the page text field's caret (UI-070, UI-121).
+  style.caretBlinkPeriod = static_cast<float>(ui.field.caretBlinkPeriod);
+  style.caretDuty = static_cast<float>(ui.field.caretDuty);
+  style.caretMarginPixels = static_cast<float>(ui.field.caretMargin);
+  style.fieldCaretWidthPixels = static_cast<float>(ui.pageField.caretWidth);
+  style.fieldCaretOffset = static_cast<float>(ui.pageField.caretOffset);
+  return style;
+}
+
+Neuron::PageGridKeys PageGridKeysOf(const TuningPresentation& _presentation) noexcept
+{
+  const auto& layout = _presentation.ref.meta.layout;
+  Neuron::PageGridKeys keys;
+  keys.horizontalSplit = layout.horizontalSplit;
+  keys.verticalSplit = layout.verticalSplit;
+  keys.gap = layout.gap;
+  keys.widescreenAspect = layout.widescreenAspect;
+  keys.widescreenInset = layout.widescreenInset;
+  keys.fontLarge = layout.fontLarge;
+  keys.fontMedium = layout.fontMedium;
+  keys.fontSmall = layout.fontSmall;
+  keys.buttonWidth = layout.buttonWidth;
+  keys.buttonHeight = layout.buttonHeight;
+  keys.buttonGap = layout.buttonGap;
+  return keys;
+}
+
+Neuron::UiMetrics UiMetricsOf(const TuningPresentation& _presentation, Neuron::SizePx _client, float _dpiScale,
+                              std::optional<double> _uiScale, std::optional<double> _textScale) noexcept
 {
   const TuningPresentation::Ui::Access& access = _presentation.ui.access;
-  return Neuron::FinalTextPixels(_sizePixels, 1.0, _dpiScale,
+  Neuron::UiMetrics metrics;
+  metrics.client = _client;
+  metrics.dpiScale = _dpiScale;
+  metrics.uiScale = static_cast<float>(_uiScale.value_or(_presentation.ui.scale.uiDefault));
+  metrics.textScale = static_cast<float>(_textScale.value_or(_presentation.ui.scale.textDefault));
+  metrics.minimumTextPixels = Neuron::MinimumTextPixels(_client.height, access.minText1080p, access.minText2160p);
+  metrics.hudCanvasHeight = _presentation.ref.ctrl.panel.canvasHeight;
+  return metrics;
+}
+
+float UiTextPixels(const TuningPresentation& _presentation, double _sizePixels, std::uint32_t _clientHeight, float _dpiScale,
+                   double _textScale) noexcept
+{
+  const TuningPresentation::Ui::Access& access = _presentation.ui.access;
+  return Neuron::FinalTextPixels(_sizePixels, _textScale, _dpiScale,
                                  Neuron::MinimumTextPixels(_clientHeight, access.minText1080p, access.minText2160p));
 }
 
 void AppendBadgeCount(const BadgeLabel& _label, Neuron::TextSystem& _text, const TuningPresentation& _presentation,
-                      std::uint32_t _clientHeight, float _dpiScale, std::vector<Neuron::UiBatch>& _out)
+                      std::uint32_t _clientHeight, float _dpiScale, double _textScale, std::vector<Neuron::UiBatch>& _out)
 {
-  const float size = UiTextPixels(_presentation, _presentation.ui.text.defaultSize, _clientHeight, _dpiScale);
+  const float size = UiTextPixels(_presentation, _presentation.ui.text.defaultSize, _clientHeight, _dpiScale, _textScale);
   const Neuron::TextLine line = _text.Layout(_label.text, Neuron::FontRole::Body, size);
   Neuron::AppendText(_out, line, _label.left, _label.middle - line.heightPixels * 0.5f, Neuron::TextStyle{});
 }
 
 void AppendUiTestPage(Neuron::TextSystem& _text, const TuningPresentation& _presentation, const Neuron::StringTable& _strings,
-                      const Neuron::MessageLocale& _locale, Neuron::SizePx _size, float _dpiScale, std::vector<Neuron::UiBatch>& _out)
+                      const Neuron::MessageLocale& _locale, const Neuron::UiRect& _area, float _dpiScale,
+                      std::vector<Neuron::UiBatch>& _out)
 {
   const TuningPresentation::Ui& ui = _presentation.ui;
   const std::array<float, 4> bodyTint =
@@ -119,10 +219,10 @@ void AppendUiTestPage(Neuron::TextSystem& _text, const TuningPresentation& _pres
 
   // UI-054: the window body, the accent strip with u from 0 to the repeat across and v from 0 to 1 down, tinted and laid
   // over; the neutral strip beside it in the same form.
-  const float panelWidth = std::clamp(static_cast<float>(_size.width) - 3.0f * PAGE_MARGIN - NEUTRAL_WIDTH, 0.0f, PANEL_WIDTH_MAX);
-  const float panelHeight = std::max(static_cast<float>(_size.height) - 2.0f * PAGE_MARGIN, 0.0f);
-  const float left = PAGE_MARGIN;
-  const float top = PAGE_MARGIN;
+  const float panelWidth = std::clamp(_area.Width() - 3.0f * PAGE_MARGIN - NEUTRAL_WIDTH, 0.0f, PANEL_WIDTH_MAX);
+  const float panelHeight = std::max(_area.Height() - 2.0f * PAGE_MARGIN, 0.0f);
+  const float left = _area.left + PAGE_MARGIN;
+  const float top = _area.top + PAGE_MARGIN;
   Neuron::AppendQuad(_out, Neuron::UiSource::Image, Neuron::UiBlend::Alpha, static_cast<std::uint16_t>(UiImage::PanelAccent),
                      Quad(left, top, left + panelWidth, top + panelHeight, {0.0f, 0.0f, repeat, 1.0f}, bodyTint));
   const float neutralLeft = left + panelWidth + PAGE_MARGIN;

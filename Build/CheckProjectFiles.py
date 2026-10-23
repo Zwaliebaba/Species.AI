@@ -45,8 +45,6 @@ RULES = {
 
 NOT_YET_CHECKED = [
   'BLD-076: an embedded map hash (no map code exists yet)',
-  'AEN-025, AEN-003: allocator, lock, logger or voice calls in an audio callback; XAudio2 includes outside the voice '
-  'back-end (no audio code exists yet)',
 ]
 
 # ADR-090 table 1: the projects of the solution and the projects each may reference directly. A program may also
@@ -70,6 +68,7 @@ PRESENTATION_LIBRARIES = ('d3d12', 'dxgi', 'xaudio2', 'x3daudio', 'gameinput', '
 # string tables against the system fonts that the client draws them with. The tool never ships and no server links it.
 PRESENTATION_LIBRARY_EXCEPTIONS = {('Tools/SpeciesContentBuild/FontCoverage.cpp', 'dwrite')}
 SHADER_PROJECT = 'NeuronClient'                           # ADR-090 item 1
+SHADER_MODEL = '6.6'                                      # ADR-002, ADR-003: every shader's profile is *_6_6
 
 # R14 and BLD-038: the packages a game or engine project may restore, with the tuning key of each pin.
 ALLOWED_PACKAGES = {
@@ -162,6 +161,22 @@ AGILITY_EXPORTS_FILE = 'AgilitySdkExports.cpp'            # and every other prog
 AGILITY_EXPORT_OPTIONS = ('/EXPORT:D3D12SDKVersion=AGILITY_SDK_VERSION,DATA', '/EXPORT:D3D12SDKPath=AGILITY_SDK_PATH,DATA')
 AGILITY_SDK_PATH = r'".\\D3D12\\"'                     # bld.pin.d3d12_sdk_path, as a C++ literal
 PIX_FILE = 'NeuronCore/Profile.cpp'                       # ADR-068, DBG-080: no other code calls the PIX runtime
+# ADR-004, ADR-007 (ADR-174): one barrier call in the tree, in the frame graph's executor, which translates the passes'
+# declared accesses; a pass, a renderer or another frame records none of its own.
+BARRIER_EXECUTOR = 'NeuronClient/FrameRenderer.cpp'
+BARRIER_CALL = re.compile(r'(?:->|\.)\s*(?:ResourceBarrier|Barrier)\s*\(')
+# AEN-025, AEN-045 (ADR-026, ADR-172): the voice back-end alone includes the XAudio2 family, and its callbacks only set
+# flags. AEN-003's half, no simulation-generator or simulation header in audio code, is rules 13 and 14's SimRng check.
+VOICE_BACKEND = 'NeuronClient/XAudio2Device.cpp'
+AUDIO_HEADERS = ('xaudio2.h', 'xaudio2fx.h', 'x3daudio.h', 'xapofx.h', 'xapo.h', 'xapobase.h', 'hrtfapoapi.h')
+AUDIO_CALLBACK = re.compile(r'STDMETHODCALLTYPE\s+On\w+\s*\([^)]*\)[^{;]*\{')
+CALLBACK_FORBIDDEN = (
+  (r'\bnew\b|\bmake_(?:unique|shared)\b|\bmalloc\b|\bpush_back\b|\bemplace_back\b|\bresize\b|\breserve\b|std::string\b',
+   'allocates'),
+  (r'\bmutex\b|\block_guard\b|\bunique_lock\b|\bscoped_lock\b|\bEnterCriticalSection\b|\bAcquireSRWLock\w*', 'locks'),
+  (r'\bLog\s*\(|\bLOG_\w+', 'logs'),
+  (r'\bCreate\w*Voice\b|\bDestroyVoice\b|\bSubmitSourceBuffer\b|\bFlushSourceBuffers\b|->\s*(?:Start|Stop)\s*\(', 'calls a voice'),
+)
 WINDOWS_HEADERS = 'NeuronCore/WindowsHeaders.h'           # PLT-132
 FILE_KIND_DEFAULTS = {'Source Files', 'Header Files', 'Resource Files'}
 SOURCE_EXTENSIONS = ('.h', '.cpp')
@@ -501,6 +516,17 @@ def rule_7(tree):
           yield f'{p.directory}/{f}', 'an .hlsli is never compiled on its own (BLD-121)'
       else:
         yield f'{p.directory}/{f}', 'Shader/ holds only .hlsl and .hlsli files (AGENTS.md §2)'
+  # ADR-002 (M3 task T16): every shader compiles at the target's Shader Model in every build, and no item sets another.
+  for p in tree.projects:
+    if not any(kind == 'FXCompile' for kind, _, _ in p.items):
+      continue
+    for c, pl in SolutionModel.BUILDS:
+      model = p.setting(c, 'FXCompile.ShaderModel', pl)
+      if model != SHADER_MODEL:
+        yield p.path, f'its shaders compile at Shader Model {model or "(the default)"} in {c}|{pl}, not {SHADER_MODEL} (ADR-002)'
+    for kind, include, metadata in p.items:
+      if kind == 'FXCompile' and metadata.get('ShaderModel', SHADER_MODEL) != SHADER_MODEL:
+        yield f'{p.directory}/{include}', f'it sets Shader Model {metadata["ShaderModel"]}, not {SHADER_MODEL} (ADR-002)'
 
 
 def rule_8(tree):
@@ -751,6 +777,10 @@ def rule_14(tree):
         if os.path.basename(header.replace('\\', '/')) == os.path.basename(WINDOWS_HEADERS):
           yield f'{path}:{line}', f'includes {header} in {project}; the server and simulation reach the system through ' \
                                   'the platform layer only (ADR-083 item 1)'
+    for index, m in enumerate(BARRIER_CALL.finditer(stripped)):
+      if path != BARRIER_EXECUTOR or index > 0:
+        line = stripped.count('\n', 0, m.start()) + 1
+        yield f'{path}:{line}', f'records a barrier outside the frame graph\'s one executor in {BARRIER_EXECUTOR} (ADR-004, ADR-007)'
     if path != PIX_FILE:
       for line, _, header in SolutionModel.includes(text):
         if header.lower() in ('pix3.h', 'pix3_win.h', 'pixevents.h'):
@@ -764,6 +794,15 @@ def rule_14(tree):
       elif project != RENDERER_PROJECT and DIRECT3D_HEADER.match(name) and name != CLIENT_FORMAT_HEADER:
         yield f'{path}:{line}', f'includes {header} outside {RENDERER_PROJECT}; the factory\'s clients see its interface ' \
                                 f'and <{CLIENT_FORMAT_HEADER}> (ADR-078)'
+    for line, _, header in SolutionModel.includes(text):
+      if path != VOICE_BACKEND and os.path.basename(header.replace('\\', '/')).lower() in AUDIO_HEADERS:
+        yield f'{path}:{line}', f'includes {header}; only {os.path.basename(VOICE_BACKEND)} includes the XAudio2 family (AEN-045)'
+    for m in AUDIO_CALLBACK.finditer(stripped):
+      body = callback_body(stripped, m.end())
+      for pattern, what in CALLBACK_FORBIDDEN:
+        if re.search(pattern, body):
+          line = stripped.count('\n', 0, m.start()) + 1
+          yield f'{path}:{line}', f'an audio callback {what}; a callback only sets flags or pushes to a lock-free queue (AEN-025)'
     without_comments = strip_comments_only(text)
     if project not in PRESENTATION_PROJECTS:
       for m in PRAGMA_LIBRARY.finditer(without_comments):
@@ -783,6 +822,15 @@ def rule_14(tree):
         line = without_comments.count('\n', 0, m.start()) + 1
         yield f'{path}:{line}', f'the Requirement attribute names {m.group(1)!r}, no requirement id of the design ' \
                                 '(DBG-140)'
+
+
+def callback_body(text, start):
+  """The body of the function whose opening brace ends at start, to its matching brace."""
+  depth, at = 1, start
+  while at < len(text) and depth:
+    depth += {'{': 1, '}': -1}.get(text[at], 0)
+    at += 1
+  return text[start:at - 1]
 
 
 def strip_comments_only(text):
@@ -933,6 +981,8 @@ FIXTURES = [
    lambda r: write(r, 'GameShared/pch.h', '\ninline int colourIndex = 0;\n', append=True)),
   (7, 'a shader with a lower-case name that is not an FXCompile item',
    lambda r: write(r, 'NeuronClient/Shader/bad.hlsl', '')),
+  (7, 'shaders compiled at Shader Model 6.0 (ADR-002)',
+   lambda r: edit(r, 'NeuronClient/NeuronClient.vcxproj', '<ShaderModel>6.6</ShaderModel>', '<ShaderModel>6.0</ShaderModel>')),
   (8, 'a project that defines ENGINE_DEVELOPMENT', fixture_switch),
   (9, 'a package version that is not its pin',
    lambda r: edit(r, 'NeuronCore/packages.config', 'version="1.0.240308001"', 'version="1.0.0"')),
@@ -966,6 +1016,9 @@ FIXTURES = [
    lambda r: write(r, 'NeuronCoreTests/TestSupport.h', '\ninline std::jthread g_worker;\n', append=True)),
   (14, 'a window created outside the platform layer and the client engine (PLT-003)',
    lambda r: write(r, 'GameClient/pch.h', '\ninline auto g_create = CreateWindowExW;\n', append=True)),
+  (14, 'a barrier recorded outside the frame graph\'s executor (ADR-004)',
+   lambda r: write(r, 'NeuronClient/UiRenderer.cpp', '\ninline void Flush(ID3D12GraphicsCommandList* _list, const D3D12_RESOURCE_BARRIER& _barrier)\n'
+                   '{\n  _list->ResourceBarrier(1, &_barrier);\n}\n', append=True)),
   (14, 'pix3.h included outside Profile.cpp (DBG-080)',
    lambda r: write(r, 'NeuronCore/Log.cpp', '\n#include <pix3.h>\n', append=True)),
   (5, 'an application manifest in a library project',
@@ -988,6 +1041,14 @@ FIXTURES = [
    lambda r: write(r, 'NeuronServer/pch.h', '\n#include "WindowsHeaders.h"\n', append=True)),
   (14, 'a Direct3D library linked by a pragma outside the client libraries (BLD-045)',
    lambda r: write(r, 'NeuronServer/pch.h', '\n#pragma comment(lib, "d3d12.lib")\n', append=True)),
+  (14, 'an XAudio2 header included outside the voice back-end (AEN-045)',
+   lambda r: write(r, 'NeuronClient/AudioEngine.cpp', '\n#include <xaudio2.h>\n', append=True)),
+  (14, 'a logger called in an audio callback (AEN-025)',
+   lambda r: edit(r, VOICE_BACKEND, 'm_ended.store(true, std::memory_order_release);',
+                  'm_ended.store(true, std::memory_order_release);\n    Log(LogCategory::Audio, LogLevel::Info, "ended");')),
+  (14, 'an allocation in an audio callback (AEN-025)',
+   lambda r: edit(r, VOICE_BACKEND, 'm_lost.store(true, std::memory_order_release);',
+                  'm_lost.store(true, std::memory_order_release);\n    auto copy = std::make_unique<int>(0);')),
   (14, 'DirectWrite linked by a tool source other than the content build\'s coverage check (ADR-147)',
    lambda r: write(r, 'Tools/SpeciesMeshKit/pch.h', '\n#pragma comment(lib, "dwrite.lib")\n', append=True)),
 ]

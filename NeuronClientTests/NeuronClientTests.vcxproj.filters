@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Audio">
+      <UniqueIdentifier>{70BA9670-F56F-5769-BA55-B6F2F19D188C}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Build">
       <UniqueIdentifier>{09BAF622-B8AD-5470-821D-54C55E1726A8}</UniqueIdentifier>
     </Filter>
@@ -35,6 +38,15 @@
     <ClCompile Include="AppWindowTests.cpp">
       <Filter>Window</Filter>
     </ClCompile>
+    <ClCompile Include="AudioEngineTests.cpp">
+      <Filter>Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="AudioMathTests.cpp">
+      <Filter>Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="BindingNotationTests.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
     <ClCompile Include="FrameGraphTests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
@@ -66,6 +78,12 @@
       <Filter>Resources</Filter>
     </ClCompile>
     <ClCompile Include="TextSystemTests.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="UiCoreTests.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="UiLayoutTests.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="UiTextTests.cpp">

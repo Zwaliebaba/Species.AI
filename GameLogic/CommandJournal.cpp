@@ -7,6 +7,8 @@
 #include "MessageCodec.h"
 #include "Sandbox.h"
 
+#include <algorithm>
+#include <array>
 #include <utility>
 
 namespace Species
@@ -17,8 +19,10 @@ namespace
 
 // The journal's file version, raised with every change of its layout.
 // 2: the watched sandbox (O77); 3: the synthetic battle's figures (ADR-126); 4: the steward's site (ADR-130); 5: a
-// journal that starts from the snapshot of its first tick (ADR-137).
-constexpr std::uint64_t JOURNAL_FORMAT = 5;
+// journal that starts from the snapshot of its first tick (ADR-137); 6: the AI settlements (ADR-157). A journal of
+// format 5 is read as one with no AI settlement (MVP-095).
+constexpr std::uint64_t JOURNAL_FORMAT = 6;
+constexpr std::uint64_t JOURNAL_FORMAT_WITHOUT_AI = 5;
 // A region's local sites are 0 to 3 (WLD-040).
 constexpr std::uint64_t LOCAL_SITE_MAX = 3;
 constexpr std::uint32_t JOURNAL_FORMAT_BITS = 32;
@@ -28,6 +32,29 @@ constexpr std::uint64_t JOURNAL_ENTRIES_MAX = std::uint64_t{1} << 32;
 Neuron::CommandQueue& QueueOf(WorldSimulation& _world, std::uint16_t _owner)
 {
   return _owner == JOURNAL_WORLD_OWNER ? _world.Commands() : _world.Region(_owner - 1U).Commands();
+}
+
+// MVP-013 and MVP-057 (ADR-157): the start's AI settlements at the free sites in site order, the three temperaments dealt
+// among them by one keyed draw of the region's first tick, so that no two alike; each run by a scripted steward.
+void FoundAiSettlements(RegionSimulation& _region, std::uint8_t _count)
+{
+  std::array<Temperament, TEMPERAMENT_MAX> deal{Temperament::Bold, Temperament::Territorial, Temperament::Wary};
+  _region.Draws().SetTick(_region.NextTick());
+  Neuron::SimRng& draw = _region.Draws().For(DrawPurpose::TemperamentDeal, 1);
+  for (std::size_t index = deal.size() - 1; index > 0; --index)
+  {
+    std::swap(deal[index], deal[draw.NextBelow(index + 1)]);
+  }
+  std::size_t founded = 0;
+  const std::size_t sites = _region.Terrain()->layout.sites.size();
+  for (std::size_t site = 0; site < sites && founded < std::min<std::size_t>(_count, deal.size()); ++site)
+  {
+    if (_region.SettlementAt(static_cast<std::uint8_t>(site)) == nullptr)
+    {
+      const Settlement& settlement = _region.FoundSettlement(static_cast<std::uint8_t>(site), false, deal[founded++]);
+      static_cast<void>(_region.AddScriptedSteward(settlement.team));
+    }
+  }
 }
 
 } // namespace
@@ -66,6 +93,10 @@ std::unique_ptr<WorldSimulation> StartWorld(const WorldStart& _start, std::share
           static_cast<void>(world->Region(0).AddScriptedSteward(settlement.team));
         }
       }
+      if (_start.aiSettlements > 0)
+      {
+        FoundAiSettlements(world->Region(0), _start.aiSettlements);
+      }
     }
   }
   return world;
@@ -80,7 +111,8 @@ StableId ConnectSteward(WorldSimulation& _world, bool _sandbox, bool _watched)
   }
   else if (!_sandbox && !_watched)
   {
-    // The MVP's world has one steward; each settlement a steward runs is the latest steward's.
+    // The MVP's world has one steward; each settlement a steward runs is the latest steward's, taken from a scripted
+    // steward that ran it (ADR-156).
     RegionSimulation& region = _world.Region(0);
     std::vector<std::uint8_t> teams;
     for (const Settlement& settlement : region.Settlements())
@@ -92,7 +124,13 @@ StableId ConnectSteward(WorldSimulation& _world, bool _sandbox, bool _watched)
     }
     for (const std::uint8_t team : teams)
     {
+      region.RemoveScriptedStewards(team);
       region.SetCommander(team, steward, false);
+      // ADR-161: and its expedition, while one is out.
+      if (ExpeditionOf(region, team) != nullptr)
+      {
+        region.SetCommander(ExpeditionTeamOf(team), steward, false);
+      }
     }
   }
   return steward;
@@ -115,6 +153,7 @@ std::vector<std::byte> WriteJournal(const CommandJournal& _journal)
   {
     writer.WriteBounded(_journal.start.stewardSite.value_or(0), LOCAL_SITE_MAX);
   }
+  writer.WriteBounded(_journal.start.aiSettlements, LOCAL_SITE_MAX);
   writer.WriteBool(_journal.restored);
   writer.WriteBounded(_journal.entries.size(), JOURNAL_ENTRIES_MAX);
   for (const JournalEntry& entry : _journal.entries)
@@ -132,7 +171,8 @@ std::vector<std::byte> WriteJournal(const CommandJournal& _journal)
 std::optional<CommandJournal> ReadJournal(std::span<const std::byte> _bytes)
 {
   Neuron::BitReader reader(_bytes);
-  if (reader.ReadBits(JOURNAL_FORMAT_BITS) != JOURNAL_FORMAT)
+  const std::uint64_t format = reader.ReadBits(JOURNAL_FORMAT_BITS);
+  if (format != JOURNAL_FORMAT && format != JOURNAL_FORMAT_WITHOUT_AI)
   {
     return std::nullopt;
   }
@@ -148,6 +188,10 @@ std::optional<CommandJournal> ReadJournal(std::span<const std::byte> _bytes)
   if (reader.ReadBool())
   {
     journal.start.stewardSite = static_cast<std::uint8_t>(reader.ReadBounded(LOCAL_SITE_MAX));
+  }
+  if (format == JOURNAL_FORMAT)
+  {
+    journal.start.aiSettlements = static_cast<std::uint8_t>(reader.ReadBounded(LOCAL_SITE_MAX));
   }
   journal.restored = reader.ReadBool();
   const std::uint64_t entries = reader.ReadBounded(JOURNAL_ENTRIES_MAX);

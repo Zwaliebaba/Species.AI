@@ -167,6 +167,7 @@
     <ClInclude Include="LogFloodScene.h" />
     <ClInclude Include="SceneRun.h" />
     <ClInclude Include="TravelScene.h" />
+    <ClInclude Include="ValleyScene.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
@@ -179,6 +180,7 @@
     <ClCompile Include="SceneRun.cpp" />
     <ClCompile Include="SpeciesPerformance.cpp" />
     <ClCompile Include="TravelScene.cpp" />
+    <ClCompile Include="ValleyScene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\GameLogic\GameLogic.vcxproj">

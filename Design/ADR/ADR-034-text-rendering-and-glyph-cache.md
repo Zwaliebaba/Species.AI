@@ -118,3 +118,15 @@ Amended 2026-10-19: the four checks below confirm the DirectWrite upgrade when i
   - **Device rebuild.** After a device rebuild the pages are uploaded again from the cache's copy on the CPU instead of being rasterized again.
 
   The record stays Proposed, and the Confirmation section's checks of option 1 apply. Its title keeps its words until the record is confirmed.
+- **Amendment 2026-10-23 (M3 task T16, owner decision O104, [ADR-174](ADR-174-the-first-playables-confirmations-at-m3.md)).** M3's evidence for option 1, as [ADR-147](ADR-147-the-directwrite-text-system-at-m2.md) builds it:
+  - `GlyphAtlasTests`: the atlas filled beyond its pages, and the least recently used page cleared;
+  - `TextSystemTests` and `UiTextTests`, on DirectWrite;
+  - the content build's coverage check of the en-US string table against the system fonts (`FontCoverage`);
+  - CI's render checks, which draw the front end and a settlement world's HUD in Bahnschrift.
+
+  Three checks move:
+  - the golden-image text tests, with the golden images (O104);
+  - the other languages' samples, with localization (ADR-063);
+  - the horizontal scale's test, with DEC-1003, which decides the width.
+
+  The owner's likeness review of the M3 build (T17, O97) judges the text. The record stays Proposed until it does.

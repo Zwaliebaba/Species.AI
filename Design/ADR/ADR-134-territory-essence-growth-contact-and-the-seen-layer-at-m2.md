@@ -109,3 +109,10 @@ GameLogicTests (`TerritoryTests`), on a fixture of two settlements and on one:
 
 * Good, because its edge is exact.
 * Bad, because the shoreline is a contour of the height field, which a polygon clipper does not take.
+
+## More Information
+
+* **Amendment 2026-10-22 (M3 task T4, [ADR-159](ADR-159-grievances-anger-and-their-fade-at-m3.md)).** Contact is territory pressure's cause (MVP-051). The relations read whether a pair is in contact now, both territories reaching their halfway line, and not the event recorded once, so that a border area a claim moves (M3 task T5) can end it.
+* **Amendment 2026-10-22 (M3 task T5, [ADR-160](ADR-160-claims-moved-areas-and-tribute-at-m3.md)).** A half of a valley border area that a claim battle moved is within its winner's territory bounds and no longer within its own side's (WLD-060, WLD-086), and both territories are made again when it moves. The move is a territory event of its own kind, naming the half (WLD-066).
+* **Amendment 2026-10-22 (M3 task T6, [ADR-161](ADR-161-expeditions-battles-the-loss-cap-and-the-respite-at-m3.md)).** A settlement's seen layer is also made about the figures of its expedition while one is out.
+* **Amendment 2026-10-23 (M3 task T15, [ADR-173](ADR-173-the-first-sound-set-played-at-m3.md)).** An orb that becomes a Worker raises the presentation event `OrbBecameWorker` at the Worker, for its sound (MVP-087). The event changes no state.

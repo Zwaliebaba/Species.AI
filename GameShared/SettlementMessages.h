@@ -9,6 +9,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 namespace Species
@@ -132,22 +133,38 @@ struct SettlementStatus
 };
 
 // MVP-102: what a notice tells its steward; a wire value that is never renumbered. M2 has structures completed; M3 adds
-// contact, claims, the warning and battles.
+// contact, claims, the warning, battles, the respite and the run (ADR-165).
 enum class NoticeKind : std::uint8_t
 {
-  StructureCompleted = 0 // MVP-033: a construction site of the steward's settlement is built
+  StructureCompleted = 0, // MVP-033: a construction site of the steward's settlement is built; the subject is the structure
+  Contact = 1,            // MVP-027: the settlement came into contact with its valley neighbour; the detail is their pair
+  ClaimMade = 2,          // MVP-053: a claim by or on the settlement; the subject is the claim, the detail its area
+  ClaimWithdrawn = 3,     // the claim's claimant withdrew it
+  ClaimLost = 4,          // the claim's claimant lost its battle
+  ClaimWon = 5,           // the claim's claimant won its battle, or its wait held the central resource site
+  AttackDeclared = 6,     // MVP-042: the warning of an attack by or on the settlement; the subject is the expedition, the
+                          // detail 1 for a claim battle
+  AttackEnded = 7,        // the expedition ended before its battle: withdrawn, or unfought at the run's end (MVP-060)
+  BattleStarted = 8,      // MVP-043: the expedition's battle started; the position is its objective
+  BattleEnded = 9,        // MVP-045: its battle ended; the detail is 1 when the attacker won, and a BattleResultNotice follows
+  RespiteStarted = 10,    // MVP-047: the settlement's respite started; the subject is the expedition of the battle it lost
+  RunQuiet = 11,          // MVP-060: the run's last mvp.run.quiet_minutes began
+  RunEnded = 12           // MVP-063: the run ended, and the world is read-only
 };
 
-inline constexpr std::uint64_t NOTICE_KIND_MAX = static_cast<std::uint64_t>(NoticeKind::StructureCompleted);
+inline constexpr std::uint64_t NOTICE_KIND_MAX = static_cast<std::uint64_t>(NoticeKind::RunEnded);
 
-/// ADR-084 item 5, MVP-102 (ADR-139): a guaranteed event for the HUD's notifications, on the reliable channel beside the
-/// command outcomes, to the steward who commands the team, in the order the region raised them: its tick, its kind, the
-/// team, its subject by stable id, and the subject's structure kind and position.
+/// ADR-084 item 5, MVP-102 (ADR-139, ADR-165): a guaranteed event for the HUD's notifications, on the reliable channel
+/// beside the command outcomes, to the steward who commands the team, in the order the region raised them: its tick, its
+/// kind, the team, its subject by stable id (0 for a kind that names none: contact and the run), the subject's structure
+/// kind and position, the other settlement concerned by its local site, whether the steward's settlement acted (the
+/// claimant or the attacker; true for contact) and the kind's detail.
 struct SettlementNotice
 {
   static constexpr Neuron::MessageTypeId TYPE = TypeIdOf(GameMessageType::SettlementNotice);
-  static constexpr std::uint8_t VERSION = 1;
-  static constexpr std::size_t MAX_BYTES = 29; // the header, the tick, the team, the subject, the kind and a whole position
+  static constexpr std::uint8_t VERSION = 2;
+  static constexpr std::size_t MAX_BYTES = 31; // the header, the tick, the kind, the team, the subject, the structure's kind and
+                                               // a whole position, the other site, the flag and the detail
 
   std::uint64_t tick = 0;
   NoticeKind kind = NoticeKind::StructureCompleted;
@@ -155,6 +172,9 @@ struct SettlementNotice
   StableId subject = 0;
   StructureKind structure = StructureKind::Dwelling;
   QuantizedPosition position;
+  std::optional<std::uint8_t> other; // a local site, 0 to 3
+  bool ours = false;
+  std::uint8_t detail = 0;
 
   void Encode(Neuron::BitWriter& _writer) const;
   void Decode(Neuron::BitReader& _reader);

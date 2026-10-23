@@ -83,6 +83,9 @@
     <ClCompile Include="MessagePatternTests.cpp">
       <Filter>Content</Filter>
     </ClCompile>
+    <ClCompile Include="SettingsStoreTests.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
     <ClCompile Include="PlatformClockTests.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
@@ -109,6 +112,12 @@
     </ClCompile>
     <ClCompile Include="SipHashTests.cpp">
       <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundAssetTests.cpp">
+      <Filter>Content</Filter>
+    </ClCompile>
+    <ClCompile Include="SpscQueueTests.cpp">
+      <Filter>Platform</Filter>
     </ClCompile>
     <ClCompile Include="StartupOptionsTests.cpp">
       <Filter>Platform</Filter>

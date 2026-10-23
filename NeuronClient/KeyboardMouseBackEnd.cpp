@@ -15,6 +15,13 @@ constexpr std::intptr_t EXTENDED_KEY_BIT = std::intptr_t{1} << 24;   // the righ
 constexpr std::intptr_t RIGHT_SHIFT_SCAN_CODE = 0x36;
 constexpr std::uintptr_t VIRTUAL_KEY_PACKET = 0xE7; // a character injected as a key, not a key of table 3.2-A
 constexpr float WHEEL_UNITS_PER_NOTCH = 120.0f;     // inp.mouse.wheel_units_per_notch (INP-110 item 3)
+// UTF-16's surrogate halves (ADR-154).
+constexpr char16_t HIGH_SURROGATE_FIRST = 0xD800;
+constexpr char16_t HIGH_SURROGATE_LAST = 0xDBFF;
+constexpr char16_t LOW_SURROGATE_FIRST = 0xDC00;
+constexpr char16_t LOW_SURROGATE_LAST = 0xDFFF;
+constexpr char32_t SURROGATE_BASE = 0x10000;
+constexpr int SURROGATE_SHIFT = 10;
 
 // The modifier of a key message's virtual-key code: 0 shift, 1 control, 2 alt; none for every other key.
 int ModifierOf(std::uintptr_t _virtualKey) noexcept
@@ -43,6 +50,26 @@ std::int32_t SignedHigh(std::intptr_t _value) noexcept
 }
 
 } // namespace
+
+std::optional<char32_t> JoinUtf16(char16_t& _pendingHigh, char16_t _unit) noexcept
+{
+  if (_unit >= HIGH_SURROGATE_FIRST && _unit <= HIGH_SURROGATE_LAST)
+  {
+    _pendingHigh = _unit;
+    return std::nullopt;
+  }
+  const char16_t high = std::exchange(_pendingHigh, char16_t{0});
+  if (_unit >= LOW_SURROGATE_FIRST && _unit <= LOW_SURROGATE_LAST)
+  {
+    if (high == 0)
+    {
+      return std::nullopt;
+    }
+    return SURROGATE_BASE +
+           ((static_cast<char32_t>(high - HIGH_SURROGATE_FIRST) << SURROGATE_SHIFT) | static_cast<char32_t>(_unit - LOW_SURROGATE_FIRST));
+  }
+  return char32_t{_unit};
+}
 
 KeyboardMouseBackEnd::KeyboardMouseBackEnd(AppWindow& _window) noexcept
   : m_window(_window)
@@ -117,12 +144,25 @@ void KeyboardMouseBackEnd::OnWindowMessage(const WindowMessage& _message)
     m_pending.push_back(event);
     break;
   }
+  case WM_CHAR:
+    // UI-007, ADR-154: UTF-16 only at the Win32 boundary; each character with the modifiers held as it arrives.
+    if (const std::optional<char32_t> codePoint = JoinUtf16(m_highSurrogate, static_cast<char16_t>(_message.wParam & 0xFFFF)))
+    {
+      m_text.push_back({*codePoint, m_modifierSides[0] != 0, m_modifierSides[1] != 0, m_modifierSides[2] != 0});
+    }
+    break;
   case WM_CLOSE:
     m_closeRequested = true; // PLT-009: action.app.quit, which no binding raises (INP-076)
     break;
   default:
-    break; // characters, input-method messages and raw input have no consumer at M1 (ADR-119)
+    break; // input-method messages and raw input have no consumer at M2 (ADR-119, ADR-154)
   }
+}
+
+void KeyboardMouseBackEnd::TakeText(std::vector<TextCharacter>& _out)
+{
+  _out.insert(_out.end(), m_text.begin(), m_text.end());
+  m_text.clear();
 }
 
 void KeyboardMouseBackEnd::Key(const WindowMessage& _message, bool _press)

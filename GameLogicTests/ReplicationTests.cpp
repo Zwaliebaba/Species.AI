@@ -10,17 +10,22 @@
 #include "RegionSimulation.h"
 #include "Sandbox.h"
 #include "ScriptedSteward.h"
+#include "SeenLayer.h"
 #include "ServerHost.h"
 #include "ServerStats.h"
 #include "SettlementMessages.h"
 #include "StateHash.h"
 #include "StateReplica.h"
 #include "StateSender.h"
+#include "RelationMessages.h"
+#include "Snapshot.h"
 #include "StateUpdate.h"
 #include "TestSupport.h"
+#include "ValleyAtWar.h"
 #include "WorkerPool.h"
 #include "WorldServer.h"
 #include "WorldSimulation.h"
+#include "WorldSnapshot.h"
 #include "WorldTerrain.h"
 
 #include <algorithm>
@@ -33,6 +38,7 @@
 #include <memory>
 #include <optional>
 #include <span>
+#include <string>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -74,11 +80,16 @@ public:
     m_dispatcher.Register<Species::WorldTerrain>([](const Species::WorldTerrain&) {});
     m_dispatcher.Register<Species::ServerStats>([](const Species::ServerStats&) {});
     m_dispatcher.Register<Species::SettlementNotice>([this](const Species::SettlementNotice& _notice) { notices.push_back(_notice); });
+    m_dispatcher.Register<Species::SettlementStatus>([this](const Species::SettlementStatus&) { ++statuses; });
+    m_dispatcher.Register<Species::ValleyStatus>([this](const Species::ValleyStatus& _status) { valleys.push_back(_status); });
+    m_dispatcher.Register<Species::BattleResultNotice>([this](const Species::BattleResultNotice& _result) { results.push_back(_result); });
     m_server.Connect(CLIENT_CONNECTION);
   }
 
   // What decides whether the nth state datagram of the run is dropped on the way; none drops nothing.
   std::function<bool(std::uint64_t)> drop;
+  // What sees every message the server sends the client, on every channel; none sees nothing.
+  std::function<void(std::span<const std::byte>)> inspect;
 
   // The client's command, on the reliable channel.
   template <class T> void SendCommand(const T& _command)
@@ -119,12 +130,19 @@ public:
   Species::StateReplica replica;
   std::uint64_t events = 0;
   std::uint64_t reports = 0;
+  std::uint64_t statuses = 0;
   std::vector<Species::SettlementNotice> notices;
+  std::vector<Species::ValleyStatus> valleys;
+  std::vector<Species::BattleResultNotice> results;
 
 private:
   [[nodiscard]] std::optional<std::uint64_t> Send(Neuron::ConnectionId, Neuron::Channel _channel,
                                                   std::span<const std::byte> _message) override
   {
+    if (inspect)
+    {
+      inspect(_message);
+    }
     if (_channel == Neuron::Channel::State && drop && drop(m_stateDatagrams++))
     {
       // Lost on the way: the transport reports its fate as lost.
@@ -156,6 +174,43 @@ std::map<Species::StableId, Species::ReplicatedState> ServerView(const Species::
     view.emplace(object.id, object.state);
   }
   return view;
+}
+
+// The bits of _bytes in order, each byte's from its lowest bit or from its highest, as characters '0' and '1'.
+std::string BitsOf(std::span<const std::byte> _bytes, bool _lowestFirst)
+{
+  std::string bits;
+  bits.reserve(_bytes.size() * 8);
+  for (const std::byte value : _bytes)
+  {
+    for (int bit = 0; bit < 8; ++bit)
+    {
+      const int shift = _lowestFirst ? bit : 7 - bit;
+      bits.push_back((std::to_integer<unsigned>(value) >> shift & 1U) != 0 ? '1' : '0');
+    }
+  }
+  return bits;
+}
+
+// Whether the 64 bits of _value appear in _bytes at any bit offset, in either order of the bits within a byte and of
+// the value's bits.
+bool HoldsValue(std::span<const std::byte> _bytes, std::uint64_t _value)
+{
+  std::string lowestFirst;
+  for (int bit = 0; bit < 64; ++bit)
+  {
+    lowestFirst.push_back((_value >> bit & 1U) != 0 ? '1' : '0');
+  }
+  const std::string highestFirst(lowestFirst.rbegin(), lowestFirst.rend());
+  for (const bool order : {true, false})
+  {
+    const std::string bits = BitsOf(_bytes, order);
+    if (bits.find(lowestFirst) != std::string::npos || bits.find(highestFirst) != std::string::npos)
+    {
+      return true;
+    }
+  }
+  return false;
 }
 
 // The first figure of _team in the client's replica.
@@ -609,6 +664,297 @@ public:
     Assert::IsTrue(otherSeen == 0 && other && other->population == 0 && other->limit == 0 && other->capacityMilliRu == 0 &&
                      other->radius == ownState.radius && other->color == ownState.color,
                    L"another steward sees its territory and colour alone");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr084AValleyClientHoldsNothingOutsideItsSeenLayer)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-016")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-097")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PIL-084")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr084AValleyClientHoldsNothingOutsideItsSeenLayer)
+  {
+    // M3 plan table 1, ADR-084 and ADR-086 (ADR-158): in a valley of four settlements, the client of the steward's
+    // holds the server's view after every tick, and that view holds no other team's figure, effect or orb and no other
+    // settlement's structure outside its settlement's seen layer, nor another settlement's stores; the Wellsprings and
+    // resource sites are the public layer, without the Workers at their ports where it does not see.
+    Species::WorldServer::Desc desc;
+    desc.tuning = CommittedTuning();
+    desc.structures = TestRecords();
+    desc.worldSeed = ValleyTerrain()->seed;
+    desc.stewardSite = SETTLED_TEAM;
+    desc.aiSettlements = 3;
+    Species::WorldServer server(desc);
+    const std::uint64_t first = server.Open();
+    AttachedClient client(server);
+    Neuron::WorkerPool pool(2);
+    std::size_t hiddenMost = 0;
+    for (std::uint64_t tick = first; tick < first + 600; ++tick)
+    {
+      client.Deliver();
+      server.Step(tick, pool);
+      client.Publish(tick);
+      client.Read();
+      Assert::IsTrue(client.replica.Latest() == ServerView(server, SETTLED_TEAM), L"the replica holds the server's view");
+      const Species::RegionSimulation& region = server.Simulation()->Region(0);
+      const Species::Sight sight = Species::Sight::OfSteward(region, region.CommanderOf(SETTLED_TEAM).sender);
+      Assert::IsTrue(sight.Narrowed(), L"the steward's client sees through its settlement's seen layer");
+      const auto sees = [&sight](const Species::QuantizedPosition& _position)
+      {
+        const Neuron::Vec3 position = Species::PositionOf(_position);
+        return sight.Sees(position.x, position.z);
+      };
+      std::size_t figures = 0;
+      std::size_t sites = 0;
+      for (const auto& [id, state] : client.replica.Latest())
+      {
+        if (const auto* figure = std::get_if<Species::ReplicatedFigure>(&state))
+        {
+          ++figures;
+          Assert::IsTrue(figure->team == SETTLED_TEAM || sees(figure->position), L"no other team's figure outside it");
+        }
+        if (const auto* effect = std::get_if<Species::ReplicatedEffect>(&state))
+        {
+          Assert::IsTrue(effect->team == SETTLED_TEAM || sees(effect->position), L"no other team's effect outside it");
+        }
+        if (const auto* orb = std::get_if<Species::ReplicatedOrb>(&state))
+        {
+          Assert::IsTrue(orb->team == SETTLED_TEAM || sees(orb->position), L"no other team's orb outside it");
+        }
+        if (const auto* structure = std::get_if<Species::ReplicatedStructure>(&state);
+            structure != nullptr && structure->owner != std::optional<std::uint8_t>(SETTLED_TEAM) && !sees(structure->position))
+        {
+          Assert::IsTrue(structure->kind == Species::StructureKind::Wellspring || structure->kind == Species::StructureKind::ResourceSite ||
+                           structure->kind == Species::StructureKind::ResourceSiteCentral,
+                         L"no other settlement's structure outside it but the public sites");
+          ExpectEqual(0, std::int64_t{structure->mannedPorts}, L"a public site shows no Worker where it is not seen");
+        }
+        if (const auto* settlement = std::get_if<Species::ReplicatedSettlement>(&state);
+            settlement != nullptr && settlement->team != SETTLED_TEAM)
+        {
+          Assert::IsTrue(settlement->storesMilliRu == 0 && settlement->population == 0, L"no other settlement's stores");
+        }
+        sites += std::holds_alternative<Species::ReplicatedStructure>(state) ? 1 : 0;
+      }
+      std::size_t living = 0;
+      for (std::size_t team = 0; team < region.TeamCount(); ++team)
+      {
+        living += region.TeamAt(team).figures.Count();
+      }
+      hiddenMost = std::max(hiddenMost, living - std::min(living, figures));
+      Assert::IsTrue(sites >= region.Settlements().size() + region.Terrain()->layout.sites.size(), L"every Wellspring and site");
+    }
+    Assert::IsTrue(hiddenMost >= 40, L"the other settlements' Workers at home are not sent");
+    ExpectEqual(0, static_cast<std::int64_t>(client.replica.Totals().missingBaselines), L"every baseline was there");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr084AValleyClientHoldsNothingOutsideItsSeenLayerInABattle)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-048")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-097")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-098")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-102")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr084AValleyClientHoldsNothingOutsideItsSeenLayerInABattle)
+  {
+    // M3 task T10 (ADR-165): in the valley at war, four settlements and two raids, one of them on the steward's
+    // settlement, the steward's client holds the server's view after every tick and nothing outside its seen layer but
+    // its own expedition's; its valley status lists both battles, but the figures of its own alone, and no grievance or
+    // expedition that is not its settlement's; and as the battles end it is told its own battle's end with its whole
+    // result, and only the other battle's public line.
+    static const Species::TuningMvp TUNING = []
+    {
+      Species::TuningMvp tuning = CommittedTuning();
+      tuning.mvp.conflict.warningMinutes = 0.1; // 60 ticks, so that both battles start as the valley settles
+      tuning.pil.battle.maxMinutes = 0.5;       // 300 ticks
+      return tuning;
+    }();
+    Species::ValleyAtWarDesc war;
+    war.key = SETTLED_TEST_KEY;
+    war.terrain = ValleyTerrain();
+    war.tuning = &TUNING;
+    war.structures = &TestRecords();
+    war.population = 60;
+    war.expedition = 10;
+    war.settleTicks = 2'000;
+    const std::unique_ptr<Species::WorldSimulation> world = Species::StartValleyAtWar(war);
+    const TemporaryFolder folder;
+    Assert::IsTrue(Neuron::SnapshotStore(folder.Path(), 1).Save(Species::SnapshotOf(*world)).has_value(), L"the valley at war saved");
+    Species::WorldServer::Desc desc;
+    desc.tuning = TUNING;
+    desc.structures = TestRecords();
+    desc.worldSeed = ValleyTerrain()->seed;
+    desc.snapshotFolder = folder.Path();
+    desc.restoreOnly = true;
+    Species::WorldServer server(desc);
+    std::uint64_t tick = server.Open();
+    Assert::IsTrue(server.Opened().restored && tick == world->NextTick() && world->Region(0).Battles().size() == 2,
+                   L"with both battles in progress, continued by the server");
+    AttachedClient client(server);
+    const auto steward = static_cast<std::uint8_t>(TUNING.mvp.sandbox.stewardSite);
+    const std::uint8_t expedition = Species::ExpeditionTeamOf(steward);
+    Neuron::WorkerPool pool(2);
+    for (const std::uint64_t last = tick + 400; tick < last; ++tick)
+    {
+      if (tick % 50 == 0)
+      {
+        client.SendCommand(Species::ReadValleyStatusCommand{steward});
+      }
+      client.Deliver();
+      server.Step(tick, pool);
+      client.Publish(tick);
+      client.Read();
+      Assert::IsTrue(client.replica.Latest() == ServerView(server, steward), L"the replica holds the server's view");
+      const Species::RegionSimulation& region = server.Simulation()->Region(0);
+      const Species::Sight sight = Species::Sight::OfSteward(region, region.CommanderOf(steward).sender);
+      const auto sees = [&sight](const Species::QuantizedPosition& _position)
+      {
+        const Neuron::Vec3 position = Species::PositionOf(_position);
+        return sight.Sees(position.x, position.z);
+      };
+      for (const auto& [id, state] : client.replica.Latest())
+      {
+        if (const auto* figure = std::get_if<Species::ReplicatedFigure>(&state))
+        {
+          Assert::IsTrue(figure->team == steward || figure->team == expedition || sees(figure->position),
+                         L"no other team's figure outside it, the attackers' among them");
+        }
+        if (const auto* settlement = std::get_if<Species::ReplicatedSettlement>(&state);
+            settlement != nullptr && settlement->team != steward)
+        {
+          Assert::IsTrue(settlement->storesMilliRu == 0 && settlement->population == 0, L"no other settlement's stores");
+        }
+      }
+    }
+    Assert::IsTrue(client.valleys.size() >= 7, L"a valley status for each request");
+    bool bothFought = false;
+    for (const Species::ValleyStatus& status : client.valleys)
+    {
+      Assert::IsTrue(status.team == steward && status.renown.size() == 4, L"the steward's, with every settlement's renown");
+      Assert::IsTrue(std::ranges::all_of(status.grievances, [&](const Species::GrievanceLine& _line)
+                                         { return _line.holder == steward || _line.against == steward; }),
+                     L"only the grievances held by or against its settlement");
+      Assert::IsTrue(std::ranges::all_of(status.expeditions, [&](const Species::ExpeditionLine& _line)
+                                         { return _line.attacker == steward || _line.target == steward; }),
+                     L"only the expeditions it sent or that are declared on it");
+      for (const Species::BattleLine& line : status.battles)
+      {
+        const bool side = line.attacker == steward || line.defender == steward;
+        Assert::IsTrue(line.side == side, L"a battle is its side's when its settlement fights in it");
+        Assert::IsTrue(side || (line.attackerLost == 0 && line.defenderLost == 0 && line.lossCap == 0 && line.fieldRadius == 0),
+                       L"another battle shows its public line alone");
+      }
+      bothFought = bothFought || status.battles.size() == 2;
+    }
+    Assert::IsTrue(bothFought, L"both battles listed while they are fought");
+    ExpectEqual(2, static_cast<std::int64_t>(client.results.size()), L"both battles ended, each with its result");
+    for (const Species::BattleResultNotice& result : client.results)
+    {
+      const bool side = result.attacker == steward || result.defender == steward;
+      Assert::IsTrue(result.side == side, L"the whole result of its own battle");
+      Assert::IsTrue(side || (result.attackerLost == 0 && result.defenderLost == 0 && result.storesMovedMilliRu == 0 &&
+                              result.essenceMoved == 0 && result.renown == 0),
+                     L"and the other battle's public line alone");
+    }
+    const auto ended = std::ranges::count(client.notices, Species::NoticeKind::BattleEnded, &Species::SettlementNotice::kind);
+    ExpectEqual(1, static_cast<std::int64_t>(ended), L"the end of its own battle is noticed, not the other's");
+    const auto own = std::ranges::find(client.notices, Species::NoticeKind::BattleEnded, &Species::SettlementNotice::kind);
+    Assert::IsTrue(own != client.notices.end() && own->team == steward && !own->ours && own->other.has_value(),
+                   L"as the defender, against its attacker");
+    ExpectEqual(0, static_cast<std::int64_t>(client.replica.Totals().missingBaselines), L"every baseline was there");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr158AnotherTeamsEventsGoOnlyWhereTheStewardSees)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-097")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PIL-084")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr158AnotherTeamsEventsGoOnlyWhereTheStewardSees)
+  {
+    // ADR-158: a steward who commands a settlement is sent its teams' events wherever they are, and another team's only
+    // where its settlement's seen layer holds them and when they are no selection or order (ADR-106); a steward who
+    // commands no settlement is sent every event but the selections and orders of the teams it does not command.
+    const std::unique_ptr<Species::WorldSimulation> world = SettledWorld();
+    Species::RegionSimulation& region = world->Region(0);
+    const Species::StableId steward = world->Ids().Issue();
+    region.SetCommander(SETTLED_TEAM, steward, false);
+    Neuron::WorkerPool pool(0);
+    world->Step(0, pool);                  // the seen layers are made in the region's step
+    constexpr std::uint8_t OTHER_TEAM = 9; // no settlement's nor its expedition's (ADR-161)
+    const Neuron::Vec3 home = region.Terrain()->layout.sites[SETTLED_TEAM];
+    const Neuron::Vec3 distant = region.Terrain()->layout.sites[(SETTLED_TEAM + 2) % 4];
+    const std::vector<Species::EffectEvent> events = {{Species::EffectEventKind::LaserFired, OTHER_TEAM, 0, home, {}, 0.0},
+                                                      {Species::EffectEventKind::LaserFired, OTHER_TEAM, 0, distant, {}, 0.0},
+                                                      {Species::EffectEventKind::WorkersSelected, OTHER_TEAM, 0, home, {}, 1.0},
+                                                      {Species::EffectEventKind::LaserFired, SETTLED_TEAM, 0, distant, {}, 0.0},
+                                                      {Species::EffectEventKind::WorkersSelected, SETTLED_TEAM, 0, distant, {}, 1.0}};
+    const std::vector<Species::EffectEvent> sent = Species::EventsForSteward(events, region, steward);
+    ExpectEqual(3, static_cast<std::int64_t>(sent.size()), L"not the other team's distant shot or its selection");
+    Assert::IsTrue(sent[0].team == OTHER_TEAM && sent[0].position.x == home.x, L"the other team's shot where it sees");
+    Assert::IsTrue(sent[1].team == SETTLED_TEAM && sent[2].team == SETTLED_TEAM, L"its own team's events wherever they are");
+    ExpectEqual(3, static_cast<std::int64_t>(Species::EventsForSteward(events, region, world->Ids().Issue()).size()),
+                L"a steward of no settlement is sent every shot and no selection");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr082NothingAClientIsSentHoldsTheSimulationKey)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-097")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-SIM-605")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr082NothingAClientIsSentHoldsTheSimulationKey)
+  {
+    // M3 plan table 1, ADR-082: a client given every byte the steward's client receives cannot compute a later draw,
+    // for no message it is sent holds either half of the simulation key, at any bit, in either order. Every kind of
+    // message goes: the terrain, the state, the events, the outcomes, the notices and the status.
+    Species::WorldServer::Desc desc;
+    desc.tuning = CommittedTuning();
+    desc.tuning.mvp.cost.dwellingRu = 3.0; // a dwelling that the first loads pay for, so that a notice is sent
+    desc.structures = TestRecords();
+    desc.worldSeed = ValleyTerrain()->seed;
+    desc.stewardSite = SETTLED_TEAM;
+    desc.aiSettlements = 3;
+    Species::WorldServer server(desc);
+    const std::uint64_t first = server.Open();
+    AttachedClient client(server);
+    const Neuron::SipHashKey key = server.Simulation()->SimulationKey();
+    Assert::IsTrue(key.low != 0 && key.high != 0, L"a key drawn for the world");
+    // The search finds a half wherever a message holds it: a terrain message whose seed field carried it.
+    for (const std::uint64_t half : {key.low, key.high})
+    {
+      Species::WorldTerrain probe;
+      probe.seed = half;
+      Assert::IsTrue(HoldsValue(Neuron::EncodeMessage(probe), half), L"the search finds a half that is sent");
+    }
+    std::size_t messages = 0;
+    std::size_t bytes = 0;
+    client.inspect = [&](std::span<const std::byte> _message)
+    {
+      ++messages;
+      bytes += _message.size();
+      Assert::IsFalse(HoldsValue(_message, key.low) || HoldsValue(_message, key.high), L"no half of the key");
+    };
+    Neuron::WorkerPool pool(2);
+    bool placed = false;
+    for (std::uint64_t tick = first; tick < first + 1'500 && client.notices.empty(); ++tick)
+    {
+      const std::optional<Species::ReplicatedSettlement> own = SettlementOf(client.replica, SETTLED_TEAM);
+      if (!placed && own && own->storesMilliRu >= 3'000)
+      {
+        const Species::RegionSimulation& region = server.Simulation()->Region(0);
+        const Species::Settlement& settlement = *region.SettlementAt(SETTLED_TEAM);
+        const std::vector<Neuron::Vec3> layout = Species::DwellingLayout(region, settlement);
+        const auto place = std::ranges::find_if(
+          layout, [&](const Neuron::Vec3& _place)
+          { return !Species::CheckPlacement(region, settlement.site, Species::StructureKind::Dwelling, _place.x, _place.z).has_value(); });
+        Assert::IsTrue(place != layout.end(), L"a place for the dwelling");
+        client.SendCommand(Species::PlaceStructureCommand{SETTLED_TEAM, Species::StructureKind::Dwelling, {place->x, place->z}});
+        client.SendCommand(Species::ReadSettlementStatusCommand{SETTLED_TEAM});
+        placed = true;
+      }
+      client.Deliver();
+      server.Step(tick, pool);
+      client.Publish(tick);
+      client.Read();
+    }
+    Assert::IsTrue(placed && client.reports > 0 && client.statuses > 0 && !client.notices.empty(),
+                   L"outcomes, a status and a notice were sent");
+    Assert::IsTrue(messages > 500 && bytes > 50'000, L"the client was sent the world");
   }
 };
 

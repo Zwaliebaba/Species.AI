@@ -183,9 +183,14 @@ public:
                 static_cast<std::int64_t>(OfKind(region, Species::StatisticKind::PopulationStep).size()), L"no new multiple");
     const std::vector<Species::StatisticEntry> samples = OfKind(region, Species::StatisticKind::Sample);
     Assert::IsTrue(samples.size() == 2 && samples[1].tick == 300, L"the samples of ticks 0 and 300");
-    Assert::IsTrue(std::ranges::all_of(region.Statistics(), [](const Species::StatisticEntry& _entry)
-                                       { return _entry.kind == Species::StatisticKind::Sample || Species::IsGrowthStep(_entry.kind); }),
-                   L"every entry a sample or a growth step");
+    // From M3 task T8 a territory also records the halfway lines it reaches (ADR-163); a lone settlement has no other event.
+    Assert::IsTrue(std::ranges::all_of(region.Statistics(),
+                                       [](const Species::StatisticEntry& _entry)
+                                       {
+                                         return _entry.kind == Species::StatisticKind::Sample || Species::IsGrowthStep(_entry.kind) ||
+                                                _entry.kind == Species::StatisticKind::HalfwayReached;
+                                       }),
+                   L"every entry a sample, a growth step or a halfway line reached");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp064TheStatisticsOfARecordedCommandStreamAreTheSameOnTwoRuns)

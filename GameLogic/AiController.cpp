@@ -8,6 +8,7 @@
 #include "LeaderOrders.h"
 #include "Profile.h"
 #include "RegionSimulation.h"
+#include "SeenLayer.h"
 
 #include <algorithm>
 #include <cmath>
@@ -34,17 +35,22 @@ GroundPoint Ground(const Neuron::Vec3& _point) noexcept
 
 // What one tick of an AI decides. The commands it sends execute at the next tick, so it treats the figures it has
 // ordered in this tick as no longer idle, and the Workers it has promoted in this cycle as Leaders where they stand, as
-// the reference's immediate actions would leave them.
+// the reference's immediate actions would leave them. It reads the nodes and other teams' figures through its sight, a
+// settlement's seen layer (MVP-058, ADR-158). Its commands are numbered from _sequence, which an AI settlement's
+// scripted steward shares with its battle cores (ADR-162), and an expedition's battle core walks to its objective.
 struct Turn
 {
   RegionSimulation& region;
   AiController& ai;
+  std::uint64_t& sequence;
+  std::optional<Neuron::Vec3> objective;
+  Sight sight;
   std::set<StableId> ordered;
   std::vector<Neuron::Vec3> promotions;
 
   template <class T> void Send(const T& _command)
   {
-    static_cast<void>(region.Commands().Submit(ai.id, ai.nextSequence++, Neuron::EncodeMessage(_command)));
+    static_cast<void>(region.Commands().Submit(ai.id, sequence++, Neuron::EncodeMessage(_command)));
   }
   [[nodiscard]] const TuningMvp& Tuning() const noexcept
   {
@@ -169,11 +175,10 @@ std::int32_t LeaderPolicy(Turn& _turn, const Figure& _leader)
   }
   std::uint32_t enemies = 0;
   Neuron::Vec3 sum;
-  for (const ActorRef& ref :
-       region.InRange(_leader.position.x, _leader.position.z, policy.botEnemyRange, RegionSimulation::EnemiesOf(team)))
+  for (const ActorRef& ref : region.InRange(_leader.position.x, _leader.position.z, policy.botEnemyRange, region.EnemiesOf(team)))
   {
     const Figure* enemy = region.Resolve(ref);
-    if (enemy != nullptr && !enemy->dead)
+    if (enemy != nullptr && !enemy->dead && _turn.sight.Sees(enemy->position.x, enemy->position.z))
     {
       ++enemies;
       sum = sum + enemy->position;
@@ -184,7 +189,22 @@ std::int32_t LeaderPolicy(Turn& _turn, const Figure& _leader)
     _turn.Send(AiOrderLeaderCommand{team, _leader.id, LeaderOperation::AssignWaypoint, false, Ground(_leader.position)});
     SetFront(_turn, _leader, sum * (1.0 / static_cast<double>(enemies)) - _leader.position);
   }
-  if (LeaderWalking(_leader, _turn.Tuning()) || !nearest)
+  if (LeaderWalking(_leader, _turn.Tuning()))
+  {
+    return next;
+  }
+  // ADR-162: an expedition's Leader that stands beyond the objective's radius walks to its battle's objective, in place
+  // of items 3 and 4, so that the battle can end by its objective held (MVP-045).
+  if (_turn.objective)
+  {
+    const Neuron::Vec3 objective = _turn.objective.value_or(Neuron::Vec3{});
+    if (Neuron::HorizontalDistance(_leader.position, objective) > _turn.Tuning().mvp.battle.objectiveRadius)
+    {
+      _turn.Send(AiOrderLeaderCommand{team, _leader.id, LeaderOperation::AssignWaypoint, false, Ground(objective)});
+    }
+    return next;
+  }
+  if (!nearest)
   {
     return next;
   }
@@ -192,15 +212,11 @@ std::int32_t LeaderPolicy(Turn& _turn, const Figure& _leader)
   // hostile neighbour; otherwise the Leader faces towards the node's first neighbour.
   bool holding = false;
   const std::vector<std::uint32_t>& links = graph.Links(*nearest);
-  if (NeedsDefending(region, *nearest, team))
+  if (NeedsDefending(region, _turn.sight, *nearest, team))
   {
     holding = true;
-    const auto hostile = std::find_if(links.begin(), links.end(),
-                                      [&](std::uint32_t _node)
-                                      {
-                                        const BotNode& node = region.BotNodes().At(_node);
-                                        return node.owner >= 0 && node.owner != team;
-                                      });
+    const auto hostile = std::find_if(links.begin(), links.end(), [&](std::uint32_t _node)
+                                      { return HeldByEnemy(region, SeenBotNode(region, _turn.sight, _node), team); });
     if (hostile != links.end())
     {
       SetFront(_turn, _leader, graph.Position(*hostile) - graph.Position(*nearest));
@@ -219,9 +235,8 @@ std::int32_t LeaderPolicy(Turn& _turn, const Figure& _leader)
   double best = std::numeric_limits<double>::infinity();
   for (std::uint32_t node = 0; node < graph.Size(); ++node)
   {
-    const std::int32_t owner = region.BotNodes().At(node).owner;
     const double distance = Neuron::Length(graph.Position(node) - _leader.position);
-    if (owner >= 0 && owner != team && distance < best &&
+    if (distance < best && HeldByEnemy(region, SeenBotNode(region, _turn.sight, node), team) &&
         IsPathClear(_leader.position, graph.Position(node), true, false, _turn.Field(), _turn.Tuning()))
     {
       best = distance;
@@ -274,10 +289,11 @@ void FormationLeaders(Turn& _turn)
   const std::uint8_t team = _turn.ai.team;
   for (std::uint32_t node = 0; node < graph.Size(); ++node)
   {
-    const BotNode& counts = region.BotNodes().At(node);
+    const BotNode& counts = SeenBotNode(region, _turn.sight, node);
     const Neuron::Vec3& position = graph.Position(node);
     if (counts.owner != team ||
-        (!NeedsDefending(region, node, team) && counts.FriendsOf(team) < static_cast<std::uint32_t>(leader.formationFriends)) ||
+        (!NeedsDefending(region, _turn.sight, node, team) &&
+         counts.FriendsOf(team) < static_cast<std::uint32_t>(leader.formationFriends)) ||
         LeaderCount(region, team, position, leader.formationLeaderRadius, LeaderCountKind::NotWaypoint) != 0 ||
         std::any_of(_turn.promotions.begin(), _turn.promotions.end(),
                     [&](const Neuron::Vec3& _promoted) { return Neuron::Length(_promoted - position) <= leader.formationLeaderRadius; }))
@@ -309,7 +325,7 @@ void Dispatch(Turn& _turn)
   std::vector<std::uint32_t> wellDefended;
   for (std::uint32_t node = 0; node < graph.Size(); ++node)
   {
-    const BotNode& counts = region.BotNodes().At(node);
+    const BotNode& counts = SeenBotNode(region, _turn.sight, node);
     const bool calm = static_cast<double>(counts.EnemiesOf(team)) < bot.dispatch.calmRatio * static_cast<double>(counts.FriendsOf(team));
     if (counts.owner == team &&
         ((calm && counts.IdleOf(team) > static_cast<std::uint32_t>(bot.dispatch.idleLimit)) || !Important(region, node)))
@@ -325,8 +341,8 @@ void Dispatch(Turn& _turn)
       continue;
     }
     // R-BOT-083: the send chance, every candidate's for a destination that is not important.
-    const double enemies = static_cast<double>(region.BotNodes().At(*target).EnemiesOf(team));
-    const double idle = static_cast<double>(region.BotNodes().At(from).IdleOf(team));
+    const double enemies = static_cast<double>(SeenBotNode(region, _turn.sight, *target).EnemiesOf(team));
+    const double idle = static_cast<double>(SeenBotNode(region, _turn.sight, from).IdleOf(team));
     double chance = 0.0;
     if (idle > 0.0)
     {
@@ -377,11 +393,16 @@ AiController MakeAi(RegionSimulation& _region, StableId _id, std::uint8_t _team)
 
 void StepAi(RegionSimulation& _region, AiController& _ai)
 {
+  StepBattleCore(_region, _ai, _ai.nextSequence, std::nullopt);
+}
+
+void StepBattleCore(RegionSimulation& _region, AiController& _ai, std::uint64_t& _sequence, const std::optional<Neuron::Vec3>& _objective)
+{
   if (_ai.team >= _region.TeamCount() || _region.Terrain() == nullptr)
   {
     return;
   }
-  Turn turn{_region, _ai, {}, {}};
+  Turn turn{_region, _ai, _sequence, _objective, Sight::OfTeam(_region, _ai.team), {}, {}};
   {
     ENGINE_PROFILE_SCOPE("sim.ai.stray_recall");
     StrayRecall(turn);
