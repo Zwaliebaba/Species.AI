@@ -40,13 +40,21 @@ enum class CursorKind : std::uint8_t
 // missing or damaged, which is logged.
 [[nodiscard]] std::shared_ptr<const Neuron::CursorImages> LoadCursorImages(const Neuron::LooseContent& _content);
 
-// R-CTRL-055 for the hover of M1 (ADR-119): the living Leader of _ownTeam whose picking sphere the ray meets with the
-// smallest screen distance between the sphere's projected centre and the projected hit point; the earlier on a tie.
-// The sphere grows with the camera's distance by the Worker distance scale factor _scaleFactor, as the Leader's figure
-// does (R-UNIT-142, R-UNIT-192).
+// R-CTRL-055 for the hover of M1 (ADR-119): the living Leader of _ownTeam, or from M3 of its expedition's team
+// _expeditionTeam (ADR-167), whose picking sphere the ray meets with the smallest screen distance between the sphere's
+// projected centre and the projected hit point; the earlier on a tie. The sphere grows with the camera's distance by the
+// Worker distance scale factor _scaleFactor, as the Leader's figure does (R-UNIT-142, R-UNIT-192).
 [[nodiscard]] std::optional<StableId> LeaderUnderRay(std::span<const InterpolatedFigure> _figures, std::uint8_t _ownTeam,
                                                      const Neuron::Ray& _ray, const Neuron::FrameView& _frame, Neuron::SizePx _view,
-                                                     const TuningPresentation& _presentation, double _scaleFactor);
+                                                     const TuningPresentation& _presentation, double _scaleFactor,
+                                                     std::optional<std::uint8_t> _expeditionTeam = std::nullopt);
+
+// MVP-049 (ADR-167): the team the battle verbs command: the settlement's team _team, or its expedition's _expeditionTeam
+// while the expedition has living figures in _figures, from a primary press on one of its Leaders (_pressed, the Leader
+// under the pointer at a primary press) until a press on one of the settlement's Leaders or the expedition's end. _current
+// is the team they command now.
+[[nodiscard]] std::uint8_t BattleTeamOf(std::span<const InterpolatedFigure> _figures, std::uint8_t _team, std::uint8_t _expeditionTeam,
+                                        std::uint8_t _current, std::optional<StableId> _pressed) noexcept;
 
 // The cursor of a kind at the pointer: its image, its side and hotspot (mvp.cursor.*, ref.ctrl.cursor.set.*) and colour.
 [[nodiscard]] Neuron::CursorQuad CursorAt(CursorKind _kind, Neuron::PointPx _pointer, const TuningPresentation& _presentation) noexcept;
@@ -58,8 +66,10 @@ enum class CursorKind : std::uint8_t
 /// world markers, whose marker under the pointer the verbs read as a Leader under it, and the badge near the pointer;
 /// with O82 (ADR-127), the primary button's orders, the ordered route kept fading, and the badge's count; with M2 task
 /// T13 (ADR-142), the steward's areas, which bound the camera; with M2 task T17 (ADR-153), the settlement verbs, which take
-/// a press over the HUD and the presses of placing before the battle verbs, with the placement cursor and ghost. Frame
-/// thread only.
+/// a press over the HUD and the presses of placing before the battle verbs, with the placement cursor and ghost; with M3
+/// task T12 (ADR-167), the conflict verbs of the relations panel, the battlefields that join the steward's areas, the
+/// attacks' and claims' markers and its expedition's Leaders' markers, and the battle verbs on the expedition's team
+/// from a press on one of its Leaders. Frame thread only.
 class SettlementView
 {
 public:
@@ -114,6 +124,11 @@ public:
   {
     return m_verbs;
   }
+  // ADR-167: the team the battle verbs command in this frame; none while they command none.
+  [[nodiscard]] std::optional<std::uint8_t> BattleTeam() const noexcept
+  {
+    return m_battleTeam;
+  }
   // ADR-153: the settlement verbs: placing, the priorities and the refusals the HUD shows.
   [[nodiscard]] const SettlementVerbs& Settlement() const noexcept
   {
@@ -164,7 +179,10 @@ private:
   std::vector<Neuron::OverlayQuad> m_badge;
   std::optional<BadgeLabel> m_badgeCount;
   Neuron::SizePx m_viewSize;
-  std::size_t m_selectedWorkers = 0; // the local team's living Workers under control in this frame's figures
+  std::size_t m_selectedWorkers = 0;        // the local team's living Workers under control in this frame's figures
+  std::optional<std::uint8_t> m_battleTeam; // ADR-167: the settlement's team or its expedition's
+  std::vector<StewardAreas::Field> m_fields;
+  std::vector<MarkerTarget> m_targets;
   CursorKind m_cursor = CursorKind::World;
   std::optional<StableId> m_hovered;
   Neuron::PointPx m_pointer;

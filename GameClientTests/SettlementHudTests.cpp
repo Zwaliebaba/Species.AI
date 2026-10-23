@@ -12,6 +12,7 @@
 #include <cmath>
 #include <cstdint>
 #include <initializer_list>
+#include <iterator>
 #include <span>
 #include <string_view>
 #include <vector>
@@ -242,7 +243,10 @@ public:
   {
     // ADR-166: the warning counts down to the end of mvp.conflict.warning_minutes; the steward's expedition and respite
     // follow; each other Cladan's anger is the sum of its grievances against the steward's settlement, listed under it
-    // with a removed cause marked, the grievance the settlement itself holds not among them; then every claim.
+    // with a removed cause marked, the grievance the settlement itself holds not among them; then every claim. ADR-167:
+    // a grievance carries its subject and weight for its tribute, a claim its id, and the areas the settlement may claim
+    // follow the claims: here the central site, claimed by another and held by none (site 1's half of the pair is held by
+    // no one in this status, so it is not claimable).
     using Kind = Species::RelationRowKind;
     const double warning = CommittedTuning().mvp.conflict.warningMinutes * 60.0;
     const std::vector<Species::RelationRow> rows = Species::RelationRowsOf(ValleyOfSiteZero(), 0, 1'000, 0.1, warning, 20);
@@ -253,18 +257,19 @@ public:
       {Kind::Expedition, 3, 0, static_cast<std::uint8_t>(Species::ExpeditionState::Released)},
       {Kind::Respite, 0, 2},
       {Kind::Cladan, 1, 42, 0, 0},
-      {Kind::Grievance, 1, 12, 0, 0},
-      {Kind::Grievance, 1, 30, 1, 1},
+      {Kind::Grievance, 1, 12, 0, 0, 0, 12'400'000},
+      {Kind::Grievance, 1, 30, 1, 1, 77, 30'000'000},
       {Kind::Cladan, 2, 40, 0, 0},
-      {Kind::Grievance, 2, 40, 2, 0},
+      {Kind::Grievance, 2, 40, 2, 0, 78, 40'000'000},
       {Kind::Cladan, 3, 0, 0, 1},
       {Kind::ClaimsHeading},
-      {Kind::Claim, 1, 0, 0, 0},
-      {Kind::Claim, 3, 0, Species::CLAIM_AREA_CENTRAL, 1}};
+      {Kind::Claim, 1, 0, 0, 0, Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 77)},
+      {Kind::Claim, 3, 0, Species::CLAIM_AREA_CENTRAL, 1, Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 80)},
+      {Kind::Claimable, 0, 0, Species::CLAIM_AREA_CENTRAL}};
     ExpectEqual(static_cast<std::int64_t>(expected.size()), static_cast<std::int64_t>(rows.size()), L"every row");
     Assert::IsTrue(rows == expected, L"in order, with their values");
     const std::vector<Species::RelationRow> bounded = Species::RelationRowsOf(ValleyOfSiteZero(), 0, 1'000, 0.1, warning, 6);
-    Assert::IsTrue(bounded.size() == 6 && bounded.back().kind == Kind::More && bounded.back().value == 8,
+    Assert::IsTrue(bounded.size() == 6 && bounded.back().kind == Kind::More && bounded.back().value == 9,
                    L"the bound says what it leaves out");
   }
 
@@ -295,8 +300,8 @@ public:
     Assert::IsTrue(relations != hud.Zones().end(), L"the relations panel is a zone");
     const auto& keys = CommittedPresentation().mvp.hud;
     const double unit = 1080.0 / 600.0;
-    Assert::AreEqual(std::round(keys.padding * unit) * 2.0 + std::round(keys.rowHeight * unit) * 13.0,
-                     static_cast<double>(relations->rect.Height()), 1e-3, L"a row high for each of its 13 rows");
+    Assert::AreEqual(std::round(keys.padding * unit) * 2.0 + std::round(keys.rowHeight * unit) * 14.0,
+                     static_cast<double>(relations->rect.Height()), 1e-3, L"a row high for each of its 14 rows");
     Assert::AreEqual(1920.0 - std::round(keys.margin * unit), static_cast<double>(relations->rect.right), 1e-3, L"at the right");
     Assert::AreEqual(1080.0 - std::round(keys.margin * unit), static_cast<double>(relations->rect.bottom), 1e-3, L"at the bottom");
     Neuron::TextSystem text(Species::TextSystemDesc(CommittedPresentation()));
@@ -315,9 +320,11 @@ public:
       }
       return quads;
     };
-    ExpectEqual(3, imageQuads(Species::UiImage::IconAttack), L"the warning, the expedition and the attack cause");
+    ExpectEqual(6, imageQuads(Species::UiImage::IconAttack), L"the warning, the expedition, the attack cause and three raids");
     ExpectEqual(2, imageQuads(Species::UiImage::IconRespite), L"its respite and another Cladan's");
-    ExpectEqual(4, imageQuads(Species::UiImage::IconClaim), L"two claims, a claim cause and the claim's card");
+    ExpectEqual(6, imageQuads(Species::UiImage::IconClaim), L"two claims, a claim cause, the claimable site and its button, the card");
+    ExpectEqual(3, imageQuads(Species::UiImage::IconTribute), L"a tribute for each grievance against it");
+    ExpectEqual(1, imageQuads(Species::UiImage::IconWithdraw), L"its expedition's withdrawal");
     ExpectEqual(1, imageQuads(Species::UiImage::IconContact), L"the pressure cause");
     ExpectEqual(1, imageQuads(Species::UiImage::IconBattle), L"the battle's card");
     ExpectEqual(3, imageQuads(Species::UiImage::PanelAccent), L"the settlement, world and relations panels");
@@ -326,6 +333,48 @@ public:
     Assert::IsTrue(
       std::ranges::none_of(hud.Zones(), [](const Species::HudZoneRect& _zone) { return _zone.zone == Species::HudZone::Relations; }),
       L"no panel before the first valley status");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp101EachRowsActionsAreButtonsAtItsEnd)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-461")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp101EachRowsActionsAreButtonsAtItsEnd)
+  {
+    // ADR-167: a raid on each Cladan, a tribute for each grievance against the steward's settlement, the withdrawal of its
+    // expedition and a claim on the claimable central site: each a zone at its row's end, found before the panel.
+    Species::HudModel model = SettlementModel();
+    model.valley = ValleyOfSiteZero();
+    model.tick = 1'000;
+    model.warningSeconds = 300.0;
+    Species::SettlementHud hud(CommittedPresentation(), CommittedTuning());
+    hud.SetModel(model, MetricsAt({1920, 1080}));
+    std::vector<Species::HudZoneRect> buttons;
+    std::ranges::copy_if(hud.Zones(), std::back_inserter(buttons),
+                         [](const Species::HudZoneRect& _zone) { return _zone.zone == Species::HudZone::RelationAction; });
+    ExpectEqual(8, static_cast<std::int64_t>(buttons.size()), L"three raids, three tributes, a withdrawal and a claim");
+    const auto panel = std::ranges::find(hud.Zones(), Species::HudZone::Relations, &Species::HudZoneRect::zone);
+    const double unit = 1080.0 / 600.0;
+    const auto& keys = CommittedPresentation().mvp.hud;
+    for (const Species::HudZoneRect& button : buttons)
+    {
+      const std::span<const Species::RelationRow> rows = hud.RelationRows();
+      const Species::RelationRow& row = rows[button.index / 2U];
+      Assert::IsTrue(Species::RelationActionsOf(row, 0)[button.index % 2U] != Species::RelationAction::None, L"a row's action");
+      Assert::AreEqual(static_cast<double>(panel->rect.right) - std::round(keys.padding * unit), static_cast<double>(button.rect.right),
+                       1e-3, L"its first button at the row's end");
+      const Neuron::PointPx center{static_cast<std::int32_t>((button.rect.left + button.rect.right) * 0.5f),
+                                   static_cast<std::int32_t>((button.rect.top + button.rect.bottom) * 0.5f)};
+      Assert::IsTrue(hud.ZoneAt(center).value_or(Species::HudZoneRect{}).zone == Species::HudZone::RelationAction, L"over the panel");
+    }
+    Assert::IsTrue(Species::RelationActionsOf({Species::RelationRowKind::Claim, 0, 0, 2, 0}, 0) ==
+                     std::array{Species::RelationAction::WithdrawClaim, Species::RelationAction::ClaimBattle},
+                   L"an open claim of its own: withdrawn, or its battle declared");
+    Assert::IsTrue(Species::RelationActionsOf({Species::RelationRowKind::Claim, 0, 0, 2, 1}, 0) ==
+                     std::array{Species::RelationAction::WithdrawClaim, Species::RelationAction::None},
+                   L"a waiting claim has no battle");
+    Assert::IsTrue(Species::RelationActionsOf({Species::RelationRowKind::Claim, 1, 0, 2, 0}, 0)[0] == Species::RelationAction::None,
+                   L"another's claim, none");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp102TheM3SentencesReadAsWritten)

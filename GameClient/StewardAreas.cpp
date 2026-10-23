@@ -64,7 +64,7 @@ void DistanceLine(std::span<const double> _in, std::span<double> _out, std::vect
 } // namespace
 
 void StewardAreas::Update(const StateReplica::View& _latest, std::optional<std::uint8_t> _team, const RegionLayout& _layout,
-                          const TuningMvp& _tuning)
+                          const TuningMvp& _tuning, std::span<const Field> _fields)
 {
   std::optional<std::uint8_t> site;
   if (_team.has_value())
@@ -97,11 +97,12 @@ void StewardAreas::Update(const StateReplica::View& _latest, std::optional<std::
     Clear();
     return;
   }
-  if (chunks == m_chunks && site.value() == m_site)
+  if (chunks == m_chunks && site.value() == m_site && std::ranges::equal(_fields, m_fields))
   {
     return;
   }
   m_chunks = std::move(chunks);
+  m_fields.assign(_fields.begin(), _fields.end());
   m_site = site.value();
   Rebuild(_layout, _tuning);
   ++m_revision;
@@ -114,6 +115,7 @@ void StewardAreas::Clear() noexcept
     return;
   }
   m_chunks.clear();
+  m_fields.clear();
   m_territory.clear();
   m_inside.clear();
   m_cellsPerAxis = 0;
@@ -156,16 +158,38 @@ void StewardAreas::Rebuild(const RegionLayout& _layout, const TuningMvp& _tuning
       }
     }
   }
-  if (maxX < 0)
+  if (maxX >= 0)
   {
-    return;
+    MarkNearTerritory(minX, minZ, maxX, maxZ, margin);
   }
+  // WLD-244 (ADR-167): each battlefield's cells, whose centres lie within its radius of its centre.
+  const auto cellAt = [this](double _coordinate, double _origin)
+  {
+    return static_cast<std::int32_t>(
+      std::clamp(std::floor((_coordinate - _origin) / m_cellSize), 0.0, static_cast<double>(m_cellsPerAxis) - 1.0));
+  };
+  for (const Field& field : m_fields)
+  {
+    for (std::int32_t z = cellAt(field.z - field.radius, m_originZ); z <= cellAt(field.z + field.radius, m_originZ); ++z)
+    {
+      for (std::int32_t x = cellAt(field.x - field.radius, m_originX); x <= cellAt(field.x + field.radius, m_originX); ++x)
+      {
+        const double dx = m_originX + (x + 0.5) * m_cellSize - field.x;
+        const double dz = m_originZ + (z + 0.5) * m_cellSize - field.z;
+        m_inside[Index(x, z)] = dx * dx + dz * dz <= field.radius * field.radius ? 1 : m_inside[Index(x, z)];
+      }
+    }
+  }
+}
+
+void StewardAreas::MarkNearTerritory(std::int32_t _minX, std::int32_t _minZ, std::int32_t _maxX, std::int32_t _maxZ, double _margin)
+{
   // The exact distance of each cell's centre from the nearest territory cell's centre, along the rows and then along the
   // columns, in cells², over the territory's box widened by the margin, beyond which no cell is near enough (ADR-142).
-  const auto boxX = static_cast<std::size_t>(minX);
-  const auto boxZ = static_cast<std::size_t>(minZ);
-  const std::size_t width = static_cast<std::size_t>(maxX) - boxX + 1;
-  const std::size_t depth = static_cast<std::size_t>(maxZ) - boxZ + 1;
+  const auto boxX = static_cast<std::size_t>(_minX);
+  const auto boxZ = static_cast<std::size_t>(_minZ);
+  const std::size_t width = static_cast<std::size_t>(_maxX) - boxX + 1;
+  const std::size_t depth = static_cast<std::size_t>(_maxZ) - boxZ + 1;
   const auto side = static_cast<std::size_t>(m_cellsPerAxis);
   std::vector<double> distance(width * depth);
   for (std::size_t z = 0; z < depth; ++z)
@@ -194,7 +218,7 @@ void StewardAreas::Rebuild(const RegionLayout& _layout, const TuningMvp& _tuning
     DistanceLine(std::span<const double>(line.data(), depth), result, roots, bounds);
     for (std::size_t z = 0; z < depth; ++z)
     {
-      m_inside[(boxZ + z) * side + boxX + x] = result[z] * m_cellSize * m_cellSize <= margin * margin ? 1 : 0;
+      m_inside[(boxZ + z) * side + boxX + x] = result[z] * m_cellSize * m_cellSize <= _margin * _margin ? 1 : 0;
     }
   }
 }

@@ -262,7 +262,7 @@ void WorldPresentation::UpdateHud(ClientSession& _session, const SettlementView&
 {
   const double seconds = std::chrono::duration<double>(m_desc.clock->Now() - m_start).count();
   m_hud->Update(_session, seconds, UiMetricsOf(*m_desc.presentation, _client, _dpiScale, m_desc.display.uiScale, m_desc.display.textScale),
-                _view.Settlement().ForHud());
+                _view.Settlement().ForHud(), _view.Markers().IconPlaces());
 }
 
 void WorldPresentation::Update(const ClientSession& _session)
@@ -333,7 +333,8 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     crowd.cameraFront = Neuron::ViewDirection(inputs.camera);
     crowd.scaledSeconds = m_presentationClock.ScaledSeconds();
     crowd.unscaledSeconds = m_presentationClock.UnscaledSeconds();
-    crowd.localTeam = _session.CommandedTeam();
+    // ADR-167: the team the battle verbs command, the settlement's or its expedition's, shows its selection.
+    crowd.localTeam = _view.BattleTeam().has_value() ? _view.BattleTeam() : _session.CommandedTeam();
     crowd.entityDetail = m_desc.display.entityDetail;
     crowd.workerScaleFactor = m_desc.display.workerScaleFactor;
     const double fraction = _session.InterpolationFraction();

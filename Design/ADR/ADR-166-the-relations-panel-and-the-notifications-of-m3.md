@@ -141,3 +141,4 @@ Chosen options: 1, 3, 5 and 7.
   - `GameClient/SettlementHud` (`RelationRowsOf`, the panel, the cards), `TerritoryLook` (`SetValley`, `SpotColor`), `UiLook` (the M3 images), `WorldPresentation`;
   - `GameShared/TuningPresentation` (`mvp.hud.relations_rows_max`); `GameData/Strings/en_us.json` (`ui.hud.cladan` to `ui.hud.notice`);
   - `GameClientTests/SettlementHudTests`, `TerritoryLookTests`, `TestSupport` (`CommittedStrings`).
+* **Amendment 2026-10-23 (M3 task T12, [ADR-167](ADR-167-the-conflict-verbs-and-markers-at-m3.md)).** Each row ends in the buttons of its actions, and the claimable areas follow the claims as rows of their own; a grievance's row carries its subject and weight, and a claim's its id, for their commands. The attacks' and claims' world markers are T12's (option 8's).

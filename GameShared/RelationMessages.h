@@ -113,6 +113,15 @@ inline constexpr std::uint8_t ATTACK_REFUSAL_MAX = static_cast<std::uint8_t>(Att
 // O98: an expedition's Leaders, at most.
 inline constexpr std::size_t EXPEDITION_LEADERS_MAX = 3;
 
+// ADR-161: the team slot of the expedition of the settlement at a site, whose figures leave the settlement's team while
+// they are out; the slots after the four sites' teams. In GameShared from M3 task T12, so that the client knows its
+// expedition's figures (ADR-167).
+inline constexpr std::uint8_t EXPEDITION_TEAM_FIRST = 4;
+[[nodiscard]] constexpr std::uint8_t ExpeditionTeamOf(std::uint8_t _site) noexcept
+{
+  return static_cast<std::uint8_t>(EXPEDITION_TEAM_FIRST + _site);
+}
+
 /// MVP-053: the settlement claims an area: a half of a valley border area that its valley neighbour holds, or the
 /// valley's central resource site. A claim refused when it executes has no effect, and its outcome's reason is the
 /// ClaimRefusal.

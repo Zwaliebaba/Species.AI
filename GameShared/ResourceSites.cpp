@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "RegionTerrain.h"
+#include "RelationMessages.h"
 #include "ResourceSites.h"
 
 #include <algorithm>
@@ -108,6 +109,34 @@ std::vector<ResourceSitePlace> PlaceResourceSites(const RegionLayout& _layout, c
   places.push_back(PlaceAt(ResourceSiteClass::Central, std::nullopt, _layout.valleyCenter.x, _layout.valleyCenter.z, _layout.sites[0],
                            static_cast<std::uint32_t>(resource.centralFactor), _field));
   return places;
+}
+
+std::optional<Neuron::Vec3> ClaimAreaCenter(const RegionLayout& _layout, const Neuron::TerrainField& _field, const TuningMvp& _tuning,
+                                            std::uint8_t _area)
+{
+  if (_area == CLAIM_AREA_CENTRAL)
+  {
+    return Neuron::Vec3{_layout.valleyCenter.x, _field.Height(_layout.valleyCenter.x, _layout.valleyCenter.z), _layout.valleyCenter.z};
+  }
+  if (_area > CLAIM_AREA_CENTRAL)
+  {
+    return std::nullopt;
+  }
+  // As PlaceResourceSites places a border resource site: from the half's own site towards its neighbour.
+  const auto& pair = VALLEY_PAIRS[_area / 2U];
+  const Neuron::Vec3& center = _layout.sites[pair[_area % 2U]];
+  const Neuron::Vec3& other = _layout.sites[pair[1U - _area % 2U]];
+  const double distance = Neuron::HorizontalDistance(center, other);
+  const std::optional<double> centroid = SegmentCentroidDistance(_tuning.wld.territory.maxRadius, distance / 2.0);
+  if (!centroid)
+  {
+    return std::nullopt;
+  }
+  const Neuron::Vec3 along = Towards(center, other);
+  const double from = distance - centroid.value_or(0.0);
+  const double x = center.x + along.x * from;
+  const double z = center.z + along.z * from;
+  return Neuron::Vec3{x, _field.Height(x, z), z};
 }
 
 bool HomeYieldsAgree(std::span<const ResourceSitePlace> _places, const Neuron::TerrainField& _field, const TuningMvp& _tuning)

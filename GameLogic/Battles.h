@@ -20,14 +20,6 @@ struct Settlement;
 // The first state version whose regions hold expeditions, battles, battle results and respites (M3 task T6, ADR-161).
 inline constexpr std::uint32_t STATE_VERSION_WITH_BATTLES = 13;
 
-// ADR-161: the team slot of the expedition of the settlement at a site, whose figures leave the settlement's team while
-// they are out; the slots after the four sites' teams.
-inline constexpr std::uint8_t EXPEDITION_TEAM_FIRST = 4;
-[[nodiscard]] constexpr std::uint8_t ExpeditionTeamOf(std::uint8_t _site) noexcept
-{
-  return static_cast<std::uint8_t>(EXPEDITION_TEAM_FIRST + _site);
-}
-
 /// MVP-041 and MVP-042 (O98, ADR-161): an attack of the settlement at site `attacker` on the settlement at site
 /// `target`, a raid or the claim battle of `claim`, by up to three of its Leaders and the Workers that followed them when
 /// it was declared, who form its expedition's team. Its stable id is the subject of the attack's grievance (MVP-051).

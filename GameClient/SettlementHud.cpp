@@ -49,6 +49,10 @@ constexpr std::string_view STRING_CLAIMS = "ui.hud.claims";
 constexpr std::string_view STRING_CLAIM = "ui.hud.claim";
 constexpr std::string_view STRING_MORE = "ui.hud.more";
 constexpr std::string_view STRING_NOTICE = "ui.hud.notice";
+// M3 task T12 (ADR-167): a claimable area, the attack being declared and a conflict command's refusal.
+constexpr std::string_view STRING_CLAIMABLE = "ui.hud.claimable";
+constexpr std::string_view STRING_DECLARE = "ui.hud.declare";
+constexpr std::string_view STRING_CONFLICT_REFUSED = "ui.hud.conflict_refused";
 
 // The selectors of the strings' select arguments, in GrowthState's, WorkerTask's, IdleReason's and StructureKind's orders.
 constexpr std::array<std::string_view, 3> GROWTH_SELECTORS{"growing", "at_limit", "stores_short"};
@@ -65,6 +69,14 @@ constexpr std::array<std::string_view, 3> CAUSE_SELECTORS{"pressure", "claim", "
 constexpr std::array<std::string_view, 3> EXPEDITION_SELECTORS{"held", "released", "fighting"};
 constexpr std::array<std::string_view, 3> CLAIM_SELECTORS{"open", "waiting", "contested"};
 constexpr std::array<UiImage, 3> CAUSE_ICONS{UiImage::IconContact, UiImage::IconClaim, UiImage::IconAttack};
+// The refusals' selectors from their first value, 1, in ClaimRefusal's, AttackRefusal's and TributeRefusal's orders, and
+// ConflictKind's (ADR-167).
+constexpr std::array<std::string_view, 7> CLAIM_REFUSAL_SELECTORS{"no_settlement",   "not_claimable", "not_held",    "already_held",
+                                                                  "already_claimed", "no_such_claim", "cooling_down"};
+constexpr std::array<std::string_view, 8> ATTACK_REFUSAL_SELECTORS{"no_settlement", "underway",  "no_target",     "under_respite",
+                                                                   "no_leader",     "too_large", "cannot_afford", "quiet"};
+constexpr std::array<std::string_view, 4> TRIBUTE_REFUSAL_SELECTORS{"no_settlement", "no_grievance", "no_amount", "cannot_afford"};
+constexpr std::array<std::string_view, 3> CONFLICT_SELECTORS{"claim", "attack", "tribute"};
 
 constexpr std::array<UiImage, 3> PRIORITY_ICONS{UiImage::IconPriorityGather, UiImage::IconPriorityConstruct, UiImage::IconPriorityGuard};
 
@@ -76,6 +88,8 @@ constexpr std::size_t PRIORITY_ROW = 4;
 constexpr std::uint8_t SHARE_MAX = 100;
 // The gap between two notification cards and between the queue and the bar, in HUD units.
 constexpr double CARD_GAP = 4.0;
+// ADR-167: the relations rows a button's zone index can name, two buttons a row in 8 bits.
+constexpr std::size_t RELATION_ROWS_ADDRESSED = 128;
 
 std::string_view KindSelector(StructureKind _kind) noexcept
 {
@@ -154,6 +168,41 @@ struct NoticeLook
   std::string_view kind;
   bool positive = true;
 };
+
+// ADR-167: a relation action's button's icon.
+UiImage ActionIcon(RelationAction _action) noexcept
+{
+  switch (_action)
+  {
+  case RelationAction::Raid:
+  case RelationAction::ClaimBattle:
+    return UiImage::IconAttack;
+  case RelationAction::WithdrawClaim:
+  case RelationAction::WithdrawAttack:
+    return UiImage::IconWithdraw;
+  case RelationAction::Tribute:
+    return UiImage::IconTribute;
+  case RelationAction::Claim:
+  case RelationAction::None:
+    break;
+  }
+  return UiImage::IconClaim;
+}
+
+std::string_view ConflictReasonSelector(ConflictKind _kind, std::uint8_t _reason) noexcept
+{
+  const std::size_t index = _reason > 0 ? std::size_t{_reason} - 1 : std::size_t{255};
+  switch (_kind)
+  {
+  case ConflictKind::Claim:
+    return Selector(CLAIM_REFUSAL_SELECTORS, index);
+  case ConflictKind::Attack:
+    return Selector(ATTACK_REFUSAL_SELECTORS, index);
+  case ConflictKind::Tribute:
+    return Selector(TRIBUTE_REFUSAL_SELECTORS, index);
+  }
+  return "other";
+}
 
 NoticeLook NoticeLookOf(const SettlementNotice& _notice) noexcept
 {
@@ -255,19 +304,42 @@ std::vector<RelationRow> RelationRowsOf(const ValleyStatus& _valley, std::uint8_
       if (grievance.holder == settlement.site && grievance.against == _site)
       {
         rows.push_back({RelationRowKind::Grievance, settlement.site, WholeWeight(grievance.weightMicro),
-                        static_cast<std::uint8_t>(grievance.cause), static_cast<std::uint8_t>(grievance.causeRemoved ? 1 : 0)});
+                        static_cast<std::uint8_t>(grievance.cause), static_cast<std::uint8_t>(grievance.causeRemoved ? 1 : 0),
+                        grievance.subject, grievance.weightMicro});
       }
     }
   }
-  // MVP-053: every claim.
-  if (!_valley.claims.empty())
+  // MVP-053: every claim, then each area the settlement may claim now (ADR-167): a half of its valley pair that its
+  // neighbour holds, or the central resource site that it does not hold, which it does not already claim and whose
+  // cooldown has passed (O100), as CheckClaim decides on the server.
+  std::vector<RelationRow> claimable;
+  for (std::uint8_t area = 0; area < VALLEY_AREAS; ++area)
+  {
+    const AreaLine& line = _valley.areas[area];
+    const bool claimed =
+      std::ranges::any_of(_valley.claims, [&](const ClaimLine& _claim) { return _claim.claimant == _site && _claim.area == area; });
+    bool open = area == CLAIM_AREA_CENTRAL ? line.holder != std::optional<std::uint8_t>(_site) : false;
+    if (area < CLAIM_AREA_CENTRAL)
+    {
+      const auto& pair = VALLEY_PAIRS[area / 2U];
+      const bool ours = pair[0] == _site || pair[1] == _site;
+      const std::uint8_t neighbor = pair[0] == _site ? pair[1] : pair[0];
+      open = ours && line.holder == std::optional<std::uint8_t>(neighbor);
+    }
+    if (open && !claimed && line.claimableTick <= _tick)
+    {
+      claimable.push_back({RelationRowKind::Claimable, _site, 0, area});
+    }
+  }
+  if (!_valley.claims.empty() || !claimable.empty())
   {
     rows.push_back({RelationRowKind::ClaimsHeading});
   }
   for (const ClaimLine& claim : _valley.claims)
   {
-    rows.push_back({RelationRowKind::Claim, claim.claimant, 0, claim.area, static_cast<std::uint8_t>(claim.state)});
+    rows.push_back({RelationRowKind::Claim, claim.claimant, 0, claim.area, static_cast<std::uint8_t>(claim.state), claim.id});
   }
+  rows.insert(rows.end(), claimable.begin(), claimable.end());
   if (_rowsMax > 0 && rows.size() > _rowsMax)
   {
     const auto left = static_cast<std::int64_t>(rows.size() - (_rowsMax - 1));
@@ -275,6 +347,37 @@ std::vector<RelationRow> RelationRowsOf(const ValleyStatus& _valley, std::uint8_
     rows.push_back({RelationRowKind::More, 0, left});
   }
   return rows;
+}
+
+std::array<RelationAction, 2> RelationActionsOf(const RelationRow& _row, std::uint8_t _site) noexcept
+{
+  switch (_row.kind)
+  {
+  case RelationRowKind::Cladan:
+    return {RelationAction::Raid, RelationAction::None};
+  case RelationRowKind::Grievance:
+    return {RelationAction::Tribute, RelationAction::None};
+  case RelationRowKind::Expedition:
+    return {RelationAction::WithdrawAttack, RelationAction::None};
+  case RelationRowKind::Claimable:
+    return {RelationAction::Claim, RelationAction::None};
+  case RelationRowKind::Claim:
+    if (_row.site != _site)
+    {
+      break;
+    }
+    // ADR-161: an open or contested claim has its battle; a waiting one is held by its wait alone.
+    return _row.state == static_cast<std::uint8_t>(ClaimState::Waiting)
+             ? std::array<RelationAction, 2>{RelationAction::WithdrawClaim, RelationAction::None}
+             : std::array<RelationAction, 2>{RelationAction::WithdrawClaim, RelationAction::ClaimBattle};
+  case RelationRowKind::Heading:
+  case RelationRowKind::Warning:
+  case RelationRowKind::Respite:
+  case RelationRowKind::ClaimsHeading:
+  case RelationRowKind::More:
+    break;
+  }
+  return {RelationAction::None, RelationAction::None};
 }
 
 HudModel HudModelOf(const ClientSession& _session, const TuningMvp& _tuning, const TuningPresentation& _presentation,
@@ -338,10 +441,23 @@ float SettlementHud::Units(double _hudUnits) const noexcept
     std::round(_hudUnits * static_cast<double>(m_metrics.HudUnitPixels()) * static_cast<double>(m_metrics.uiScale)));
 }
 
-void SettlementHud::Update(ClientSession& _session, double _realSeconds, const Neuron::UiMetrics& _metrics, const HudVerbs& _verbs)
+Neuron::UiRect SettlementHud::RelationButton(std::size_t _place, std::size_t _slot) const noexcept
+{
+  const auto& hud = m_presentation.mvp.hud;
+  const float padding = Units(hud.padding);
+  const float row = Units(hud.rowHeight);
+  const float icon = Units(hud.iconSize);
+  const float top = std::round(m_relations.top + padding + row * static_cast<float>(_place) + (row - icon) * 0.5f);
+  const float right = m_relations.right - padding - static_cast<float>(_slot) * (icon + padding);
+  return Neuron::UiRect::FromSize(right - icon, top, icon, icon);
+}
+
+void SettlementHud::Update(ClientSession& _session, double _realSeconds, const Neuron::UiMetrics& _metrics, const HudVerbs& _verbs,
+                           std::span<const MarkerIconPlace> _markers)
 {
   const std::vector<SettlementNotice> arrived = _session.TakeNotices();
   m_model = HudModelOf(_session, m_tuning, m_presentation, std::move(m_model.notices), arrived, _realSeconds, _verbs);
+  m_model.markers.assign(_markers.begin(), _markers.end());
   // MVP-098: the status is server data, asked for once a period while the client has a settlement.
   if (m_model.settlement.has_value() &&
       (!m_lastRequest.has_value() || _realSeconds - *m_lastRequest >= m_presentation.mvp.hud.statusPeriod || _realSeconds < *m_lastRequest))
@@ -448,6 +564,18 @@ void SettlementHud::Layout(const Neuron::UiMetrics& _metrics)
     m_relations =
       Neuron::UiRect::FromSize(width - margin - Units(hud.panelWidth), height - margin - panelHeight, Units(hud.panelWidth), panelHeight);
     m_zones.push_back({HudZone::Relations, 0, m_relations});
+    // ADR-167: each row's buttons at its end, the first nearest it, found before the panel under them.
+    for (std::size_t place = 0; place < m_relationRows.size() && place < RELATION_ROWS_ADDRESSED; ++place)
+    {
+      const std::array<RelationAction, 2> actions = RelationActionsOf(m_relationRows[place], m_model.settlement->site);
+      for (std::size_t slot = 0; slot < actions.size(); ++slot)
+      {
+        if (actions[slot] != RelationAction::None)
+        {
+          m_zones.push_back({HudZone::RelationAction, static_cast<std::uint8_t>(place * 2 + slot), RelationButton(place, slot)});
+        }
+      }
+    }
   }
 }
 
@@ -509,6 +637,38 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
       image(UiImage::HudMeter, Neuron::UiRect::FromSize(_left, _top, filled, meterHeight), Rgba(palette.meterFill));
     }
   };
+
+  // ADR-166: a Cladan's name, from its colour, and an area's: the central site, or a half of a valley border area by the
+  // settlement whose half it is and the neighbour it faces.
+  const auto cladanName = [&](std::uint8_t _site)
+  {
+    const std::array arguments{Neuron::FormatArgument{"cladan", Selector(CLADAN_SELECTORS, _site)}};
+    return _strings.Format(STRING_CLADAN, arguments, _locale);
+  };
+  const auto areaName = [&](std::uint8_t _area)
+  {
+    if (_area >= CLAIM_AREA_CENTRAL)
+    {
+      const std::array arguments{Neuron::FormatArgument{"area", std::string_view("central")}};
+      return _strings.Format(STRING_AREA, arguments, _locale);
+    }
+    const auto& pair = VALLEY_PAIRS[_area / 2U];
+    const std::string owner = cladanName(pair[_area % 2U]);
+    const std::string facing = cladanName(pair[1U - _area % 2U]);
+    const std::array arguments{Neuron::FormatArgument{"area", std::string_view("half")},
+                               Neuron::FormatArgument{"owner", std::string_view(owner)},
+                               Neuron::FormatArgument{"facing", std::string_view(facing)}};
+    return _strings.Format(STRING_AREA, arguments, _locale);
+  };
+
+  // ADR-167: the attacks' and claims' icons over their world markers' discs (pass 16), under the panels, in white as the
+  // Leader marker's icon is (R-CTRL-386).
+  for (const MarkerIconPlace& marker : m_model.markers)
+  {
+    const float side = std::round(marker.side);
+    image(marker.icon == TargetIcon::Claim ? UiImage::IconClaim : UiImage::IconAttack,
+          Neuron::UiRect::FromSize(std::round(marker.x - side * 0.5f), std::round(marker.y - side * 0.5f), side, side), text);
+  }
 
   // The settlement panel (UI-460's accent strip).
   panel(UiImage::PanelAccent, m_panel, Rgba(palette.accent));
@@ -663,7 +823,33 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
                          Neuron::RowTextTop(lineTop, row, laid.heightPixels), style);
     };
     const HudVerbs& verbs = m_model.verbs;
-    if (verbs.refusal.has_value() && verbs.refusalAgeSeconds < hud.noticeSeconds)
+    const auto faded = [&](double _ageSeconds)
+    {
+      const double left = hud.noticeSeconds - _ageSeconds;
+      return hud.noticeFade > 0.0 ? std::clamp(left / hud.noticeFade, 0.0, 1.0) : 1.0;
+    };
+    if (verbs.pending.has_value())
+    {
+      // MVP-101 (ADR-167): the attack being declared, with its cost and whether it is unprovoked, before it is confirmed.
+      const PendingAttack& pending = *verbs.pending;
+      const std::string target = cladanName(pending.target);
+      const std::string area = pending.area.has_value() ? areaName(*pending.area) : std::string();
+      const std::array arguments{Neuron::FormatArgument{"kind", std::string_view(pending.area.has_value() ? "claim" : "raid")},
+                                 Neuron::FormatArgument{"target", std::string_view(target)},
+                                 Neuron::FormatArgument{"area", std::string_view(area)},
+                                 Neuron::FormatArgument{"leaders", static_cast<std::int64_t>(pending.leaders)},
+                                 Neuron::FormatArgument{"cost", WholeRu(pending.costMilliRu)},
+                                 Neuron::FormatArgument{"unprovoked", std::string_view(pending.unprovoked ? "yes" : "no")}};
+      centered(STRING_DECLARE, arguments, static_cast<std::int64_t>(own.storesMilliRu) >= pending.costMilliRu ? text : negative);
+    }
+    else if (verbs.conflictRefusal.has_value() && verbs.conflictRefusalAgeSeconds < hud.noticeSeconds)
+    {
+      const auto [kind, reason] = *verbs.conflictRefusal;
+      const std::array arguments{Neuron::FormatArgument{"kind", Selector(CONFLICT_SELECTORS, static_cast<std::size_t>(kind))},
+                                 Neuron::FormatArgument{"reason", ConflictReasonSelector(kind, reason)}};
+      centered(STRING_CONFLICT_REFUSED, arguments, Rgba(palette.negative, faded(verbs.conflictRefusalAgeSeconds)));
+    }
+    else if (verbs.refusal.has_value() && verbs.refusalAgeSeconds < hud.noticeSeconds)
     {
       const double left = hud.noticeSeconds - verbs.refusalAgeSeconds;
       const double alpha = hud.noticeFade > 0.0 ? std::clamp(left / hud.noticeFade, 0.0, 1.0) : 1.0;
@@ -681,29 +867,6 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
       centered(STRING_PLACING, arguments, text);
     }
   }
-
-  // ADR-166: a Cladan's name, from its colour, and an area's: the central site, or a half of a valley border area by the
-  // settlement whose half it is and the neighbour it faces.
-  const auto cladanName = [&](std::uint8_t _site)
-  {
-    const std::array arguments{Neuron::FormatArgument{"cladan", Selector(CLADAN_SELECTORS, _site)}};
-    return _strings.Format(STRING_CLADAN, arguments, _locale);
-  };
-  const auto areaName = [&](std::uint8_t _area)
-  {
-    if (_area >= CLAIM_AREA_CENTRAL)
-    {
-      const std::array arguments{Neuron::FormatArgument{"area", std::string_view("central")}};
-      return _strings.Format(STRING_AREA, arguments, _locale);
-    }
-    const auto& pair = VALLEY_PAIRS[_area / 2U];
-    const std::string owner = cladanName(pair[_area % 2U]);
-    const std::string facing = cladanName(pair[1U - _area % 2U]);
-    const std::array arguments{Neuron::FormatArgument{"area", std::string_view("half")},
-                               Neuron::FormatArgument{"owner", std::string_view(owner)},
-                               Neuron::FormatArgument{"facing", std::string_view(facing)}};
-    return _strings.Format(STRING_AREA, arguments, _locale);
-  };
 
   // MVP-050, MVP-102 (ADR-166): the relations panel, bottom right.
   if (!m_relationRows.empty())
@@ -758,7 +921,7 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
         line(STRING_ANGER, arguments, rowText, rowTop, row, relation.value > 0 ? negative : text);
         if (relation.state != 0)
         {
-          rowImage(UiImage::IconRespite, m_relations.right - padding - icon, positive);
+          image(UiImage::IconRespite, RelationButton(static_cast<std::size_t>(&relation - m_relationRows.data()), 1), positive);
         }
         break;
       }
@@ -786,12 +949,44 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
         line(STRING_CLAIM, arguments, rowText, rowTop, row, text);
         break;
       }
+      case RelationRowKind::Claimable:
+      {
+        // ADR-167: an area the settlement may claim now, its button at the row's end.
+        rowImage(UiImage::IconClaim, left, Rgba(palette.text, hud.disabledAlpha));
+        const std::string area = areaName(relation.detail);
+        const std::array arguments{Neuron::FormatArgument{"area", std::string_view(area)}};
+        line(STRING_CLAIMABLE, arguments, rowText, rowTop, row, text);
+        break;
+      }
       case RelationRowKind::More:
       {
         const std::array arguments{Neuron::FormatArgument{"count", relation.value}};
         line(STRING_MORE, arguments, rowText, rowTop, row, text);
         break;
       }
+      }
+      // ADR-167: the row's buttons, the one of the attack being declared in the accent strip.
+      const auto place = static_cast<std::size_t>(&relation - m_relationRows.data());
+      const std::array<RelationAction, 2> actions = RelationActionsOf(relation, m_model.settlement->site);
+      for (std::size_t slot = 0; slot < actions.size() && place < RELATION_ROWS_ADDRESSED; ++slot)
+      {
+        if (actions[slot] == RelationAction::None)
+        {
+          continue;
+        }
+        const Neuron::UiRect button = RelationButton(place, slot);
+        const bool pending = m_model.verbs.pending.has_value() && m_model.verbs.pending->button == place * 2 + slot;
+        if (pending)
+        {
+          panel(UiImage::PanelAccent, button, Rgba(palette.accent));
+        }
+        else
+        {
+          panel(UiImage::PanelNeutral, button, Rgba(palette.neutral));
+        }
+        // A raid on a Cladan under a respite would be refused (MVP-047): its button is dimmed.
+        const bool dimmed = actions[slot] == RelationAction::Raid && relation.state != 0;
+        image(ActionIcon(actions[slot]), button, Rgba(palette.text, dimmed ? hud.disabledAlpha : 1.0));
       }
       rowTop += row;
     }

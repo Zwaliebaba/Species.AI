@@ -167,6 +167,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-164](ADR-164-the-command-paths-confirmation-the-valley-run-and-the-valley-at-war-at-m3.md) | The command path's confirmation, the valley run and the valley at war at M3 | Proposed | 2026-10-23 |
 | [ADR-165](ADR-165-the-valleys-status-notices-and-battle-results-at-m3.md) | The valley's status, notices and battle results at M3 | Proposed | 2026-10-23 |
 | [ADR-166](ADR-166-the-relations-panel-and-the-notifications-of-m3.md) | The relations panel and the notifications of M3 | Proposed | 2026-10-23 |
+| [ADR-167](ADR-167-the-conflict-verbs-and-markers-at-m3.md) | The conflict verbs and markers at M3 | Proposed | 2026-10-23 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

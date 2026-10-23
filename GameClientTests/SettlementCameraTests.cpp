@@ -2,6 +2,7 @@
 
 #include "Picking.h"
 #include "RegionTerrain.h"
+#include "RelationMessages.h"
 #include "SettlementCamera.h"
 #include "SettlementView.h"
 #include "StewardAreas.h"
@@ -412,6 +413,38 @@ public:
     // Far off the pointer, no sphere is met.
     const Neuron::Ray elsewhere = Neuron::PickRayAt(10.0, 10.0, frame, VIEW, 1.0);
     Assert::IsFalse(Species::LeaderUnderRay(figures, 0, elsewhere, frame, VIEW, CommittedPresentation(), 2.0).has_value());
+    // ADR-167: with team 1 as the expedition's, its Leader is hovered too, the one centred under the pointer winning.
+    figures[4].state.dead = true;
+    figures[3].position = at + Neuron::Vec3{30.0, 0.0, 0.0};
+    Assert::IsTrue(Species::LeaderUnderRay(figures, 0, ray, frame, VIEW, CommittedPresentation(), 2.0, std::uint8_t{1}) ==
+                     Species::StableId{10},
+                   L"the expedition's Leader under the pointer");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp049APressOnAnExpeditionLeaderCommandsItsTeam)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-049")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp049APressOnAnExpeditionLeaderCommandsItsTeam)
+  {
+    // ADR-167: the battle verbs command the settlement's team until a press on a Leader of its expedition, then the
+    // expedition's until a press on one of the settlement's Leaders or the expedition's end.
+    constexpr std::uint8_t TEAM = 2;
+    const std::uint8_t expedition = Species::ExpeditionTeamOf(TEAM);
+    std::vector<Species::InterpolatedFigure> figures(3);
+    figures[0].id = 20;
+    figures[0].state = {.team = TEAM, .kind = Species::FigureKind::Leader};
+    figures[1].id = 21;
+    figures[1].state = {.team = expedition, .kind = Species::FigureKind::Leader};
+    figures[2].id = 22;
+    figures[2].state = {.team = 1, .kind = Species::FigureKind::Leader};
+    ExpectEqual(TEAM, Species::BattleTeamOf(figures, TEAM, expedition, TEAM, std::nullopt), L"the settlement's, with no press");
+    ExpectEqual(expedition, Species::BattleTeamOf(figures, TEAM, expedition, TEAM, Species::StableId{21}), L"a press on its Leader");
+    ExpectEqual(expedition, Species::BattleTeamOf(figures, TEAM, expedition, expedition, std::nullopt), L"kept");
+    ExpectEqual(expedition, Species::BattleTeamOf(figures, TEAM, expedition, expedition, Species::StableId{22}), L"another's Leader");
+    ExpectEqual(TEAM, Species::BattleTeamOf(figures, TEAM, expedition, expedition, Species::StableId{20}), L"back on a press on its own");
+    figures[1].state.dead = true;
+    ExpectEqual(TEAM, Species::BattleTeamOf(figures, TEAM, expedition, expedition, std::nullopt), L"the expedition's end");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl352ACursorSitsOnItsHotspot)
