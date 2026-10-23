@@ -434,7 +434,7 @@ std::optional<ValleyAtWarWorld> PrepareValley(const Neuron::LooseContent& _conte
   ValleyAtWarWorld valley;
   valley.ticks = world->NextTick();
   valley.battles = static_cast<std::uint32_t>(region.Battles().size());
-  for (std::uint8_t team = 0; team < region.TeamCount(); ++team)
+  for (std::size_t team = 0; team < region.TeamCount(); ++team)
   {
     const Species::SlicedPool<Species::Figure>& figures = region.TeamAt(team).figures;
     for (std::uint32_t slot = 0; slot < figures.Capacity(); ++slot)
