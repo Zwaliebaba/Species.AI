@@ -180,6 +180,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-177](ADR-177-distinct-stand-ins-for-the-huds-icons.md) | Distinct stand-ins for the HUD's icons | Proposed | 2026-10-23 |
 | [ADR-178](ADR-178-the-stewards-growth-hold.md) | The steward's growth hold | Proposed | 2026-10-23 |
 | [ADR-179](ADR-179-the-camera-turns-only-while-the-middle-button-is-held.md) | The camera turns only while the middle button is held | Proposed | 2026-10-23 |
+| [ADR-180](ADR-180-a-drop-off-point-pushed-clear-of-its-structure.md) | A drop-off point pushed clear of its structure | Proposed | 2026-10-23 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

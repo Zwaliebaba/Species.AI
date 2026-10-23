@@ -122,6 +122,14 @@ inline constexpr std::size_t TURRET_BARREL_PLACE = 7;
 // head's barrel mount, and its ray sphere (R-BLDG-407, ADR-133).
 [[nodiscard]] ObstacleShape StructureShape(const Structure& _structure, const StructureRecords* _records, const TuningMvp& _tuning);
 
+// MVP-031: where a Worker puts a load down at a drop-off, the Wellspring's door or a storehouse's entrance at rest, on the
+// terrain; the structure's position on the terrain for a kind with neither. As a port is (R-BLDG-020), it is pushed by
+// steps of ref.bldg.structure.push_step_wu directly away from the structure's position until a Worker anywhere within
+// ref.unit.worker.snap_distance of it is clear of _shape by ref.unit.worker.structure_clear_radius, so the Worker's
+// structure push (R-UNIT-114) never holds it short of arriving (ADR-180).
+[[nodiscard]] Neuron::Vec3 DropPointOf(const Structure& _structure, const Neuron::SimulationRecord& _record, const ObstacleShape& _shape,
+                                       const Neuron::TerrainField& _field, const TuningMvp& _tuning);
+
 // A structure canonically, as the region's state holds it (ADR-081 item 7), and the values Write wrote; Read is false
 // when they do not read whole or name a kind this build does not have.
 void WriteStructure(Neuron::BitWriter& _writer, const Structure& _structure);

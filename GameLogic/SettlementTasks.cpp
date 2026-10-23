@@ -63,24 +63,6 @@ void SendAlongRoute(RegionSimulation& _region, Figure& _worker, std::uint32_t _s
   _worker.routePoint = -1;
 }
 
-// MVP-031: where a load is put down, the Wellspring's door or a storehouse's entrance, on the terrain.
-Neuron::Vec3 DropPoint(const RegionSimulation& _region, const Structure& _structure)
-{
-  Neuron::Vec3 point = _structure.position;
-  if (_region.Records() != nullptr)
-  {
-    const Neuron::SimulationRecord& record = RecordOf(*_region.Records(), _structure.kind);
-    const auto kind = _structure.kind == StructureKind::Wellspring ? Neuron::SocketKind::Door : Neuron::SocketKind::Entrance;
-    const std::vector<const Neuron::SimulationSocket*> sockets = Neuron::SocketsOf(record, kind);
-    if (!sockets.empty())
-    {
-      point = StructurePoint(_structure, Neuron::RestPositionOf(record, *sockets.front()));
-    }
-  }
-  point.y = _region.Terrain()->field.Height(point.x, point.z);
-  return point;
-}
-
 bool IsDropOff(const Structure& _structure, std::uint8_t _team) noexcept
 {
   return (_structure.kind == StructureKind::Wellspring || _structure.kind == StructureKind::Storehouse) &&
@@ -98,7 +80,7 @@ void StartCarrying(RegionSimulation& _region, Figure& _worker, std::uint8_t _tea
   {
     if (structures.Used(slot) && IsDropOff(structures.At(slot), _team))
     {
-      const double candidate = Neuron::HorizontalDistance(_worker.position, DropPoint(_region, structures.At(slot)));
+      const double candidate = Neuron::HorizontalDistance(_worker.position, _region.DropPointAt(slot));
       if (!nearest || candidate < distance)
       {
         nearest = slot;
@@ -115,7 +97,7 @@ void StartCarrying(RegionSimulation& _region, Figure& _worker, std::uint8_t _tea
   _worker.portStructureId = drop.id;
   _worker.portStructureSlot = nearest.value_or(0);
   _worker.portIndex = 0;
-  _worker.waypoint = DropPoint(_region, drop);
+  _worker.waypoint = _region.DropPointAt(_worker.portStructureSlot);
   _worker.route = _region.BuildRoute(_worker.position, _worker.waypoint, false);
   _worker.routePoint = -1;
   _worker.workerState = WorkerState::Carrying;
@@ -298,7 +280,7 @@ void CarryingStep(Figure& _worker, const FigureContext& _context)
   }
   if (_worker.route == 0)
   {
-    _worker.waypoint = DropPoint(region, *drop);
+    _worker.waypoint = region.DropPointAt(_worker.portStructureSlot);
   }
   if (!WorkerMoveToWaypoint(_worker, false, movement))
   {
