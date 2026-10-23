@@ -250,7 +250,9 @@ def find_msbuild():
   vswhere = os.path.join(os.environ.get('ProgramFiles(x86)', r'C:\Program Files (x86)'), 'Microsoft Visual Studio', 'Installer',
                          'vswhere.exe')
   if os.path.exists(vswhere):
-    found = subprocess.run([vswhere, '-latest', '-products', '*', '-find', r'MSBuild\**\Bin\MSBuild.exe'], capture_output=True,
+    # The C++ tools are required, since another product's MSBuild, such as SQL Server Management Studio's, may be the latest.
+    found = subprocess.run([vswhere, '-latest', '-products', '*', '-requires', 'Microsoft.VisualStudio.Component.VC.Tools.x86.x64',
+                            '-find', r'MSBuild\**\Bin\MSBuild.exe'], capture_output=True,
                            text=True).stdout.splitlines()
     if found:
       return found[0]
