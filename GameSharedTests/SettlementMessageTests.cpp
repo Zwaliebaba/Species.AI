@@ -133,8 +133,8 @@ public:
     dispatcher.Register<Species::SettlementNotice>([&received](const Species::SettlementNotice& _notice) { received = _notice; });
     Assert::IsTrue(dispatcher.Dispatch(bytes) && received && received->tick == notice.tick && received->kind == notice.kind &&
                      received->team == 2 && received->subject == notice.subject && received->structure == Species::StructureKind::Turret &&
-                     received->position == notice.position && received->other == std::optional<std::uint8_t>(3) && received->ours &&
-                     received->detail == 255,
+                     received->position == notice.position && received->other == std::optional<std::uint8_t>(std::uint8_t{3}) &&
+                     received->ours && received->detail == 255,
                    L"every field");
     Species::SettlementNotice none = notice;
     none.other.reset();

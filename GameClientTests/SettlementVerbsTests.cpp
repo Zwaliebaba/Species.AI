@@ -470,7 +470,8 @@ public:
     // The claim's battle is fought against the area's holder, and declared with the claim; the secondary press drops it.
     const Species::SettlementFrame battle = Press(rows, PlaceOf(rows, Species::RelationRowKind::Claim, SITE), 1);
     static_cast<void>(verbs.Update(battle, TEAM, view, areas));
-    Assert::IsTrue(verbs.Pending().has_value() && verbs.Pending()->target == 0 && verbs.Pending()->area == std::optional<std::uint8_t>(4),
+    Assert::IsTrue(verbs.Pending().has_value() && verbs.Pending()->target == 0 &&
+                     verbs.Pending()->area == std::optional<std::uint8_t>(std::uint8_t{4}),
                    L"against site 0, which holds area 4");
     Species::SettlementFrame secondary;
     secondary.secondaryDown = true;
