@@ -153,6 +153,8 @@ public:
 private:
   // The world's surfaces and looks dropped, for no terrain.
   void ClearWorld();
+  // ADR-175: hands the HUD the panel art's plates and the text system, strings and locale it measures with.
+  void PrepareHud();
 
   Desc m_desc;
   const RegionTerrain* m_terrain = nullptr; // the terrain the world was built from

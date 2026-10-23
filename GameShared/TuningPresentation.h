@@ -2766,8 +2766,43 @@ struct TuningPresentation
 
     struct Chrome
     {
-      // ui.chrome.body_repeat, in repeats of the strip across the width
-      double bodyRepeat = 0.0;
+      struct AccentSlice
+      {
+        // ui.chrome.accent_slice.left, in texels
+        double left = 0.0;
+
+        // ui.chrome.accent_slice.top, in texels
+        double top = 0.0;
+
+        // ui.chrome.accent_slice.right, in texels
+        double right = 0.0;
+
+        // ui.chrome.accent_slice.bottom, in texels
+        double bottom = 0.0;
+      };
+
+      struct NeutralSlice
+      {
+        // ui.chrome.neutral_slice.left, in texels
+        double left = 0.0;
+
+        // ui.chrome.neutral_slice.top, in texels
+        double top = 0.0;
+
+        // ui.chrome.neutral_slice.right, in texels
+        double right = 0.0;
+
+        // ui.chrome.neutral_slice.bottom, in texels
+        double bottom = 0.0;
+      };
+
+      // ui.chrome.plate_texel, in HUD units per texel of a plate's frame
+      double plateTexel = 0.0;
+
+      AccentSlice accentSlice;
+      NeutralSlice neutralSlice;
+      // ui.chrome.button_texel, in HUD units per texel of a button's frame
+      double buttonTexel = 0.0;
     };
 
     struct Palette
@@ -5238,9 +5273,30 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ui::Chrome::AccentSlice& _out)
+{
+  _out.left = _reader.Decimal(_object, "left", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.top = _reader.Decimal(_object, "top", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.right = _reader.Decimal(_object, "right", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.bottom = _reader.Decimal(_object, "bottom", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ui::Chrome::NeutralSlice& _out)
+{
+  _out.left = _reader.Decimal(_object, "left", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.top = _reader.Decimal(_object, "top", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.right = _reader.Decimal(_object, "right", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.bottom = _reader.Decimal(_object, "bottom", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ui::Chrome& _out)
 {
-  _out.bodyRepeat = _reader.Decimal(_object, "body_repeat", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.plateTexel = _reader.Decimal(_object, "plate_texel", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  ReadFields(_reader, _reader.Object(_object, "accent_slice"), _out.accentSlice);
+  ReadFields(_reader, _reader.Object(_object, "neutral_slice"), _out.neutralSlice);
+  _out.buttonTexel = _reader.Decimal(_object, "button_texel", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -8966,14 +9022,52 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.minText2160p = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ui::Chrome::AccentSlice& _in)
+{
+  _writer.F64(_in.left);
+  _writer.F64(_in.top);
+  _writer.F64(_in.right);
+  _writer.F64(_in.bottom);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ui::Chrome::AccentSlice& _out)
+{
+  _out.left = _reader.F64();
+  _out.top = _reader.F64();
+  _out.right = _reader.F64();
+  _out.bottom = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ui::Chrome::NeutralSlice& _in)
+{
+  _writer.F64(_in.left);
+  _writer.F64(_in.top);
+  _writer.F64(_in.right);
+  _writer.F64(_in.bottom);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ui::Chrome::NeutralSlice& _out)
+{
+  _out.left = _reader.F64();
+  _out.top = _reader.F64();
+  _out.right = _reader.F64();
+  _out.bottom = _reader.F64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ui::Chrome& _in)
 {
-  _writer.F64(_in.bodyRepeat);
+  _writer.F64(_in.plateTexel);
+  CookFields(_writer, _in.accentSlice);
+  CookFields(_writer, _in.neutralSlice);
+  _writer.F64(_in.buttonTexel);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ui::Chrome& _out)
 {
-  _out.bodyRepeat = _reader.F64();
+  _out.plateTexel = _reader.F64();
+  ReadCookedFields(_reader, _out.accentSlice);
+  ReadCookedFields(_reader, _out.neutralSlice);
+  _out.buttonTexel = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ui::Palette::WindowBodyTint& _in)

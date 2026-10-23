@@ -184,6 +184,7 @@
     <ClInclude Include="MeshRenderer.h" />
     <ClInclude Include="MessageFormat.h" />
     <ClInclude Include="MessageLocale.h" />
+    <ClInclude Include="NineSlice.h" />
     <ClInclude Include="OverlayRenderer.h" />
     <ClInclude Include="ParticlePool.h" />
     <ClInclude Include="PassTable.h" />
@@ -237,6 +238,7 @@
     <ClCompile Include="MeshRenderer.cpp" />
     <ClCompile Include="MessageFormat.cpp" />
     <ClCompile Include="MessageLocale.cpp" />
+    <ClCompile Include="NineSlice.cpp" />
     <ClCompile Include="OverlayRenderer.cpp" />
     <ClCompile Include="ParticlePool.cpp" />
     <ClCompile Include="PassTable.cpp" />

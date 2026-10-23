@@ -175,6 +175,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-172](ADR-172-the-audio-engine-at-the-mvps-size.md) | The audio engine at the MVP's size | Proposed | 2026-10-23 |
 | [ADR-173](ADR-173-the-first-sound-set-played-at-m3.md) | The first sound set played at M3 | Proposed | 2026-10-23 |
 | [ADR-174](ADR-174-the-first-playables-confirmations-at-m3.md) | The first playable's confirmations at M3 | Proposed | 2026-10-23 |
+| [ADR-175](ADR-175-the-huds-panels-as-framed-plates-sized-to-their-rows.md) | The HUD's panels as framed plates sized to their rows | Proposed | 2026-10-23 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

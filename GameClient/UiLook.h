@@ -2,6 +2,7 @@
 
 #include "LooseContent.h"
 #include "MessageLocale.h"
+#include "NineSlice.h"
 #include "StringTable.h"
 #include "TextSystem.h"
 #include "TuningPresentation.h"
@@ -83,14 +84,20 @@ enum class UiImage : std::uint16_t
 void AppendBadgeCount(const BadgeLabel& _label, Neuron::TextSystem& _text, const TuningPresentation& _presentation,
                       std::uint32_t _clientHeight, float _dpiScale, double _textScale, std::vector<Neuron::UiBatch>& _out);
 
+// ADR-175: the panel image _image as a plate: its size read from its DDS header in _images, with the slices of
+// `ui.chrome.accent_slice.*` for uitex.panel_accent and of `ui.chrome.neutral_slice.*` for uitex.panel_neutral; any
+// other image, or one missing, has no size and is drawn whole.
+[[nodiscard]] Neuron::NineSlice PlateOf(const TuningPresentation& _presentation, const Neuron::UiImages& _images, UiImage _image);
+
 // A Debug build's UI test samples (`--ui-test`, ADR-145, ADR-147, ADR-149), in _area, the test page's right box: the
-// accent panel strip as a window body (UI-054) with the neutral strip beside it; the body role at four sizes and the
+// accent panel as a window body's plate (UI-054, ADR-175) with the neutral plate beside it, drawn as _images' panels
+// at `ui.chrome.plate_texel` × _dpiScale pixels a texel; the body role at four sizes and the
 // development role at one; a line each filled additive, outlined (UI-192), inked and laid over; characters of the
 // fallback family and one no family draws; a string _strings holds, one it does not and a plural formatted in _locale's
 // forms (ADR-146); and a solid and an image swatch in each blend that the UI draws them in, so that every pipeline of
 // the UI pass draws.
-void AppendUiTestPage(Neuron::TextSystem& _text, const TuningPresentation& _presentation, const Neuron::StringTable& _strings,
-                      const Neuron::MessageLocale& _locale, const Neuron::UiRect& _area, float _dpiScale,
-                      std::vector<Neuron::UiBatch>& _out);
+void AppendUiTestPage(Neuron::TextSystem& _text, const TuningPresentation& _presentation, const Neuron::UiImages& _images,
+                      const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale, const Neuron::UiRect& _area,
+                      float _dpiScale, std::vector<Neuron::UiBatch>& _out);
 
 } // namespace Species

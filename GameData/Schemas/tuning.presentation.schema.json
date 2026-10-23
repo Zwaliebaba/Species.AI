@@ -8448,18 +8448,132 @@
           "type": "object",
           "description": "the ui.chrome.* keys",
           "properties": {
-            "body_repeat": {
+            "plate_texel": {
               "type": "number",
-              "description": "ui.chrome.body_repeat (UI-054)",
+              "description": "ui.chrome.plate_texel (UI-054)",
               "minimum": 0,
               "x-species-precision": "binary64",
               "x-species-type": "sim_decimal",
-              "x-species-unit": "repeats of the strip across the width",
+              "x-species-unit": "HUD units per texel of a plate's frame",
+              "x-species-presence": "required"
+            },
+            "accent_slice": {
+              "type": "object",
+              "description": "the ui.chrome.accent_slice.* keys",
+              "properties": {
+                "left": {
+                  "type": "number",
+                  "description": "ui.chrome.accent_slice.left (UI-054)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "texels",
+                  "x-species-presence": "required"
+                },
+                "top": {
+                  "type": "number",
+                  "description": "ui.chrome.accent_slice.top (UI-054)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "texels",
+                  "x-species-presence": "required"
+                },
+                "right": {
+                  "type": "number",
+                  "description": "ui.chrome.accent_slice.right (UI-054)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "texels",
+                  "x-species-presence": "required"
+                },
+                "bottom": {
+                  "type": "number",
+                  "description": "ui.chrome.accent_slice.bottom (UI-054)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "texels",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "left",
+                "top",
+                "right",
+                "bottom"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "neutral_slice": {
+              "type": "object",
+              "description": "the ui.chrome.neutral_slice.* keys",
+              "properties": {
+                "left": {
+                  "type": "number",
+                  "description": "ui.chrome.neutral_slice.left (UI-054)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "texels",
+                  "x-species-presence": "required"
+                },
+                "top": {
+                  "type": "number",
+                  "description": "ui.chrome.neutral_slice.top (UI-054)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "texels",
+                  "x-species-presence": "required"
+                },
+                "right": {
+                  "type": "number",
+                  "description": "ui.chrome.neutral_slice.right (UI-054)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "texels",
+                  "x-species-presence": "required"
+                },
+                "bottom": {
+                  "type": "number",
+                  "description": "ui.chrome.neutral_slice.bottom (UI-054)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "texels",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "left",
+                "top",
+                "right",
+                "bottom"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "button_texel": {
+              "type": "number",
+              "description": "ui.chrome.button_texel (UI-054)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "HUD units per texel of a button's frame",
               "x-species-presence": "required"
             }
           },
           "required": [
-            "body_repeat"
+            "plate_texel",
+            "accent_slice",
+            "neutral_slice",
+            "button_texel"
           ],
           "additionalProperties": false,
           "x-species-type": "object",

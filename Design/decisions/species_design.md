@@ -86,7 +86,7 @@ This file records the decisions of the Species design and of the MVP built from 
 
 ### DEC-1005 The provisional layout and palette of the settlement HUD
 - Status: Open
-- Affects: implementation/mvp_scope.md (MVP-102, and table 3's `mvp.hud.*`); architecture/components/renderer/visual_language.md (RND-403); ADR-152
+- Affects: implementation/mvp_scope.md (MVP-102, and table 3's `mvp.hud.*`); architecture/components/renderer/visual_language.md (RND-403); ADR-152, ADR-175; architecture/components/ui_framework/core_and_widgets.md (UI-054's `ui.chrome.*` plate keys)
 - Specified behaviour: MVP-102 lists what the HUD shows, and the MVP assets give its icons and panel strips, but no layout or palette exists; the owner approves the HUD layout (MVP assets §1) and chose a provisional palette for M2 (O95). The client builds the following until the owner decides.
   - **Where the panels go.**
     - The settlement panel, top left: the stores, the Workers, growth, the upkeep, the three priorities and the idle Workers by reason, each on a row with its icon, with a meter under the stores, the Workers and each priority.
@@ -94,6 +94,7 @@ This file records the decisions of the Species design and of the MVP built from 
     - The notification cards, top right, newest first.
     - The world's panel, bottom left, with the seed.
   - **Measures.** In the HUD space of RND-377, as table 3's `mvp.hud.*` measures state, times the UI scale.
+  - **Plates and widths** (added 2026-10-23, O105, ADR-175). Each panel and button is a framed plate of the owner's panel art, its frame at `ui.chrome.plate_texel` (`ui.chrome.button_texel` for a button). Each panel is as wide as its widest row, never narrower than its `mvp.hud.*` width.
   - **The palette** (`mvp.hud.palette.*`), drafted from the front end's colours (`ui.palette.fe_*`) for RND-403's roles: a blue accent panel, a grey neutral panel, white text, green positive and red negative captions, and blue meters.
 - Options:
   - A — as stated, with the owner retuning the keys after M2 task T16's run;

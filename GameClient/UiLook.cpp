@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "AssetError.h"
+#include "DdsHeader.h"
 #include "GameFonts.h"
 #include "Log.h"
 #include "MessageFormat.h"
@@ -206,28 +207,62 @@ void AppendBadgeCount(const BadgeLabel& _label, Neuron::TextSystem& _text, const
   Neuron::AppendText(_out, line, _label.left, _label.middle - line.heightPixels * 0.5f, Neuron::TextStyle{});
 }
 
-void AppendUiTestPage(Neuron::TextSystem& _text, const TuningPresentation& _presentation, const Neuron::StringTable& _strings,
-                      const Neuron::MessageLocale& _locale, const Neuron::UiRect& _area, float _dpiScale,
-                      std::vector<Neuron::UiBatch>& _out)
+Neuron::NineSlice PlateOf(const TuningPresentation& _presentation, const Neuron::UiImages& _images, UiImage _image)
+{
+  Neuron::NineSlice plate;
+  const auto slices = [](const auto& _slice)
+  {
+    return std::array<float, 4>{static_cast<float>(_slice.left), static_cast<float>(_slice.top), static_cast<float>(_slice.right),
+                                static_cast<float>(_slice.bottom)};
+  };
+  if (_image == UiImage::PanelAccent)
+  {
+    plate.slices = slices(_presentation.ui.chrome.accentSlice);
+  }
+  else if (_image == UiImage::PanelNeutral)
+  {
+    plate.slices = slices(_presentation.ui.chrome.neutralSlice);
+  }
+  else
+  {
+    return plate;
+  }
+  const auto index = static_cast<std::size_t>(_image);
+  if (index < _images.files.size() && !_images.files[index].empty())
+  {
+    if (const auto header = Neuron::ReadDdsHeader(_images.files[index]); header.has_value())
+    {
+      plate.image = {header->width, header->height};
+    }
+  }
+  return plate;
+}
+
+void AppendUiTestPage(Neuron::TextSystem& _text, const TuningPresentation& _presentation, const Neuron::UiImages& _images,
+                      const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale, const Neuron::UiRect& _area,
+                      float _dpiScale, std::vector<Neuron::UiBatch>& _out)
 {
   const TuningPresentation::Ui& ui = _presentation.ui;
   const std::array<float, 4> bodyTint =
     Rgba(ui.palette.windowBodyTint.r, ui.palette.windowBodyTint.g, ui.palette.windowBodyTint.b, ui.palette.windowBodyTint.a);
   const std::array<float, 4> outline =
     Rgba(ui.palette.textOutline.r, ui.palette.textOutline.g, ui.palette.textOutline.b, ui.palette.textOutline.a);
-  const auto repeat = static_cast<float>(ui.chrome.bodyRepeat);
-
-  // UI-054: the window body, the accent strip with u from 0 to the repeat across and v from 0 to 1 down, tinted and laid
-  // over; the neutral strip beside it in the same form.
-  const float panelWidth = std::clamp(_area.Width() - 3.0f * PAGE_MARGIN - NEUTRAL_WIDTH, 0.0f, PANEL_WIDTH_MAX);
-  const float panelHeight = std::max(_area.Height() - 2.0f * PAGE_MARGIN, 0.0f);
-  const float left = _area.left + PAGE_MARGIN;
-  const float top = _area.top + PAGE_MARGIN;
-  Neuron::AppendQuad(_out, Neuron::UiSource::Image, Neuron::UiBlend::Alpha, static_cast<std::uint16_t>(UiImage::PanelAccent),
-                     Quad(left, top, left + panelWidth, top + panelHeight, {0.0f, 0.0f, repeat, 1.0f}, bodyTint));
+  // UI-054 as ADR-175 amends it: the window body, the accent panel's plate tinted and laid over; the neutral plate
+  // beside it in the same form.
+  const float texelPixels = static_cast<float>(ui.chrome.plateTexel) * _dpiScale;
+  const float panelWidth = std::round(std::clamp(_area.Width() - 3.0f * PAGE_MARGIN - NEUTRAL_WIDTH, 0.0f, PANEL_WIDTH_MAX));
+  const float panelHeight = std::round(std::max(_area.Height() - 2.0f * PAGE_MARGIN, 0.0f));
+  const float left = std::round(_area.left + PAGE_MARGIN);
+  const float top = std::round(_area.top + PAGE_MARGIN);
+  const auto plate = [&](UiImage _image, const Neuron::UiRect& _box)
+  {
+    const Neuron::NineSlice slice = PlateOf(_presentation, _images, _image);
+    Neuron::AppendNineSlice(_out, static_cast<std::uint16_t>(_image), slice, _box, Neuron::NineSliceScale(slice, _box, texelPixels),
+                            bodyTint);
+  };
+  plate(UiImage::PanelAccent, Neuron::UiRect::FromSize(left, top, panelWidth, panelHeight));
   const float neutralLeft = left + panelWidth + PAGE_MARGIN;
-  Neuron::AppendQuad(_out, Neuron::UiSource::Image, Neuron::UiBlend::Alpha, static_cast<std::uint16_t>(UiImage::PanelNeutral),
-                     Quad(neutralLeft, top, neutralLeft + NEUTRAL_WIDTH, top + panelHeight, {0.0f, 0.0f, repeat, 1.0f}, bodyTint));
+  plate(UiImage::PanelNeutral, Neuron::UiRect::FromSize(neutralLeft, top, NEUTRAL_WIDTH, panelHeight));
 
   // The body role at four sizes and the development role at one, outlined and filled as the framework's text is
   // (UI-192), each line below the last by its height.

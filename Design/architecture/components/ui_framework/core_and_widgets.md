@@ -448,6 +448,14 @@ The scroll hook asks the cursor's own widget, and the search for the next active
 | 5 title text | the window title (UI-049) in the caption role, ink mode, centred at x + w ÷ 2, draw point y + `ui.chrome.title_baseline` (9 px), or y + size ÷ 2 with large menus, at size *m*(`ui.chrome.title_size` (12)), drawn twice | `ui.palette.text_ink` |
 | 6 widgets | the UI core's widget draw (UI-043) | — |
 
+> **Amendment 2026-10-23 (owner decision O105, [ADR-175](../../../ADR/ADR-175-the-huds-panels-as-framed-plates-sized-to-their-rows.md)).** Species draws step 1 as a framed plate, not a repeated strip. The owner's `uitex.panel_accent` and `uitex.panel_neutral` are each one plate with its frame and rivets. Each is drawn in nine slices:
+>
+> - the corners at their texels' size;
+> - the edges and the face stretched across, and cut down the box at `ui.chrome.plate_texel` HUD units a texel;
+> - the slices `ui.chrome.accent_slice.*` and `ui.chrome.neutral_slice.*` texels wide.
+>
+> A box too small for the slices shrinks the scale. A button is drawn at `ui.chrome.button_texel`. `ui.chrome.body_repeat` is not read.
+
 ### 4.13 The standard button
 
 **UI-055** (MUST) A standard button has a font size of `ui.button.font_size` (11), is not centred and not disabled when created. When created with an automatic size, its width is the caption's character count × `ui.button.auto_char_width` (7 px) + `ui.button.auto_padding` (9 px) and its height `ui.button.auto_height` (15 px); a caption left empty takes the text of the button's string id. A **disabled** button never acts: activation, clicks and value changes do nothing while it is disabled, and it draws in its disabled colours (DEC-102). A host action that is not permitted is a disabled button (DEC-243).
@@ -827,7 +835,17 @@ All values are presentation values. Lengths are pixels at a DPI scale of 1 and a
 | `ui.chrome.close_box` | (w − 12, 2), 10 × 10 | px | position from the window's final width | UI-046 | DEC-102 |
 | `ui.chrome.client_inset` | 2 | px | left, right and bottom; the top is below the title bar | UI-047 | — |
 | `ui.chrome.title_height` | 15 | px, *m* | title bar | UI-047, UI-054 | — |
-| `ui.chrome.body_repeat` | 8 | repeats of the strip across the width | v spans the height once | UI-054 | — |
+| `ui.chrome.body_repeat` | 8 | repeats of the strip across the width | v spans the height once; not read by Species since ADR-175 | UI-054 | — |
+| `ui.chrome.plate_texel` | 0.5 | HUD units per texel | a panel's plate (ADR-175) | UI-054 | DEC-1005 |
+| `ui.chrome.button_texel` | 0.25 | HUD units per texel | a button's plate (ADR-175) | UI-054 | DEC-1005 |
+| `ui.chrome.accent_slice.left` | 40 | texels | `uitex.panel_accent`'s left slice, its frame and rivets (ADR-175) | UI-054 | DEC-1005 |
+| `ui.chrome.accent_slice.top` | 25 | texels | `uitex.panel_accent`'s top slice, its frame (ADR-175) | UI-054 | DEC-1005 |
+| `ui.chrome.accent_slice.right` | 24 | texels | `uitex.panel_accent`'s right slice, its frame and rivets (ADR-175) | UI-054 | DEC-1005 |
+| `ui.chrome.accent_slice.bottom` | 6 | texels | `uitex.panel_accent`'s bottom slice, its frame (ADR-175) | UI-054 | DEC-1005 |
+| `ui.chrome.neutral_slice.left` | 40 | texels | `uitex.panel_neutral`'s left slice, its frame and rivets (ADR-175) | UI-054 | DEC-1005 |
+| `ui.chrome.neutral_slice.top` | 6 | texels | `uitex.panel_neutral`'s top slice, its frame (ADR-175) | UI-054 | DEC-1005 |
+| `ui.chrome.neutral_slice.right` | 24 | texels | `uitex.panel_neutral`'s right slice, its frame and rivets (ADR-175) | UI-054 | DEC-1005 |
+| `ui.chrome.neutral_slice.bottom` | 6 | texels | `uitex.panel_neutral`'s bottom slice, its frame (ADR-175) | UI-054 | DEC-1005 |
 | `ui.chrome.border_width` | 2 | px | | UI-054 | — |
 | `ui.chrome.frame_offset` | 2 | px outside the rectangle | 1 px outer frame | UI-054 | — |
 | `ui.chrome.title_baseline` | 9 | px below the top | draw point; y + size ÷ 2 with large menus | UI-054 | — |

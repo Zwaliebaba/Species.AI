@@ -75,16 +75,18 @@ public:
     std::vector<Neuron::UiBatch> batches;
     const Neuron::StringTable strings;
     const Neuron::MessageLocale locale("en-US");
-    Species::AppendUiTestPage(text, CommittedPresentation(), strings, locale, {0.0f, 0.0f, 1280.0f, 720.0f}, 1.0f, batches);
+    Species::AppendUiTestPage(text, CommittedPresentation(), Neuron::UiImages{}, strings, locale, {0.0f, 0.0f, 1280.0f, 720.0f}, 1.0f,
+                              batches);
     Assert::IsFalse(batches.empty(), L"a page");
-    // The window body first: the accent strip, u to the repeat across and v once down, tinted and laid over.
+    // The window body first: the accent panel's plate (ADR-175), tinted and laid over; with no image to read its size
+    // from, drawn whole.
     const Neuron::UiBatch& body = batches.front();
     Assert::IsTrue(body.source == Neuron::UiSource::Image && body.blend == Neuron::UiBlend::Alpha &&
                      body.image == static_cast<std::uint16_t>(Species::UiImage::PanelAccent),
-                   L"the accent strip, laid over");
+                   L"the accent plate, laid over");
     const Species::TuningPresentation& presentation = CommittedPresentation();
-    Assert::AreEqual(static_cast<float>(presentation.ui.chrome.bodyRepeat), body.quads[0].uv[2], L"repeated across");
-    Assert::AreEqual(1.0f, body.quads[0].uv[3], L"once down");
+    Assert::AreEqual(1.0f, body.quads[0].uv[2], L"whole across");
+    Assert::AreEqual(1.0f, body.quads[0].uv[3], L"whole down");
     Assert::AreEqual(static_cast<float>(presentation.ui.palette.windowBodyTint.a), body.quads[0].color[3], L"tinted");
     std::set<std::pair<Neuron::UiSource, Neuron::UiBlend>> drawn;
     for (const Neuron::UiBatch& batch : batches)

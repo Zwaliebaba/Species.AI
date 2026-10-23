@@ -599,6 +599,88 @@ public:
     ExpectEqual(std::llround(cost.turretRu * 1000.0), Species::StructureCostMilliRu(CommittedTuning(), Species::StructureKind::Turret, 5),
                 L"a turret's does not escalate");
   }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Ui054TheHudsPanelsArePlatesAsWideAsTheirRows)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-054")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-062")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-102")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Ui054TheHudsPanelsArePlatesAsWideAsTheirRows)
+  {
+    // ADR-175: the owner's panel art drawn as plates, and the committed sentences measured as they are drawn, with four
+    // settlements' standing at four-figure renown.
+    Species::SettlementHud hud(CommittedPresentation(), CommittedTuning());
+    Species::HudPlates plates;
+    plates.accent = {{128, 1020}, {40.0f, 25.0f, 24.0f, 6.0f}};
+    plates.neutral = {{128, 1024}, {40.0f, 6.0f, 24.0f, 6.0f}};
+    hud.SetPlates(plates);
+    Neuron::TextSystem text(Species::TextSystemDesc(CommittedPresentation()));
+    const Neuron::MessageLocale locale("en-US");
+    hud.SetText(text, CommittedStrings(), locale);
+    Species::HudModel model = SettlementModel();
+    Species::ValleyStatus valley = ValleyOfSiteZero();
+    for (Species::RenownLine& line : valley.renown)
+    {
+      line.defense = 1'200;
+      line.claims = 340;
+      line.easing = 25;
+      line.structures = 9'000;
+    }
+    model.valley = valley;
+    model.tick = 1'000;
+    hud.SetModel(model, MetricsAt({1920, 1080}));
+    std::vector<Neuron::UiBatch> batches;
+    hud.Draw(text, CommittedStrings(), locale, batches);
+
+    // No text runs off its panel, card or button: every glyph lies inside one of the HUD's zones.
+    std::int64_t glyphs = 0;
+    for (const Neuron::UiBatch& batch : batches)
+    {
+      if (batch.source != Neuron::UiSource::Glyphs)
+      {
+        continue;
+      }
+      for (const Neuron::UiQuad& quad : batch.quads)
+      {
+        ++glyphs;
+        const bool inside = std::ranges::any_of(hud.Zones(),
+                                                [&](const Species::HudZoneRect& _zone)
+                                                {
+                                                  return _zone.rect.Contains(quad.rectangle[0] + 0.5f, quad.rectangle[1] + 0.5f) &&
+                                                         _zone.rect.Contains(quad.rectangle[2] - 0.5f, quad.rectangle[3] - 0.5f);
+                                                });
+        Assert::IsTrue(inside, L"a glyph inside a panel");
+      }
+    }
+    Assert::IsTrue(glyphs > 0, L"the HUD's text");
+    // The world's panel widens past its least width to hold the standing's rows.
+    const double unit = 1080.0 / 600.0;
+    const auto world = std::ranges::find(hud.Zones(), Species::HudZone::World, &Species::HudZoneRect::zone);
+    Assert::IsTrue(world != hud.Zones().end(), L"the world's panel");
+    Assert::IsTrue(world->rect.Width() > std::round(CommittedPresentation().mvp.hud.panelWidth * unit), L"wider than its least");
+    // A bottom panel that would reach under the construction bar stands above it.
+    const auto overlaps = [](const Neuron::UiRect& _a, const Neuron::UiRect& _b)
+    { return _a.left < _b.right && _b.left < _a.right && _a.top < _b.bottom && _b.top < _a.bottom; };
+    for (const Species::HudZoneRect& zone : hud.Zones())
+    {
+      if (zone.zone == Species::HudZone::World || zone.zone == Species::HudZone::Relations)
+      {
+        Assert::IsTrue(std::ranges::none_of(hud.Zones(), [&](const Species::HudZoneRect& _entry)
+                                            { return _entry.zone == Species::HudZone::Build && overlaps(zone.rect, _entry.rect); }),
+                       L"clear of the construction bar");
+      }
+    }
+    // The settlement, world and relations panels are each one plate of the accent art: its nine slices.
+    std::int64_t accent = 0;
+    for (const Neuron::UiBatch& batch : batches)
+    {
+      if (batch.source == Neuron::UiSource::Image && batch.image == static_cast<std::uint16_t>(Species::UiImage::PanelAccent))
+      {
+        accent += static_cast<std::int64_t>(batch.quads.size());
+      }
+    }
+    ExpectEqual(std::int64_t{3} * 9, accent, L"three plates of nine slices");
+  }
 };
 
 } // namespace GameClientTests
