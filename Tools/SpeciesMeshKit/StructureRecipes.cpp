@@ -412,13 +412,9 @@ MeshModel ResourceSite()
   MeshModel model{"ResourceSite.cmo", {}, {}, false};
   ModelNode& site = model.Node("resource_site");
   AddFrustum(site, {.sides = 12, .baseRadius = 12.5, .topRadius = 11.0, .length = 1.2, .color = EARTH_DARK, .capColor = EARTH});
-  AddFrustum(site, {.base = {0.0, 1.2, 0.0},
-                    .sides = 12,
-                    .baseRadius = 9.6,
-                    .topRadius = 6.6,
-                    .length = 2.4,
-                    .color = EARTH_DARK,
-                    .capColor = EARTH});
+  AddFrustum(
+    site,
+    {.base = {0.0, 1.2, 0.0}, .sides = 12, .baseRadius = 9.6, .topRadius = 6.6, .length = 2.4, .color = EARTH_DARK, .capColor = EARTH});
   for (const std::uint32_t k : {0u, 3u, 7u})
   {
     AddRock(site, Around({0.0, 0.0, 0.0}, 10.4, k, 10, 1.2), 1.2, 0.6, 1.2);
@@ -457,13 +453,9 @@ MeshModel ResourceSiteCentral()
   MeshModel model{"ResourceSiteCentral.cmo", {}, {}, false};
   ModelNode& site = model.Node("resource_site_central");
   AddFrustum(site, {.sides = 12, .baseRadius = 27.5, .topRadius = 25.5, .length = 1.5, .color = EARTH_DARK, .capColor = EARTH});
-  AddFrustum(site, {.base = {0.0, 1.5, 0.0},
-                    .sides = 12,
-                    .baseRadius = 23.0,
-                    .topRadius = 18.0,
-                    .length = 3.0,
-                    .color = EARTH_DARK,
-                    .capColor = EARTH});
+  AddFrustum(
+    site,
+    {.base = {0.0, 1.5, 0.0}, .sides = 12, .baseRadius = 23.0, .topRadius = 18.0, .length = 3.0, .color = EARTH_DARK, .capColor = EARTH});
   for (std::uint32_t k = 0; k < 6; ++k)
   {
     AddRock(site, Around({0.0, 0.0, 0.0}, 24.4, 2 * k + 1, 12, 1.5), 1.5, 0.7, 1.4);
@@ -499,7 +491,9 @@ MeshModel PortPad()
   MeshModel model{"StructureDefault.cmo", {}, {}, false};
   ModelNode& pad = model.Node("port_pad");
   AddFrustum(pad, {.sides = 6, .baseRadius = 4.6, .topRadius = 4.3, .length = 0.35, .topCap = false, .color = PAD, .capColor = PAD});
-  AddFrustum(pad, {.base = {0.0, 0.35, 0.0}, .sides = 6, .baseRadius = 4.3, .topRadius = 3.8, .length = 0.15, .color = PAD_TOP, .capColor = PAD_TOP});
+  AddFrustum(
+    pad,
+    {.base = {0.0, 0.35, 0.0}, .sides = 6, .baseRadius = 4.3, .topRadius = 3.8, .length = 0.15, .color = PAD_TOP, .capColor = PAD_TOP});
   for (std::uint32_t stud = 0; stud < 3; ++stud)
   {
     AddFrustum(pad, {.base = Around({0.0, 0.0, 0.0}, 4.0, 2 * stud, 6, 0.32),
@@ -511,7 +505,8 @@ MeshModel PortPad()
                      .color = METAL_MID,
                      .capColor = METAL_MID});
   }
-  AddFrustum(pad, {.base = {0.0, 0.56, 0.0}, .sides = 6, .baseRadius = 3.0, .topRadius = 3.0, .length = 0.05, .color = PAD, .capColor = PAD});
+  AddFrustum(pad,
+             {.base = {0.0, 0.56, 0.0}, .sides = 6, .baseRadius = 3.0, .topRadius = 3.0, .length = 0.05, .color = PAD, .capColor = PAD});
   AddFrustum(model.Node("port_pad_rim"), {.base = {0.0, 0.5, 0.0},
                                           .sides = 6,
                                           .baseRadius = 3.6,
