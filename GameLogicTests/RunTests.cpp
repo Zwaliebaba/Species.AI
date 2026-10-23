@@ -299,7 +299,7 @@ public:
     // A structure of 250 ru completed: 2 for its whole hundreds.
     const Neuron::Vec3 home = WellspringAt(region, 0);
     const std::uint32_t dwelling =
-      region.AddStructure(Species::StructureKind::Dwelling, 0, std::nullopt, home.x + 150.0, home.z, {1.0, 0.0, 0.0});
+      region.AddStructure(Species::StructureKind::Dwelling, std::uint8_t{0}, std::nullopt, home.x + 150.0, home.z, {1.0, 0.0, 0.0});
     region.Structures().At(dwelling).costMilliRu = Species::MilliRuOf(250.0);
     region.Structures().At(dwelling).completedTick = world->NextTick();
     Assert::IsTrue(StepUntil(*world, 1, [] { return true; }), L"a step");
