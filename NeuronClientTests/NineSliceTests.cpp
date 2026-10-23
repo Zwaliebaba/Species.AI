@@ -90,7 +90,7 @@ public:
     std::vector<Neuron::UiBatch> batches;
     Neuron::AppendNineSlice(batches, 3, plate, box, 2.0f, {1.0f, 1.0f, 1.0f, 1.0f});
     const std::vector<Neuron::UiQuad> quads = QuadsOf(batches);
-    ExpectEqual(3 * 4, static_cast<std::int64_t>(quads.size()), L"the top, two runs of the middle and the bottom");
+    ExpectEqual(std::int64_t{3} * 4, static_cast<std::int64_t>(quads.size()), L"the top, two runs of the middle and the bottom");
     Assert::AreEqual(200.0 * 3062.0, Area(quads), 1e-3, L"the quads cover the box once");
     for (const Neuron::UiQuad& quad : quads)
     {

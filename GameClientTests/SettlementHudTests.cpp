@@ -679,7 +679,7 @@ public:
         accent += static_cast<std::int64_t>(batch.quads.size());
       }
     }
-    ExpectEqual(3 * 9, accent, L"three plates of nine slices");
+    ExpectEqual(std::int64_t{3} * 9, accent, L"three plates of nine slices");
   }
 };
 
