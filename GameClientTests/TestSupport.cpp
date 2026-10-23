@@ -1,9 +1,12 @@
 #include "pch.h"
 
+#include "AuthoringParser.h"
 #include "Check.h"
+#include "Files.h"
 #include "TestSupport.h"
 #include "Tuning.h"
 
+#include <algorithm>
 #include <atomic>
 #include <mutex>
 #include <system_error>
@@ -86,6 +89,36 @@ const Species::TuningPresentation& CommittedPresentation()
     return presentation.value_or(Species::TuningPresentation{});
   }();
   return COMMITTED_PRESENTATION;
+}
+
+const Neuron::StringTable& CommittedStrings()
+{
+  static const Neuron::StringTable COMMITTED_STRINGS = []
+  {
+    Neuron::StringTableAsset table;
+    table.language = "en-US";
+    const auto bytes = Neuron::ReadWholeFile(RepositoryContentRoot() / L"Strings" / L"en_us.json");
+    Assert::IsTrue(bytes.has_value(), L"the committed strings read");
+    const auto document = Neuron::AuthoringParser{}.Parse(bytes.value_or(std::vector<std::byte>{}), "en_us.json");
+    Assert::IsTrue(document.has_value(), L"the committed strings parse");
+    if (document.has_value())
+    {
+      for (const Neuron::JsonMember& member : document->root.members)
+      {
+        if (member.key != "strings")
+        {
+          continue;
+        }
+        for (const Neuron::JsonMember& entry : member.value.members)
+        {
+          table.entries.push_back({entry.key, entry.value.text, entry.value.text, false});
+        }
+      }
+    }
+    std::ranges::sort(table.entries, {}, &Neuron::StringEntry::id);
+    return Neuron::StringTable(std::move(table));
+  }();
+  return COMMITTED_STRINGS;
 }
 
 // Development checks become test failures (DBG-072): the hook records them, and every test class checks the record.

@@ -37,6 +37,18 @@
     "ui.front.anti_aliasing_option": "{mode, select, off {Off} two {2x} four {4x} other {On}}",
     "ui.front.vsync": "Vertical sync",
     "ui.front.volume": "Master volume",
-    "ui.front.volume_option": "{percent, number, integer}%"
+    "ui.front.volume_option": "{percent, number, integer}%",
+    "ui.hud.cladan": "{cladan, select, green {Green} red {Red} yellow {Yellow} blue {Blue} other {Unknown}}",
+    "ui.hud.area": "{area, select, central {the central site} other {{owner}'s half facing {facing}}}",
+    "ui.hud.relations": "Relations",
+    "ui.hud.warning": "{cladan} attacks in {minutes, number, integer}:{seconds}",
+    "ui.hud.expedition": "{state, select, held {Your expedition waits for {target}} released {Your expedition marches on {target}} fighting {Your expedition fights {target}} other {Your expedition}}",
+    "ui.hud.respite": "Respite: {minutes, number, integer} min left",
+    "ui.hud.anger": "{cladan}: anger {anger, number, integer}",
+    "ui.hud.grievance": "{cause, select, pressure {Pressure} claim {Claim} attack {Attack} other {Grievance}} {weight, number, integer}{removed, select, yes {, fading fast} other {, fading}}",
+    "ui.hud.claims": "Claims",
+    "ui.hud.claim": "{claimant} claims {area}: {state, select, open {open} waiting {waiting} contested {contested} other {}}",
+    "ui.hud.more": "{count, number, integer} more",
+    "ui.hud.notice": "{kind, select, contact {Contact with {other}} claim_ours {You claim {area}} claim_theirs {{other} claims {area}} withdrawn_ours {Your claim on {area} is withdrawn} withdrawn_theirs {{other} withdraws its claim} lost_ours {Your claim on {area} is lost} lost_theirs {{other} lost its claim} won_ours {You hold {area}} won_theirs {{other} holds {area}} attack_ours {You declare an attack on {other}} attack_theirs {{other} declares an attack!} ended_ours {Your attack on {other} has ended} ended_theirs {The attack by {other} has ended} battle {The battle with {other} begins} battle_won {You won the battle with {other}} battle_lost {You lost the battle with {other}} respite {A respite from attacks} respite_theirs {{other} is under a respite} quiet {The run's last minutes: no new attacks} run_ended {The run has ended} other {News from the valley}}"
   }
 }

@@ -655,7 +655,8 @@
         }
       },
       "priority_step": 10,
-      "disabled_alpha": 0.35
+      "disabled_alpha": 0.35,
+      "relations_rows_max": 14
     }
   },
   "dbg": {

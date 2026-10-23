@@ -108,3 +108,4 @@ Chosen option: 1.
   - the priorities show the shares sent until a status holds them.
 * Owner decision O95; DEC-1005; MVP-005, MVP-034, MVP-037, MVP-098, MVP-101, MVP-102; UI-168, UI-171, UI-460, UI-461; RND-377, RND-403.
 * The code: `GameClient/SettlementHud`, `ClientSession` (`LatestStatus`, `WorldSeed`), `UiLook` (the HUD's images), `WorldPresentation` (`UpdateHud`, pass 19); `GameShared/StructureCost`; `GameLogic/Construction`.
+* **Amendment 2026-10-23 (M3 task T11, [ADR-166](ADR-166-the-relations-panel-and-the-notifications-of-m3.md)).** The HUD asks for the valley's status with the settlement's, shows the relations panel at the bottom right, and draws a card for every kind of notice, each with its icon; `mvp.hud.relations_rows_max` bounds the panel.

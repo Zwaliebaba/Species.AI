@@ -1762,6 +1762,9 @@ struct TuningPresentation
 
       // mvp.hud.disabled_alpha, in fraction
       double disabledAlpha = 0.0;
+
+      // mvp.hud.relations_rows_max, in rows
+      std::int64_t relationsRowsMax = 0;
     };
 
     Light light;
@@ -4195,6 +4198,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "palette"), _out.palette);
   _out.priorityStep = _reader.Integer(_object, "priority_step", 0);
   _out.disabledAlpha = _reader.Decimal(_object, "disabled_alpha", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.relationsRowsMax = _reader.Integer(_object, "relations_rows_max", 0);
   _reader.Close(_object);
 }
 
@@ -7137,6 +7141,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::
   CookFields(_writer, _in.palette);
   _writer.I64(_in.priorityStep);
   _writer.F64(_in.disabledAlpha);
+  _writer.I64(_in.relationsRowsMax);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Mvp::Hud& _out)
@@ -7160,6 +7165,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.palette);
   _out.priorityStep = _reader.I64();
   _out.disabledAlpha = _reader.F64();
+  _out.relationsRowsMax = _reader.I64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Mvp& _in)

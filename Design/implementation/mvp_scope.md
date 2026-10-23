@@ -495,6 +495,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.hud.bar_button_width` | 96 | HUD units | — | provisional | MVP-101 | The construction bar's entries |
 | `mvp.hud.bar_height` | 34 | HUD units | — | provisional | MVP-101 | — |
 | `mvp.hud.queue_size` | 26 | HUD units | — | provisional | MVP-102 | A queued site's square |
+| `mvp.hud.relations_rows_max` | 14 | rows | — | provisional | MVP-102 | The relations panel's rows at most; its last row says how many more there are (ADR-166) |
 | `mvp.hud.priority_step` | 10 | % | — | provisional | MVP-036 | A priority's arrow moves its share by this much, the other two shares the other way (ADR-153) |
 | `mvp.hud.disabled_alpha` | 0.35 | opacity | — | provisional | MVP-102 | An arrow that cannot move its share |
 | `mvp.hud.palette.accent` | 0.55, 0.6, 1.0, 0.85 | linear RGBA | — | provisional | MVP-102 | O95's provisional palette for RND-403's roles: the accent panel's tint |

@@ -8,10 +8,12 @@
 #include "TestSupport.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -219,24 +221,29 @@ public:
     const auto& mark = CommittedPresentation().mvp.borderMark;
     Assert::IsTrue(look.BorderSpots().size() > 100, L"four lenses of spots");
     std::size_t onLines = 0;
-    for (const Neuron::Vec3& spot : look.BorderSpots())
+    for (const Species::TerritoryLook::BorderSpot& border : look.BorderSpots())
     {
+      const Neuron::Vec3& spot = border.position;
       Assert::IsTrue(spot.x >= layout.originX + band && spot.x <= layout.originX + layout.side - band && spot.z >= layout.originZ + band &&
                        spot.z <= layout.originZ + layout.side - band,
                      L"outside the coast bands");
       Assert::AreEqual(SeedOne().field.Height(spot.x, spot.z) + mark.spotSize, spot.y, 1e-9);
       bool placed = false;
-      for (const auto& pair : Species::VALLEY_PAIRS)
+      for (std::size_t index = 0; index < Species::VALLEY_PAIRS.size(); ++index)
       {
+        const auto& pair = Species::VALLEY_PAIRS[index];
         const double first = Neuron::HorizontalDistance(spot, layout.sites[pair[0]]);
         const double second = Neuron::HorizontalDistance(spot, layout.sites[pair[1]]);
         const bool halfway = std::abs(first - second) < 1e-6 && first <= radius + 1e-6;
-        const bool edge =
-          (std::abs(first - radius) < 1e-6 && second <= radius + 1e-6) || (std::abs(second - radius) < 1e-6 && first <= radius + 1e-6);
+        // ADR-166: the arc about the first site bounds the half nearer the second, area index × 2 + 1, and the other way.
+        const bool nearSecond = std::abs(first - radius) < 1e-6 && second <= radius + 1e-6;
+        const bool nearFirst = std::abs(second - radius) < 1e-6 && first <= radius + 1e-6;
         onLines += halfway ? 1 : 0;
-        placed = placed || halfway || edge;
+        placed = placed || (halfway && !border.area.has_value()) ||
+                 (nearSecond && border.area == std::optional<std::uint8_t>(static_cast<std::uint8_t>(index * 2 + 1))) ||
+                 (nearFirst && border.area == std::optional<std::uint8_t>(static_cast<std::uint8_t>(index * 2)));
       }
-      Assert::IsTrue(placed, L"on a lens's edge or its halfway line");
+      Assert::IsTrue(placed, L"on a lens's edge, naming its half, or its halfway line");
     }
     Assert::IsTrue(onLines > 0, L"the halfway lines are marked");
     std::vector<Neuron::QuadBatch> batches;
@@ -253,6 +260,41 @@ public:
       Assert::AreEqual(static_cast<float>(mark.color.r), quad.color[0]);
       Assert::AreEqual(static_cast<float>(mark.alpha), quad.color[3]);
     }
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp053AHalfsEdgeTakesItsHoldersOrItsClaimantsColor)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-053")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-084")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp053AHalfsEdgeTakesItsHoldersOrItsClaimantsColor)
+  {
+    // ADR-166: a half's edge spots take its holder's colour from the valley's status, its claimant's while a claim on it
+    // stands, and the neutral mark's with no status or no holder; the halfway line stays neutral.
+    Species::TerritoryLook look(CommittedPresentation(), CommittedTuning());
+    look.Update(Replica(SITE, Square(1)), SeedOne());
+    const auto& mark = CommittedPresentation().mvp.borderMark;
+    const std::array<float, 4> neutral{static_cast<float>(mark.color.r), static_cast<float>(mark.color.g), static_cast<float>(mark.color.b),
+                                       static_cast<float>(mark.alpha)};
+    const auto spotOf = [&](std::optional<std::uint8_t> _area)
+    { return *std::ranges::find(look.BorderSpots(), _area, &Species::TerritoryLook::BorderSpot::area); };
+    Assert::IsTrue(look.SpotColor(spotOf(std::uint8_t{2})) == neutral, L"no status: neutral");
+    Species::ValleyStatus valley;
+    valley.areas[2].holder = std::uint8_t{2};
+    valley.areas[3].holder = std::uint8_t{3};
+    valley.claims.push_back({Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 5), 2, 3, 0, Species::ClaimState::Open});
+    look.SetValley(valley);
+    const auto colored = [&](std::uint8_t _team)
+    {
+      std::array<float, 4> color = Species::TeamColor(_team);
+      color[3] *= static_cast<float>(mark.alpha);
+      return color;
+    };
+    Assert::IsTrue(look.SpotColor(spotOf(std::uint8_t{2})) == colored(2), L"a held half in its holder's colour");
+    Assert::IsTrue(look.SpotColor(spotOf(std::uint8_t{3})) == colored(2), L"a claimed half in its claimant's");
+    Assert::IsTrue(look.SpotColor(spotOf(std::uint8_t{0})) == neutral, L"an unheld half neutral");
+    Assert::IsTrue(look.SpotColor(spotOf(std::nullopt)) == neutral, L"and the halfway line");
+    look.SetValley(std::nullopt);
+    Assert::IsTrue(look.SpotColor(spotOf(std::uint8_t{2})) == neutral, L"neutral again with no status");
   }
 };
 

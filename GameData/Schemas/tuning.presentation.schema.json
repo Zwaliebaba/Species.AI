@@ -5432,6 +5432,14 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "fraction",
               "x-species-presence": "required"
+            },
+            "relations_rows_max": {
+              "type": "integer",
+              "description": "mvp.hud.relations_rows_max (MVP-102)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "rows",
+              "x-species-presence": "required"
             }
           },
           "required": [
@@ -5453,7 +5461,8 @@
             "queue_size",
             "palette",
             "priority_step",
-            "disabled_alpha"
+            "disabled_alpha",
+            "relations_rows_max"
           ],
           "additionalProperties": false,
           "x-species-type": "object",

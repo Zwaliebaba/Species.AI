@@ -408,6 +408,7 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     AppendOrbBatches(orbs, *m_desc.presentation, inputs.quadBatches);
     // M2 task T13 (ADR-143): every settlement's territory line and the border areas' spots, in pass 10a.
     m_territories.Update(_session.Replica().Latest(), *m_terrain);
+    m_territories.SetValley(_session.LatestValleyStatus()); // M3 task T11 (ADR-166): the areas' holders and claims
     m_territories.AppendBatches(inputs.quadBatches);
     // M1 task T17b (ADR-125): the route preview in pass 12, the world markers in pass 16 and the badge in pass 20, its
     // count in the UI's batches of pass 20 (ADR-145).

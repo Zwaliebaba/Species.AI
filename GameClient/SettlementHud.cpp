@@ -2,12 +2,15 @@
 
 #include "SettlementHud.h"
 
+#include "DevelopmentOverlay.h"
+#include "RegionTerrain.h"
 #include "StructureCost.h"
 #include "UiLook.h"
 #include "UiText.h"
 
 #include <algorithm>
 #include <cmath>
+#include <format>
 #include <string>
 #include <utility>
 
@@ -33,6 +36,19 @@ constexpr std::string_view STRING_COMPLETED = "ui.hud.completed";
 constexpr std::string_view STRING_SEED = "ui.hud.seed";
 constexpr std::string_view STRING_PLACING = "ui.hud.placing"; // ADR-153
 constexpr std::string_view STRING_REFUSED = "ui.hud.refused";
+// M3 task T11 (ADR-166): the relations panel and the notices of M3's kinds.
+constexpr std::string_view STRING_CLADAN = "ui.hud.cladan";
+constexpr std::string_view STRING_AREA = "ui.hud.area";
+constexpr std::string_view STRING_RELATIONS = "ui.hud.relations";
+constexpr std::string_view STRING_WARNING = "ui.hud.warning";
+constexpr std::string_view STRING_EXPEDITION = "ui.hud.expedition";
+constexpr std::string_view STRING_RESPITE = "ui.hud.respite";
+constexpr std::string_view STRING_ANGER = "ui.hud.anger";
+constexpr std::string_view STRING_GRIEVANCE = "ui.hud.grievance";
+constexpr std::string_view STRING_CLAIMS = "ui.hud.claims";
+constexpr std::string_view STRING_CLAIM = "ui.hud.claim";
+constexpr std::string_view STRING_MORE = "ui.hud.more";
+constexpr std::string_view STRING_NOTICE = "ui.hud.notice";
 
 // The selectors of the strings' select arguments, in GrowthState's, WorkerTask's, IdleReason's and StructureKind's orders.
 constexpr std::array<std::string_view, 3> GROWTH_SELECTORS{"growing", "at_limit", "stores_short"};
@@ -41,6 +57,14 @@ constexpr std::array<std::string_view, 4> IDLE_SELECTORS{"no_free_port", "queue_
 // PlacementRefusal's selectors, from NotBuildable (ADR-153).
 constexpr std::array<std::string_view, PLACEMENT_REFUSAL_MAX> REFUSAL_SELECTORS{
   "not_buildable", "queue_full", "outside_territory", "in_center_ring", "not_walkable", "overlaps", "cannot_afford"};
+
+// The Cladans by their colour, the site's index (MVP-013, ADR-130), and the selectors of GrievanceCause, ExpeditionState
+// and ClaimState (ADR-166).
+constexpr std::array<std::string_view, 4> CLADAN_SELECTORS{"green", "red", "yellow", "blue"};
+constexpr std::array<std::string_view, 3> CAUSE_SELECTORS{"pressure", "claim", "attack"};
+constexpr std::array<std::string_view, 3> EXPEDITION_SELECTORS{"held", "released", "fighting"};
+constexpr std::array<std::string_view, 3> CLAIM_SELECTORS{"open", "waiting", "contested"};
+constexpr std::array<UiImage, 3> CAUSE_ICONS{UiImage::IconContact, UiImage::IconClaim, UiImage::IconAttack};
 
 constexpr std::array<UiImage, 3> PRIORITY_ICONS{UiImage::IconPriorityGather, UiImage::IconPriorityConstruct, UiImage::IconPriorityGuard};
 
@@ -105,6 +129,72 @@ std::string_view RefusalSelector(PlacementRefusal _refusal) noexcept
   return index >= 1 && index <= REFUSAL_SELECTORS.size() ? REFUSAL_SELECTORS[index - 1] : "other";
 }
 
+template <std::size_t N> std::string_view Selector(const std::array<std::string_view, N>& _selectors, std::size_t _index) noexcept
+{
+  return _index < N ? _selectors[_index] : std::string_view("other");
+}
+
+// A weight in whole units, from its millionths.
+std::int64_t WholeWeight(std::int64_t _weightMicro) noexcept
+{
+  return static_cast<std::int64_t>(std::llround(static_cast<double>(_weightMicro) / 1e6));
+}
+
+// The ticks from _tick to _until in whole seconds, rounded up; 0 once it has passed.
+std::int64_t SecondsUntil(std::uint64_t _until, std::uint64_t _tick, double _tickSeconds) noexcept
+{
+  return _until > _tick ? static_cast<std::int64_t>(std::ceil(static_cast<double>(_until - _tick) * _tickSeconds)) : 0;
+}
+
+/// MVP-102 (ADR-166): how a notification card shows a notice: its icon, its text's selector and whether it is good news
+/// for the steward.
+struct NoticeLook
+{
+  UiImage icon = UiImage::IconDwelling;
+  std::string_view kind;
+  bool positive = true;
+};
+
+NoticeLook NoticeLookOf(const SettlementNotice& _notice) noexcept
+{
+  const bool ours = _notice.ours;
+  switch (_notice.kind)
+  {
+  case NoticeKind::StructureCompleted:
+    return {KindIcon(_notice.structure), "", true};
+  case NoticeKind::Contact:
+    return {UiImage::IconContact, "contact", true};
+  case NoticeKind::ClaimMade:
+    return {UiImage::IconClaim, ours ? "claim_ours" : "claim_theirs", ours};
+  case NoticeKind::ClaimWithdrawn:
+    return {UiImage::IconWithdraw, ours ? "withdrawn_ours" : "withdrawn_theirs", !ours};
+  case NoticeKind::ClaimLost:
+    return {UiImage::IconClaim, ours ? "lost_ours" : "lost_theirs", !ours};
+  case NoticeKind::ClaimWon:
+    return {UiImage::IconClaim, ours ? "won_ours" : "won_theirs", ours};
+  case NoticeKind::AttackDeclared:
+    return {UiImage::IconAttack, ours ? "attack_ours" : "attack_theirs", ours};
+  case NoticeKind::AttackEnded:
+    return {UiImage::IconWithdraw, ours ? "ended_ours" : "ended_theirs", !ours};
+  case NoticeKind::BattleStarted:
+    return {UiImage::IconBattle, "battle", true};
+  case NoticeKind::BattleEnded:
+  {
+    // The detail is 1 when the attacker won; the steward's settlement is the attacker when it acted.
+    const bool won = (_notice.detail == 1) == ours;
+    return {UiImage::IconBattle, won ? "battle_won" : "battle_lost", won};
+  }
+  case NoticeKind::RespiteStarted:
+    // The settlement under the respite acted; the attacker's steward learns that its target is under one.
+    return {UiImage::IconRespite, ours ? "respite" : "respite_theirs", ours};
+  case NoticeKind::RunQuiet:
+    return {UiImage::IconRunClock, "quiet", true};
+  case NoticeKind::RunEnded:
+    return {UiImage::IconRunClock, "run_ended", true};
+  }
+  return {UiImage::IconBattle, "other", true};
+}
+
 } // namespace
 
 std::int64_t TeamDwellings(const StateReplica::View& _latest, std::uint8_t _team)
@@ -119,6 +209,72 @@ std::int64_t TeamDwellings(const StateReplica::View& _latest, std::uint8_t _team
     }
   }
   return dwellings;
+}
+
+std::vector<RelationRow> RelationRowsOf(const ValleyStatus& _valley, std::uint8_t _site, std::uint64_t _tick, double _tickSeconds,
+                                        double _warningSeconds, std::size_t _rowsMax)
+{
+  std::vector<RelationRow> rows{{RelationRowKind::Heading}};
+  // MVP-042: each attack declared on the settlement, counting down to the warning's end; and its own expedition.
+  const auto warningTicks = static_cast<std::uint64_t>(std::llround(_warningSeconds / std::max(_tickSeconds, 1e-9)));
+  for (const ExpeditionLine& expedition : _valley.expeditions)
+  {
+    if (expedition.target == _site && expedition.state == ExpeditionState::Held)
+    {
+      rows.push_back(
+        {RelationRowKind::Warning, expedition.attacker, SecondsUntil(expedition.declaredTick + warningTicks, _tick, _tickSeconds)});
+    }
+    else if (expedition.attacker == _site)
+    {
+      rows.push_back({RelationRowKind::Expedition, expedition.target, 0, static_cast<std::uint8_t>(expedition.state)});
+    }
+  }
+  // MVP-047: the settlement's own respite, in whole minutes left, rounded up.
+  const auto respiteOf = [&](std::uint8_t _of) { return std::ranges::find(_valley.respites, _of, &RespiteLine::site); };
+  if (const auto own = respiteOf(_site); own != _valley.respites.end() && own->until > _tick)
+  {
+    rows.push_back({RelationRowKind::Respite, _site, (SecondsUntil(own->until, _tick, _tickSeconds) + 59) / 60});
+  }
+  // MVP-050: each other Cladan's anger toward it, the sum of the grievances listed under it.
+  for (const RenownLine& settlement : _valley.renown)
+  {
+    if (settlement.site == _site)
+    {
+      continue;
+    }
+    std::int64_t angerMicro = 0;
+    for (const GrievanceLine& grievance : _valley.grievances)
+    {
+      angerMicro += grievance.holder == settlement.site && grievance.against == _site ? grievance.weightMicro : 0;
+    }
+    const auto respite = respiteOf(settlement.site);
+    rows.push_back({RelationRowKind::Cladan, settlement.site, WholeWeight(angerMicro), 0,
+                    static_cast<std::uint8_t>(respite != _valley.respites.end() && respite->until > _tick ? 1 : 0)});
+    for (const GrievanceLine& grievance : _valley.grievances)
+    {
+      if (grievance.holder == settlement.site && grievance.against == _site)
+      {
+        rows.push_back({RelationRowKind::Grievance, settlement.site, WholeWeight(grievance.weightMicro),
+                        static_cast<std::uint8_t>(grievance.cause), static_cast<std::uint8_t>(grievance.causeRemoved ? 1 : 0)});
+      }
+    }
+  }
+  // MVP-053: every claim.
+  if (!_valley.claims.empty())
+  {
+    rows.push_back({RelationRowKind::ClaimsHeading});
+  }
+  for (const ClaimLine& claim : _valley.claims)
+  {
+    rows.push_back({RelationRowKind::Claim, claim.claimant, 0, claim.area, static_cast<std::uint8_t>(claim.state)});
+  }
+  if (_rowsMax > 0 && rows.size() > _rowsMax)
+  {
+    const auto left = static_cast<std::int64_t>(rows.size() - (_rowsMax - 1));
+    rows.resize(_rowsMax - 1);
+    rows.push_back({RelationRowKind::More, 0, left});
+  }
+  return rows;
 }
 
 HudModel HudModelOf(const ClientSession& _session, const TuningMvp& _tuning, const TuningPresentation& _presentation,
@@ -142,6 +298,14 @@ HudModel HudModelOf(const ClientSession& _session, const TuningMvp& _tuning, con
     model.buildCostsMilliRu[index] = StructureCostMilliRu(_tuning, BUILD_KINDS[index], dwellings);
   }
   model.notices = AgeNotices(std::move(_notices), _arrived, _nowSeconds, _presentation);
+  // ADR-166: the valley's status of the same settlement, and the tick its countdowns run from.
+  const std::optional<ValleyStatus>& valley = _session.LatestValleyStatus();
+  if (model.settlement.has_value() && valley.has_value() && valley->team == model.settlement->team)
+  {
+    model.valley = valley;
+  }
+  model.tick = _session.ServerTick().value_or(0);
+  model.warningSeconds = _tuning.mvp.conflict.warningMinutes * 60.0;
   return model;
 }
 
@@ -151,11 +315,7 @@ std::vector<HudNotice> AgeNotices(std::vector<HudNotice> _notices, std::span<con
   const auto& hud = _presentation.mvp.hud;
   for (const SettlementNotice& notice : _arrived)
   {
-    // ADR-165: M3's kinds have their cards from M3 task T11.
-    if (notice.kind == NoticeKind::StructureCompleted)
-    {
-      _notices.push_back({notice, _nowSeconds});
-    }
+    _notices.push_back({notice, _nowSeconds});
   }
   std::erase_if(_notices, [&](const HudNotice& _notice) { return _nowSeconds - _notice.arrivedSeconds >= hud.noticeSeconds; });
   const auto kept = static_cast<std::size_t>(std::max<std::int64_t>(hud.noticesMax, 0));
@@ -192,6 +352,8 @@ void SettlementHud::Update(ClientSession& _session, double _realSeconds, const N
     {
       m_lastRequest = _realSeconds;
     }
+    // ADR-166: and the valley's, at the same pace.
+    static_cast<void>(_session.SendCommand(ReadValleyStatusCommand{m_model.settlement->team}));
   }
   Layout(_metrics);
 }
@@ -275,6 +437,18 @@ void SettlementHud::Layout(const Neuron::UiMetrics& _metrics)
   // The world's panel, bottom left.
   m_world = Neuron::UiRect::FromSize(margin, height - margin - row - 2.0f * padding, Units(hud.panelWidth), row + 2.0f * padding);
   m_zones.push_back({HudZone::World, 0, m_world});
+
+  // ADR-166: the relations panel, bottom right, once the valley's status has come.
+  m_relationRows.clear();
+  if (m_model.valley.has_value())
+  {
+    m_relationRows = RelationRowsOf(*m_model.valley, m_model.settlement->site, m_model.tick, m_model.tickSeconds, m_model.warningSeconds,
+                                    static_cast<std::size_t>(std::max<std::int64_t>(hud.relationsRowsMax, 1)));
+    const float panelHeight = 2.0f * padding + row * static_cast<float>(m_relationRows.size());
+    m_relations =
+      Neuron::UiRect::FromSize(width - margin - Units(hud.panelWidth), height - margin - panelHeight, Units(hud.panelWidth), panelHeight);
+    m_zones.push_back({HudZone::Relations, 0, m_relations});
+  }
 }
 
 std::optional<HudZoneRect> SettlementHud::ZoneAt(Neuron::PointPx _position) const noexcept
@@ -508,6 +682,121 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
     }
   }
 
+  // ADR-166: a Cladan's name, from its colour, and an area's: the central site, or a half of a valley border area by the
+  // settlement whose half it is and the neighbour it faces.
+  const auto cladanName = [&](std::uint8_t _site)
+  {
+    const std::array arguments{Neuron::FormatArgument{"cladan", Selector(CLADAN_SELECTORS, _site)}};
+    return _strings.Format(STRING_CLADAN, arguments, _locale);
+  };
+  const auto areaName = [&](std::uint8_t _area)
+  {
+    if (_area >= CLAIM_AREA_CENTRAL)
+    {
+      const std::array arguments{Neuron::FormatArgument{"area", std::string_view("central")}};
+      return _strings.Format(STRING_AREA, arguments, _locale);
+    }
+    const auto& pair = VALLEY_PAIRS[_area / 2U];
+    const std::string owner = cladanName(pair[_area % 2U]);
+    const std::string facing = cladanName(pair[1U - _area % 2U]);
+    const std::array arguments{Neuron::FormatArgument{"area", std::string_view("half")},
+                               Neuron::FormatArgument{"owner", std::string_view(owner)},
+                               Neuron::FormatArgument{"facing", std::string_view(facing)}};
+    return _strings.Format(STRING_AREA, arguments, _locale);
+  };
+
+  // MVP-050, MVP-102 (ADR-166): the relations panel, bottom right.
+  if (!m_relationRows.empty())
+  {
+    panel(UiImage::PanelAccent, m_relations, Rgba(palette.accent));
+    const float left = m_relations.left + padding;
+    const float rowText = left + icon + padding;
+    float rowTop = m_relations.top + padding;
+    const auto rowImage = [&](UiImage _icon, float _left, const std::array<float, 4>& _color)
+    { image(_icon, Neuron::UiRect::FromSize(_left, std::round(rowTop + (row - icon) * 0.5f), icon, icon), _color); };
+    for (const RelationRow& relation : m_relationRows)
+    {
+      switch (relation.kind)
+      {
+      case RelationRowKind::Heading:
+        line(STRING_RELATIONS, {}, left, rowTop, row, text);
+        break;
+      case RelationRowKind::Warning:
+      {
+        rowImage(UiImage::IconAttack, left, negative);
+        const std::string name = cladanName(relation.site);
+        const std::string seconds = std::format("{:02}", relation.value % 60);
+        const std::array arguments{Neuron::FormatArgument{"cladan", std::string_view(name)},
+                                   Neuron::FormatArgument{"minutes", relation.value / 60},
+                                   Neuron::FormatArgument{"seconds", std::string_view(seconds)}};
+        line(STRING_WARNING, arguments, rowText, rowTop, row, negative);
+        break;
+      }
+      case RelationRowKind::Expedition:
+      {
+        rowImage(UiImage::IconAttack, left, text);
+        const std::string name = cladanName(relation.site);
+        const std::array arguments{Neuron::FormatArgument{"state", Selector(EXPEDITION_SELECTORS, relation.detail)},
+                                   Neuron::FormatArgument{"target", std::string_view(name)}};
+        line(STRING_EXPEDITION, arguments, rowText, rowTop, row, text);
+        break;
+      }
+      case RelationRowKind::Respite:
+      {
+        rowImage(UiImage::IconRespite, left, positive);
+        const std::array arguments{Neuron::FormatArgument{"minutes", relation.value}};
+        line(STRING_RESPITE, arguments, rowText, rowTop, row, positive);
+        break;
+      }
+      case RelationRowKind::Cladan:
+      {
+        // MVP-013: a swatch of the Cladan's colour, and its respite at the row's end.
+        rowImage(UiImage::HudMeter, left, TeamColor(relation.site));
+        const std::string name = cladanName(relation.site);
+        const std::array arguments{Neuron::FormatArgument{"cladan", std::string_view(name)},
+                                   Neuron::FormatArgument{"anger", relation.value}};
+        line(STRING_ANGER, arguments, rowText, rowTop, row, relation.value > 0 ? negative : text);
+        if (relation.state != 0)
+        {
+          rowImage(UiImage::IconRespite, m_relations.right - padding - icon, positive);
+        }
+        break;
+      }
+      case RelationRowKind::Grievance:
+      {
+        // Indented under its Cladan, with its cause's icon; a removed cause fades faster (MVP-052).
+        rowImage(CAUSE_ICONS.at(std::min<std::size_t>(relation.detail, CAUSE_ICONS.size() - 1)), rowText, text);
+        const std::array arguments{Neuron::FormatArgument{"cause", Selector(CAUSE_SELECTORS, relation.detail)},
+                                   Neuron::FormatArgument{"weight", relation.value},
+                                   Neuron::FormatArgument{"removed", std::string_view(relation.state != 0 ? "yes" : "no")}};
+        line(STRING_GRIEVANCE, arguments, rowText + icon + padding, rowTop, row, text);
+        break;
+      }
+      case RelationRowKind::ClaimsHeading:
+        line(STRING_CLAIMS, {}, left, rowTop, row, text);
+        break;
+      case RelationRowKind::Claim:
+      {
+        rowImage(UiImage::IconClaim, left, TeamColor(relation.site));
+        const std::string name = cladanName(relation.site);
+        const std::string area = areaName(relation.detail);
+        const std::array arguments{Neuron::FormatArgument{"claimant", std::string_view(name)},
+                                   Neuron::FormatArgument{"area", std::string_view(area)},
+                                   Neuron::FormatArgument{"state", Selector(CLAIM_SELECTORS, relation.state)}};
+        line(STRING_CLAIM, arguments, rowText, rowTop, row, text);
+        break;
+      }
+      case RelationRowKind::More:
+      {
+        const std::array arguments{Neuron::FormatArgument{"count", relation.value}};
+        line(STRING_MORE, arguments, rowText, rowTop, row, text);
+        break;
+      }
+      }
+      rowTop += row;
+    }
+  }
+
   // MVP-102: the notification cards, newest first, fading out over their last mvp.hud.notice_fade.
   if (!m_model.notices.empty())
   {
@@ -522,11 +811,26 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
       const Neuron::UiRect card = Neuron::UiRect::FromSize(static_cast<float>(m_metrics.client.width) - Units(hud.margin) - cardWidth,
                                                            cardTop, cardWidth, cardHeight);
       image(UiImage::NotificationCard, card, Rgba(palette.neutral, alpha));
-      image(KindIcon(notice->notice.structure),
-            Neuron::UiRect::FromSize(card.left + padding, std::round(card.top + (cardHeight - icon) * 0.5f), icon, icon),
+      const NoticeLook look = NoticeLookOf(notice->notice);
+      image(look.icon, Neuron::UiRect::FromSize(card.left + padding, std::round(card.top + (cardHeight - icon) * 0.5f), icon, icon),
             Rgba(palette.text, alpha));
-      const std::array arguments{Neuron::FormatArgument{"kind", KindSelector(notice->notice.structure)}};
-      line(STRING_COMPLETED, arguments, card.left + 2.0f * padding + icon, card.top, cardHeight, Rgba(palette.positive, alpha));
+      const std::array<float, 4> color = look.positive ? Rgba(palette.positive, alpha) : Rgba(palette.negative, alpha);
+      if (notice->notice.kind == NoticeKind::StructureCompleted)
+      {
+        const std::array arguments{Neuron::FormatArgument{"kind", KindSelector(notice->notice.structure)}};
+        line(STRING_COMPLETED, arguments, card.left + 2.0f * padding + icon, card.top, cardHeight, color);
+      }
+      else
+      {
+        // ADR-166: M3's kinds, naming the other settlement and, for a claim, its area (the notice's detail).
+        const std::string other = notice->notice.other.has_value() ? cladanName(*notice->notice.other) : std::string();
+        const bool claim = notice->notice.kind == NoticeKind::ClaimMade || notice->notice.kind == NoticeKind::ClaimWithdrawn ||
+                           notice->notice.kind == NoticeKind::ClaimLost || notice->notice.kind == NoticeKind::ClaimWon;
+        const std::string area = claim ? areaName(notice->notice.detail) : std::string();
+        const std::array arguments{Neuron::FormatArgument{"kind", look.kind}, Neuron::FormatArgument{"other", std::string_view(other)},
+                                   Neuron::FormatArgument{"area", std::string_view(area)}};
+        line(STRING_NOTICE, arguments, card.left + 2.0f * padding + icon, card.top, cardHeight, color);
+      }
       cardTop += cardHeight + gap;
     }
   }

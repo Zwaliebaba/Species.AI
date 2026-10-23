@@ -11,6 +11,9 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <initializer_list>
+#include <span>
+#include <string_view>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -24,6 +27,30 @@ namespace
 Neuron::UiMetrics MetricsAt(Neuron::SizePx _client)
 {
   return Species::UiMetricsOf(CommittedPresentation(), _client, 1.0f, std::nullopt, std::nullopt);
+}
+
+// A valley status for the settlement at site 0 after tick 1,000: grievances of two Cladans against it and one it holds,
+// an attack declared on it and its own expedition, its respite and another's, and two claims (ADR-166).
+Species::ValleyStatus ValleyOfSiteZero()
+{
+  Species::ValleyStatus valley;
+  valley.tick = 1'000;
+  for (std::uint8_t site = 0; site < 4; ++site)
+  {
+    valley.renown.push_back({site});
+  }
+  valley.grievances = {{1, 0, Species::GrievanceCause::Pressure, 0, false, false, 12'400'000},
+                       {1, 0, Species::GrievanceCause::Claim, 77, false, true, 30'000'000},
+                       {2, 0, Species::GrievanceCause::Attack, 78, true, false, 40'000'000},
+                       {0, 1, Species::GrievanceCause::Pressure, 0, false, false, 5'000'000}};
+  valley.expeditions = {
+    {Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 78), 2, 0, 0, 900, Species::ExpeditionState::Held, true, 40},
+    {Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 79), 0, 3, 0, 500, Species::ExpeditionState::Released, false, 30}};
+  valley.respites = {{0, 2'200}, {3, 1'600}};
+  valley.claims = {
+    {Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 77), 1, 0, 400, Species::ClaimState::Open},
+    {Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 80), 3, Species::CLAIM_AREA_CENTRAL, 600, Species::ClaimState::Waiting}};
+  return valley;
 }
 
 Species::HudModel SettlementModel()
@@ -205,6 +232,143 @@ public:
     Assert::IsFalse(notices.empty(), L"shown until mvp.hud.notice_seconds");
     notices = Species::AgeNotices(std::move(notices), {}, 10.0 + keys.noticeSeconds, CommittedPresentation());
     Assert::IsTrue(notices.empty(), L"and gone then");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp050TheRelationsPanelListsAngerGrievancesClaimsAndTheWarning)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-050")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-102")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp050TheRelationsPanelListsAngerGrievancesClaimsAndTheWarning)
+  {
+    // ADR-166: the warning counts down to the end of mvp.conflict.warning_minutes; the steward's expedition and respite
+    // follow; each other Cladan's anger is the sum of its grievances against the steward's settlement, listed under it
+    // with a removed cause marked, the grievance the settlement itself holds not among them; then every claim.
+    using Kind = Species::RelationRowKind;
+    const double warning = CommittedTuning().mvp.conflict.warningMinutes * 60.0;
+    const std::vector<Species::RelationRow> rows = Species::RelationRowsOf(ValleyOfSiteZero(), 0, 1'000, 0.1, warning, 20);
+    const auto warningLeft = static_cast<std::int64_t>(std::ceil(warning - 10.0)); // declared at tick 900, a second ago
+    const std::vector<Species::RelationRow> expected{
+      {Kind::Heading},
+      {Kind::Warning, 2, warningLeft},
+      {Kind::Expedition, 3, 0, static_cast<std::uint8_t>(Species::ExpeditionState::Released)},
+      {Kind::Respite, 0, 2},
+      {Kind::Cladan, 1, 42, 0, 0},
+      {Kind::Grievance, 1, 12, 0, 0},
+      {Kind::Grievance, 1, 30, 1, 1},
+      {Kind::Cladan, 2, 40, 0, 0},
+      {Kind::Grievance, 2, 40, 2, 0},
+      {Kind::Cladan, 3, 0, 0, 1},
+      {Kind::ClaimsHeading},
+      {Kind::Claim, 1, 0, 0, 0},
+      {Kind::Claim, 3, 0, Species::CLAIM_AREA_CENTRAL, 1}};
+    ExpectEqual(static_cast<std::int64_t>(expected.size()), static_cast<std::int64_t>(rows.size()), L"every row");
+    Assert::IsTrue(rows == expected, L"in order, with their values");
+    const std::vector<Species::RelationRow> bounded = Species::RelationRowsOf(ValleyOfSiteZero(), 0, 1'000, 0.1, warning, 6);
+    Assert::IsTrue(bounded.size() == 6 && bounded.back().kind == Kind::More && bounded.back().value == 8,
+                   L"the bound says what it leaves out");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp102TheRelationsPanelAndTheNoticeCardsOfM3)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-102")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp102TheRelationsPanelAndTheNoticeCardsOfM3)
+  {
+    // ADR-166: with a valley status the relations panel is a zone at the bottom right, a row high each, and draws its
+    // icons; each notice of M3's kinds has a card with its own icon.
+    Species::HudModel model = SettlementModel();
+    model.valley = ValleyOfSiteZero();
+    model.tick = 1'000;
+    model.warningSeconds = 300.0;
+    Species::SettlementNotice claim;
+    claim.kind = Species::NoticeKind::ClaimMade;
+    claim.other = std::uint8_t{1};
+    claim.detail = 0;
+    Species::SettlementNotice ended;
+    ended.kind = Species::NoticeKind::BattleEnded;
+    ended.other = std::uint8_t{2};
+    ended.detail = 1;
+    model.notices = {{claim, 1.0}, {ended, 2.0}};
+    Species::SettlementHud hud(CommittedPresentation(), CommittedTuning());
+    const Neuron::UiMetrics metrics = MetricsAt({1920, 1080});
+    hud.SetModel(model, metrics);
+    const auto relations = std::ranges::find(hud.Zones(), Species::HudZone::Relations, &Species::HudZoneRect::zone);
+    Assert::IsTrue(relations != hud.Zones().end(), L"the relations panel is a zone");
+    const auto& keys = CommittedPresentation().mvp.hud;
+    const double unit = 1080.0 / 600.0;
+    Assert::AreEqual(std::round(keys.padding * unit) * 2.0 + std::round(keys.rowHeight * unit) * 13.0,
+                     static_cast<double>(relations->rect.Height()), 1e-3, L"a row high for each of its 13 rows");
+    Assert::AreEqual(1920.0 - std::round(keys.margin * unit), static_cast<double>(relations->rect.right), 1e-3, L"at the right");
+    Assert::AreEqual(1080.0 - std::round(keys.margin * unit), static_cast<double>(relations->rect.bottom), 1e-3, L"at the bottom");
+    Neuron::TextSystem text(Species::TextSystemDesc(CommittedPresentation()));
+    const Neuron::StringTable strings;
+    const Neuron::MessageLocale locale("en-US");
+    std::vector<Neuron::UiBatch> batches;
+    hud.Draw(text, strings, locale, batches);
+    const auto imageQuads = [&](Species::UiImage _image)
+    {
+      std::int64_t quads = 0;
+      for (const Neuron::UiBatch& batch : batches)
+      {
+        quads += batch.source == Neuron::UiSource::Image && batch.image == static_cast<std::uint16_t>(_image)
+                   ? static_cast<std::int64_t>(batch.quads.size())
+                   : 0;
+      }
+      return quads;
+    };
+    ExpectEqual(3, imageQuads(Species::UiImage::IconAttack), L"the warning, the expedition and the attack cause");
+    ExpectEqual(2, imageQuads(Species::UiImage::IconRespite), L"its respite and another Cladan's");
+    ExpectEqual(4, imageQuads(Species::UiImage::IconClaim), L"two claims, a claim cause and the claim's card");
+    ExpectEqual(1, imageQuads(Species::UiImage::IconContact), L"the pressure cause");
+    ExpectEqual(1, imageQuads(Species::UiImage::IconBattle), L"the battle's card");
+    ExpectEqual(3, imageQuads(Species::UiImage::PanelAccent), L"the settlement, world and relations panels");
+    model.valley.reset();
+    hud.SetModel(model, metrics);
+    Assert::IsTrue(
+      std::ranges::none_of(hud.Zones(), [](const Species::HudZoneRect& _zone) { return _zone.zone == Species::HudZone::Relations; }),
+      L"no panel before the first valley status");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp102TheM3SentencesReadAsWritten)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-102")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp102TheM3SentencesReadAsWritten)
+  {
+    // ADR-166: the committed en-US strings give the sentences the HUD builds from its selectors and names.
+    const Neuron::StringTable& strings = CommittedStrings();
+    const Neuron::MessageLocale locale("en-US");
+    using Argument = Neuron::FormatArgument;
+    const auto format = [&](std::string_view _id, std::initializer_list<Argument> _arguments)
+    { return strings.Format(_id, std::span<const Argument>(_arguments.begin(), _arguments.size()), locale); };
+    ExpectText("Red", format("ui.hud.cladan", {Argument{"cladan", std::string_view("red")}}), L"a Cladan by its colour");
+    ExpectText("the central site", format("ui.hud.area", {Argument{"area", std::string_view("central")}}), L"the central site");
+    ExpectText("Green's half facing Red",
+               format("ui.hud.area", {Argument{"area", std::string_view("half")}, Argument{"owner", std::string_view("Green")},
+                                      Argument{"facing", std::string_view("Red")}}),
+               L"a border half");
+    ExpectText("Red claims Green's half facing Red",
+               format("ui.hud.notice", {Argument{"kind", std::string_view("claim_theirs")}, Argument{"other", std::string_view("Red")},
+                                        Argument{"area", std::string_view("Green's half facing Red")}}),
+               L"a claim notice");
+    ExpectText("You won the battle with Yellow",
+               format("ui.hud.notice", {Argument{"kind", std::string_view("battle_won")}, Argument{"other", std::string_view("Yellow")},
+                                        Argument{"area", std::string_view("")}}),
+               L"a battle won");
+    ExpectText("Yellow attacks in 4:05",
+               format("ui.hud.warning", {Argument{"cladan", std::string_view("Yellow")}, Argument{"minutes", std::int64_t{4}},
+                                         Argument{"seconds", std::string_view("05")}}),
+               L"the warning's countdown");
+    ExpectText("Claim 30, fading fast",
+               format("ui.hud.grievance", {Argument{"cause", std::string_view("claim")}, Argument{"weight", std::int64_t{30}},
+                                           Argument{"removed", std::string_view("yes")}}),
+               L"a grievance whose cause is removed");
+    ExpectText("Blue: anger 42",
+               format("ui.hud.anger", {Argument{"cladan", std::string_view("Blue")}, Argument{"anger", std::int64_t{42}}}),
+               L"a Cladan's anger");
+    ExpectText(
+      "Blue claims the central site: waiting",
+      format("ui.hud.claim", {Argument{"claimant", std::string_view("Blue")}, Argument{"area", std::string_view("the central site")},
+                              Argument{"state", std::string_view("waiting")}}),
+      L"a claim");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp034TheBarShowsTheCostTheServerCharges)

@@ -2,6 +2,7 @@
 
 #include "ClientSession.h"
 #include "MessageLocale.h"
+#include "RelationMessages.h"
 #include "ReplicatedState.h"
 #include "SettlementMessages.h"
 #include "StringTable.h"
@@ -54,7 +55,48 @@ struct HudModel
   double nowSeconds = 0.0;        // real time
   double tickSeconds = 0.1;       // ref.sim.tick_period
   HudVerbs verbs;                 // ADR-153
+  // M3 task T11 (ADR-166): the server's latest valley status (MVP-098), the replica's latest tick for its countdowns, and
+  // mvp.conflict.warning_minutes in seconds.
+  std::optional<ValleyStatus> valley;
+  std::uint64_t tick = 0;
+  double warningSeconds = 0.0;
 };
+
+// MVP-102 (ADR-166): what a row of the relations panel shows.
+enum class RelationRowKind : std::uint8_t
+{
+  Heading,       // the panel's title
+  Warning,       // an attack declared on the steward's settlement, its countdown to the warning's end
+  Expedition,    // the steward's own expedition and where it stands
+  Respite,       // the steward's settlement under a respite, the minutes it has left
+  Cladan,        // another Cladan's anger toward the steward's settlement, and whether it is under a respite
+  Grievance,     // one of that Cladan's grievances against the steward's settlement: its cause, weight and fade
+  ClaimsHeading, // the claims' title
+  Claim,         // a claim: its claimant, area and state
+  More           // the rows the panel's bound leaves out
+};
+
+/// A row of the relations panel: its kind; the settlement it names by its local site (the Cladan, the attacker, the
+/// expedition's target, the claimant); a value (anger or weight in whole units, the seconds or minutes left, the rows
+/// left out); and the kind's detail (a grievance's cause, a claim's area, an expedition's state) and state (a claim's
+/// state, a grievance whose cause is removed, a Cladan under a respite).
+struct RelationRow
+{
+  RelationRowKind kind = RelationRowKind::Heading;
+  std::uint8_t site = 0;
+  std::int64_t value = 0;
+  std::uint8_t detail = 0;
+  std::uint8_t state = 0;
+
+  friend bool operator==(const RelationRow&, const RelationRow&) = default;
+};
+
+// MVP-050, MVP-102 (ADR-166): the relations panel's rows for the settlement at site _site after tick _tick of the
+// valley status: the warning of each attack declared on it, its own expedition, its respite, each other Cladan's anger
+// toward it with the grievances that make it, and every claim; at most _rowsMax rows, the last of a longer list saying
+// how many it leaves out.
+[[nodiscard]] std::vector<RelationRow> RelationRowsOf(const ValleyStatus& _valley, std::uint8_t _site, std::uint64_t _tick,
+                                                      double _tickSeconds, double _warningSeconds, std::size_t _rowsMax);
 
 // The HUD's screen zones (UI-461, R-CTRL-223): a press over one reaches no world verb (ADR-153).
 enum class HudZone : std::uint8_t
@@ -65,7 +107,8 @@ enum class HudZone : std::uint8_t
   Notices,       // the notification cards
   World,         // the world's information panel
   PriorityRaise, // a priority's raising arrow; its index is the task's, from gathering (ADR-153)
-  PriorityLower  // a priority's lowering arrow
+  PriorityLower, // a priority's lowering arrow
+  Relations      // the relations panel (ADR-166)
 };
 
 struct HudZoneRect
@@ -93,7 +136,9 @@ struct HudZoneRect
 /// Workers and the population limit, growth and the cause when it stops, the upkeep and the inactive structures, the
 /// priorities with their Workers, and the idle Workers by reason (MVP-037); the construction bar holds each structure
 /// with its cost, the queue each site with its progress; the notification cards the structures completed; and the
-/// world's panel its seed. Its looks and measures are `mvp.hud.*`, provisional (O95, DEC-1005). Main thread only.
+/// world's panel its seed. From M3 task T11 (ADR-166) it asks for the valley's status with the settlement's, shows the
+/// relations panel of RelationRowsOf, and draws a card for every kind of notice. Its looks and measures are `mvp.hud.*`,
+/// provisional (O95, DEC-1005). Main thread only.
 class SettlementHud
 {
 public:
@@ -136,6 +181,8 @@ private:
   std::array<Neuron::UiRect, BUILD_KINDS.size()> m_build{};
   std::array<std::array<Neuron::UiRect, 2>, 3> m_arrows{}; // each priority's lowering and raising arrows (ADR-153)
   Neuron::UiRect m_queue;
+  Neuron::UiRect m_relations;
+  std::vector<RelationRow> m_relationRows;
   std::size_t m_panelRows = 0;
   std::optional<double> m_lastRequest;
 };

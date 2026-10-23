@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CppUnitTest.h"
+#include "StringTable.h"
 #include "TuningMvp.h"
 #include "TuningPresentation.h"
 
@@ -44,6 +45,9 @@ private:
 [[nodiscard]] const Species::TuningMvp& CommittedTuning();
 // The committed presentation record (ADR-116), read once.
 [[nodiscard]] const Species::TuningPresentation& CommittedPresentation();
+// The committed en-US strings (ADR-146), read once from GameData/Strings/en_us.json, each text as it is written: the
+// strings with no caption marker, as the client formats them, for the tests of its sentences.
+[[nodiscard]] const Neuron::StringTable& CommittedStrings();
 
 // The framework's AreEqual needs a ToString for every type it compares; these compare and describe the values
 // themselves.
