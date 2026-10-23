@@ -377,6 +377,96 @@ public:
                    L"another's claim, none");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp048AResultsRowsAreItsRecord)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-048")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PIL-046")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp048AResultsRowsAreItsRecord)
+  {
+    // ADR-168: the outcome for the steward's settlement, the end and the battle's length, each side's Workers lost, then
+    // the stores, Essence, area, grievance, respite and renown that are not none, and the close with the results waiting.
+    using Kind = Species::ResultRowKind;
+    Species::BattleResultNotice raid;
+    raid.attacker = 0;
+    raid.defender = 1;
+    raid.end = Species::BattleEnd::LossCap;
+    raid.attackerWon = true;
+    raid.startTick = 1'000;
+    raid.endTick = 1'000 + 1'234; // 123.4 s at 0.1 s a tick
+    raid.side = true;
+    raid.attackerLost = 12;
+    raid.defenderLost = 30;
+    raid.storesMovedMilliRu = 45'600;
+    raid.essenceMoved = 7;
+    raid.grievanceMicro = 20'400'000;
+    raid.respiteUntil = raid.endTick + 9'001; // 15 min and a tick
+    raid.renown = 5;
+    const std::vector<Species::ResultRow> rows = Species::ResultRowsOf(raid, 0, 0.1, 2);
+    const std::vector<Species::ResultRow> expected{{Kind::Title, 1},    {Kind::End, 1, 123}, {Kind::Lost, 12, 30},
+                                                   {Kind::Stores, 45},  {Kind::Essence, 7},  {Kind::Grievance, 20},
+                                                   {Kind::Respite, 16}, {Kind::Renown, 5},   {Kind::Close, 2}};
+    Assert::IsTrue(rows == expected, L"the attacker's victory, every line");
+    // The defender of the same battle lost it; a claim battle that moved its area says so; nothing moved, nothing listed.
+    ExpectEqual(0, Species::ResultRowsOf(raid, 1, 0.1, 0).front().value, L"a defeat for the defender");
+    Species::BattleResultNotice claim;
+    claim.attacker = 2;
+    claim.defender = 0;
+    claim.area = std::uint8_t{4};
+    claim.areaMoved = true;
+    claim.end = Species::BattleEnd::ObjectiveHeld;
+    claim.attackerWon = true;
+    claim.side = true;
+    const std::vector<Species::ResultRow> lost = Species::ResultRowsOf(claim, 0, 0.1, 0);
+    const std::vector<Species::ResultRow> plain{{Kind::Title, 0}, {Kind::End, 0, 0}, {Kind::Lost, 0, 0}, {Kind::Area}, {Kind::Close, 0}};
+    Assert::IsTrue(lost == plain, L"a lost claim battle that moved the area");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp048TheResultCardStandsAtTheTopCenter)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-048")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-102")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp048TheResultCardStandsAtTheTopCenter)
+  {
+    // ADR-168: the first result waiting is a card mvp.hud.result_width wide at the top centre, a row high per row, a zone
+    // of its own, drawn with icon.hud.result_card; with none waiting, no card.
+    Species::HudModel model = SettlementModel();
+    Species::BattleResultNotice result;
+    result.attacker = 1;
+    result.defender = 0;
+    result.side = true;
+    model.results = {result, result};
+    Species::SettlementHud hud(CommittedPresentation(), CommittedTuning());
+    hud.SetModel(model, MetricsAt({1920, 1080}));
+    const auto card = std::ranges::find(hud.Zones(), Species::HudZone::Result, &Species::HudZoneRect::zone);
+    Assert::IsTrue(card != hud.Zones().end(), L"the card is a zone");
+    const auto& keys = CommittedPresentation().mvp.hud;
+    const double unit = 1080.0 / 600.0;
+    const double width = std::round(keys.resultWidth * unit);
+    Assert::AreEqual(width, static_cast<double>(card->rect.Width()), 1e-3, L"mvp.hud.result_width wide");
+    Assert::AreEqual(std::round((1920.0 - width) * 0.5), static_cast<double>(card->rect.left), 1e-3, L"centred");
+    Assert::AreEqual(std::round(keys.margin * unit), static_cast<double>(card->rect.top), 1e-3, L"at the top");
+    Assert::AreEqual(std::round(keys.padding * unit) * 2.0 + std::round(keys.rowHeight * unit) * 4.0,
+                     static_cast<double>(card->rect.Height()), 1e-3, L"the title, end, losses and close rows");
+    Neuron::TextSystem text(Species::TextSystemDesc(CommittedPresentation()));
+    const Neuron::StringTable strings;
+    const Neuron::MessageLocale locale("en-US");
+    std::vector<Neuron::UiBatch> batches;
+    hud.Draw(text, strings, locale, batches);
+    std::int64_t frames = 0;
+    for (const Neuron::UiBatch& batch : batches)
+    {
+      frames += batch.source == Neuron::UiSource::Image && batch.image == static_cast<std::uint16_t>(Species::UiImage::ResultCard)
+                  ? static_cast<std::int64_t>(batch.quads.size())
+                  : 0;
+    }
+    ExpectEqual(1, frames, L"one card, its frame drawn");
+    model.results.clear();
+    hud.SetModel(model, MetricsAt({1920, 1080}));
+    Assert::IsTrue(
+      std::ranges::none_of(hud.Zones(), [](const Species::HudZoneRect& _zone) { return _zone.zone == Species::HudZone::Result; }),
+      L"no card with none waiting");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp102TheM3SentencesReadAsWritten)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-102")
   END_TEST_METHOD_ATTRIBUTE()
@@ -418,6 +508,47 @@ public:
       format("ui.hud.claim", {Argument{"claimant", std::string_view("Blue")}, Argument{"area", std::string_view("the central site")},
                               Argument{"state", std::string_view("waiting")}}),
       L"a claim");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp101TheConflictAndResultSentencesReadAsWritten)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-048")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp101TheConflictAndResultSentencesReadAsWritten)
+  {
+    // ADR-167 and ADR-168: the committed en-US strings of the declare line, a conflict refusal, a claimable area, the
+    // result card and a public line.
+    const Neuron::StringTable& strings = CommittedStrings();
+    const Neuron::MessageLocale locale("en-US");
+    using Argument = Neuron::FormatArgument;
+    const auto format = [&](std::string_view _id, std::initializer_list<Argument> _arguments)
+    { return strings.Format(_id, std::span<const Argument>(_arguments.begin(), _arguments.size()), locale); };
+    ExpectText("Raid Red with 2 Leaders for 300, unprovoked: press again to declare",
+               format("ui.hud.declare", {Argument{"kind", std::string_view("raid")}, Argument{"target", std::string_view("Red")},
+                                         Argument{"area", std::string_view("")}, Argument{"leaders", std::int64_t{2}},
+                                         Argument{"cost", std::int64_t{300}}, Argument{"unprovoked", std::string_view("yes")}}),
+               L"the declare line");
+    ExpectText("That area was claimed too recently",
+               format("ui.hud.conflict_refused",
+                      {Argument{"kind", std::string_view("claim")}, Argument{"reason", std::string_view("cooling_down")}}),
+               L"a claim refused by its cooldown");
+    ExpectText("Claim the central site", format("ui.hud.claimable", {Argument{"area", std::string_view("the central site")}}),
+               L"a claimable area");
+    ExpectText("Victory: Green raided Red",
+               format("ui.hud.result_title", {Argument{"outcome", std::string_view("won")}, Argument{"kind", std::string_view("raid")},
+                                              Argument{"attacker", std::string_view("Green")},
+                                              Argument{"defender", std::string_view("Red")}, Argument{"area", std::string_view("")}}),
+               L"a raid won");
+    ExpectText("The attackers were routed after 2 min 3 s",
+               format("ui.hud.result_end", {Argument{"end", std::string_view("rout")}, Argument{"minutes", std::int64_t{2}},
+                                            Argument{"seconds", std::int64_t{3}}}),
+               L"its end and length");
+    ExpectText("Click to close: 1 more result", format("ui.hud.result_close", {Argument{"more", std::int64_t{1}}}), L"one more waiting");
+    ExpectText("Click to close", format("ui.hud.result_close", {Argument{"more", std::int64_t{0}}}), L"none waiting");
+    ExpectText("Blue beat Yellow in a raid",
+               format("ui.hud.result_public", {Argument{"winner", std::string_view("Blue")}, Argument{"loser", std::string_view("Yellow")},
+                                               Argument{"kind", std::string_view("raid")}, Argument{"area", std::string_view("")}}),
+               L"another battle's public line");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp034TheBarShowsTheCostTheServerCharges)

@@ -111,6 +111,7 @@ struct SettlementVerbResult
 ///   expedition or sends a grievance's tribute at once. A raid or a claim battle is declared in two presses: the first
 ///   shows the attack with its cost and whether it is unprovoked, a second on the same button declares it, and the
 ///   secondary press, or any other press over the HUD, drops it. Their refusals are kept as a placement's is.
+/// - **Results** (M3 task T13, ADR-168). A press on the result card closes the result it shows.
 /// Nothing is sent while the client commands no settlement. Frame thread only.
 class SettlementVerbs
 {
@@ -184,6 +185,7 @@ private:
   std::vector<std::pair<std::uint64_t, ConflictKind>> m_conflicts;        // the conflict commands sent and not yet reported
   std::optional<std::pair<ConflictKind, std::uint8_t>> m_conflictRefusal; // the last refused, and its reason
   double m_conflictRefusalAgeSeconds = 0.0;
+  std::uint64_t m_resultsClosed = 0; // ADR-168: the presses on the result card, never reset, so the HUD can count them
 };
 
 } // namespace Species

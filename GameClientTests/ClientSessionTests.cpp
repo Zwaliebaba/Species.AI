@@ -7,6 +7,7 @@
 #include "RegionTerrain.h"
 #include "RelationMessages.h"
 #include "ReplicaTiming.h"
+#include "SettlementHud.h"
 #include "SettlementMessages.h"
 #include "StateUpdate.h"
 #include "TestSupport.h"
@@ -409,6 +410,60 @@ public:
     Assert::IsTrue(results.size() == 2 && results[0].expedition == raid.expedition && results[1].area == claim.area,
                    L"both results, in order");
     Assert::IsTrue(f.session->TakeBattleResults().empty(), L"taken once");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp048EachOwnResultWaitsOnTheCardUntilClosed)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-048")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-102")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp048EachOwnResultWaitsOnTheCardUntilClosed)
+  {
+    // ADR-168: the HUD takes the session's results: the settlement's own wait on the result card in the order they came,
+    // each closed by a press on the card, which the verbs count; another battle's public line is a card among the notices.
+    Fixture f;
+    const Species::WorldTerrain sent{SeedOne().seed, SeedOne().digest, std::uint8_t{2}};
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(sent)).has_value());
+    const Species::ReplicatedSettlement own{2, 2, 2, 120'500, 1'500'000, 20, 40, 5'600};
+    f.Send(Species::StateUpdate{3, 0, {RecordOf(Species::SettlementObjectId(2), own, nullptr)}});
+    Species::BattleResultNotice raid;
+    raid.expedition = Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 7);
+    raid.attacker = 2;
+    raid.defender = 1;
+    raid.attackerWon = true;
+    raid.endTick = 3;
+    raid.side = true;
+    Species::BattleResultNotice claim = raid;
+    claim.expedition = Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 8);
+    claim.area = std::uint8_t{4};
+    Species::BattleResultNotice publicLine = raid;
+    publicLine.expedition = Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 9);
+    publicLine.attacker = 0;
+    publicLine.defender = 3;
+    publicLine.side = false;
+    for (const std::vector<std::byte>& bytes :
+         {Neuron::EncodeMessage(raid), Neuron::EncodeMessage(publicLine), Neuron::EncodeMessage(claim)})
+    {
+      Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, bytes).has_value(), L"sent");
+    }
+    f.session->Update();
+    Species::SettlementHud hud(CommittedPresentation(), CommittedTuning());
+    const Neuron::UiMetrics metrics = Species::UiMetricsOf(CommittedPresentation(), {1920, 1080}, 1.0f, std::nullopt, std::nullopt);
+    Species::HudVerbs verbs;
+    verbs.resultsClosed = 4; // the verbs' count before this HUD
+    hud.Update(*f.session, 1.0, metrics, verbs);
+    const Species::HudModel& model = hud.Model();
+    Assert::IsTrue(model.results.size() == 2 && model.results[0].expedition == raid.expedition &&
+                     model.results[1].expedition == claim.expedition,
+                   L"its two results wait, in order");
+    Assert::IsTrue(model.notices.size() == 1 && model.notices[0].result.has_value() &&
+                     model.notices[0].result.value_or(Species::BattleResultNotice{}).expedition == publicLine.expedition,
+                   L"the public line is a card");
+    verbs.resultsClosed = 5;
+    hud.Update(*f.session, 1.1, metrics, verbs);
+    Assert::IsTrue(hud.Model().results.size() == 1 && hud.Model().results[0].expedition == claim.expedition, L"the first closed");
+    verbs.resultsClosed = 6;
+    hud.Update(*f.session, 1.2, metrics, verbs);
+    Assert::IsTrue(hud.Model().results.empty(), L"and the second");
   }
 };
 

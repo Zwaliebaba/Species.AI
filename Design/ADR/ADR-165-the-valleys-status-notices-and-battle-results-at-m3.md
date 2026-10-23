@@ -139,3 +139,4 @@ Chosen options: 1, 3 and 5.
   - `GameLogic/Relations` (`ValleyEvent`), `RegionSimulation` (`Raise`, `ValleyEvents`), `Claims` (`ResourceSiteOfArea`), `Battles`, `SettlementCommands` (`ValleyStatusOf`, `ResultNoticeOf`), `WorldServer`;
   - `GameClient/ClientSession`, `SettlementHud`;
   - `GameSharedTests/RelationMessageTests`, `SettlementMessageTests`, `StateUpdateTests`; `GameLogicTests/ReplicationTests`, `ClaimTests`, `RunTests`; `GameClientTests/ClientSessionTests`.
+* **Amendment 2026-10-23 (M3 task T13, [ADR-168](ADR-168-the-battle-result-card-at-m3.md)).** The HUD takes the session's results each frame: the settlement's own wait on the result card, every other's public line is a card among the notices.

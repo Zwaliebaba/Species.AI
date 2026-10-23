@@ -5440,6 +5440,15 @@
               "x-species-type": "count",
               "x-species-unit": "rows",
               "x-species-presence": "required"
+            },
+            "result_width": {
+              "type": "number",
+              "description": "mvp.hud.result_width (MVP-048)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "HUD units",
+              "x-species-presence": "required"
             }
           },
           "required": [
@@ -5462,7 +5471,8 @@
             "palette",
             "priority_step",
             "disabled_alpha",
-            "relations_rows_max"
+            "relations_rows_max",
+            "result_width"
           ],
           "additionalProperties": false,
           "x-species-type": "object",

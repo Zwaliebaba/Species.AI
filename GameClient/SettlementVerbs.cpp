@@ -370,6 +370,9 @@ void SettlementVerbs::PressHud(const HudZoneRect& _zone, std::uint8_t _team, con
     }
     break;
   }
+  case HudZone::Result:
+    ++m_resultsClosed; // ADR-168: the press closes the result the card shows
+    break;
   case HudZone::Settlement:
   case HudZone::Queue:
   case HudZone::Notices:
@@ -517,6 +520,7 @@ HudVerbs SettlementVerbs::ForHud() const
   verbs.pending = m_pending;
   verbs.conflictRefusal = m_conflictRefusal;
   verbs.conflictRefusalAgeSeconds = m_conflictRefusalAgeSeconds;
+  verbs.resultsClosed = m_resultsClosed;
   return verbs;
 }
 

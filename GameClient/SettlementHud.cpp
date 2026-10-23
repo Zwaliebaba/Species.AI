@@ -53,6 +53,21 @@ constexpr std::string_view STRING_NOTICE = "ui.hud.notice";
 constexpr std::string_view STRING_CLAIMABLE = "ui.hud.claimable";
 constexpr std::string_view STRING_DECLARE = "ui.hud.declare";
 constexpr std::string_view STRING_CONFLICT_REFUSED = "ui.hud.conflict_refused";
+// ADR-168: the result card's lines and a public line's card.
+constexpr std::string_view STRING_RESULT_TITLE = "ui.hud.result_title";
+constexpr std::string_view STRING_RESULT_END = "ui.hud.result_end";
+constexpr std::string_view STRING_RESULT_LOST = "ui.hud.result_lost";
+constexpr std::string_view STRING_RESULT_STORES = "ui.hud.result_stores";
+constexpr std::string_view STRING_RESULT_ESSENCE = "ui.hud.result_essence";
+constexpr std::string_view STRING_RESULT_AREA = "ui.hud.result_area";
+constexpr std::string_view STRING_RESULT_GRIEVANCE = "ui.hud.result_grievance";
+constexpr std::string_view STRING_RESULT_RESPITE = "ui.hud.result_respite";
+constexpr std::string_view STRING_RESULT_RENOWN = "ui.hud.result_renown";
+constexpr std::string_view STRING_RESULT_CLOSE = "ui.hud.result_close";
+constexpr std::string_view STRING_RESULT_PUBLIC = "ui.hud.result_public";
+// BattleEnd's selectors in ui.hud.result_end, by its value.
+constexpr std::array<std::string_view, 5> END_SELECTORS{"objective", "loss_cap", "rout", "withdrawn", "time"};
+constexpr double SECONDS_PER_MINUTE = 60.0;
 
 // The selectors of the strings' select arguments, in GrowthState's, WorkerTask's, IdleReason's and StructureKind's orders.
 constexpr std::array<std::string_view, 3> GROWTH_SELECTORS{"growing", "at_limit", "stores_short"};
@@ -380,6 +395,44 @@ std::array<RelationAction, 2> RelationActionsOf(const RelationRow& _row, std::ui
   return {RelationAction::None, RelationAction::None};
 }
 
+std::vector<ResultRow> ResultRowsOf(const BattleResultNotice& _result, std::uint8_t _site, double _tickSeconds, std::size_t _waiting)
+{
+  std::vector<ResultRow> rows;
+  const bool won = (_result.attacker == _site) == _result.attackerWon;
+  rows.push_back({ResultRowKind::Title, won ? 1 : 0});
+  const std::uint64_t ticks = _result.endTick > _result.startTick ? _result.endTick - _result.startTick : 0;
+  rows.push_back({ResultRowKind::End, static_cast<std::int64_t>(_result.end), std::llround(static_cast<double>(ticks) * _tickSeconds)});
+  rows.push_back({ResultRowKind::Lost, _result.attackerLost, _result.defenderLost});
+  // MVP-046: a won raid's stores go home with the attackers; PIL-045: the defender takes the fallen attackers' Essence.
+  if (const std::int64_t stores = WholeRu(_result.storesMovedMilliRu); stores > 0)
+  {
+    rows.push_back({ResultRowKind::Stores, stores});
+  }
+  if (_result.essenceMoved > 0)
+  {
+    rows.push_back({ResultRowKind::Essence, _result.essenceMoved});
+  }
+  if (_result.areaMoved && _result.area.has_value())
+  {
+    rows.push_back({ResultRowKind::Area});
+  }
+  if (const std::int64_t weight = WholeWeight(_result.grievanceMicro); weight > 0)
+  {
+    rows.push_back({ResultRowKind::Grievance, weight});
+  }
+  if (_result.respiteUntil > _result.endTick)
+  {
+    const double minutes = static_cast<double>(_result.respiteUntil - _result.endTick) * _tickSeconds / SECONDS_PER_MINUTE;
+    rows.push_back({ResultRowKind::Respite, static_cast<std::int64_t>(std::ceil(minutes))});
+  }
+  if (_result.renown > 0)
+  {
+    rows.push_back({ResultRowKind::Renown, _result.renown});
+  }
+  rows.push_back({ResultRowKind::Close, static_cast<std::int64_t>(_waiting)});
+  return rows;
+}
+
 HudModel HudModelOf(const ClientSession& _session, const TuningMvp& _tuning, const TuningPresentation& _presentation,
                     std::vector<HudNotice> _notices, std::span<const SettlementNotice> _arrived, double _nowSeconds, const HudVerbs& _verbs)
 {
@@ -456,8 +509,38 @@ void SettlementHud::Update(ClientSession& _session, double _realSeconds, const N
                            std::span<const MarkerIconPlace> _markers)
 {
   const std::vector<SettlementNotice> arrived = _session.TakeNotices();
-  m_model = HudModelOf(_session, m_tuning, m_presentation, std::move(m_model.notices), arrived, _realSeconds, _verbs);
+  // ADR-168: the results of the settlement's battles wait for the result card; every other battle's public line is a
+  // card among the notices.
+  std::vector<HudNotice> notices = std::move(m_model.notices);
+  for (const BattleResultNotice& result : _session.TakeBattleResults())
+  {
+    if (result.side)
+    {
+      m_results.push_back(result);
+    }
+    else
+    {
+      notices.push_back({SettlementNotice{}, _realSeconds, result});
+    }
+  }
+  m_model = HudModelOf(_session, m_tuning, m_presentation, std::move(notices), arrived, _realSeconds, _verbs);
   m_model.markers.assign(_markers.begin(), _markers.end());
+  // Each press on the card closes the result it shows. The verbs count the presses; the presses before the HUD's first
+  // update closed none of its results.
+  std::uint64_t closed = std::min(m_resultsClosed.value_or(_verbs.resultsClosed), _verbs.resultsClosed);
+  for (; closed < _verbs.resultsClosed; ++closed)
+  {
+    if (!m_results.empty())
+    {
+      m_results.pop_front();
+    }
+  }
+  m_resultsClosed = closed;
+  if (!m_model.settlement.has_value())
+  {
+    m_results.clear();
+  }
+  m_model.results.assign(m_results.begin(), m_results.end());
   // MVP-098: the status is server data, asked for once a period while the client has a settlement.
   if (m_model.settlement.has_value() &&
       (!m_lastRequest.has_value() || _realSeconds - *m_lastRequest >= m_presentation.mvp.hud.statusPeriod || _realSeconds < *m_lastRequest))
@@ -576,6 +659,17 @@ void SettlementHud::Layout(const Neuron::UiMetrics& _metrics)
         }
       }
     }
+  }
+
+  // ADR-168: the result card, top centre, while a result of the settlement's battles waits, a row high per row.
+  m_resultRows.clear();
+  if (!m_model.results.empty())
+  {
+    m_resultRows = ResultRowsOf(m_model.results.front(), m_model.settlement->site, m_model.tickSeconds, m_model.results.size() - 1);
+    const float cardWidth = Units(hud.resultWidth);
+    m_result = Neuron::UiRect::FromSize(std::round((width - cardWidth) * 0.5f), margin, cardWidth,
+                                        2.0f * padding + row * static_cast<float>(m_resultRows.size()));
+    m_zones.push_back({HudZone::Result, 0, m_result});
   }
 }
 
@@ -1006,6 +1100,24 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
       const Neuron::UiRect card = Neuron::UiRect::FromSize(static_cast<float>(m_metrics.client.width) - Units(hud.margin) - cardWidth,
                                                            cardTop, cardWidth, cardHeight);
       image(UiImage::NotificationCard, card, Rgba(palette.neutral, alpha));
+      // ADR-168: another battle's public line, its winner and loser named.
+      if (notice->result.has_value())
+      {
+        const BattleResultNotice& result = *notice->result;
+        image(UiImage::IconBattle,
+              Neuron::UiRect::FromSize(card.left + padding, std::round(card.top + (cardHeight - icon) * 0.5f), icon, icon),
+              Rgba(palette.text, alpha));
+        const std::string winner = cladanName(result.attackerWon ? result.attacker : result.defender);
+        const std::string loser = cladanName(result.attackerWon ? result.defender : result.attacker);
+        const std::string area = result.area.has_value() ? areaName(*result.area) : std::string();
+        const std::array arguments{Neuron::FormatArgument{"winner", std::string_view(winner)},
+                                   Neuron::FormatArgument{"loser", std::string_view(loser)},
+                                   Neuron::FormatArgument{"kind", std::string_view(result.area.has_value() ? "claim" : "raid")},
+                                   Neuron::FormatArgument{"area", std::string_view(area)}};
+        line(STRING_RESULT_PUBLIC, arguments, card.left + 2.0f * padding + icon, card.top, cardHeight, Rgba(palette.text, alpha));
+        cardTop += cardHeight + gap;
+        continue;
+      }
       const NoticeLook look = NoticeLookOf(notice->notice);
       image(look.icon, Neuron::UiRect::FromSize(card.left + padding, std::round(card.top + (cardHeight - icon) * 0.5f), icon, icon),
             Rgba(palette.text, alpha));
@@ -1037,6 +1149,96 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
     const std::string seed = std::to_string(*m_model.seed);
     const std::array arguments{Neuron::FormatArgument{"seed", std::string_view(seed)}};
     line(STRING_SEED, arguments, m_world.left + padding, m_world.top + padding, m_world.Height() - 2.0f * padding, text);
+  }
+
+  // MVP-048 (ADR-168): the result card of the settlement's first battle not yet closed, over the rest.
+  if (!m_resultRows.empty() && !m_model.results.empty())
+  {
+    const BattleResultNotice& result = m_model.results.front();
+    panel(UiImage::PanelNeutral, m_result, Rgba(palette.neutral));
+    image(UiImage::ResultCard, m_result, text);
+    const std::string attacker = cladanName(result.attacker);
+    const std::string defender = cladanName(result.defender);
+    const std::string winner = result.attackerWon ? attacker : defender;
+    const std::string area = result.area.has_value() ? areaName(*result.area) : std::string();
+    const auto name = [](const std::string& _name) { return std::string_view(_name); };
+    float lineTop = m_result.top + padding;
+    const float left = m_result.left + padding;
+    for (const ResultRow& resultRow : m_resultRows)
+    {
+      switch (resultRow.kind)
+      {
+      case ResultRowKind::Title:
+      {
+        const std::array arguments{Neuron::FormatArgument{"outcome", std::string_view(resultRow.value != 0 ? "won" : "lost")},
+                                   Neuron::FormatArgument{"kind", std::string_view(result.area.has_value() ? "claim" : "raid")},
+                                   Neuron::FormatArgument{"attacker", name(attacker)}, Neuron::FormatArgument{"defender", name(defender)},
+                                   Neuron::FormatArgument{"area", name(area)}};
+        line(STRING_RESULT_TITLE, arguments, left, lineTop, row, resultRow.value != 0 ? positive : negative);
+        break;
+      }
+      case ResultRowKind::End:
+      {
+        const std::array arguments{Neuron::FormatArgument{"end", Selector(END_SELECTORS, static_cast<std::uint8_t>(resultRow.value))},
+                                   Neuron::FormatArgument{"minutes", resultRow.second / 60},
+                                   Neuron::FormatArgument{"seconds", resultRow.second % 60}};
+        line(STRING_RESULT_END, arguments, left, lineTop, row, text);
+        break;
+      }
+      case ResultRowKind::Lost:
+      {
+        const std::array arguments{Neuron::FormatArgument{"attacker", name(attacker)}, Neuron::FormatArgument{"defender", name(defender)},
+                                   Neuron::FormatArgument{"attacker_lost", resultRow.value},
+                                   Neuron::FormatArgument{"defender_lost", resultRow.second}};
+        line(STRING_RESULT_LOST, arguments, left, lineTop, row, text);
+        break;
+      }
+      case ResultRowKind::Stores:
+      {
+        const std::array arguments{Neuron::FormatArgument{"attacker", name(attacker)}, Neuron::FormatArgument{"stores", resultRow.value}};
+        line(STRING_RESULT_STORES, arguments, left, lineTop, row, text);
+        break;
+      }
+      case ResultRowKind::Essence:
+      {
+        const std::array arguments{Neuron::FormatArgument{"defender", name(defender)}, Neuron::FormatArgument{"essence", resultRow.value}};
+        line(STRING_RESULT_ESSENCE, arguments, left, lineTop, row, text);
+        break;
+      }
+      case ResultRowKind::Area:
+      {
+        const std::array arguments{Neuron::FormatArgument{"area", name(area)}, Neuron::FormatArgument{"winner", name(winner)}};
+        line(STRING_RESULT_AREA, arguments, left, lineTop, row, text);
+        break;
+      }
+      case ResultRowKind::Grievance:
+      {
+        const std::array arguments{Neuron::FormatArgument{"defender", name(defender)}, Neuron::FormatArgument{"attacker", name(attacker)},
+                                   Neuron::FormatArgument{"weight", resultRow.value}};
+        line(STRING_RESULT_GRIEVANCE, arguments, left, lineTop, row, text);
+        break;
+      }
+      case ResultRowKind::Respite:
+      {
+        const std::array arguments{Neuron::FormatArgument{"defender", name(defender)}, Neuron::FormatArgument{"minutes", resultRow.value}};
+        line(STRING_RESULT_RESPITE, arguments, left, lineTop, row, text);
+        break;
+      }
+      case ResultRowKind::Renown:
+      {
+        const std::array arguments{Neuron::FormatArgument{"winner", name(winner)}, Neuron::FormatArgument{"renown", resultRow.value}};
+        line(STRING_RESULT_RENOWN, arguments, left, lineTop, row, text);
+        break;
+      }
+      case ResultRowKind::Close:
+      {
+        const std::array arguments{Neuron::FormatArgument{"more", resultRow.value}};
+        line(STRING_RESULT_CLOSE, arguments, left, lineTop, row, Rgba(palette.text, hud.disabledAlpha));
+        break;
+      }
+      }
+      lineTop += row;
+    }
   }
 }
 
