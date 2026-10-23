@@ -169,6 +169,7 @@
     <ClInclude Include="WorldMenu.h" />
     <ClInclude Include="WorldPresentation.h" />
     <ClInclude Include="WorldSaves.h" />
+    <ClInclude Include="WorldSounds.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
@@ -197,6 +198,7 @@
     <ClCompile Include="WorldMenu.cpp" />
     <ClCompile Include="WorldPresentation.cpp" />
     <ClCompile Include="WorldSaves.cpp" />
+    <ClCompile Include="WorldSounds.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

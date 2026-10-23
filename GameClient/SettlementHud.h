@@ -283,6 +283,11 @@ public:
   {
     return m_relationRows;
   }
+  // ADR-173: the notices that arrived at the last update, in their order, for the sounds they play.
+  [[nodiscard]] std::span<const SettlementNotice> Arrived() const noexcept
+  {
+    return m_arrived;
+  }
 
   // For a test: the model and the layout as an update would make them.
   void SetModel(HudModel _model, const Neuron::UiMetrics& _metrics);
@@ -305,6 +310,7 @@ private:
   Neuron::UiRect m_queue;
   Neuron::UiRect m_relations;
   std::vector<RelationRow> m_relationRows;
+  std::vector<SettlementNotice> m_arrived;
   std::deque<BattleResultNotice> m_results;     // ADR-168: the results of its battles not yet closed
   std::optional<std::uint64_t> m_resultsClosed; // the verbs' closing presses already applied; none before the first update
   Neuron::UiRect m_result;

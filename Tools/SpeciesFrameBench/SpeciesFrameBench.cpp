@@ -2,6 +2,7 @@
 
 #include "AppWindow.h"
 #include "AssetError.h"
+#include "AudioEngine.h"
 #include "ClientSession.h"
 #include "CommandJournal.h"
 #include "Construction.h"
@@ -35,6 +36,8 @@
 #include "WorldPresentation.h"
 #include "WorldSimulation.h"
 #include "WorldSnapshot.h"
+#include "WorldSounds.h"
+#include "XAudio2Device.h"
 
 #include <algorithm>
 #include <array>
@@ -490,6 +493,7 @@ struct Bench
   const Species::TuningPresentation* presentation = nullptr;
   const GrownSettlement* grown = nullptr;
   const ValleyAtWarWorld* valley = nullptr;
+  Neuron::AudioEngine* audio = nullptr; // ADR-173: the scenes' sounds, as Species.exe plays them
 };
 
 enum class SceneEnd : std::uint8_t
@@ -572,6 +576,7 @@ SceneEnd RunScene(const Scene& _scene, const Options& _options, const Bench& _be
   worldDesc.presentation = _bench.presentation;
   worldDesc.content = _bench.content;
   worldDesc.clock = _bench.clock;
+  worldDesc.audio = _bench.audio;
   Species::WorldPresentation world(worldDesc);
   Species::SettlementView::Desc viewDesc;
   viewDesc.tuning = &tuning;
@@ -948,6 +953,14 @@ int Run(const Options& _options)
         keyboardMouse.RequestClose();
       }
     });
+  // ADR-173: the audio engine as Species.exe makes it, at the full master volume, silent with no output device.
+  const Neuron::CounterTimeSource audioClock;
+  Neuron::AudioEngine::Desc audioDesc;
+  audioDesc.settings = Species::AudioSettingsOf(*presentation, static_cast<unsigned>(Species::MASTER_VOLUME_MAX));
+  audioDesc.events = Species::GameSoundEvents(*content, *presentation);
+  audioDesc.device = Neuron::CreateXAudio2Device(Species::AudioDeviceDescOf(*presentation));
+  audioDesc.clock = &audioClock;
+  Neuron::AudioEngine audio(std::move(audioDesc));
   const Bench bench{&clock,
                     &*window,
                     renderer->get(),
@@ -957,7 +970,8 @@ int Run(const Options& _options)
                     &*tuning,
                     &*presentation,
                     grown ? &*grown : nullptr,
-                    valley ? &*valley : nullptr};
+                    valley ? &*valley : nullptr,
+                    &audio};
   std::vector<SceneResult> results;
   int code = 0;
   for (const Scene& scene : SCENES)

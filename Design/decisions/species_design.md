@@ -16,6 +16,8 @@ This file records the decisions of the Species design and of the MVP built from 
 | [DEC-1005](#dec-1005-the-provisional-layout-and-palette-of-the-settlement-hud) | The provisional layout and palette of the settlement HUD | Open | MVP, UI |
 | [DEC-1006](#dec-1006-how-the-ai-settlements-claim-and-raise-their-expeditions) | How the AI settlements claim and raise their expeditions | Open | MVP |
 | [DEC-1007](#dec-1007-renown-for-a-withdrawn-claim) | Renown for a withdrawn claim | Open | MVP, PIL |
+| [DEC-1008](#dec-1008-the-valley-runs-misses-of-playtest-1s-lines) | The valley run's misses of Playtest 1's lines | Resolved | MVP, PIL |
+| [DEC-1009](#dec-1009-the-first-sound-sets-mix-and-the-turrets-sighting) | The first sound set's mix and the turret's sighting | Open | MVP, AEN |
 
 ## 1 World and sites
 
@@ -98,6 +100,33 @@ This file records the decisions of the Species design and of the MVP built from 
   - B — a layout and palette the owner sets before the run.
 - Recommendation: A. Every measure and colour is a key of the client's presentation record, so a retune changes no code, and the layout is reviewed for likeness at M2's end (PIL-027).
 - Decide by: the owner's run of M2 task T16; the likeness review of PIL-027 judges the result.
+
+### DEC-1009 The first sound set's mix and the turret's sighting
+- Status: Open
+- Affects: implementation/mvp_scope.md (MVP-087, and table 3's `mvp.sound.*`); implementation/m3_plan.md (§2's row of ADR-141); ADR-141, ADR-173
+- Specified behaviour: MVP-087 names the seven groups of the first sound set, but not their levels, buses or distances. The M3 plan also expects ADR-141's `TurretTargetSighted` heard, though the asset manifest has no group for a turret's sighting. The client builds the following until the owner decides.
+  - **Levels.** Each event plays at its `mvp.sound.<event>.level_db`:
+    - a laser shot at −12 dB;
+    - a death at −9 dB;
+    - an orb becoming a Worker, a structure completed, the attack warning, and a battle's start and end at −6 dB.
+
+    Every synthesized member peaks at −1 dBFS (ADR-171), so these levels alone set the balance between the groups.
+  - **Distance.** A positioned sound keeps its full level within `mvp.sound.min_distance` (1,000 wu) of the camera and falls as 1/d beyond it (AEN-201). With the reference's 100 wu (`ref.aud.layer.min_distance_default`), a battle seen from the settlement view's usual distance of about 1,000 to 2,500 wu would be 20 to 28 dB down.
+  - **Buses.** These play positioned on the world bus:
+    - the laser shot;
+    - the death;
+    - the orb;
+    - the structure.
+
+    The attack warning (two-dimensional, as its manifest row has it at the MVP) and the battle's start and end play on the announcer bus. It ducks the world bus by `ref.aud.bus.announcer.duck_world_db` for `ref.aud.bus.announcer.duck_time` (AEN-216).
+  - **Caps.** The laser shot and the death take `aen.voice.event_cap.world_max` (6). The other world sounds take `aen.voice.event_cap.world_default` (4).
+  - **The turret's sighting.** No sound plays for `TurretTargetSighted` at M3, since no group exists for it.
+- Options:
+  - A — as stated: the owner retunes the keys after M3 task T15's run, and the turret's sighting waits for a sound set that has its group;
+  - B — as A, with a group for the turret's sighting added to the MVP's set: a manifest row, its synthesized stand-in and an eighth event;
+  - C — levels and a distance that the owner sets before the run.
+- Recommendation: A. Every level and the distance are keys of the client's presentation record, so a retune changes no code. The turret's sighting is one of many reference sounds the MVP leaves out, and MVP-087 lists the set the owner chose (O98).
+- Decide by: the owner's run of M3 task T15.
 
 ## 3 Platform
 

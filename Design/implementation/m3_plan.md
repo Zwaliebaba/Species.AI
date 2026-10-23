@@ -59,6 +59,8 @@ M1's and M2's records leave these to M3:
 
 *Table 2 — What M1's and M2's records leave to M3.*
 
+> **Amendment 2026-10-23 (M3 task T15, [ADR-173](../ADR/ADR-173-the-first-sound-set-played-at-m3.md); DEC-1009, Open).** ADR-141's `TurretTargetSighted` is not heard at M3. MVP-087's sound set has no group for a turret's sighting, and DEC-1009 asks the owner whether to add one.
+
 ## 3 What M2 has settled, and what still waits
 
 The parts of M3 that cost most rest on what M2 measures. M2's code is written, and its exit waits on the owner's runs (`playtests/M2.md`):

@@ -263,6 +263,19 @@ void WorldPresentation::UpdateHud(ClientSession& _session, const SettlementView&
   const double seconds = std::chrono::duration<double>(m_desc.clock->Now() - m_start).count();
   m_hud->Update(_session, seconds, UiMetricsOf(*m_desc.presentation, _client, _dpiScale, m_desc.display.uiScale, m_desc.display.textScale),
                 _view.Settlement().ForHud(), _view.Markers().IconPlaces());
+  // ADR-173: the warning of an attack and a battle's start and end, two-dimensional, as their notices arrive.
+  if (m_desc.audio != nullptr)
+  {
+    std::vector<SoundCue> cues;
+    for (const SettlementNotice& notice : m_hud->Arrived())
+    {
+      if (const std::optional<SoundCue> cue = CueOf(notice); cue.has_value())
+      {
+        cues.push_back(*cue);
+      }
+    }
+    PlayCues(*m_desc.audio, cues);
+  }
 }
 
 void WorldPresentation::LeaveWorld()
@@ -279,6 +292,7 @@ void WorldPresentation::ClearWorld()
   m_leaders = LeaderLook{};
   m_effects.Clear();
   m_structures.Clear();
+  m_sounds.Clear();
   m_territories.Clear();
   m_viewMask.reset();
   m_viewMaskRevision.reset();
@@ -337,6 +351,12 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
   }
   // ADR-123: the presentation events are taken every frame, and dropped while no world is drawn.
   const std::vector<ReceivedEvent> events = _session.TakeEvents();
+  // ADR-173: the listener is the camera, before its shake, and the events' sounds play with their draws.
+  if (m_desc.audio != nullptr && m_terrain != nullptr && displayTick.has_value())
+  {
+    static_cast<void>(m_desc.audio->SetListener(ListenerOf(inputs.camera)));
+    PlayCues(*m_desc.audio, m_sounds.Due(events, *displayTick));
+  }
   // M1 task T16 (ADR-121): the crowds, on the presentation clock (VFX-016; no world is held at M1, at game speed 1).
   m_presentationClock.Advance(m_desc.clock->Now(), false, 1.0);
   if (m_terrain != nullptr && m_sceneTextures != nullptr)

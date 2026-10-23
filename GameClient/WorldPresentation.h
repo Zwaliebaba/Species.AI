@@ -22,6 +22,7 @@
 #include "TuningMvp.h"
 #include "TuningPresentation.h"
 #include "WorldScene.h"
+#include "WorldSounds.h"
 
 #include <cstdint>
 #include <memory>
@@ -46,8 +47,9 @@ public:
     const TuningPresentation* presentation = nullptr;
     const Neuron::LooseContent* content = nullptr;
     const Neuron::PlatformClock* clock = nullptr;
-    bool uiTest = false;    // a Debug build's `--ui-test`: the UI's test screen (ADR-145, ADR-149)
-    DisplayOptions display; // the display options of the settings store (ADR-150)
+    bool uiTest = false;                  // a Debug build's `--ui-test`: the UI's test screen (ADR-145, ADR-149)
+    DisplayOptions display;               // the display options of the settings store (ADR-150)
+    Neuron::AudioEngine* audio = nullptr; // ADR-173: the world's sounds play on it, outliving the presentation; none: none
   };
 
   explicit WorldPresentation(Desc _desc);
@@ -166,6 +168,7 @@ private:
   LeaderLook m_leaders;
   EffectsLook m_effects;
   StructureLook m_structures;
+  SoundSchedule m_sounds; // ADR-173: the effect events' sounds, on the display clock
   TerritoryLook m_territories;
   std::shared_ptr<const Neuron::ViewMask> m_viewMask; // ADR-144: the fog's mask of the steward's areas
   std::optional<std::uint64_t> m_viewMaskRevision;    // the areas' revision it was built from

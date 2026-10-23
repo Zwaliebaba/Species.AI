@@ -98,6 +98,9 @@
     <ClCompile Include="WorldSavesTests.cpp">
       <Filter>Session</Filter>
     </ClCompile>
+    <ClCompile Include="WorldSoundsTests.cpp">
+      <Filter>Session</Filter>
+    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>
     </ClCompile>

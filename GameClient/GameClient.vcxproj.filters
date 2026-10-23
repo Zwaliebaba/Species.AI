@@ -99,6 +99,9 @@
     <ClInclude Include="WorldSaves.h">
       <Filter>Session</Filter>
     </ClInclude>
+    <ClInclude Include="WorldSounds.h">
+      <Filter>Presentation</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Build</Filter>
     </ClInclude>
@@ -178,6 +181,9 @@
     </ClCompile>
     <ClCompile Include="WorldSaves.cpp">
       <Filter>Session</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldSounds.cpp">
+      <Filter>Presentation</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>

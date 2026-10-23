@@ -2,6 +2,7 @@
 
 #include "AppWindow.h"
 #include "AssetError.h"
+#include "AudioEngine.h"
 #include "ClientSession.h"
 #include "ClientSettings.h"
 #include "Development.h"
@@ -31,6 +32,8 @@
 #include "WorldMenu.h"
 #include "WorldPresentation.h"
 #include "WorldSaves.h"
+#include "WorldSounds.h"
+#include "XAudio2Device.h"
 
 #include <algorithm>
 #include <array>
@@ -569,12 +572,26 @@ int Run()
     renderConfig.frameRateWindowSeconds = presentationTuning->ref.sim.frame.fpsWindow;
     renderConfig.frameRateInitial = presentationTuning->ref.sim.frame.fpsInitial;
     presentation.renderer->Reconfigure(renderConfig);
+    // M3 task T15 (ADR-172, ADR-173): the audio engine on its own clock (AEN-006) and thread, through XAudio2 on the
+    // default output device or, with none, silent (AEN-100). Its table is the first sound set's, read from the content;
+    // it starts at the stored master volume and follows it as the options page sets it (AEN-076).
+    const Neuron::CounterTimeSource audioClock;
+    Neuron::AudioEngine::Desc audioDesc;
+    audioDesc.settings = AudioSettingsOf(*presentationTuning, static_cast<unsigned>(settings.GetInteger(SETTING_MASTER_VOLUME)));
+    audioDesc.events = GameSoundEvents(*content, *presentationTuning);
+    audioDesc.device = Neuron::CreateXAudio2Device(AudioDeviceDescOf(*presentationTuning));
+    audioDesc.clock = &audioClock;
+    Neuron::AudioEngine audio(std::move(audioDesc));
+    const Neuron::SettingsStore::SubscriptionId volumeSubscription =
+      settings.Subscribe(std::string(SETTING_MASTER_VOLUME), [&audio, &settings](std::string_view /*_key*/)
+                         { static_cast<void>(audio.SetMasterVolume(static_cast<unsigned>(settings.GetInteger(SETTING_MASTER_VOLUME)))); });
     WorldPresentation::Desc worldDesc;
     worldDesc.tuning = &*clientTuning;
     worldDesc.presentation = &*presentationTuning;
     worldDesc.content = &*content;
     worldDesc.clock = &clock;
     worldDesc.display = DisplayOptionsOf(settings); // ADR-150
+    worldDesc.audio = &audio;
 #if ENGINE_DEVELOPMENT
     worldDesc.uiTest = options.uiTest; // ADR-145: the UI's test page
 #endif
@@ -705,6 +722,7 @@ int Run()
     WorldMenu worldMenu(worldMenuDesc);
     const std::uint64_t checkedFrames = RunFrameLoop(clock, *presentation.window, *presentation.renderer, renderConfig, world, frontEnd,
                                                      worldMenu, startWorld, std::move(initial), settings, savesFolder, checkFrames);
+    settings.Unsubscribe(volumeSubscription);
     // PLT-043: the renderer releases its swap chain before the window is destroyed.
     presentation.renderer.reset();
     presentation.window.reset();

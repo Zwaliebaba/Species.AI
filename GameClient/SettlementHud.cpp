@@ -559,6 +559,7 @@ void SettlementHud::Update(ClientSession& _session, double _realSeconds, const N
     }
   }
   m_model = HudModelOf(_session, m_tuning, m_presentation, std::move(notices), arrived, _realSeconds, _verbs);
+  m_arrived = arrived;
   m_model.markers.assign(_markers.begin(), _markers.end());
   // Each press on the card closes the result it shows. The verbs count the presses; the presses before the HUD's first
   // update closed none of its results.

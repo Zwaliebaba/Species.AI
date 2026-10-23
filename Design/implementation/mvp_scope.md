@@ -253,7 +253,9 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-086** (MUST) The MVP's meshes and textures are produced by development tools under `Tools/` (procedural shape kits and texture generators, or a digital content creation tool with an exporter) and written in the cooked formats the runtime loads (ADR-017, ADR-019), so that the runtime path is the one later content takes. The tools may use pinned third-party code restored by NuGet (O29, O30); nothing of them ships (R14).
 
-**MVP-087** (SHOULD) From M3 the MVP SHOULD play a first sound set through the audio engine (ADR-022 to ADR-027): laser shots (`sfx.weapon.laser_bolt.spawn`), deaths (`sfx.unit.worker.die`), an orb becoming a Worker (`sfx.unit.essence_orb.collected`), a structure completed (`sfx.building.dwelling.complete`), the attack warning (`sfx.unit.worker.attack_horn`), and a battle starting and ending (`sfx.ui.battle.start`, `sfx.ui.battle.end`).
+**MVP-087** (SHOULD) From M3 the MVP SHOULD play a first sound set through the audio engine (ADR-022 to ADR-027): laser shots (`sfx.weapon.laser_bolt.spawn`), deaths (`sfx.unit.worker.die`), an orb becoming a Worker (`sfx.unit.essence_orb.collected`), a structure completed (`sfx.building.dwelling.complete`), the attack warning (`sfx.unit.worker.attack_horn`), and a battle starting and ending (`sfx.ui.battle.start`, `sfx.ui.battle.end`). Its levels, buses and distance are provisional until the owner hears them (DEC-1009).
+
+> **Amendment 2026-10-23 (O98; M3 task T15, [ADR-171](../ADR/ADR-171-the-first-sound-set-synthesized-and-cooked-at-m3.md), [ADR-172](../ADR/ADR-172-the-audio-engine-at-the-mvps-size.md), [ADR-173](../ADR/ADR-173-the-first-sound-set-played-at-m3.md); DEC-1009, Open).** M3 plays the set through the audio engine at the MVP's size. A laser shot, a death, an orb becoming a Worker and a structure completed each play at their event's position on the world bus. The attack warning and a battle's start and end play two-dimensional on the announcer bus. The levels and the distance are table 3's provisional `mvp.sound.*`. No sound plays for a turret sighting its target, since the set has no group for it.
 
 ### 2.10 Seams kept for growth (O50)
 
@@ -506,6 +508,14 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.hud.palette.negative` | 1.0, 0.3, 0.3, 1.0 | linear RGBA | — | provisional | MVP-102 | Negative captions: growth stopped, idle Workers, a cost the stores cannot pay |
 | `mvp.hud.palette.meter_track` | 1.0, 1.0, 1.0, 0.15 | linear RGBA | — | provisional | MVP-102 | — |
 | `mvp.hud.palette.meter_fill` | 0.3, 0.6, 0.9, 0.9 | linear RGBA | — | provisional | MVP-102 | — |
+| `mvp.sound.min_distance` | 1000 | wu | — | provisional | MVP-087 | A positioned sound's full level within this distance of the camera, falling as 1/d beyond it (AEN-201; DEC-1009, ADR-173); the owner tunes the mix at T15's run |
+| `mvp.sound.laser_shot.level_db` | −12 | dB | — | provisional | MVP-087 | `sfx.weapon.laser_bolt.spawn`, on the world bus; every synthesized member peaks at −1 dBFS (ADR-171) |
+| `mvp.sound.death.level_db` | −9 | dB | — | provisional | MVP-087 | `sfx.unit.worker.die`, a Worker's or a Leader's |
+| `mvp.sound.orb_becomes_worker.level_db` | −6 | dB | — | provisional | MVP-087 | `sfx.unit.essence_orb.collected` |
+| `mvp.sound.structure_completed.level_db` | −6 | dB | — | provisional | MVP-087 | `sfx.building.dwelling.complete`, every structure's |
+| `mvp.sound.attack_warning.level_db` | −6 | dB | — | provisional | MVP-087 | `sfx.unit.worker.attack_horn`, two-dimensional on the announcer bus |
+| `mvp.sound.battle_started.level_db` | −6 | dB | — | provisional | MVP-087 | `sfx.ui.battle.start`, on the announcer bus |
+| `mvp.sound.battle_ended.level_db` | −6 | dB | — | provisional | MVP-087 | `sfx.ui.battle.end`, on the announcer bus |
 
 *Table 3 — The tuning values of the MVP.*
 

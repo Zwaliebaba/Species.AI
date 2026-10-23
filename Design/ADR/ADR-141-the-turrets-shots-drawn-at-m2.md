@@ -116,3 +116,4 @@ Chosen options: 1 and 4.
 * The code: GameClient (`EffectsLook`, `WorldPresentation`), and the presentation record's new keys.
 * `Build/CheckProjectFiles.py`'s check of DAT-277 reads a socket name as `socket_<kind>` with a kind of AST table 3.8-A, from the table in `NeuronCore/MeshAsset.cpp`. Its earlier test, any string starting `socket_`, refused the generated reader of `ref.weapon.shell_casing.socket_offset`, which is a record's key and no socket.
 * ADR-010 and ADR-140 are amended with this record.
+* **Amendment 2026-10-23 (M3 task T15, [ADR-173](ADR-173-the-first-sound-set-played-at-m3.md)).** `TurretTargetSighted` is not heard at M3. MVP-087's sound set has no group for a turret's sighting, and DEC-1009 asks the owner whether to add one.

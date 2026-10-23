@@ -39,7 +39,9 @@ enum class EffectEventKind : std::uint8_t
   TurretFired = 21,         // R-BLDG-418, R-BLDG-420: a round, its muzzle flash and casing; position the muzzle, vector the
                             // round's velocity, value the barrel's index
   TurretRoundHit = 22,      // R-CRATE-451 steps 4 and 5: the round's particles; position the hit, value 1 on a structure
-  TurretDestroyed = 23      // R-BLDG-423: the head and barrels shatter; subject the turret
+  TurretDestroyed = 23,     // R-BLDG-423: the head and barrels shatter; subject the turret
+  // From M3 task T15 (ADR-173):
+  OrbBecameWorker = 24 // MVP-025, MVP-087: an orb became a Worker at its Wellspring; subject and position the Worker
 };
 
 /// One presentation event, in the order the region's rules emitted it within its tick (ADR-036's stable identity is the
