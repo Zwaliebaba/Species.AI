@@ -16,7 +16,7 @@ namespace Neuron
 namespace
 {
 
-constexpr Nanoseconds REBUILD_RETRY{1'000'000'000}; // a lost device is tried again once a second (AEN-260)
+constexpr Nanoseconds REBUILD_RETRY{1'000'000'000}; // a device that failed is built again once a second (AEN-260)
 constexpr std::int64_t NANOSECONDS_PER_SECOND = 1'000'000'000;
 
 [[nodiscard]] double ToDecibels(double _gain) noexcept
@@ -442,7 +442,7 @@ void AudioEngine::Allocate(Nanoseconds _now)
 void AudioEngine::Update()
 {
   const Nanoseconds now = m_clock->Now();
-  // AEN-259: a lost device plays every instance virtual, and is rebuilt once it can be.
+  // AEN-259: while the device has failed, every instance plays virtual, and the device is built again once it can be.
   if (m_device->Lost())
   {
     for (Instance& instance : m_instances)
