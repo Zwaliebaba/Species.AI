@@ -1403,6 +1403,11 @@ const FrameTiming& FrameRenderer::LastFrameTiming() const noexcept
   return m_state->timing;
 }
 
+const std::string& FrameRenderer::AdapterName() const noexcept
+{
+  return m_state->device->AdapterName();
+}
+
 double FrameRenderer::FramesPerSecond() const noexcept
 {
   const RendererState& state = *m_state;

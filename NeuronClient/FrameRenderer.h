@@ -130,6 +130,8 @@ public:
   [[nodiscard]] Nanoseconds LastFrameWaits() const noexcept;
   // ADR-148: the last frame's waits, apart, with the GPU time and the display's statistics read during it.
   [[nodiscard]] const FrameTiming& LastFrameTiming() const noexcept;
+  // RND-020: the name of the adapter the device was made on, which the frame bench records beside its scenes (O100).
+  [[nodiscard]] const std::string& AdapterName() const noexcept;
 
 #if ENGINE_DEVELOPMENT
   // The debug layer's messages of warning severity or above since the process started: none is the render check's

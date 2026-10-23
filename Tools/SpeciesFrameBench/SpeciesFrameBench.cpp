@@ -729,8 +729,18 @@ std::string ValleyJsonOf(const std::optional<ValleyAtWarWorld>& _valley)
 }
 
 std::string JsonOf(const std::vector<SceneResult>& _results, const Options& _options, const Species::TuningMvp& _tuning,
-                   const Neuron::DesktopMode& _display)
+                   const Neuron::DesktopMode& _display, std::string_view _adapter)
 {
+  // O100: the adapter the scenes drew on, which the performance script pins, with a quote or a backslash escaped.
+  std::string adapter;
+  for (const char c : _adapter)
+  {
+    if (c == '"' || c == '\\')
+    {
+      adapter += '\\';
+    }
+    adapter += c;
+  }
   const auto fpsTarget = std::max<std::int64_t>(_tuning.mvp.client.fpsTarget, 1);
   const double periodMs = 1000.0 / static_cast<double>(fpsTarget);
   std::string scenes;
@@ -759,9 +769,9 @@ std::string JsonOf(const std::vector<SceneResult>& _results, const Options& _opt
                   result.aliveMax, result.onScreenSum / frames, result.onScreenMax, GrownJsonOf(result.grown), ValleyJsonOf(result.valley));
   }
   return std::format("{{\n  \"tool\": \"{}\", \"configuration\": \"{}\", \"platform\": \"{}\", \"quick\": {}, \"fps_target\": {}, "
-                     "\"figures_max\": {},\n  \"display\": {{\"width\": {}, \"height\": {}, \"refresh_hz\": {}}},\n"
+                     "\"figures_max\": {},\n  \"adapter\": \"{}\", \"display\": {{\"width\": {}, \"height\": {}, \"refresh_hz\": {}}},\n"
                      "  \"scenes\": [\n{}\n  ]\n}}\n",
-                     PRODUCT_NAME, CONFIGURATION, PLATFORM, _options.quick ? "true" : "false", fpsTarget, _tuning.mvp.client.figuresMax,
+                     PRODUCT_NAME, CONFIGURATION, PLATFORM, _options.quick ? "true" : "false", fpsTarget, _tuning.mvp.client.figuresMax, adapter,
                      _display.width, _display.height, _display.refreshHz, scenes);
 }
 
@@ -981,10 +991,11 @@ int Run(const Options& _options)
   router.ConfinePointer(false);
   window->RemoveListener(listener);
   window->SetInputSink(nullptr);
+  const std::string adapterName = (*renderer)->AdapterName();
   renderer->reset(); // PLT-043: the swap chain goes before the window
   if (code == 0)
   {
-    const std::string json = JsonOf(results, _options, *tuning, display);
+    const std::string json = JsonOf(results, _options, *tuning, display, adapterName);
     if (_options.out.empty())
     {
       std::fwrite(json.data(), 1, json.size(), stdout);

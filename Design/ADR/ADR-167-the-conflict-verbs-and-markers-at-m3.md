@@ -123,7 +123,7 @@ Chosen options: 1, 3, 5, 7, 9 and 11.
   - `SettlementCameraTests`: the hover finds the expedition's Leader; a press on an expedition Leader commands its team until the expedition ends;
   - `DevelopmentOverlayTests`: an expedition's team takes its settlement's colour.
 * `GameSharedTests`: each area's centre is its resource site.
-* The owner's run on `Debug|ARM64`, in a world with the AI settlements (the M3 plan's T12): they raid an AI settlement, its cost and provocation shown before the second press; follow the expedition by its Leaders' markers to the target; command it in the battle, the battlefield clear of fog; claim an area and see its marker; and ease a grievance by tribute, its weight falling on the panel.
+* The owner's run on a Debug build, in a world with the AI settlements (the M3 plan's T12): they raid an AI settlement, its cost and provocation shown before the second press; follow the expedition by its Leaders' markers to the target; command it in the battle, the battlefield clear of fog; claim an area and see its marker; and ease a grievance by tribute, its weight falling on the panel.
 
 ## Pros and Cons of the Options
 

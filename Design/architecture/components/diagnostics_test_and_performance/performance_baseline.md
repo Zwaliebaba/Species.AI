@@ -110,6 +110,8 @@ The cost of one tick must fit, spread over its 10 slices, into the render frames
 
 > **Amendment 2026-10-22 (O85; [ADR-126](../../../ADR/ADR-126-frame-bench-and-rendered-scenes.md) amendment).** The reference test machine has no 1,920 × 1,080 monitor, so the frame-rate scenes of the O69 amendment run on its own 2,880 × 1,920, 60 Hz panel, with the battle drawn in a window of 1,920 × 1,080 (MVP-085), and their first run pins that panel's display mode.
 
+> **Amendment 2026-10-22 (O100).** The reference test machine is the owner's x64 laptop, in place of the Windows on Arm PC of the O69 amendment, and the performance job measures the `Release|x64` build. Its graphics adapters are recorded as every hardware adapter with its driver, since the game draws on the high-performance one while another drives the panel, and the frame bench records the adapter it drew on. The frame-rate scenes run borderless on its own 1,920 × 1,080 panel, set to 60 Hz for the run, so the window of the O85 amendment is not used on it. The change of the machine re-baselines every result: the next run pins the laptop and its display. Its figures bind the MVP's budgets only, as before.
+
 ## 6 Failure modes, diagnostics and telemetry
 
 Once the reference test machine is pinned, a result above its budget fails the performance job; until then it is reported and does not fail (DBG-208, DBG-209). A result never changes run-time behaviour.

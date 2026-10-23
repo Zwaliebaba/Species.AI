@@ -10,10 +10,12 @@ reference test machine.
 --tuning-source <GameData> makes the tool read the authored tuning record instead of the cooked one beside it, for a
 tool built without its content folder.
 
-Builds Release|ARM64 through Species.slnx (AGENTS.md §3), runs the headless measurement scenes of SpeciesPerformance,
+Builds Release|x64 through Species.slnx (AGENTS.md §3; O100 moved the reference test machine from the ARM64
+development build of O69 to an x64 PC), runs the headless measurement scenes of SpeciesPerformance,
 each from a fixed seed with a recorded command stream, then the rendered scenes of SpeciesFrameBench (M1 plan T18,
-ADR-126) unless --headless-only is given, reads the machine's configuration (processor, memory size, graphics adapter,
-driver version, display mode and OS build) and writes the configuration, the build's identity and each figure against
+ADR-126) unless --headless-only is given, reads the machine's configuration (processor, memory size, graphics adapters,
+their driver versions, display mode and OS build; every hardware adapter, as a laptop has two, and the bench names the
+one it drew on, O100) and writes the configuration, the build's identity and each figure against
 its budget into the performance section of playtests/M1.md.
 
 The first run pins the machine, and the first run of the rendered scenes pins the display they drew on, as the bench
@@ -59,7 +61,7 @@ SAVED_WORLD_SECTION = "## The owner's growth run"
 VALLEY_RECORD = os.path.join(ROOT, 'playtests', 'M3.md')  # ADR-164: the valley run predicts Playtest 1's measured lines
 VALLEY_SECTION = '## The valley run'
 CONFIGURATION = 'Release'
-PLATFORM = 'ARM64'  # O69, ADR-094: the reference test machine measures the ARM64 development build natively
+PLATFORM = 'x64'  # O100: the reference test machine is an x64 PC, in place of O69's ARM64 development build
 
 MACHINE_ITEMS = [
   ('processor', 'Processor'),
@@ -238,10 +240,12 @@ def machine():
     "$p = Get-CimInstance Win32_Processor | Select-Object -First 1; "
     "$c = Get-CimInstance Win32_ComputerSystem; "
     "$v = Get-CimInstance Win32_VideoController | Where-Object { $_.CurrentHorizontalResolution } | Select-Object -First 1; "
+    # O100: every hardware adapter, in name order, since a laptop's display adapter is not the one the game draws on.
+    "$a = Get-CimInstance Win32_VideoController | Where-Object { $_.Name -notlike 'Microsoft *' } | Sort-Object Name; "
     "$o = Get-CimInstance Win32_OperatingSystem; "
     "$u = (Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion').UBR; "
     "[pscustomobject]@{ processor = $p.Name.Trim(); memory = ('{0} GB' -f [math]::Round($c.TotalPhysicalMemory / 1GB)); "
-    "adapter = $v.Name; driver = $v.DriverVersion; "
+    "adapter = ($a.Name -join ' + '); driver = ($a.DriverVersion -join ' + '); "
     "display = ('{0} x {1} at {2} Hz' -f $v.CurrentHorizontalResolution, $v.CurrentVerticalResolution, $v.CurrentRefreshRate); "
     "os_build = ('{0}.{1}' -f $o.Version, $u) } | ConvertTo-Json -Compress")
   return json.loads(powershell(query))
@@ -258,7 +262,9 @@ def find_msbuild():
   vswhere = os.path.join(os.environ.get('ProgramFiles(x86)', r'C:\Program Files (x86)'), 'Microsoft Visual Studio', 'Installer',
                          'vswhere.exe')
   if os.path.exists(vswhere):
-    found = subprocess.run([vswhere, '-latest', '-products', '*', '-find', r'MSBuild\**\Bin\MSBuild.exe'], capture_output=True,
+    # The C++ tools are required, since another product's MSBuild, such as SQL Server Management Studio's, may be the latest.
+    found = subprocess.run([vswhere, '-latest', '-products', '*', '-requires', 'Microsoft.VisualStudio.Component.VC.Tools.x86.x64',
+                            '-find', r'MSBuild\**\Bin\MSBuild.exe'], capture_output=True,
                            text=True).stdout.splitlines()
     if found:
       return found[0]
@@ -399,6 +405,8 @@ def drawn_at_target(frames, drawn_on):
 def run_section(when, build_id, config, result, frames):
   """The run's section, and whether a headless and a rendered figure is above its budget."""
   drawn_on = f', the rendered scenes on {rendered_display(frames, config)}' if frames is not None else ''
+  if frames is not None and frames.get('adapter'):
+    drawn_on += f' drawn by {frames["adapter"]}'  # O100
   lines = [f'### Run {when}, build {build_id}, {result["configuration"]}|{result["platform"]}', '',
            f'Driver {config.get("driver", "")}, OS build {config.get("os_build", "")}, display {config.get("display", "")}{drawn_on} '
            '(O75).', '',
@@ -635,7 +643,7 @@ def frames_like(frames, p99, size=RENDERED_SIZE, display=(*RENDERED_SIZE, RENDER
 
 # ADR-156: the tool's reading of a saved world, its figures made up.
 SAVED_WORLD_FIXTURE = {
-  'tool': 'SpeciesPerformance', 'configuration': 'Release', 'platform': 'ARM64', 'tick_period_s': 0.1,
+  'tool': 'SpeciesPerformance', 'configuration': 'Release', 'platform': 'x64', 'tick_period_s': 0.1,
   'saved_world': {'snapshot': 'world-00000000000000169000.snapshot', 'seed': 7, 'ticks': 169000, 'hours': 4.694, 'largest_workers': 300,
                   'plateau_h': 4.3, 'gap_minutes': 15.3, 'gap_from_h': 0.0, 'gap_met': True, 'plateau_met': True,
                   'steps': [[9169, 2, 30, 30], [16287, 2, 40, 40], [23837, 1, 3, 40], [30000, 3, 4, 44]],
@@ -646,7 +654,7 @@ SAVED_WORLD_FIXTURE = {
 # The bench's result when the self-test runs none: the shape SpeciesFrameBench writes, its figures made up.
 FRAMES_FIXTURE = {
   'tool': 'SpeciesFrameBench', 'configuration': 'Debug', 'platform': 'x64', 'quick': True, 'fps_target': 60, 'figures_max': 1500,
-  'display': {'width': 1920, 'height': 1080, 'refresh_hz': 60},
+  'adapter': 'fixture adapter', 'display': {'width': 1920, 'height': 1080, 'refresh_hz': 60},
   'scenes': [{'name': name, 'seed': 1, 'figures': figures, 'ticks': 20, 'frames': 120, 'suspended_frames': 0,
               'window': {'width': 1920, 'height': 1080},
               'interval_ms': {'p50': 16.6, 'p95': 16.7, 'p99': 16.8, 'max': 33.4, 'mean': 16.7},
@@ -668,7 +676,7 @@ FRAMES_FIXTURE = {
 # ADR-164: a valley run of two seeds as SpeciesPerformance writes it, its figures made up: seed 1 meets every line, and
 # seed 2's steward fights 3 battles.
 VALLEY_FIXTURE = {
-  'tool': 'SpeciesPerformance', 'configuration': 'Release', 'platform': 'ARM64', 'tick_period_s': 0.1,
+  'tool': 'SpeciesPerformance', 'configuration': 'Release', 'platform': 'x64', 'tick_period_s': 0.1,
   'valley': [
     {'seed': 1, 'ticks': 288000, 'steward_site': 0, 'policy': 2, 'run_ended': True, 'contact_h': 2.4, 'steward_battles': 5,
      'steward_figures_median': 380, 'steward_figures_least': 260, 'battles': 9, 'battles_4_to_12': 1.0, 'longest_battle_min': 11.0,
@@ -794,6 +802,7 @@ def self_test(tool, tuning_source, bench=None, warp=False):
        lambda: record(path, reference, within, slow, 'fixture', 'display') == 0 and
        pinned_display(open(path, encoding='utf-8').read()) == {'display': '1920 x 1080 at 60 Hz'}),
       ('a rendered run reports the server\'s tick rate', lambda: recorded('server ticks per second while drawn')),
+      ('a rendered run names the adapter it drew on (O100)', lambda: recorded(f' drawn by {frames["adapter"]}')),
       ('a rendered run reports where its frames\' time went (ADR-148)',
        lambda: recorded("frame's time on the GPU", 'waits at the 99th percentile', 'showed no new frame', 'longest frames')),
       ('a rendered run on another display stops',
@@ -828,8 +837,8 @@ def self_test(tool, tuning_source, bench=None, warp=False):
 def main():
   parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
   parser.add_argument('--skip-build', action='store_true')
-  parser.add_argument('--tool', help='the SpeciesPerformance.exe to run (default: the Release|ARM64 build)')
-  parser.add_argument('--bench', help='the SpeciesFrameBench.exe to run (default: the Release|ARM64 build)')
+  parser.add_argument('--tool', help='the SpeciesPerformance.exe to run (default: the Release|x64 build)')
+  parser.add_argument('--bench', help='the SpeciesFrameBench.exe to run (default: the Release|x64 build)')
   parser.add_argument('--headless-only', action='store_true', help='run the headless scenes alone')
   parser.add_argument('--warp', action='store_true', help='with --self-test: draw the bench on the WARP adapter (a Debug build)')
   parser.add_argument('--record', help='the record to write (default: playtests/M1.md, playtests/M2.md with --saved-world or '
@@ -889,7 +898,7 @@ def main():
   for name, built in (('tool', result), ('bench', frames)):
     if built is not None and (built['configuration'], built['platform']) != (CONFIGURATION, PLATFORM):
       print(f'RunPerformance: the {name} is a {built["configuration"]}|{built["platform"]} build; only {CONFIGURATION}|{PLATFORM} '
-            'is recorded (O69)')
+            'is recorded (O100)')
       return 0
   when = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
   return record(args.record or RECORD, machine(), result, frames, identity(), when)

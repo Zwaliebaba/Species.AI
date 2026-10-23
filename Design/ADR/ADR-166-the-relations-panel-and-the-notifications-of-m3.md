@@ -87,7 +87,7 @@ Chosen options: 1, 3, 5 and 7.
   - the panel is a zone at the bottom right, a row high per row, absent before the first status, and draws its icons; the cards of M3's kinds have their icons;
   - the committed en-US strings give the sentences: a Cladan, an area, a claim notice, a battle won, the warning, a grievance, an anger, a claim;
   - each spot on a half's edge names its area, and takes its holder's colour, its claimant's while a claim stands, and the neutral mark's with no status.
-* The owner's run on `Debug|ARM64`, in a world with the AI settlements (the M3 plan's T11): the panel lists each neighbour's anger and grievances; when an AI settlement declares an attack, a card comes and the panel counts the warning down; the owner writes the attack's cause before opening the panel, and it matches the grievance listed; a claimed half's dots turn to the claimant's colour.
+* The owner's run on a Debug build, in a world with the AI settlements (the M3 plan's T11): the panel lists each neighbour's anger and grievances; when an AI settlement declares an attack, a card comes and the panel counts the warning down; the owner writes the attack's cause before opening the panel, and it matches the grievance listed; a claimed half's dots turn to the claimant's colour.
 
 ## Pros and Cons of the Options
 

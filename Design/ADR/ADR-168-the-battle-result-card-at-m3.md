@@ -75,7 +75,7 @@ Chosen options: 1, 4 and 6.
 * `GameClientTests`:
   - `SettlementHudTests`: a won raid's rows give every line, a defeat's outcome is lost, and a lost claim battle that moved its area lists the area and nothing moved; the card is a zone at the top centre, `mvp.hud.result_width` wide and a row high per row, drawn with its frame, and absent with no result; the committed sentences of the card and the public line;
   - `ClientSessionTests`: the HUD takes the session's results, its own waiting in order and the public line among the cards; each press the verbs count closes the first, and the presses before the HUD closed none.
-* The owner's run on `Debug|ARM64`, in a world with the AI settlements (the M3 plan's T13): after a battle of their own the card shows its result, which agrees with the server's statistics of the battle; another battle's line arrives as a card; a press closes the card.
+* The owner's run on a Debug build, in a world with the AI settlements (the M3 plan's T13): after a battle of their own the card shows its result, which agrees with the server's statistics of the battle; another battle's line arrives as a card; a press closes the card.
 
 ## Pros and Cons of the Options
 

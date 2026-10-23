@@ -94,7 +94,7 @@ GameLogicTests:
 
 **The valley run of seeds 1 to 8** on a Linux build of the game's libraries (`playtests/M3.md`, "The valley run") meets two of Playtest 1's six measurable lines: every conflict settled within 7 hours of play, and the strongest settlement at most 1.40 times the median. It misses the steward's battles in a run (11 to 22), battle length (13 % within 4 to 12 minutes), the figures in the steward's battles (249 typical, 79 least) and the growth steps' largest gap (76.6 minutes). [DEC-1008](../decisions/species_design.md#dec-1008-the-valley-runs-misses-of-playtest-1s-lines) puts these misses, their causes and the levers to the owner (T9's "done when"); the tuning waits for the owner's M2 runs (O98). The first run, before the defense of a claimed area, missed the same four lines further: 17 to 42 battles, 123 figures typical, and every claim battle won in 30 seconds.
 
-**The owner's performance run** on `Release|ARM64` judges `valley-battles` and `valley-drawn` (T9's "done when").
+**The owner's performance run** on `Release|x64` (O100) judges `valley-battles` and `valley-drawn` (T9's "done when").
 
 ## Pros and Cons of the Options
 

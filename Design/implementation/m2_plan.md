@@ -71,7 +71,7 @@ Three consequences follow for this plan. The tuning is a task of its own (T10), 
 ## 4 The order of M2
 
 **The settlement comes first, headless and tuned, and the look follows.** As at M1, a measurement moves values that the later work is built around: here the shape of a settlement over a run, which sets the HUD's figures, how many structures the view draws and when contact arrives at M3. So the tasks fall in two phases, as M1's did:
-- **Phase A, T2 to T10**, builds the settlement as a headless simulation. CI tests every task, and none needs a run checklist except T2, whose silhouettes the owner approves (approved as drafted, O87). It ends with T10, the scripted steward's growth scene and the tuning, and with the owner's run of the performance script on `Release|ARM64`.
+- **Phase A, T2 to T10**, builds the settlement as a headless simulation. CI tests every task, and none needs a run checklist except T2, whose silhouettes the owner approves (approved as drafted, O87). It ends with T10, the scripted steward's growth scene and the tuning, and with the owner's run of the performance script on `Release|x64` (`Release|ARM64` before O100).
 - **Phase B, T11 to T19**, makes the settlement visible and playable. Every task states a run checklist (M0 plan §2) and is not merged before the owner's answer.
 
 T2 and T3 come first because the simulation reads the structures' ports and footprints from the cooked simulation data records (AST-043, AST-046), never from a render mesh (ADR-021); until they land, T4 and T5 test on records written by the tests. T14 and T15, the UI framework and the settings store, depend on nothing in phase A and may run beside it, as M1's content build did (O73), each pushed with its run checklist; the HUD, the verbs and the front end (T16 to T18) follow T10, so that the tuning settles the figures they show.
@@ -142,7 +142,7 @@ M2's world is the MVP's valley with one settlement in it: the steward's, at the 
 - **Leaving a world.** At M2 the client has the front end and the world, and returns to the front end only by quitting and starting again; ADR-083's Leaving state and a loading page wait ([ADR-155](../ADR/ADR-155-the-front-end-and-saved-worlds-at-m2.md)).
 - **No demolition.** MVP-101 gives the steward no demolish verb, although MVP-073 names demolition among the deputy's refusals; M2 builds none.
 - **Numerics.** Simulation state stays binary64 (ADR-081) and the cooked records' binary32 socket transforms are widened on load; one build reproduces a run, and an ARM64 and an x64 build give different hashes, as at M1.
-- **CI builds `Debug|x64` only** (`AGENTS.md` §6). The `Release|ARM64` runs of T10 and T19 are the owner's, as is a Release build of any change that could break only under optimisation.
+- **CI builds `Debug|x64` only** (`AGENTS.md` §6). The `Release|ARM64` runs of T10 and T19 are the owner's, as is a Release build of any change that could break only under optimisation. *Amendment 2026-10-22 (O100): the reference test machine is the owner's x64 laptop, so these runs are on `Release|x64`, with the laptop's 1,920 × 1,080 panel set to 60 Hz; its first run pins it, in `playtests/M2.md` as in `playtests/M1.md`.*
 
 ## 9 The owner's answers
 
@@ -166,7 +166,7 @@ The model of §3 raised four more questions. The owner took this plan's recommen
 
 - **Approves or redesigns the structures' drafted recipes and their silhouettes** at T2 (§9, question 3; O86), which the owner approved as drafted (O87), and chooses the panel palette for T16 (RND-403).
 - **Draws the M2 hand-made files** ([MVP assets](mvp_assets.md) §4): the carried-load overlay, the placement cursor and its shadow, the pointer arrow, the turret icon, the check-box tick and the M2 HUD icons; and **writes the en-US strings** (O91) that the HUD and the front end use.
-- **Runs the checklists** of T2 and T11 to T19 on Debug builds, and the performance script at T10 and T19 on `Release|ARM64` with the 1,920 × 1,080, 60 Hz display (O69, O75).
+- **Runs the checklists** of T2 and T11 to T19 on Debug builds, and the performance script at T10 and T19 on `Release|x64` with the 1,920 × 1,080 panel at 60 Hz (O75, O100; `Release|ARM64` before O100).
 - **Plays the growth run** of §5 to the plateau and the ten minutes of watching at T19, and writes the session log's three lines in `playtests/M2.md` after each session, in the format of the playtest README.
 - **Reviews the likeness** of the game face (its text in Bahnschrift, O97), the structure silhouettes and the HUD layout (PIL-027, O70), with the result recorded in the manifest.
 - **Prepares M3:** the nine relations and run icons, and the synthesizer patches of the first sound set, the Worker death group's among them (O98). The owner answered the [M3 plan](m3_plan.md)'s questions ahead of M2's exit (O98), and M3's headless phase A starts before it.
