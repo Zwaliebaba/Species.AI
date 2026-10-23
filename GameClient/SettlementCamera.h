@@ -27,6 +27,7 @@ struct CameraControls
   bool lower = false;
   bool zoom = false;
   bool lookAround = false;
+  bool look = false;         // O107 (ADR-179): action.camera.look held, the camera turns towards the pointer
   float wheelNotches = 0.0f; // action.camera.height_wheel, forward positive
 };
 
@@ -42,7 +43,8 @@ struct CameraBounds
 /// The player camera of the settlement view (`MatchCamera`, R-CTRL-450 to R-CTRL-497; ADR-119), in the modes the MVP
 /// reaches: static until a world is entered, then free movement. It holds a front vector and rebuilds its up vector
 /// from world up each frame, since nothing rolls it at M1. The forward and back keys fly it along its front (O90,
-/// ADR-142), and in a settlement world the steward's areas bound it (WLD-244). It is local to the client and never sent
+/// ADR-142), and in a settlement world the steward's areas bound it (WLD-244). It turns towards the pointer only while the
+/// middle button is held (O107, ADR-179), so the pointer is free for the HUD otherwise. It is local to the client and never sent
 /// (DEC-008), and it reads the terrain only through the client's own field. Frame thread only.
 class SettlementCamera
 {

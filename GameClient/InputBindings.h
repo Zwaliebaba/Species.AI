@@ -28,6 +28,7 @@ enum class GameAction : std::uint16_t
   CameraAim,
   CameraZoom,
   CameraLookAround,
+  CameraLook, // O107 (ADR-179): table 3.6-A row 66, the middle button held turns the camera towards the pointer
   // M1 task T17 (ADR-124): the battle verbs of table 3.6-A rows 19 to 24 and 40 to 45.
   SelectPick,
   SelectPickIdle,

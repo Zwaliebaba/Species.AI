@@ -41,9 +41,10 @@ std::vector<Neuron::ActionBindings> DefaultBindings()
   bind(GameAction::CameraLower, "action.camera.lower", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::E, Held)});
   bind(GameAction::CameraHeightWheel, "action.camera.height_wheel", Neuron::ValueKind::Axis1, {MouseBinding(MouseControl::Wheel, Move)});
   bind(GameAction::CameraAim, "action.camera.aim", Neuron::ValueKind::Axis2, {MouseBinding(MouseControl::Motion, Move)});
-  bind(GameAction::CameraZoom, "action.camera.zoom", Neuron::ValueKind::Boolean,
-       {KeyBinding(KeyCode::Z, Held), MouseBinding(MouseControl::Middle, Held)});
+  // O107 (ADR-179): the middle button is the look's, so the zoom keeps its key alone.
+  bind(GameAction::CameraZoom, "action.camera.zoom", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Z, Held)});
   bind(GameAction::CameraLookAround, "action.camera.look_around", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::F2, Held)});
+  bind(GameAction::CameraLook, "action.camera.look", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Middle, Held)});
   // Rows 19 to 24 (reference/06 rows S1, S3 to S6): the primary button picks, and on the ground begins the circle.
   bind(GameAction::SelectPick, "action.select.pick", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Primary, Down)});
   bind(GameAction::SelectPickIdle, "action.select.pick_idle", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Primary, Down)});
