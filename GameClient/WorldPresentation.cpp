@@ -242,6 +242,7 @@ WorldPresentation::WorldPresentation(Desc _desc)
   m_uiImages = LoadUiImages(*m_desc.content);
   m_strings = Neuron::LoadStringTable(*m_desc.content, UI_LANGUAGE);
   m_locale = std::make_unique<Neuron::MessageLocale>(UI_LANGUAGE);
+  PrepareHud();
   Neuron::Log(Neuron::LogCategory::Ui, Neuron::LogLevel::Info, "text is drawn in {}, the development overlay in {}",
               m_text->FaceFamily(Neuron::FontRole::Body), m_text->FaceFamily(Neuron::FontRole::Development));
 #if ENGINE_DEVELOPMENT
@@ -282,6 +283,15 @@ void WorldPresentation::LeaveWorld()
 {
   ClearWorld();
   m_hud = std::make_unique<SettlementHud>(*m_desc.presentation, *m_desc.tuning);
+  PrepareHud();
+}
+
+void WorldPresentation::PrepareHud()
+{
+  // ADR-175: the plates of the panel art, and what the HUD measures its rows with as it draws them.
+  m_hud->SetPlates(
+    {PlateOf(*m_desc.presentation, *m_uiImages, UiImage::PanelAccent), PlateOf(*m_desc.presentation, *m_uiImages, UiImage::PanelNeutral)});
+  m_hud->SetText(*m_text, *m_strings, *m_locale);
 }
 
 void WorldPresentation::ClearWorld()
@@ -484,7 +494,7 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
 #if ENGINE_DEVELOPMENT
   if (const std::optional<Neuron::UiRect> area = m_ui->TestSampleArea(); area.has_value())
   {
-    AppendUiTestPage(*m_text, *m_desc.presentation, *m_strings, *m_locale, *area, _dpiScale, inputs.ui);
+    AppendUiTestPage(*m_text, *m_desc.presentation, *m_uiImages, *m_strings, *m_locale, *area, _dpiScale, inputs.ui);
   }
   // DBG-095, DBG-096, ADR-120: while the overlay is shown, the frame-rate line, whose objects are counted while a world
   // exists, and the frame page, its text in the development role (ADR-147).

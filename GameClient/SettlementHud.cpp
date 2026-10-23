@@ -517,6 +517,29 @@ std::vector<HudNotice> AgeNotices(std::vector<HudNotice> _notices, std::span<con
   return _notices;
 }
 
+namespace
+{
+
+// ADR-166: an area's name: the central site, or a half of a valley border area by the settlement whose half it is and the
+// neighbour it faces.
+std::string AreaName(std::uint8_t _area, const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale)
+{
+  if (_area >= CLAIM_AREA_CENTRAL)
+  {
+    const std::array arguments{Neuron::FormatArgument{"area", std::string_view("central")}};
+    return _strings.Format(STRING_AREA, arguments, _locale);
+  }
+  const auto& pair = VALLEY_PAIRS[_area / 2U];
+  const std::string owner = CladanName(pair[_area % 2U], _strings, _locale);
+  const std::string facing = CladanName(pair[1U - _area % 2U], _strings, _locale);
+  const std::array arguments{Neuron::FormatArgument{"area", std::string_view("half")},
+                             Neuron::FormatArgument{"owner", std::string_view(owner)},
+                             Neuron::FormatArgument{"facing", std::string_view(facing)}};
+  return _strings.Format(STRING_AREA, arguments, _locale);
+}
+
+} // namespace
+
 SettlementHud::SettlementHud(const TuningPresentation& _presentation, const TuningMvp& _tuning)
   : m_presentation(_presentation),
     m_tuning(_tuning)
@@ -535,8 +558,8 @@ Neuron::UiRect SettlementHud::RelationButton(std::size_t _place, std::size_t _sl
   const float padding = Units(hud.padding);
   const float row = Units(hud.rowHeight);
   const float icon = Units(hud.iconSize);
-  const float top = std::round(m_relations.top + padding + row * static_cast<float>(_place) + (row - icon) * 0.5f);
-  const float right = m_relations.right - padding - static_cast<float>(_slot) * (icon + padding);
+  const float top = std::round(m_relationsInner.top + padding + row * static_cast<float>(_place) + (row - icon) * 0.5f);
+  const float right = m_relationsInner.right - padding - static_cast<float>(_slot) * (icon + padding);
   return Neuron::UiRect::FromSize(right - icon, top, icon, icon);
 }
 
@@ -599,6 +622,491 @@ void SettlementHud::SetModel(HudModel _model, const Neuron::UiMetrics& _metrics)
   Layout(_metrics);
 }
 
+void SettlementHud::SetText(Neuron::TextSystem& _text, const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale) noexcept
+{
+  m_textSystem = &_text;
+  m_strings = &_strings;
+  m_locale = &_locale;
+}
+
+float SettlementHud::TextPixels() const noexcept
+{
+  return m_metrics.TextPixels(m_presentation.mvp.hud.textSize * static_cast<double>(m_metrics.HudUnitPixels()), true);
+}
+
+float SettlementHud::PlatePixels(bool _button) const noexcept
+{
+  const auto& chrome = m_presentation.ui.chrome;
+  return static_cast<float>((_button ? chrome.buttonTexel : chrome.plateTexel) * static_cast<double>(m_metrics.HudUnitPixels()) *
+                            static_cast<double>(m_metrics.uiScale));
+}
+
+std::array<float, 2> SettlementHud::PlateSize(const Neuron::NineSlice& _plate, float _width, float _height) const noexcept
+{
+  const float scale = PlatePixels(false);
+  return {std::round(_plate.slices[0] * scale) + std::round(_plate.slices[2] * scale) + _width,
+          std::round(_plate.slices[1] * scale) + std::round(_plate.slices[3] * scale) + _height};
+}
+
+Neuron::UiRect SettlementHud::Inside(const Neuron::NineSlice& _plate, const Neuron::UiRect& _rect, bool _button) const noexcept
+{
+  return Neuron::NineSliceInner(_plate, _rect, Neuron::NineSliceScale(_plate, _rect, PlatePixels(_button)));
+}
+
+float SettlementHud::Widest(std::span<const HudRow> _rows) const
+{
+  if (m_textSystem == nullptr)
+  {
+    return 0.0f;
+  }
+  const float size = TextPixels();
+  const float padding = Units(m_presentation.mvp.hud.padding);
+  float widest = 0.0f;
+  for (const HudRow& row : _rows)
+  {
+    float width = row.indent + m_textSystem->Layout(row.text, Neuron::FontRole::Body, size).widthPixels + row.trailing;
+    if (!row.end.empty())
+    {
+      width += padding + m_textSystem->Layout(row.end, Neuron::FontRole::Body, size).widthPixels;
+    }
+    widest = std::max(widest, width);
+  }
+  return std::ceil(widest);
+}
+
+std::vector<HudRow> SettlementHud::SettlementRows(const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale) const
+{
+  std::vector<HudRow> rows;
+  if (!m_model.settlement.has_value())
+  {
+    return rows;
+  }
+  const auto& hud = m_presentation.mvp.hud;
+  const std::array<float, 4> text = Rgba(hud.palette.text);
+  const std::array<float, 4> positive = Rgba(hud.palette.positive);
+  const std::array<float, 4> negative = Rgba(hud.palette.negative);
+  const float textIndent = Units(hud.iconSize) + Units(hud.padding);
+  const auto add = [&](std::optional<UiImage> _icon, std::string _text, const std::array<float, 4>& _color) -> HudRow&
+  {
+    HudRow& row = rows.emplace_back();
+    row.text = std::move(_text);
+    row.color = _color;
+    row.indent = textIndent;
+    row.icon = _icon;
+    row.iconColor = text;
+    return row;
+  };
+  const ReplicatedSettlement& own = *m_model.settlement;
+  // MVP-030, MVP-021: the stores and their capacity, in whole resource units, from the replica's latest tick.
+  {
+    const std::array arguments{Neuron::FormatArgument{"stores", WholeRu(static_cast<std::int64_t>(own.storesMilliRu))},
+                               Neuron::FormatArgument{"capacity", WholeRu(static_cast<std::int64_t>(own.capacityMilliRu))}};
+    add(UiImage::IconResource, _strings.Format(STRING_STORES, arguments, _locale), text).meter =
+      own.capacityMilliRu > 0 ? static_cast<double>(own.storesMilliRu) / static_cast<double>(own.capacityMilliRu) : 0.0;
+  }
+  // MVP-022: the Workers and the population limit.
+  {
+    const std::array arguments{Neuron::FormatArgument{"population", static_cast<std::int64_t>(own.population)},
+                               Neuron::FormatArgument{"limit", static_cast<std::int64_t>(own.limit)}};
+    add(UiImage::IconWorkers, _strings.Format(STRING_WORKERS, arguments, _locale), text).meter =
+      own.limit > 0 ? static_cast<double>(own.population) / static_cast<double>(own.limit) : 0.0;
+  }
+  if (!m_model.status.has_value())
+  {
+    add(std::nullopt, _strings.Format(STRING_WAITING, {}, _locale), text);
+    return rows;
+  }
+  const SettlementStatus& status = *m_model.status;
+  // MVP-024, MVP-035, MVP-102: growth, or the cause when it stops.
+  {
+    const auto growth = static_cast<std::size_t>(status.growth);
+    const auto seconds = static_cast<std::int64_t>(std::ceil(static_cast<double>(status.growthTicks) * m_model.tickSeconds));
+    const std::array arguments{Neuron::FormatArgument{"state", GROWTH_SELECTORS.at(std::min(growth, GROWTH_SELECTORS.size() - 1))},
+                               Neuron::FormatArgument{"seconds", seconds}};
+    add(UiImage::IconGrowth, _strings.Format(STRING_GROWTH, arguments, _locale),
+        status.growth == GrowthState::Growing ? positive : negative);
+  }
+  // MVP-035: the upkeep an hour, and at the row's end the structures it made inactive.
+  {
+    const std::array arguments{Neuron::FormatArgument{"upkeep", WholeRu(status.upkeepMilliRuPerHour)}};
+    HudRow& upkeep = add(std::nullopt, _strings.Format(STRING_UPKEEP, arguments, _locale), text);
+    if (status.inactiveStructures > 0)
+    {
+      const std::array inactive{Neuron::FormatArgument{"count", static_cast<std::int64_t>(status.inactiveStructures)}};
+      upkeep.end = _strings.Format(STRING_INACTIVE, inactive, _locale);
+      upkeep.endColor = negative;
+    }
+  }
+  // MVP-036: each priority's share with the Workers that hold its task; the shares sent until a status holds them, and
+  // the room for the arrows that move them (ADR-153).
+  const std::array<std::uint8_t, 3> shares = m_model.verbs.shares.value_or(status.priorities);
+  const float arrowsWidth = 2.0f * (Units(hud.iconSize) + Units(hud.padding));
+  for (std::size_t task = 0; task < TASK_SELECTORS.size(); ++task)
+  {
+    const std::array arguments{Neuron::FormatArgument{"task", TASK_SELECTORS[task]},
+                               Neuron::FormatArgument{"share", static_cast<std::int64_t>(shares[task])},
+                               Neuron::FormatArgument{"workers", static_cast<std::int64_t>(status.tasks[task])}};
+    HudRow& priority = add(PRIORITY_ICONS[task], _strings.Format(STRING_PRIORITY, arguments, _locale), text);
+    priority.meter = static_cast<double>(shares[task]) / SHARE_MAX;
+    priority.trailing = arrowsWidth;
+    priority.task = task;
+  }
+  // MVP-037: the idle Workers, by reason.
+  std::int64_t idle = 0;
+  for (const std::uint32_t count : status.idle)
+  {
+    idle += count;
+  }
+  const std::array idleArguments{Neuron::FormatArgument{"count", idle}};
+  add(std::nullopt, _strings.Format(STRING_IDLE, idleArguments, _locale), text).indent = 0.0f;
+  for (std::size_t reason = 0; reason < IDLE_SELECTORS.size(); ++reason)
+  {
+    if (status.idle[reason] == 0)
+    {
+      continue;
+    }
+    const std::array arguments{Neuron::FormatArgument{"reason", IDLE_SELECTORS[reason]},
+                               Neuron::FormatArgument{"count", static_cast<std::int64_t>(status.idle[reason])}};
+    add(std::nullopt, _strings.Format(STRING_IDLE_REASON, arguments, _locale), negative);
+  }
+  return rows;
+}
+
+std::vector<HudRow> SettlementHud::WorldRows(const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale) const
+{
+  std::vector<HudRow> rows;
+  if (!m_model.settlement.has_value())
+  {
+    return rows;
+  }
+  const auto& hud = m_presentation.mvp.hud;
+  const std::array<float, 4> text = Rgba(hud.palette.text);
+  // MVP-005: the world's seed, as digits that can be typed again; its row stays when there is none.
+  HudRow& seedRow = rows.emplace_back();
+  seedRow.color = text;
+  if (m_model.seed.has_value())
+  {
+    const std::string seed = std::to_string(*m_model.seed);
+    const std::array arguments{Neuron::FormatArgument{"seed", std::string_view(seed)}};
+    seedRow.text = _strings.Format(STRING_SEED, arguments, _locale);
+  }
+  if (!m_model.valley.has_value())
+  {
+    return rows;
+  }
+  // MVP-060 and MVP-062 (ADR-169): the time left in the run, and the standing with each settlement's renown by source.
+  const RunTime run = RunTimeOf(*m_model.valley, m_model.tick, m_model.tickSeconds);
+  const std::string minutes = std::format("{:02}", run.secondsLeft / 60 % 60);
+  const std::string seconds = std::format("{:02}", run.secondsLeft % 60);
+  const std::array timeArguments{Neuron::FormatArgument{"state", std::string_view(run.state == RunTime::State::Ended   ? "ended"
+                                                                                  : run.state == RunTime::State::Quiet ? "quiet"
+                                                                                                                       : "running")},
+                                 Neuron::FormatArgument{"hours", run.secondsLeft / SECONDS_PER_HOUR},
+                                 Neuron::FormatArgument{"minutes", std::string_view(minutes)},
+                                 Neuron::FormatArgument{"seconds", std::string_view(seconds)}};
+  HudRow& time = rows.emplace_back();
+  time.text = _strings.Format(STRING_TIME_LEFT, timeArguments, _locale);
+  time.color = run.state == RunTime::State::Running ? text : Rgba(hud.palette.negative);
+  HudRow& standing = rows.emplace_back();
+  standing.text = _strings.Format(STRING_STANDING, {}, _locale);
+  standing.color = text;
+  std::int64_t place = 0;
+  for (const RenownLine& renown : StandingOf(*m_model.valley))
+  {
+    ++place;
+    const std::string name = CladanName(renown.site, _strings, _locale);
+    const std::array arguments{Neuron::FormatArgument{"place", place},
+                               Neuron::FormatArgument{"cladan", std::string_view(name)},
+                               Neuron::FormatArgument{"total", RenownTotal(renown)},
+                               Neuron::FormatArgument{"defense", std::int64_t{renown.defense}},
+                               Neuron::FormatArgument{"claims", std::int64_t{renown.claims}},
+                               Neuron::FormatArgument{"easing", std::int64_t{renown.easing}},
+                               Neuron::FormatArgument{"structures", std::int64_t{renown.structures}}};
+    HudRow& line = rows.emplace_back();
+    line.text = _strings.Format(STRING_RENOWN, arguments, _locale);
+    line.color = renown.site == m_model.settlement->site ? Rgba(hud.palette.positive) : text;
+    line.icon = UiImage::HudMeter; // MVP-013: a swatch of the Cladan's colour
+    line.iconColor = TeamColor(renown.site);
+    line.indent = Units(hud.iconSize) + Units(hud.padding);
+  }
+  return rows;
+}
+
+std::vector<HudRow> SettlementHud::RelationPanelRows(const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale) const
+{
+  std::vector<HudRow> rows;
+  if (!m_model.settlement.has_value())
+  {
+    return rows;
+  }
+  const auto& hud = m_presentation.mvp.hud;
+  const std::array<float, 4> text = Rgba(hud.palette.text);
+  const std::array<float, 4> positive = Rgba(hud.palette.positive);
+  const std::array<float, 4> negative = Rgba(hud.palette.negative);
+  const float icon = Units(hud.iconSize);
+  const float padding = Units(hud.padding);
+  // Each row keeps the room of its two buttons at its end (ADR-167).
+  const float trailing = 2.0f * (icon + padding);
+  for (const RelationRow& relation : m_relationRows)
+  {
+    HudRow& row = rows.emplace_back();
+    row.color = text;
+    row.iconColor = text;
+    row.indent = icon + padding;
+    row.trailing = trailing;
+    switch (relation.kind)
+    {
+    case RelationRowKind::Heading:
+      row.text = _strings.Format(STRING_RELATIONS, {}, _locale);
+      row.indent = 0.0f;
+      break;
+    case RelationRowKind::Warning:
+    {
+      const std::string name = CladanName(relation.site, _strings, _locale);
+      const std::string seconds = std::format("{:02}", relation.value % 60);
+      const std::array arguments{Neuron::FormatArgument{"cladan", std::string_view(name)},
+                                 Neuron::FormatArgument{"minutes", relation.value / 60},
+                                 Neuron::FormatArgument{"seconds", std::string_view(seconds)}};
+      row.text = _strings.Format(STRING_WARNING, arguments, _locale);
+      row.color = negative;
+      row.icon = UiImage::IconAttack;
+      row.iconColor = negative;
+      break;
+    }
+    case RelationRowKind::Expedition:
+    {
+      const std::string name = CladanName(relation.site, _strings, _locale);
+      const std::array arguments{Neuron::FormatArgument{"state", Selector(EXPEDITION_SELECTORS, relation.detail)},
+                                 Neuron::FormatArgument{"target", std::string_view(name)}};
+      row.text = _strings.Format(STRING_EXPEDITION, arguments, _locale);
+      row.icon = UiImage::IconAttack;
+      break;
+    }
+    case RelationRowKind::Respite:
+    {
+      const std::array arguments{Neuron::FormatArgument{"minutes", relation.value}};
+      row.text = _strings.Format(STRING_RESPITE, arguments, _locale);
+      row.color = positive;
+      row.icon = UiImage::IconRespite;
+      row.iconColor = positive;
+      break;
+    }
+    case RelationRowKind::Cladan:
+    {
+      // MVP-013: a swatch of the Cladan's colour; its respite is drawn at the row's end.
+      const std::string name = CladanName(relation.site, _strings, _locale);
+      const std::array arguments{Neuron::FormatArgument{"cladan", std::string_view(name)}, Neuron::FormatArgument{"anger", relation.value}};
+      row.text = _strings.Format(STRING_ANGER, arguments, _locale);
+      row.color = relation.value > 0 ? negative : text;
+      row.icon = UiImage::HudMeter;
+      row.iconColor = TeamColor(relation.site);
+      break;
+    }
+    case RelationRowKind::Grievance:
+    {
+      // Indented under its Cladan, with its cause's icon; a removed cause fades faster (MVP-052).
+      const std::array arguments{Neuron::FormatArgument{"cause", Selector(CAUSE_SELECTORS, relation.detail)},
+                                 Neuron::FormatArgument{"weight", relation.value},
+                                 Neuron::FormatArgument{"removed", std::string_view(relation.state != 0 ? "yes" : "no")}};
+      row.text = _strings.Format(STRING_GRIEVANCE, arguments, _locale);
+      row.icon = CAUSE_ICONS.at(std::min<std::size_t>(relation.detail, CAUSE_ICONS.size() - 1));
+      row.iconIndent = icon + padding;
+      row.indent = 2.0f * (icon + padding);
+      break;
+    }
+    case RelationRowKind::ClaimsHeading:
+      row.text = _strings.Format(STRING_CLAIMS, {}, _locale);
+      row.indent = 0.0f;
+      break;
+    case RelationRowKind::Claim:
+    {
+      const std::string name = CladanName(relation.site, _strings, _locale);
+      const std::string area = AreaName(relation.detail, _strings, _locale);
+      const std::array arguments{Neuron::FormatArgument{"claimant", std::string_view(name)},
+                                 Neuron::FormatArgument{"area", std::string_view(area)},
+                                 Neuron::FormatArgument{"state", Selector(CLAIM_SELECTORS, relation.state)}};
+      row.text = _strings.Format(STRING_CLAIM, arguments, _locale);
+      row.icon = UiImage::IconClaim;
+      row.iconColor = TeamColor(relation.site);
+      break;
+    }
+    case RelationRowKind::Claimable:
+    {
+      // ADR-167: an area the settlement may claim now, its button at the row's end.
+      const std::string area = AreaName(relation.detail, _strings, _locale);
+      const std::array arguments{Neuron::FormatArgument{"area", std::string_view(area)}};
+      row.text = _strings.Format(STRING_CLAIMABLE, arguments, _locale);
+      row.icon = UiImage::IconClaim;
+      row.iconColor = Rgba(hud.palette.text, hud.disabledAlpha);
+      break;
+    }
+    case RelationRowKind::More:
+    {
+      const std::array arguments{Neuron::FormatArgument{"count", relation.value}};
+      row.text = _strings.Format(STRING_MORE, arguments, _locale);
+      break;
+    }
+    }
+  }
+  return rows;
+}
+
+std::vector<HudRow> SettlementHud::ResultPanelRows(const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale) const
+{
+  std::vector<HudRow> rows;
+  if (m_resultRows.empty() || m_model.results.empty())
+  {
+    return rows;
+  }
+  const auto& hud = m_presentation.mvp.hud;
+  const std::array<float, 4> text = Rgba(hud.palette.text);
+  const BattleResultNotice& result = m_model.results.front();
+  const std::string attacker = CladanName(result.attacker, _strings, _locale);
+  const std::string defender = CladanName(result.defender, _strings, _locale);
+  const std::string winner = result.attackerWon ? attacker : defender;
+  const std::string area = result.area.has_value() ? AreaName(*result.area, _strings, _locale) : std::string();
+  const auto name = [](const std::string& _name) { return std::string_view(_name); };
+  for (const ResultRow& resultRow : m_resultRows)
+  {
+    HudRow& row = rows.emplace_back();
+    row.color = text;
+    switch (resultRow.kind)
+    {
+    case ResultRowKind::Title:
+    {
+      const std::array arguments{Neuron::FormatArgument{"outcome", std::string_view(resultRow.value != 0 ? "won" : "lost")},
+                                 Neuron::FormatArgument{"kind", std::string_view(result.area.has_value() ? "claim" : "raid")},
+                                 Neuron::FormatArgument{"attacker", name(attacker)}, Neuron::FormatArgument{"defender", name(defender)},
+                                 Neuron::FormatArgument{"area", name(area)}};
+      row.text = _strings.Format(STRING_RESULT_TITLE, arguments, _locale);
+      row.color = resultRow.value != 0 ? Rgba(hud.palette.positive) : Rgba(hud.palette.negative);
+      break;
+    }
+    case ResultRowKind::End:
+    {
+      const std::array arguments{Neuron::FormatArgument{"end", Selector(END_SELECTORS, static_cast<std::uint8_t>(resultRow.value))},
+                                 Neuron::FormatArgument{"minutes", resultRow.second / 60},
+                                 Neuron::FormatArgument{"seconds", resultRow.second % 60}};
+      row.text = _strings.Format(STRING_RESULT_END, arguments, _locale);
+      break;
+    }
+    case ResultRowKind::Lost:
+    {
+      const std::array arguments{Neuron::FormatArgument{"attacker", name(attacker)}, Neuron::FormatArgument{"defender", name(defender)},
+                                 Neuron::FormatArgument{"attacker_lost", resultRow.value},
+                                 Neuron::FormatArgument{"defender_lost", resultRow.second}};
+      row.text = _strings.Format(STRING_RESULT_LOST, arguments, _locale);
+      break;
+    }
+    case ResultRowKind::Stores:
+    {
+      const std::array arguments{Neuron::FormatArgument{"attacker", name(attacker)}, Neuron::FormatArgument{"stores", resultRow.value}};
+      row.text = _strings.Format(STRING_RESULT_STORES, arguments, _locale);
+      break;
+    }
+    case ResultRowKind::Essence:
+    {
+      const std::array arguments{Neuron::FormatArgument{"defender", name(defender)}, Neuron::FormatArgument{"essence", resultRow.value}};
+      row.text = _strings.Format(STRING_RESULT_ESSENCE, arguments, _locale);
+      break;
+    }
+    case ResultRowKind::Area:
+    {
+      const std::array arguments{Neuron::FormatArgument{"area", name(area)}, Neuron::FormatArgument{"winner", name(winner)}};
+      row.text = _strings.Format(STRING_RESULT_AREA, arguments, _locale);
+      break;
+    }
+    case ResultRowKind::Grievance:
+    {
+      const std::array arguments{Neuron::FormatArgument{"defender", name(defender)}, Neuron::FormatArgument{"attacker", name(attacker)},
+                                 Neuron::FormatArgument{"weight", resultRow.value}};
+      row.text = _strings.Format(STRING_RESULT_GRIEVANCE, arguments, _locale);
+      break;
+    }
+    case ResultRowKind::Respite:
+    {
+      const std::array arguments{Neuron::FormatArgument{"defender", name(defender)}, Neuron::FormatArgument{"minutes", resultRow.value}};
+      row.text = _strings.Format(STRING_RESULT_RESPITE, arguments, _locale);
+      break;
+    }
+    case ResultRowKind::Renown:
+    {
+      const std::array arguments{Neuron::FormatArgument{"winner", name(winner)}, Neuron::FormatArgument{"renown", resultRow.value}};
+      row.text = _strings.Format(STRING_RESULT_RENOWN, arguments, _locale);
+      break;
+    }
+    case ResultRowKind::Close:
+    {
+      const std::array arguments{Neuron::FormatArgument{"more", resultRow.value}};
+      row.text = _strings.Format(STRING_RESULT_CLOSE, arguments, _locale);
+      row.color = Rgba(hud.palette.text, hud.disabledAlpha);
+      break;
+    }
+    }
+  }
+  return rows;
+}
+
+HudRow SettlementHud::NoticeRow(const HudNotice& _notice, double _alpha, const Neuron::StringTable& _strings,
+                                const Neuron::MessageLocale& _locale) const
+{
+  const auto& hud = m_presentation.mvp.hud;
+  HudRow row;
+  row.indent = Units(hud.iconSize) + Units(hud.padding);
+  row.iconColor = Rgba(hud.palette.text, _alpha);
+  // ADR-168: another battle's public line, its winner and loser named.
+  if (_notice.result.has_value())
+  {
+    const BattleResultNotice& result = *_notice.result;
+    const std::string winner = CladanName(result.attackerWon ? result.attacker : result.defender, _strings, _locale);
+    const std::string loser = CladanName(result.attackerWon ? result.defender : result.attacker, _strings, _locale);
+    const std::string area = result.area.has_value() ? AreaName(*result.area, _strings, _locale) : std::string();
+    const std::array arguments{Neuron::FormatArgument{"winner", std::string_view(winner)},
+                               Neuron::FormatArgument{"loser", std::string_view(loser)},
+                               Neuron::FormatArgument{"kind", std::string_view(result.area.has_value() ? "claim" : "raid")},
+                               Neuron::FormatArgument{"area", std::string_view(area)}};
+    row.text = _strings.Format(STRING_RESULT_PUBLIC, arguments, _locale);
+    row.color = Rgba(hud.palette.text, _alpha);
+    row.icon = UiImage::IconBattle;
+    return row;
+  }
+  const NoticeLook look = NoticeLookOf(_notice.notice);
+  row.icon = look.icon;
+  row.color = look.positive ? Rgba(hud.palette.positive, _alpha) : Rgba(hud.palette.negative, _alpha);
+  if (_notice.notice.kind == NoticeKind::StructureCompleted)
+  {
+    const std::array arguments{Neuron::FormatArgument{"kind", KindSelector(_notice.notice.structure)}};
+    row.text = _strings.Format(STRING_COMPLETED, arguments, _locale);
+    return row;
+  }
+  // ADR-166: M3's kinds, naming the other settlement and, for a claim, its area (the notice's detail).
+  const std::string other = _notice.notice.other.has_value() ? CladanName(*_notice.notice.other, _strings, _locale) : std::string();
+  const bool claim = _notice.notice.kind == NoticeKind::ClaimMade || _notice.notice.kind == NoticeKind::ClaimWithdrawn ||
+                     _notice.notice.kind == NoticeKind::ClaimLost || _notice.notice.kind == NoticeKind::ClaimWon;
+  const std::string area = claim ? AreaName(_notice.notice.detail, _strings, _locale) : std::string();
+  const std::array arguments{Neuron::FormatArgument{"kind", look.kind}, Neuron::FormatArgument{"other", std::string_view(other)},
+                             Neuron::FormatArgument{"area", std::string_view(area)}};
+  row.text = _strings.Format(STRING_NOTICE, arguments, _locale);
+  return row;
+}
+
+std::array<HudRow, 2> SettlementHud::BuildRows(std::size_t _index, const Neuron::StringTable& _strings,
+                                               const Neuron::MessageLocale& _locale) const
+{
+  const auto& hud = m_presentation.mvp.hud;
+  std::array<HudRow, 2> rows;
+  const std::array name{Neuron::FormatArgument{"kind", KindSelector(BUILD_KINDS[_index])}};
+  rows[0].text = _strings.Format(STRING_BUILD, name, _locale);
+  rows[0].color = Rgba(hud.palette.text);
+  // MVP-034: red while the stores cannot pay it.
+  const std::int64_t cost = m_model.buildCostsMilliRu[_index];
+  const std::array costArguments{Neuron::FormatArgument{"cost", WholeRu(cost)}};
+  rows[1].text = _strings.Format(STRING_COST, costArguments, _locale);
+  const bool affordable = m_model.settlement.has_value() && static_cast<std::int64_t>(m_model.settlement->storesMilliRu) >= cost;
+  rows[1].color = affordable ? Rgba(hud.palette.positive) : Rgba(hud.palette.negative);
+  return rows;
+}
+
 void SettlementHud::Layout(const Neuron::UiMetrics& _metrics)
 {
   m_metrics = _metrics;
@@ -613,6 +1121,16 @@ void SettlementHud::Layout(const Neuron::UiMetrics& _metrics)
   const float margin = Units(hud.margin);
   const float padding = Units(hud.padding);
   const float row = Units(hud.rowHeight);
+  const float icon = Units(hud.iconSize);
+  const float least = Units(hud.panelWidth);
+  // ADR-175: with a text system given, each panel is as wide as its widest row needs, and its plate's frame lies around
+  // its content; else it keeps its least width.
+  const bool measured = m_textSystem != nullptr && m_strings != nullptr && m_locale != nullptr;
+  const auto plateOf = [&](const Neuron::NineSlice& _plate, float _least, float _content, std::size_t _rows)
+  {
+    const std::array<float, 2> size = PlateSize(_plate, _content + 2.0f * padding, 2.0f * padding + row * static_cast<float>(_rows));
+    return std::array<float, 2>{std::max(_least, size[0]), size[1]};
+  };
 
   // The settlement panel, top left: the fixed rows, then a heading and a row for each idle reason with Workers.
   std::size_t idleRows = 1;
@@ -621,16 +1139,18 @@ void SettlementHud::Layout(const Neuron::UiMetrics& _metrics)
     idleRows += static_cast<std::size_t>(std::ranges::count_if(m_model.status->idle, [](std::uint32_t _count) { return _count > 0; }));
   }
   m_panelRows = m_model.status.has_value() ? FIXED_ROWS + idleRows : 3;
-  m_panel = Neuron::UiRect::FromSize(margin, margin, Units(hud.panelWidth), 2.0f * padding + row * static_cast<float>(m_panelRows));
+  const std::array<float, 2> panel =
+    plateOf(m_plates.accent, least, measured ? Widest(SettlementRows(*m_strings, *m_locale)) : 0.0f, m_panelRows);
+  m_panel = Neuron::UiRect::FromSize(margin, margin, panel[0], panel[1]);
+  m_panelInner = Inside(m_plates.accent, m_panel, false);
   m_zones.push_back({HudZone::Settlement, 0, m_panel});
   // ADR-153: each priority's lowering and raising arrows at its row's right end, once the status gives the shares.
   if (m_model.status.has_value())
   {
-    const float icon = Units(hud.iconSize);
     for (std::size_t task = 0; task < m_arrows.size(); ++task)
     {
-      const float top = std::round(m_panel.top + padding + row * static_cast<float>(PRIORITY_ROW + task) + (row - icon) * 0.5f);
-      const float raiseLeft = m_panel.right - padding - icon;
+      const float top = std::round(m_panelInner.top + padding + row * static_cast<float>(PRIORITY_ROW + task) + (row - icon) * 0.5f);
+      const float raiseLeft = m_panelInner.right - padding - icon;
       m_arrows[task][0] = Neuron::UiRect::FromSize(raiseLeft - padding - icon, top, icon, icon);
       m_arrows[task][1] = Neuron::UiRect::FromSize(raiseLeft, top, icon, icon);
       m_zones.push_back({HudZone::PriorityLower, static_cast<std::uint8_t>(task), m_arrows[task][0]});
@@ -638,16 +1158,32 @@ void SettlementHud::Layout(const Neuron::UiMetrics& _metrics)
     }
   }
 
-  // The construction bar, bottom centre, and the queue's row above it.
-  const float buttonWidth = Units(hud.barButtonWidth);
+  // The construction bar, bottom centre, and the queue's row above it; ADR-175: each entry as wide as the widest name or
+  // cost needs inside the wider frame of its two plates.
+  m_buttonWidth = Units(hud.barButtonWidth);
+  if (measured)
+  {
+    std::vector<HudRow> entries;
+    for (std::size_t index = 0; index < BUILD_KINDS.size(); ++index)
+    {
+      const std::array<HudRow, 2> rows = BuildRows(index, *m_strings, *m_locale);
+      entries.insert(entries.end(), rows.begin(), rows.end());
+    }
+    const float scale = PlatePixels(true);
+    const auto frame = [&](const Neuron::NineSlice& _plate)
+    { return std::round(_plate.slices[0] * scale) + std::round(_plate.slices[2] * scale); };
+    m_buttonWidth =
+      std::max(m_buttonWidth, std::max(frame(m_plates.accent), frame(m_plates.neutral)) + 3.0f * padding + icon + Widest(entries));
+  }
   const float barHeight = Units(hud.barHeight);
   const float gap = Units(CARD_GAP);
-  const float barWidth = buttonWidth * static_cast<float>(BUILD_KINDS.size()) + gap * static_cast<float>(BUILD_KINDS.size() - 1);
+  const float barWidth = m_buttonWidth * static_cast<float>(BUILD_KINDS.size()) + gap * static_cast<float>(BUILD_KINDS.size() - 1);
   const float barLeft = std::round((width - barWidth) * 0.5f);
   const float barTop = height - margin - barHeight;
   for (std::size_t index = 0; index < BUILD_KINDS.size(); ++index)
   {
-    m_build[index] = Neuron::UiRect::FromSize(barLeft + static_cast<float>(index) * (buttonWidth + gap), barTop, buttonWidth, barHeight);
+    m_build[index] =
+      Neuron::UiRect::FromSize(barLeft + static_cast<float>(index) * (m_buttonWidth + gap), barTop, m_buttonWidth, barHeight);
     m_zones.push_back({HudZone::Build, static_cast<std::uint8_t>(index), m_build[index]});
   }
   const std::size_t sites = m_model.status.has_value() ? m_model.status->queue.size() : 0;
@@ -659,21 +1195,36 @@ void SettlementHud::Layout(const Neuron::UiMetrics& _metrics)
     m_zones.push_back({HudZone::Queue, 0, m_queue});
   }
 
-  // The notification cards, top right, newest first.
+  // The notification cards, top right, newest first; ADR-175: as wide as the widest card's line needs.
+  m_cardWidth = Units(hud.cardWidth);
   if (!m_model.notices.empty())
   {
-    const float cardWidth = Units(hud.cardWidth);
+    if (measured)
+    {
+      std::vector<HudRow> cards;
+      cards.reserve(m_model.notices.size());
+      for (const HudNotice& notice : m_model.notices)
+      {
+        cards.push_back(NoticeRow(notice, 1.0, *m_strings, *m_locale));
+      }
+      m_cardWidth = std::max(m_cardWidth, 2.0f * padding + Widest(cards));
+    }
     const float cardHeight = Units(hud.cardHeight);
     const auto cards = static_cast<float>(m_model.notices.size());
-    m_zones.push_back({HudZone::Notices, 0,
-                       Neuron::UiRect::FromSize(width - margin - cardWidth, margin, cardWidth, cards * cardHeight + (cards - 1.0f) * gap)});
+    m_zones.push_back(
+      {HudZone::Notices, 0,
+       Neuron::UiRect::FromSize(width - margin - m_cardWidth, margin, m_cardWidth, cards * cardHeight + (cards - 1.0f) * gap)});
   }
 
   // The world's panel, bottom left.
   // ADR-169: under the seed, once the valley's status has come, the time left, the standing's heading and its rows.
   const std::size_t worldRows = 1 + (m_model.valley.has_value() ? 2 + m_model.valley->renown.size() : 0);
-  const float worldHeight = row * static_cast<float>(worldRows) + 2.0f * padding;
-  m_world = Neuron::UiRect::FromSize(margin, height - margin - worldHeight, Units(hud.panelWidth), worldHeight);
+  const std::array<float, 2> world = plateOf(m_plates.accent, least, measured ? Widest(WorldRows(*m_strings, *m_locale)) : 0.0f, worldRows);
+  // ADR-175: a bottom panel that would reach under the construction bar stands above it instead.
+  const auto bottomOf = [&](float _left, float _right)
+  { return _right + gap > barLeft && _left - gap < barLeft + barWidth ? barTop - gap : height - margin; };
+  m_world = Neuron::UiRect::FromSize(margin, bottomOf(margin, margin + world[0]) - world[1], world[0], world[1]);
+  m_worldInner = Inside(m_plates.accent, m_world, false);
   m_zones.push_back({HudZone::World, 0, m_world});
 
   // ADR-166: the relations panel, bottom right, once the valley's status has come.
@@ -682,9 +1233,11 @@ void SettlementHud::Layout(const Neuron::UiMetrics& _metrics)
   {
     m_relationRows = RelationRowsOf(*m_model.valley, m_model.settlement->site, m_model.tick, m_model.tickSeconds, m_model.warningSeconds,
                                     static_cast<std::size_t>(std::max<std::int64_t>(hud.relationsRowsMax, 1)));
-    const float panelHeight = 2.0f * padding + row * static_cast<float>(m_relationRows.size());
-    m_relations =
-      Neuron::UiRect::FromSize(width - margin - Units(hud.panelWidth), height - margin - panelHeight, Units(hud.panelWidth), panelHeight);
+    const std::array<float, 2> relations =
+      plateOf(m_plates.accent, least, measured ? Widest(RelationPanelRows(*m_strings, *m_locale)) : 0.0f, m_relationRows.size());
+    m_relations = Neuron::UiRect::FromSize(
+      width - margin - relations[0], bottomOf(width - margin - relations[0], width - margin) - relations[1], relations[0], relations[1]);
+    m_relationsInner = Inside(m_plates.accent, m_relations, false);
     m_zones.push_back({HudZone::Relations, 0, m_relations});
     // ADR-167: each row's buttons at its end, the first nearest it, found before the panel under them.
     for (std::size_t place = 0; place < m_relationRows.size() && place < RELATION_ROWS_ADDRESSED; ++place)
@@ -705,9 +1258,10 @@ void SettlementHud::Layout(const Neuron::UiMetrics& _metrics)
   if (!m_model.results.empty())
   {
     m_resultRows = ResultRowsOf(m_model.results.front(), m_model.settlement->site, m_model.tickSeconds, m_model.results.size() - 1);
-    const float cardWidth = Units(hud.resultWidth);
-    m_result = Neuron::UiRect::FromSize(std::round((width - cardWidth) * 0.5f), margin, cardWidth,
-                                        2.0f * padding + row * static_cast<float>(m_resultRows.size()));
+    const std::array<float, 2> result = plateOf(m_plates.neutral, Units(hud.resultWidth),
+                                                measured ? Widest(ResultPanelRows(*m_strings, *m_locale)) : 0.0f, m_resultRows.size());
+    m_result = Neuron::UiRect::FromSize(std::round((width - result[0]) * 0.5f), margin, result[0], result[1]);
+    m_resultInner = Inside(m_plates.neutral, m_result, false);
     m_zones.push_back({HudZone::Result, 0, m_result});
   }
 }
@@ -737,8 +1291,7 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
   const float row = Units(hud.rowHeight);
   const float icon = Units(hud.iconSize);
   const float meterHeight = std::max(Units(hud.meterHeight), 1.0f);
-  const float textPixels = m_metrics.TextPixels(hud.textSize * static_cast<double>(m_metrics.HudUnitPixels()), true);
-  const auto repeat = static_cast<float>(m_presentation.ui.chrome.bodyRepeat);
+  const float textPixels = TextPixels();
   const std::array<float, 4> text = Rgba(palette.text);
   const std::array<float, 4> positive = Rgba(palette.positive);
   const std::array<float, 4> negative = Rgba(palette.negative);
@@ -748,13 +1301,18 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
   {
     Neuron::AppendQuad(_out, Neuron::UiSource::Image, Neuron::UiBlend::Alpha, static_cast<std::uint16_t>(_image), Quad(_rect, _color, _uv));
   };
-  const auto panel = [&](UiImage _strip, const Neuron::UiRect& _rect, const std::array<float, 4>& _tint)
-  { image(_strip, _rect, _tint, {0.0f, 0.0f, repeat, 1.0f}); };
-  const auto line = [&](std::string_view _id, std::span<const Neuron::FormatArgument> _arguments, float _left, float _top, float _height,
-                        const std::array<float, 4>& _color, bool _rightAligned = false, float _right = 0.0f)
+  // ADR-175: a plate of the accent or the neutral panel art, at a panel's or a button's scale.
+  const auto plate = [&](bool _accent, const Neuron::UiRect& _rect, bool _button)
   {
-    const std::string formatted = _strings.Format(_id, _arguments, _locale);
-    const Neuron::TextLine laid = _text.Layout(formatted, Neuron::FontRole::Body, textPixels);
+    const Neuron::NineSlice& slice = _accent ? m_plates.accent : m_plates.neutral;
+    Neuron::AppendNineSlice(_out, static_cast<std::uint16_t>(_accent ? UiImage::PanelAccent : UiImage::PanelNeutral), slice, _rect,
+                            Neuron::NineSliceScale(slice, _rect, PlatePixels(_button)),
+                            _accent ? Rgba(palette.accent) : Rgba(palette.neutral));
+  };
+  const auto line = [&](std::string_view _line, float _left, float _top, float _height, const std::array<float, 4>& _color,
+                        bool _rightAligned = false, float _right = 0.0f)
+  {
+    const Neuron::TextLine laid = _text.Layout(_line, Neuron::FontRole::Body, textPixels);
     Neuron::TextStyle style;
     style.color = _color;
     const float left = _rightAligned ? std::round(_right - laid.widthPixels) : _left;
@@ -770,24 +1328,25 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
       image(UiImage::HudMeter, Neuron::UiRect::FromSize(_left, _top, filled, meterHeight), Rgba(palette.meterFill));
     }
   };
-
-  // ADR-166: a Cladan's name, from its colour, and an area's: the central site, or a half of a valley border area by the
-  // settlement whose half it is and the neighbour it faces.
-  const auto cladanName = [&](std::uint8_t _site) { return CladanName(_site, _strings, _locale); };
-  const auto areaName = [&](std::uint8_t _area)
+  // ADR-175: a panel's row, its content running from _left to _right, at _top: its icon, its text, the meter under its
+  // text and the text at its end.
+  const auto drawRow = [&](const HudRow& _row, float _left, float _right, float _top)
   {
-    if (_area >= CLAIM_AREA_CENTRAL)
+    if (_row.icon.has_value())
     {
-      const std::array arguments{Neuron::FormatArgument{"area", std::string_view("central")}};
-      return _strings.Format(STRING_AREA, arguments, _locale);
+      image(*_row.icon, Neuron::UiRect::FromSize(_left + _row.iconIndent, std::round(_top + (row - icon) * 0.5f), icon, icon),
+            _row.iconColor);
     }
-    const auto& pair = VALLEY_PAIRS[_area / 2U];
-    const std::string owner = cladanName(pair[_area % 2U]);
-    const std::string facing = cladanName(pair[1U - _area % 2U]);
-    const std::array arguments{Neuron::FormatArgument{"area", std::string_view("half")},
-                               Neuron::FormatArgument{"owner", std::string_view(owner)},
-                               Neuron::FormatArgument{"facing", std::string_view(facing)}};
-    return _strings.Format(STRING_AREA, arguments, _locale);
+    const float textHeight = _row.meter.has_value() ? row - meterHeight : row;
+    line(_row.text, _left + _row.indent, _top, textHeight, _row.color);
+    if (_row.meter.has_value())
+    {
+      meter(_left + _row.indent, _top + row - meterHeight - 1.0f, _right - _row.trailing - _left - _row.indent, *_row.meter);
+    }
+    if (!_row.end.empty())
+    {
+      line(_row.end, 0.0f, _top, textHeight, _row.endColor, true, _right - _row.trailing);
+    }
   };
 
   // ADR-167: the attacks' and claims' icons over their world markers' discs (pass 16), under the panels, in white as the
@@ -799,127 +1358,49 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
           Neuron::UiRect::FromSize(std::round(marker.x - side * 0.5f), std::round(marker.y - side * 0.5f), side, side), text);
   }
 
-  // The settlement panel (UI-460's accent strip).
-  panel(UiImage::PanelAccent, m_panel, Rgba(palette.accent));
-  const float iconLeft = m_panel.left + padding;
-  const float textLeft = iconLeft + icon + padding;
-  const float meterWidth = m_panel.right - padding - textLeft;
-  float top = m_panel.top + padding;
-  const auto rowIcon = [&](UiImage _icon)
-  { image(_icon, Neuron::UiRect::FromSize(iconLeft, std::round(top + (row - icon) * 0.5f), icon, icon), text); };
-  const ReplicatedSettlement& own = *m_model.settlement;
-  // MVP-030, MVP-021: the stores and their capacity, in whole resource units, from the replica's latest tick.
+  // The settlement panel (UI-460's accent plate), and each priority's arrows (ADR-153), cursor.pointer's art pointing
+  // down and flipped for up (UI-076).
+  plate(true, m_panel, false);
   {
-    rowIcon(UiImage::IconResource);
-    const std::array arguments{Neuron::FormatArgument{"stores", WholeRu(static_cast<std::int64_t>(own.storesMilliRu))},
-                               Neuron::FormatArgument{"capacity", WholeRu(static_cast<std::int64_t>(own.capacityMilliRu))}};
-    line(STRING_STORES, arguments, textLeft, top, row - meterHeight, text);
-    meter(textLeft, top + row - meterHeight - 1.0f, meterWidth,
-          own.capacityMilliRu > 0 ? static_cast<double>(own.storesMilliRu) / static_cast<double>(own.capacityMilliRu) : 0.0);
-    top += row;
-  }
-  // MVP-022: the Workers and the population limit.
-  {
-    rowIcon(UiImage::IconWorkers);
-    const std::array arguments{Neuron::FormatArgument{"population", static_cast<std::int64_t>(own.population)},
-                               Neuron::FormatArgument{"limit", static_cast<std::int64_t>(own.limit)}};
-    line(STRING_WORKERS, arguments, textLeft, top, row - meterHeight, text);
-    meter(textLeft, top + row - meterHeight - 1.0f, meterWidth,
-          own.limit > 0 ? static_cast<double>(own.population) / static_cast<double>(own.limit) : 0.0);
-    top += row;
-  }
-  if (!m_model.status.has_value())
-  {
-    line(STRING_WAITING, {}, textLeft, top, row, text);
-  }
-  else
-  {
-    const SettlementStatus& status = *m_model.status;
-    // MVP-024, MVP-035, MVP-102: growth, or the cause when it stops.
-    rowIcon(UiImage::IconGrowth);
-    const auto growth = static_cast<std::size_t>(status.growth);
-    const auto seconds = static_cast<std::int64_t>(std::ceil(static_cast<double>(status.growthTicks) * m_model.tickSeconds));
-    const std::array growthArguments{Neuron::FormatArgument{"state", GROWTH_SELECTORS.at(std::min(growth, GROWTH_SELECTORS.size() - 1))},
-                                     Neuron::FormatArgument{"seconds", seconds}};
-    line(STRING_GROWTH, growthArguments, textLeft, top, row, status.growth == GrowthState::Growing ? positive : negative);
-    top += row;
-    // MVP-035: the upkeep an hour, and the structures it made inactive.
-    const std::array upkeep{Neuron::FormatArgument{"upkeep", WholeRu(status.upkeepMilliRuPerHour)}};
-    line(STRING_UPKEEP, upkeep, textLeft, top, row, text);
-    if (status.inactiveStructures > 0)
+    const float left = m_panelInner.left + padding;
+    const float right = m_panelInner.right - padding;
+    float top = m_panelInner.top + padding;
+    for (const HudRow& panelRow : SettlementRows(_strings, _locale))
     {
-      const std::array inactive{Neuron::FormatArgument{"count", static_cast<std::int64_t>(status.inactiveStructures)}};
-      line(STRING_INACTIVE, inactive, 0.0f, top, row, negative, true, m_panel.right - padding);
-    }
-    top += row;
-    // MVP-036: each priority's share with the Workers that hold its task; the shares sent until a status holds them, and
-    // the arrows that move them (ADR-153), cursor.pointer's art pointing down and flipped for up (UI-076).
-    const std::array<std::uint8_t, 3> shares = m_model.verbs.shares.value_or(status.priorities);
-    const float arrowsWidth = 2.0f * (icon + padding);
-    for (std::size_t task = 0; task < TASK_SELECTORS.size(); ++task)
-    {
-      rowIcon(PRIORITY_ICONS[task]);
-      const std::array arguments{Neuron::FormatArgument{"task", TASK_SELECTORS[task]},
-                                 Neuron::FormatArgument{"share", static_cast<std::int64_t>(shares[task])},
-                                 Neuron::FormatArgument{"workers", static_cast<std::int64_t>(status.tasks[task])}};
-      line(STRING_PRIORITY, arguments, textLeft, top, row - meterHeight, text);
-      meter(textLeft, top + row - meterHeight - 1.0f, meterWidth - arrowsWidth, static_cast<double>(shares[task]) / SHARE_MAX);
-      const std::array<bool, 2> movable{shares[task] > 0, shares[task] < SHARE_MAX};
-      for (std::size_t arrow = 0; arrow < movable.size(); ++arrow)
+      drawRow(panelRow, left, right, top);
+      if (panelRow.task.has_value() && *panelRow.task < m_arrows.size() && m_model.status.has_value())
       {
-        const Neuron::UiRect& rect = m_arrows[task][arrow];
-        panel(UiImage::PanelNeutral, rect, Rgba(palette.neutral));
-        const std::array<float, 4> uv =
-          arrow == 1 ? std::array<float, 4>{0.0f, 1.0f, 1.0f, 0.0f} : std::array<float, 4>{0.0f, 0.0f, 1.0f, 1.0f};
-        image(UiImage::ArrowPointer, rect, Rgba(palette.text, movable[arrow] ? 1.0 : hud.disabledAlpha), uv);
+        const std::size_t task = *panelRow.task;
+        const std::array<std::uint8_t, 3> shares = m_model.verbs.shares.value_or(m_model.status->priorities);
+        const std::array<bool, 2> movable{shares[task] > 0, shares[task] < SHARE_MAX};
+        for (std::size_t arrow = 0; arrow < movable.size(); ++arrow)
+        {
+          const Neuron::UiRect& rect = m_arrows[task][arrow];
+          plate(false, rect, true);
+          const std::array<float, 4> uv =
+            arrow == 1 ? std::array<float, 4>{0.0f, 1.0f, 1.0f, 0.0f} : std::array<float, 4>{0.0f, 0.0f, 1.0f, 1.0f};
+          image(UiImage::ArrowPointer, rect, Rgba(palette.text, movable[arrow] ? 1.0 : hud.disabledAlpha), uv);
+        }
       }
-      top += row;
-    }
-    // MVP-037: the idle Workers, by reason.
-    std::int64_t idle = 0;
-    for (const std::uint32_t count : status.idle)
-    {
-      idle += count;
-    }
-    const std::array idleArguments{Neuron::FormatArgument{"count", idle}};
-    line(STRING_IDLE, idleArguments, iconLeft, top, row, text);
-    top += row;
-    for (std::size_t reason = 0; reason < IDLE_SELECTORS.size(); ++reason)
-    {
-      if (status.idle[reason] == 0)
-      {
-        continue;
-      }
-      const std::array arguments{Neuron::FormatArgument{"reason", IDLE_SELECTORS[reason]},
-                                 Neuron::FormatArgument{"count", static_cast<std::int64_t>(status.idle[reason])}};
-      line(STRING_IDLE_REASON, arguments, textLeft, top, row, negative);
       top += row;
     }
   }
 
-  // MVP-032, MVP-034: the construction bar, each structure with its cost, red while the stores cannot pay it.
+  // MVP-032, MVP-034: the construction bar, each structure with its cost, red while the stores cannot pay it; ADR-153:
+  // the entry being placed on the accent plate.
   for (std::size_t index = 0; index < BUILD_KINDS.size(); ++index)
   {
     const Neuron::UiRect& button = m_build[index];
-    // ADR-153: the entry being placed in the accent strip.
-    if (m_model.verbs.placing == BUILD_KINDS[index])
-    {
-      panel(UiImage::PanelAccent, button, Rgba(palette.accent));
-    }
-    else
-    {
-      panel(UiImage::PanelNeutral, button, Rgba(palette.neutral));
-    }
+    const bool placing = m_model.verbs.placing == BUILD_KINDS[index];
+    plate(placing, button, true);
+    const Neuron::UiRect inner = Inside(placing ? m_plates.accent : m_plates.neutral, button, true);
     image(KindIcon(BUILD_KINDS[index]),
-          Neuron::UiRect::FromSize(button.left + padding, std::round(button.top + (button.Height() - icon) * 0.5f), icon, icon), text);
-    const float left = button.left + 2.0f * padding + icon;
-    const float half = std::round(button.Height() * 0.5f);
-    const std::array name{Neuron::FormatArgument{"kind", KindSelector(BUILD_KINDS[index])}};
-    line(STRING_BUILD, name, left, button.top, half, text);
-    const std::int64_t cost = m_model.buildCostsMilliRu[index];
-    const std::array costArguments{Neuron::FormatArgument{"cost", WholeRu(cost)}};
-    line(STRING_COST, costArguments, left, button.top + half, button.Height() - half,
-         static_cast<std::int64_t>(own.storesMilliRu) >= cost ? positive : negative);
+          Neuron::UiRect::FromSize(inner.left + padding, std::round(inner.top + (inner.Height() - icon) * 0.5f), icon, icon), text);
+    const float left = inner.left + 2.0f * padding + icon;
+    const float half = std::round(inner.Height() * 0.5f);
+    const std::array<HudRow, 2> entry = BuildRows(index, _strings, _locale);
+    line(entry[0].text, left, inner.top, half, entry[0].color);
+    line(entry[1].text, left, inner.top + half, inner.Height() - half, entry[1].color);
   }
   // MVP-032, MVP-033: the queue, each site with its progress, in the order it is built.
   if (m_model.status.has_value())
@@ -930,7 +1411,7 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
     for (const QueuedSite& queued : m_model.status->queue)
     {
       const Neuron::UiRect cell = Neuron::UiRect::FromSize(left, m_queue.top, site, site);
-      panel(UiImage::PanelNeutral, cell, Rgba(palette.neutral));
+      plate(false, cell, true);
       const float inset = std::round((site - icon) * 0.5f);
       image(KindIcon(queued.kind), Neuron::UiRect::FromSize(cell.left + inset, cell.top + inset - meterHeight, icon, icon), text);
       meter(cell.left + 2.0f, cell.bottom - meterHeight - 2.0f, site - 4.0f, static_cast<double>(queued.progressPermille) / 1000.0);
@@ -941,6 +1422,7 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
   // ADR-153: above the queue, the server's last refusal of a placement with its reason, fading as a card does; else,
   // while placing, the refusal the client foresees at the pointer, or the structure being placed.
   {
+    const ReplicatedSettlement& own = *m_model.settlement;
     const auto centered = [&](std::string_view _id, std::span<const Neuron::FormatArgument> _arguments, const std::array<float, 4>& _color)
     {
       const std::string formatted = _strings.Format(_id, _arguments, _locale);
@@ -961,8 +1443,8 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
     {
       // MVP-101 (ADR-167): the attack being declared, with its cost and whether it is unprovoked, before it is confirmed.
       const PendingAttack& pending = *verbs.pending;
-      const std::string target = cladanName(pending.target);
-      const std::string area = pending.area.has_value() ? areaName(*pending.area) : std::string();
+      const std::string target = CladanName(pending.target, _strings, _locale);
+      const std::string area = pending.area.has_value() ? AreaName(*pending.area, _strings, _locale) : std::string();
       const std::array arguments{Neuron::FormatArgument{"kind", std::string_view(pending.area.has_value() ? "claim" : "raid")},
                                  Neuron::FormatArgument{"target", std::string_view(target)},
                                  Neuron::FormatArgument{"area", std::string_view(area)},
@@ -980,10 +1462,8 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
     }
     else if (verbs.refusal.has_value() && verbs.refusalAgeSeconds < hud.noticeSeconds)
     {
-      const double left = hud.noticeSeconds - verbs.refusalAgeSeconds;
-      const double alpha = hud.noticeFade > 0.0 ? std::clamp(left / hud.noticeFade, 0.0, 1.0) : 1.0;
       const std::array arguments{Neuron::FormatArgument{"reason", RefusalSelector(*verbs.refusal)}};
-      centered(STRING_REFUSED, arguments, Rgba(palette.negative, alpha));
+      centered(STRING_REFUSED, arguments, Rgba(palette.negative, faded(verbs.refusalAgeSeconds)));
     }
     else if (verbs.placing.has_value() && verbs.foreseen.has_value())
     {
@@ -1000,102 +1480,21 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
   // MVP-050, MVP-102 (ADR-166): the relations panel, bottom right.
   if (!m_relationRows.empty())
   {
-    panel(UiImage::PanelAccent, m_relations, Rgba(palette.accent));
-    const float left = m_relations.left + padding;
-    const float rowText = left + icon + padding;
-    float rowTop = m_relations.top + padding;
-    const auto rowImage = [&](UiImage _icon, float _left, const std::array<float, 4>& _color)
-    { image(_icon, Neuron::UiRect::FromSize(_left, std::round(rowTop + (row - icon) * 0.5f), icon, icon), _color); };
-    for (const RelationRow& relation : m_relationRows)
+    plate(true, m_relations, false);
+    const float left = m_relationsInner.left + padding;
+    const float right = m_relationsInner.right - padding;
+    float rowTop = m_relationsInner.top + padding;
+    const std::vector<HudRow> rows = RelationPanelRows(_strings, _locale);
+    for (std::size_t place = 0; place < m_relationRows.size() && place < rows.size(); ++place)
     {
-      switch (relation.kind)
+      const RelationRow& relation = m_relationRows[place];
+      drawRow(rows[place], left, right, rowTop);
+      // MVP-047: a Cladan under a respite has the respite's icon at its row's end.
+      if (relation.kind == RelationRowKind::Cladan && relation.state != 0)
       {
-      case RelationRowKind::Heading:
-        line(STRING_RELATIONS, {}, left, rowTop, row, text);
-        break;
-      case RelationRowKind::Warning:
-      {
-        rowImage(UiImage::IconAttack, left, negative);
-        const std::string name = cladanName(relation.site);
-        const std::string seconds = std::format("{:02}", relation.value % 60);
-        const std::array arguments{Neuron::FormatArgument{"cladan", std::string_view(name)},
-                                   Neuron::FormatArgument{"minutes", relation.value / 60},
-                                   Neuron::FormatArgument{"seconds", std::string_view(seconds)}};
-        line(STRING_WARNING, arguments, rowText, rowTop, row, negative);
-        break;
+        image(UiImage::IconRespite, RelationButton(place, 1), positive);
       }
-      case RelationRowKind::Expedition:
-      {
-        rowImage(UiImage::IconAttack, left, text);
-        const std::string name = cladanName(relation.site);
-        const std::array arguments{Neuron::FormatArgument{"state", Selector(EXPEDITION_SELECTORS, relation.detail)},
-                                   Neuron::FormatArgument{"target", std::string_view(name)}};
-        line(STRING_EXPEDITION, arguments, rowText, rowTop, row, text);
-        break;
-      }
-      case RelationRowKind::Respite:
-      {
-        rowImage(UiImage::IconRespite, left, positive);
-        const std::array arguments{Neuron::FormatArgument{"minutes", relation.value}};
-        line(STRING_RESPITE, arguments, rowText, rowTop, row, positive);
-        break;
-      }
-      case RelationRowKind::Cladan:
-      {
-        // MVP-013: a swatch of the Cladan's colour, and its respite at the row's end.
-        rowImage(UiImage::HudMeter, left, TeamColor(relation.site));
-        const std::string name = cladanName(relation.site);
-        const std::array arguments{Neuron::FormatArgument{"cladan", std::string_view(name)},
-                                   Neuron::FormatArgument{"anger", relation.value}};
-        line(STRING_ANGER, arguments, rowText, rowTop, row, relation.value > 0 ? negative : text);
-        if (relation.state != 0)
-        {
-          image(UiImage::IconRespite, RelationButton(static_cast<std::size_t>(&relation - m_relationRows.data()), 1), positive);
-        }
-        break;
-      }
-      case RelationRowKind::Grievance:
-      {
-        // Indented under its Cladan, with its cause's icon; a removed cause fades faster (MVP-052).
-        rowImage(CAUSE_ICONS.at(std::min<std::size_t>(relation.detail, CAUSE_ICONS.size() - 1)), rowText, text);
-        const std::array arguments{Neuron::FormatArgument{"cause", Selector(CAUSE_SELECTORS, relation.detail)},
-                                   Neuron::FormatArgument{"weight", relation.value},
-                                   Neuron::FormatArgument{"removed", std::string_view(relation.state != 0 ? "yes" : "no")}};
-        line(STRING_GRIEVANCE, arguments, rowText + icon + padding, rowTop, row, text);
-        break;
-      }
-      case RelationRowKind::ClaimsHeading:
-        line(STRING_CLAIMS, {}, left, rowTop, row, text);
-        break;
-      case RelationRowKind::Claim:
-      {
-        rowImage(UiImage::IconClaim, left, TeamColor(relation.site));
-        const std::string name = cladanName(relation.site);
-        const std::string area = areaName(relation.detail);
-        const std::array arguments{Neuron::FormatArgument{"claimant", std::string_view(name)},
-                                   Neuron::FormatArgument{"area", std::string_view(area)},
-                                   Neuron::FormatArgument{"state", Selector(CLAIM_SELECTORS, relation.state)}};
-        line(STRING_CLAIM, arguments, rowText, rowTop, row, text);
-        break;
-      }
-      case RelationRowKind::Claimable:
-      {
-        // ADR-167: an area the settlement may claim now, its button at the row's end.
-        rowImage(UiImage::IconClaim, left, Rgba(palette.text, hud.disabledAlpha));
-        const std::string area = areaName(relation.detail);
-        const std::array arguments{Neuron::FormatArgument{"area", std::string_view(area)}};
-        line(STRING_CLAIMABLE, arguments, rowText, rowTop, row, text);
-        break;
-      }
-      case RelationRowKind::More:
-      {
-        const std::array arguments{Neuron::FormatArgument{"count", relation.value}};
-        line(STRING_MORE, arguments, rowText, rowTop, row, text);
-        break;
-      }
-      }
-      // ADR-167: the row's buttons, the one of the attack being declared in the accent strip.
-      const auto place = static_cast<std::size_t>(&relation - m_relationRows.data());
+      // ADR-167: the row's buttons, the one of the attack being declared on the accent plate.
       const std::array<RelationAction, 2> actions = RelationActionsOf(relation, m_model.settlement->site);
       for (std::size_t slot = 0; slot < actions.size() && place < RELATION_ROWS_ADDRESSED; ++slot)
       {
@@ -1105,14 +1504,7 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
         }
         const Neuron::UiRect button = RelationButton(place, slot);
         const bool pending = m_model.verbs.pending.has_value() && m_model.verbs.pending->button == place * 2 + slot;
-        if (pending)
-        {
-          panel(UiImage::PanelAccent, button, Rgba(palette.accent));
-        }
-        else
-        {
-          panel(UiImage::PanelNeutral, button, Rgba(palette.neutral));
-        }
+        plate(pending, button, true);
         // A raid on a Cladan under a respite would be refused (MVP-047): its button is dimmed.
         const bool dimmed = actions[slot] == RelationAction::Raid && relation.state != 0;
         image(ActionIcon(actions[slot]), button, Rgba(palette.text, dimmed ? hud.disabledAlpha : 1.0));
@@ -1124,7 +1516,6 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
   // MVP-102: the notification cards, newest first, fading out over their last mvp.hud.notice_fade.
   if (!m_model.notices.empty())
   {
-    const float cardWidth = Units(hud.cardWidth);
     const float cardHeight = Units(hud.cardHeight);
     const float gap = Units(CARD_GAP);
     float cardTop = Units(hud.margin);
@@ -1132,183 +1523,48 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
     {
       const double left = hud.noticeSeconds - (m_model.nowSeconds - notice->arrivedSeconds);
       const double alpha = hud.noticeFade > 0.0 ? std::clamp(left / hud.noticeFade, 0.0, 1.0) : 1.0;
-      const Neuron::UiRect card = Neuron::UiRect::FromSize(static_cast<float>(m_metrics.client.width) - Units(hud.margin) - cardWidth,
-                                                           cardTop, cardWidth, cardHeight);
+      const Neuron::UiRect card = Neuron::UiRect::FromSize(static_cast<float>(m_metrics.client.width) - Units(hud.margin) - m_cardWidth,
+                                                           cardTop, m_cardWidth, cardHeight);
       image(UiImage::NotificationCard, card, Rgba(palette.neutral, alpha));
-      // ADR-168: another battle's public line, its winner and loser named.
-      if (notice->result.has_value())
+      const HudRow cardRow = NoticeRow(*notice, alpha, _strings, _locale);
+      if (cardRow.icon.has_value())
       {
-        const BattleResultNotice& result = *notice->result;
-        image(UiImage::IconBattle,
-              Neuron::UiRect::FromSize(card.left + padding, std::round(card.top + (cardHeight - icon) * 0.5f), icon, icon),
-              Rgba(palette.text, alpha));
-        const std::string winner = cladanName(result.attackerWon ? result.attacker : result.defender);
-        const std::string loser = cladanName(result.attackerWon ? result.defender : result.attacker);
-        const std::string area = result.area.has_value() ? areaName(*result.area) : std::string();
-        const std::array arguments{Neuron::FormatArgument{"winner", std::string_view(winner)},
-                                   Neuron::FormatArgument{"loser", std::string_view(loser)},
-                                   Neuron::FormatArgument{"kind", std::string_view(result.area.has_value() ? "claim" : "raid")},
-                                   Neuron::FormatArgument{"area", std::string_view(area)}};
-        line(STRING_RESULT_PUBLIC, arguments, card.left + 2.0f * padding + icon, card.top, cardHeight, Rgba(palette.text, alpha));
-        cardTop += cardHeight + gap;
-        continue;
+        image(
+          *cardRow.icon,
+          Neuron::UiRect::FromSize(card.left + padding + cardRow.iconIndent, std::round(card.top + (cardHeight - icon) * 0.5f), icon, icon),
+          cardRow.iconColor);
       }
-      const NoticeLook look = NoticeLookOf(notice->notice);
-      image(look.icon, Neuron::UiRect::FromSize(card.left + padding, std::round(card.top + (cardHeight - icon) * 0.5f), icon, icon),
-            Rgba(palette.text, alpha));
-      const std::array<float, 4> color = look.positive ? Rgba(palette.positive, alpha) : Rgba(palette.negative, alpha);
-      if (notice->notice.kind == NoticeKind::StructureCompleted)
-      {
-        const std::array arguments{Neuron::FormatArgument{"kind", KindSelector(notice->notice.structure)}};
-        line(STRING_COMPLETED, arguments, card.left + 2.0f * padding + icon, card.top, cardHeight, color);
-      }
-      else
-      {
-        // ADR-166: M3's kinds, naming the other settlement and, for a claim, its area (the notice's detail).
-        const std::string other = notice->notice.other.has_value() ? cladanName(*notice->notice.other) : std::string();
-        const bool claim = notice->notice.kind == NoticeKind::ClaimMade || notice->notice.kind == NoticeKind::ClaimWithdrawn ||
-                           notice->notice.kind == NoticeKind::ClaimLost || notice->notice.kind == NoticeKind::ClaimWon;
-        const std::string area = claim ? areaName(notice->notice.detail) : std::string();
-        const std::array arguments{Neuron::FormatArgument{"kind", look.kind}, Neuron::FormatArgument{"other", std::string_view(other)},
-                                   Neuron::FormatArgument{"area", std::string_view(area)}};
-        line(STRING_NOTICE, arguments, card.left + 2.0f * padding + icon, card.top, cardHeight, color);
-      }
+      line(cardRow.text, card.left + padding + cardRow.indent, card.top, cardHeight, cardRow.color);
       cardTop += cardHeight + gap;
     }
   }
 
-  // MVP-005: the world's seed, as digits that can be typed again.
-  panel(UiImage::PanelAccent, m_world, Rgba(palette.accent));
-  if (m_model.seed.has_value())
+  // MVP-005, MVP-060 and MVP-062 (ADR-169): the world's panel, bottom left: its seed, the time left in the run and the
+  // standing with each settlement's renown by source.
+  plate(true, m_world, false);
   {
-    const std::string seed = std::to_string(*m_model.seed);
-    const std::array arguments{Neuron::FormatArgument{"seed", std::string_view(seed)}};
-    line(STRING_SEED, arguments, m_world.left + padding, m_world.top + padding, row, text);
-  }
-  // MVP-060 and MVP-062 (ADR-169): the time left in the run, and the standing with each settlement's renown by source.
-  if (m_model.valley.has_value())
-  {
-    const float left = m_world.left + padding;
-    float worldTop = m_world.top + padding + row;
-    const RunTime run = RunTimeOf(*m_model.valley, m_model.tick, m_model.tickSeconds);
-    const std::string minutes = std::format("{:02}", run.secondsLeft / 60 % 60);
-    const std::string seconds = std::format("{:02}", run.secondsLeft % 60);
-    const std::array timeArguments{Neuron::FormatArgument{"state", std::string_view(run.state == RunTime::State::Ended   ? "ended"
-                                                                                    : run.state == RunTime::State::Quiet ? "quiet"
-                                                                                                                         : "running")},
-                                   Neuron::FormatArgument{"hours", run.secondsLeft / SECONDS_PER_HOUR},
-                                   Neuron::FormatArgument{"minutes", std::string_view(minutes)},
-                                   Neuron::FormatArgument{"seconds", std::string_view(seconds)}};
-    line(STRING_TIME_LEFT, timeArguments, left, worldTop, row, run.state == RunTime::State::Running ? text : negative);
-    worldTop += row;
-    line(STRING_STANDING, {}, left, worldTop, row, text);
-    worldTop += row;
-    std::int64_t place = 0;
-    for (const RenownLine& renown : StandingOf(*m_model.valley))
+    const float left = m_worldInner.left + padding;
+    const float right = m_worldInner.right - padding;
+    float top = m_worldInner.top + padding;
+    for (const HudRow& worldRow : WorldRows(_strings, _locale))
     {
-      ++place;
-      image(UiImage::HudMeter, Neuron::UiRect::FromSize(left, std::round(worldTop + (row - icon) * 0.5f), icon, icon),
-            TeamColor(renown.site));
-      const std::string name = cladanName(renown.site);
-      const std::array arguments{Neuron::FormatArgument{"place", place},
-                                 Neuron::FormatArgument{"cladan", std::string_view(name)},
-                                 Neuron::FormatArgument{"total", RenownTotal(renown)},
-                                 Neuron::FormatArgument{"defense", std::int64_t{renown.defense}},
-                                 Neuron::FormatArgument{"claims", std::int64_t{renown.claims}},
-                                 Neuron::FormatArgument{"easing", std::int64_t{renown.easing}},
-                                 Neuron::FormatArgument{"structures", std::int64_t{renown.structures}}};
-      line(STRING_RENOWN, arguments, left + icon + padding, worldTop, row, renown.site == m_model.settlement->site ? positive : text);
-      worldTop += row;
+      drawRow(worldRow, left, right, top);
+      top += row;
     }
   }
 
   // MVP-048 (ADR-168): the result card of the settlement's first battle not yet closed, over the rest.
   if (!m_resultRows.empty() && !m_model.results.empty())
   {
-    const BattleResultNotice& result = m_model.results.front();
-    panel(UiImage::PanelNeutral, m_result, Rgba(palette.neutral));
+    plate(false, m_result, false);
     image(UiImage::ResultCard, m_result, text);
-    const std::string attacker = cladanName(result.attacker);
-    const std::string defender = cladanName(result.defender);
-    const std::string winner = result.attackerWon ? attacker : defender;
-    const std::string area = result.area.has_value() ? areaName(*result.area) : std::string();
-    const auto name = [](const std::string& _name) { return std::string_view(_name); };
-    float lineTop = m_result.top + padding;
-    const float left = m_result.left + padding;
-    for (const ResultRow& resultRow : m_resultRows)
+    const float left = m_resultInner.left + padding;
+    const float right = m_resultInner.right - padding;
+    float top = m_resultInner.top + padding;
+    for (const HudRow& resultRow : ResultPanelRows(_strings, _locale))
     {
-      switch (resultRow.kind)
-      {
-      case ResultRowKind::Title:
-      {
-        const std::array arguments{Neuron::FormatArgument{"outcome", std::string_view(resultRow.value != 0 ? "won" : "lost")},
-                                   Neuron::FormatArgument{"kind", std::string_view(result.area.has_value() ? "claim" : "raid")},
-                                   Neuron::FormatArgument{"attacker", name(attacker)}, Neuron::FormatArgument{"defender", name(defender)},
-                                   Neuron::FormatArgument{"area", name(area)}};
-        line(STRING_RESULT_TITLE, arguments, left, lineTop, row, resultRow.value != 0 ? positive : negative);
-        break;
-      }
-      case ResultRowKind::End:
-      {
-        const std::array arguments{Neuron::FormatArgument{"end", Selector(END_SELECTORS, static_cast<std::uint8_t>(resultRow.value))},
-                                   Neuron::FormatArgument{"minutes", resultRow.second / 60},
-                                   Neuron::FormatArgument{"seconds", resultRow.second % 60}};
-        line(STRING_RESULT_END, arguments, left, lineTop, row, text);
-        break;
-      }
-      case ResultRowKind::Lost:
-      {
-        const std::array arguments{Neuron::FormatArgument{"attacker", name(attacker)}, Neuron::FormatArgument{"defender", name(defender)},
-                                   Neuron::FormatArgument{"attacker_lost", resultRow.value},
-                                   Neuron::FormatArgument{"defender_lost", resultRow.second}};
-        line(STRING_RESULT_LOST, arguments, left, lineTop, row, text);
-        break;
-      }
-      case ResultRowKind::Stores:
-      {
-        const std::array arguments{Neuron::FormatArgument{"attacker", name(attacker)}, Neuron::FormatArgument{"stores", resultRow.value}};
-        line(STRING_RESULT_STORES, arguments, left, lineTop, row, text);
-        break;
-      }
-      case ResultRowKind::Essence:
-      {
-        const std::array arguments{Neuron::FormatArgument{"defender", name(defender)}, Neuron::FormatArgument{"essence", resultRow.value}};
-        line(STRING_RESULT_ESSENCE, arguments, left, lineTop, row, text);
-        break;
-      }
-      case ResultRowKind::Area:
-      {
-        const std::array arguments{Neuron::FormatArgument{"area", name(area)}, Neuron::FormatArgument{"winner", name(winner)}};
-        line(STRING_RESULT_AREA, arguments, left, lineTop, row, text);
-        break;
-      }
-      case ResultRowKind::Grievance:
-      {
-        const std::array arguments{Neuron::FormatArgument{"defender", name(defender)}, Neuron::FormatArgument{"attacker", name(attacker)},
-                                   Neuron::FormatArgument{"weight", resultRow.value}};
-        line(STRING_RESULT_GRIEVANCE, arguments, left, lineTop, row, text);
-        break;
-      }
-      case ResultRowKind::Respite:
-      {
-        const std::array arguments{Neuron::FormatArgument{"defender", name(defender)}, Neuron::FormatArgument{"minutes", resultRow.value}};
-        line(STRING_RESULT_RESPITE, arguments, left, lineTop, row, text);
-        break;
-      }
-      case ResultRowKind::Renown:
-      {
-        const std::array arguments{Neuron::FormatArgument{"winner", name(winner)}, Neuron::FormatArgument{"renown", resultRow.value}};
-        line(STRING_RESULT_RENOWN, arguments, left, lineTop, row, text);
-        break;
-      }
-      case ResultRowKind::Close:
-      {
-        const std::array arguments{Neuron::FormatArgument{"more", resultRow.value}};
-        line(STRING_RESULT_CLOSE, arguments, left, lineTop, row, Rgba(palette.text, hud.disabledAlpha));
-        break;
-      }
-      }
-      lineTop += row;
+      drawRow(resultRow, left, right, top);
+      top += row;
     }
   }
 }

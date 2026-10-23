@@ -1040,7 +1040,20 @@
       "min_text_2160p": 19
     },
     "chrome": {
-      "body_repeat": 8
+      "plate_texel": 0.5,
+      "accent_slice": {
+        "left": 40,
+        "top": 25,
+        "right": 24,
+        "bottom": 6
+      },
+      "neutral_slice": {
+        "left": 40,
+        "top": 6,
+        "right": 24,
+        "bottom": 6
+      },
+      "button_texel": 0.25
     },
     "palette": {
       "window_body_tint": {

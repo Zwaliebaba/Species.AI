@@ -177,6 +177,7 @@
     <ClCompile Include="GpuResourceFactoryTests.cpp" />
     <ClCompile Include="InputRouterTests.cpp" />
     <ClCompile Include="MessageFormatTests.cpp" />
+    <ClCompile Include="NineSliceTests.cpp" />
     <ClCompile Include="ParticlePoolTests.cpp" />
     <ClCompile Include="PickingTests.cpp" />
     <ClCompile Include="PresentationTests.cpp" />

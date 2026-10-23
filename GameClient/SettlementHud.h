@@ -2,6 +2,7 @@
 
 #include "ClientSession.h"
 #include "MessageLocale.h"
+#include "NineSlice.h"
 #include "RelationMessages.h"
 #include "ReplicatedState.h"
 #include "SettlementMessages.h"
@@ -232,6 +233,31 @@ struct HudZoneRect
   Neuron::UiRect rect;
 };
 
+/// The plates the HUD's panels and buttons are drawn on (ADR-175): the frames of uitex.panel_accent and
+/// uitex.panel_neutral (PlateOf). Without them each image is drawn whole over its box, with no frame.
+struct HudPlates
+{
+  Neuron::NineSlice accent;
+  Neuron::NineSlice neutral;
+};
+
+/// A row of a HUD panel or card (ADR-175), as the layout measures it and Draw draws it: its text and color, where its
+/// icon and its text start in the panel's content, a meter under its text, a text at its end and the room it keeps there.
+struct HudRow
+{
+  std::string text;
+  std::array<float, 4> color{};
+  float indent = 0.0f; // pixels from the content's left edge to the text
+  std::optional<UiImage> icon;
+  std::array<float, 4> iconColor{};
+  float iconIndent = 0.0f;     // pixels from the content's left edge to the icon
+  std::optional<double> meter; // a meter of this fraction under the text, to the row's end less its trailing room
+  std::string end;             // a text right-aligned at the row's end, before its trailing room
+  std::array<float, 4> endColor{};
+  float trailing = 0.0f;           // pixels the row keeps at its end, for its buttons or arrows
+  std::optional<std::size_t> task; // a priority's row: the task whose arrows it holds (ADR-153)
+};
+
 // MVP-102: _notices with the notices _arrived at real time _nowSeconds added, without those mvp.hud.notice_seconds old
 // or older, and at most mvp.hud.notices_max of them, the newest kept; oldest first.
 [[nodiscard]] std::vector<HudNotice> AgeNotices(std::vector<HudNotice> _notices, std::span<const SettlementNotice> _arrived,
@@ -251,8 +277,9 @@ struct HudZoneRect
 /// priorities with their Workers, and the idle Workers by reason (MVP-037); the construction bar holds each structure
 /// with its cost, the queue each site with its progress; the notification cards the structures completed; and the
 /// world's panel its seed. From M3 task T11 (ADR-166) it asks for the valley's status with the settlement's, shows the
-/// relations panel of RelationRowsOf, and draws a card for every kind of notice. Its looks and measures are `mvp.hud.*`,
-/// provisional (O95, DEC-1005). Main thread only.
+/// relations panel of RelationRowsOf, and draws a card for every kind of notice. Since ADR-175 each panel and button is a
+/// framed plate of the owner's panel art, and each panel and card is as wide as its widest row needs. Its looks and
+/// measures are `mvp.hud.*`, provisional (O95, DEC-1005). Main thread only.
 class SettlementHud
 {
 public:
@@ -291,10 +318,38 @@ public:
 
   // For a test: the model and the layout as an update would make them.
   void SetModel(HudModel _model, const Neuron::UiMetrics& _metrics);
+  // ADR-175: the plates of the content's panel images.
+  void SetPlates(const HudPlates& _plates) noexcept
+  {
+    m_plates = _plates;
+  }
+  // ADR-175: what the layout measures each panel's rows with, as Draw lays them out, so each panel is as wide as its
+  // widest row needs; until it is given, each panel keeps its least width.
+  void SetText(Neuron::TextSystem& _text, const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale) noexcept;
 
 private:
   void Layout(const Neuron::UiMetrics& _metrics);
   [[nodiscard]] float Units(double _hudUnits) const noexcept;
+  // The final size of the HUD's text in pixels (UI-171).
+  [[nodiscard]] float TextPixels() const noexcept;
+  // ADR-175: each panel's rows and each card's, in the order they are drawn.
+  [[nodiscard]] std::vector<HudRow> SettlementRows(const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale) const;
+  [[nodiscard]] std::vector<HudRow> WorldRows(const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale) const;
+  [[nodiscard]] std::vector<HudRow> RelationPanelRows(const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale) const;
+  [[nodiscard]] std::vector<HudRow> ResultPanelRows(const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale) const;
+  [[nodiscard]] HudRow NoticeRow(const HudNotice& _notice, double _alpha, const Neuron::StringTable& _strings,
+                                 const Neuron::MessageLocale& _locale) const;
+  // The name and the cost of the construction bar's entry _index (MVP-032, MVP-034).
+  [[nodiscard]] std::array<HudRow, 2> BuildRows(std::size_t _index, const Neuron::StringTable& _strings,
+                                                const Neuron::MessageLocale& _locale) const;
+  // ADR-175: the widest of _rows in whole pixels, its text measured at the HUD's size; 0 with no text system given.
+  [[nodiscard]] float Widest(std::span<const HudRow> _rows) const;
+  // ADR-175: the pixels a texel of a plate's frame takes on a panel, or on a button.
+  [[nodiscard]] float PlatePixels(bool _button) const noexcept;
+  // ADR-175: the size of a panel's plate around content of _width × _height pixels.
+  [[nodiscard]] std::array<float, 2> PlateSize(const Neuron::NineSlice& _plate, float _width, float _height) const noexcept;
+  // ADR-175: the part of a plate inside its frame, a panel's or a button's.
+  [[nodiscard]] Neuron::UiRect Inside(const Neuron::NineSlice& _plate, const Neuron::UiRect& _rect, bool _button) const noexcept;
   // ADR-167: the button of action _slot of the relations row at _place, an icon's square at the row's end.
   [[nodiscard]] Neuron::UiRect RelationButton(std::size_t _place, std::size_t _slot) const noexcept;
 
@@ -317,6 +372,17 @@ private:
   std::vector<ResultRow> m_resultRows;
   std::size_t m_panelRows = 0;
   std::optional<double> m_lastRequest;
+  // ADR-175: the plates, what the layout measures with, and each panel's content inside its plate's frame.
+  HudPlates m_plates;
+  Neuron::TextSystem* m_textSystem = nullptr;
+  const Neuron::StringTable* m_strings = nullptr;
+  const Neuron::MessageLocale* m_locale = nullptr;
+  Neuron::UiRect m_panelInner;
+  Neuron::UiRect m_worldInner;
+  Neuron::UiRect m_relationsInner;
+  Neuron::UiRect m_resultInner;
+  float m_cardWidth = 0.0f;
+  float m_buttonWidth = 0.0f;
 };
 
 } // namespace Species
