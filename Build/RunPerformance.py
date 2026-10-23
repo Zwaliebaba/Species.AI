@@ -37,7 +37,7 @@ ADR-156), judges it as the growth scene is, and records it in playtests/M2.md un
 machine is neither read nor pinned for it. --valley runs the valley run alone (M3 task T9, ADR-164): the corpus of seeds,
 each valley's four settlements driven by a policy for a run, judged against Playtest 1's measurable lines and recorded
 in playtests/M3.md unless --record names another file; it fails (exit code 1) when a line is missed, and neither reads
-nor pins the machine, since a valley run's figures are the simulation's, the same on every machine. --self-test is CI's: it runs the given tool with --quick, and the bench too when one is
+nor pins the machine, since a valley run's figures are the simulation's, not the machine's speed. --self-test is CI's: it runs the given tool with --quick, and the bench too when one is
 given (--warp draws it on the WARP adapter), then proves the record's rules on fixtures in a temporary folder, and
 writes nothing into the checkout.
 """
@@ -578,7 +578,7 @@ def valley_rows(result):
     ('figures in the steward\'s battles, typical and least', 'no battle' if typical is None else
      f'{typical} typical, {steward_figures[0]} least over {len(steward_figures)} battles', '300 to 450, never below 200',
      met(typical is not None and 300 <= typical <= 450 and steward_figures[0] >= 200)),
-    ('battle length', f'{within / max(len(lengths), 1):.0%} of {len(lengths)} within 4 to 12 min, the longest '
+    ('battle length', f'{within / max(len(lengths), 1) * 100:.0f} % of {len(lengths)} within 4 to 12 min, the longest '
      f'{max(lengths, default=0.0):.1f} min', '90 %, none above 20 min',
      met(bool(lengths) and within >= 0.9 * len(lengths) and max(lengths) <= 20.0)),
     ('conflicts that reach an end state within 7 hours of play', f'{len(settled)} of {len(judged)} claims', '60 %',

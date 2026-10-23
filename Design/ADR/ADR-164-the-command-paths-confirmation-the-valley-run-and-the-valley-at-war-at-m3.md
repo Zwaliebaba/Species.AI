@@ -53,7 +53,7 @@ Chosen option: 1.
   - **The run.** `RunValley` starts seed *n*'s valley with the steward's settlement at `mvp.sandbox.steward_site` and three AI settlements. The steward's settlement is run by its scripted steward with the decisions of a Territorial settlement, which is the run's stated conflict policy. The run lasts `mvp.run.length_hours`, then as long as its battles in progress need, up to `pil.battle.max_minutes`.
   - **What it keeps.** Each battle's ticks, sides, end and figures. The figures are the most of both sides' living figures on its battlefield at once (MVP-043), counted every second. It also keeps each claim and its end from the server's statistics (MVP-064), the steward's growth steps, and each settlement's strength, Workers and renown at the end.
   - **The corpus.** `RunValleys` runs seeds 1 to 8 on as many threads as the machine has, since each run is a world of its own. Its step times are therefore those of runs sharing the machine, and are reported, not judged.
-  - **The tool.** `SpeciesPerformance.exe --scenes valley` runs the corpus only when named, since it takes about an hour of a 4-core machine's time. `Build\RunPerformance.py --valley` runs it and judges each line over the corpus (`valley_rows`). It records the result in its own section of `playtests/M3.md` and fails when a line is missed. A valley run's figures are the simulation's, the same on every machine, so it neither reads nor pins the machine.
+  - **The tool.** `SpeciesPerformance.exe --scenes valley` runs the corpus only when named, since it takes about an hour of a 4-core machine's time. `Build\RunPerformance.py --valley` runs it and judges each line over the corpus (`valley_rows`). It records the result in its own section of `playtests/M3.md` and fails when a line is missed. A valley run's figures are the simulation's, not the machine's speed, so it neither reads nor pins the machine. A build by another compiler may contract floating-point sums differently and so play the corpus differently.
   - **The lines.** Each is judged as follows:
     - the largest gap between the steward's growth steps in hour 0 to 5, on every seed (20 minutes);
     - the figures in the steward's battles over the corpus: the median at 300 to 450, none below 200;
@@ -92,7 +92,7 @@ GameLogicTests:
 
 `Build\RunPerformance.py --self-test` runs the quick valley run and the quick scenes `valley-battles` and `valley-drawn`, and proves the valley run's judgement and record on fixtures.
 
-**The valley run of seeds 1 to 8** is recorded in `playtests/M3.md`, "The valley run", each line judged over the corpus. A line it misses goes to the owner with its cause and its levers in the decision register (T9's "done when"); the tuning waits for the owner's M2 runs (O98).
+**The valley run of seeds 1 to 8** on a Linux build of the game's libraries (`playtests/M3.md`, "The valley run") meets two of Playtest 1's six measurable lines: every conflict settled within 7 hours of play, and the strongest settlement at most 1.40 times the median. It misses the steward's battles in a run (11 to 22), battle length (13 % within 4 to 12 minutes), the figures in the steward's battles (249 typical, 79 least) and the growth steps' largest gap (76.6 minutes). [DEC-1008](../decisions/species_design.md#dec-1008-the-valley-runs-misses-of-playtest-1s-lines) puts these misses, their causes and the levers to the owner (T9's "done when"); the tuning waits for the owner's M2 runs (O98). The first run, before the defense of a claimed area, missed the same four lines further: 17 to 42 battles, 123 figures typical, and every claim battle won in 30 seconds.
 
 **The owner's performance run** on `Release|ARM64` judges `valley-battles` and `valley-drawn` (T9's "done when").
 
@@ -122,7 +122,7 @@ GameLogicTests:
   - [ADR-126](ADR-126-frame-bench-and-rendered-scenes.md): the scene `valley-drawn`;
   - [ADR-162](ADR-162-the-ai-settlements-decisions-at-m3.md): the defense of a claimed area from its warning;
   - [ADR-163](ADR-163-the-run-renown-and-the-epilogues-data-at-m3.md): the tool worlds' runs.
-* Owner decisions O80, O98; MVP-015, MVP-022, MVP-043, MVP-049, MVP-053, MVP-056, MVP-064, MVP-070, MVP-094; PIL-021, PIL-028, PIL-047, PIL-055, PIL-065, PIL-123; DEC-1006.
+* Owner decisions O80, O98; MVP-015, MVP-022, MVP-043, MVP-049, MVP-053, MVP-056, MVP-064, MVP-070, MVP-094; PIL-021, PIL-028, PIL-047, PIL-055, PIL-065, PIL-123; DEC-1006, DEC-1008.
 * The code:
   - `GameLogic/ValleyAtWar`, `SettlementAi` (`ClaimDefenseOf`), `Battles` (`ObjectiveOf`);
   - `Tools/SpeciesPerformance/ValleyScene`, `SpeciesPerformance`, `SceneRun`, `GrowthScene`;

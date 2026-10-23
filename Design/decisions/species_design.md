@@ -149,3 +149,18 @@ This file records the decisions of the Species design and of the MVP built from 
   - C — no renown for a withdrawn claim, only for tribute.
 - Recommendation: A. It keeps the scope's reward for backing down from a real claim and closes the repetition, with no new key.
 - Decide by: Playtest 1, whose renown standing (MVP-062) shows whether easing is worth what it costs.
+
+### DEC-1008 The valley run's misses of Playtest 1's lines
+- Status: Open
+- Affects: implementation/mvp_scope.md (MVP-045, MVP-053, MVP-055, §6.1's table 5, and table 3's `mvp.battle.objective_hold_s`, `mvp.battle.rout_share`, `mvp.ai.attack_min_share` and `mvp.conflict.attack_cost_ru`); ADR-162; ADR-164; DEC-1006
+- Specified behaviour: the rules and values stand as they are until the owner decides. The valley run of M3 task T9 runs seeds 1 to 8 for a run each, with the steward's settlement under its scripted steward and a Territorial settlement's decisions (`playtests/M3.md`, "The valley run"). It meets two of Playtest 1's six measurable lines: every conflict reached an end state within 7 hours of play (158 of 158 claims), and the strongest settlement ended at most 1.40 times the median. It misses four:
+  - **The steward's battles in a run**: 11 to 22, against 4 to 10. Claims repeat with nothing to space them. A Territorial settlement claims each half its neighbour holds as soon as the neighbour holds it, so a half that changes hands is claimed back at once. One claimant claimed one area up to 7 times in a run, and 86 of the steward's 141 battles were claim battles.
+  - **Battle length**: 13 % of 263 battles within 4 to 12 minutes, against 90 %. None ran above 20, since `pil.battle.max_minutes` ends a battle there. Of 150 claim battles, 80 ended within a minute, by the objective held for `mvp.battle.objective_hold_s` (30 s) or by a rout at `mvp.battle.rout_share`. Of 113 raids, 40 ran to the 20-minute limit.
+  - **The figures in the steward's battles**: 249 typical and 79 at the least, against 300 to 450 and never below 200. They are counted as the most of both sides on the battlefield at once. An expedition is what its settlement can field when its muster ends (DEC-1006), and a claim battle at a border area draws only the defenders that reach the claimed site.
+  - **The largest gap between the steward's growth steps in hours 0 to 5**: up to 76.6 minutes on four seeds, and 15.3 to 21.0 on the others, against 20. The first contact comes at 1.4 to 2.1 hours, and from then on the claims cost the steward attacks at `mvp.conflict.attack_cost_ru` (300 ru) and Workers.
+- Options:
+  - A — space the claims: no claim may be made on an area until a new key, `mvp.claim.cooldown_minutes`, has passed since the last claim on it ended. Raise `mvp.battle.objective_hold_s` so that a claim battle is fought before it is won. Retune the figures and the growth steps on M2's evidence (O98).
+  - B — keep the rules and retune only the values (`objective_hold_s`, `rout_share`, `attack_min_share`, `attack_cost_ru`), accepting the battles that repeated claims bring.
+  - C — narrow DEC-1006's Territorial rule: claim a held half only while its anger towards the holder is at least its threshold.
+- Recommendation: A. The repeated claims are a rule's gap, not a value's, and no value of the present keys spaces them; the battle and growth values wait for M2's evidence, as O98 has it.
+- Decide by: M3 task T9's tuning, after the owner's M2 runs and before Playtest 1.
