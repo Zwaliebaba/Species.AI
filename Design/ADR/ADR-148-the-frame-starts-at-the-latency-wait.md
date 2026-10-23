@@ -124,3 +124,4 @@ Chosen option: 1. It corrects both the measure and the motion, and it gathers th
 * Owner decisions O75, O85, O88 and O93.
 * The code: `NeuronClient/FrameRenderer`; `Species/Species.cpp`; `Tools/SpeciesFrameBench`; `Build/RunPerformance.py`.
 * ADR-012, ADR-120 and ADR-126 are amended with this record.
+* **Amendment 2026-10-22 (owner decision O100).** The owner's next rendered run is on the x64 laptop that replaces the reference test machine, on `Release|x64`, with its 1,920 × 1,080 panel set to 60 Hz and the battle drawn borderless, so the desktop window manager's composition of O85's window, one of the causes considered above, does not arise there.
