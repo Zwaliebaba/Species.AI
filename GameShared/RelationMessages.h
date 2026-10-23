@@ -56,10 +56,11 @@ enum class AttackRefusal : std::uint8_t
   UnderRespite = 4, // the target is under a respite (MVP-047)
   NoLeader = 5,     // no live Leader of the settlement among those named
   TooLarge = 6,     // the Leaders' Workers are more than mvp.expedition.size_max
-  CannotAfford = 7  // the stores do not hold the attack's cost
+  CannotAfford = 7, // the stores do not hold the attack's cost
+  Quiet = 8         // the run is in its last mvp.run.quiet_minutes (MVP-060, ADR-163)
 };
 
-inline constexpr std::uint8_t ATTACK_REFUSAL_MAX = static_cast<std::uint8_t>(AttackRefusal::CannotAfford);
+inline constexpr std::uint8_t ATTACK_REFUSAL_MAX = static_cast<std::uint8_t>(AttackRefusal::Quiet);
 // O98: an expedition's Leaders, at most.
 inline constexpr std::size_t EXPEDITION_LEADERS_MAX = 3;
 

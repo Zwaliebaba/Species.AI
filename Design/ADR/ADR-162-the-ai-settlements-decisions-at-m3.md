@@ -121,3 +121,4 @@ GameLogicTests `SettlementAiTests`:
   - `AiController` (`StepBattleCore`), `RegionSimulation` (the decisions, their state and the step), `WorldSnapshot`;
   - `GameShared/TuningMvp` (`mvp.ai.muster_minutes`);
   - `GameLogicTests/SettlementAiTests`, `StateHashTests`, `RelationTests`, `TestSupport` (`ValleyWorld`'s tuning, `RegionStateOf`).
+* **Amendment 2026-10-22 (M3 task T8, [ADR-163](ADR-163-the-run-renown-and-the-epilogues-data-at-m3.md)).** An AI settlement starts no muster in the run's quiet minutes, and gives up one under way.

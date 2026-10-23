@@ -451,6 +451,12 @@ void WorldServer::Receive(Neuron::ConnectionId _connection, const Neuron::Receiv
     steward.reports.push_back({sequence, m_world->NextTick(), result, 0});
     return;
   }
+  // MVP-063 (ADR-163): a world whose run has ended is read-only, and takes no command into a queue.
+  if (m_world->RunState().ended)
+  {
+    steward.reports.push_back({sequence, m_world->NextTick(), CommandResult::NotPermitted, 0});
+    return;
+  }
   Neuron::CommandQueue& region = m_world->Region(0).Commands();
   const bool regional = !reader.Failed() && region.Handles(header.type);
   Neuron::CommandQueue& queue = regional ? region : m_world->Commands();

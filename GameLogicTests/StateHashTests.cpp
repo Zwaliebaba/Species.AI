@@ -78,13 +78,15 @@ public:
     // Changed by M3 task T5: each region writes its claims' and its moved areas' counts after its grievances (ADR-160),
     // none here. Changed by M3 task T6: each region writes its expeditions', battles', battle results' and respites'
     // counts after its moved areas (ADR-161), none here. Changed by M3 task T7: each region writes its AI settlements'
-    // decisions' count after its respites (ADR-162), none here.
+    // decisions' count after its respites (ADR-162), none here. Changed by M3 task T8: the world owner writes its run
+    // after its commands, ending 8 hours after tick 0, and each region its settlements' renown count after its AI
+    // settlements' decisions (ADR-163), none here.
     const GoldenRun one = Run600Ticks(1, 0);
-    Assert::IsTrue(one.last == 0xc82d4a31d6ffdf04, L"the hash after 600 ticks of one region");
-    Assert::IsTrue(one.chain == 0x10d9850a8eaf3db4, L"the chain of 600 tick hashes of one region");
+    Assert::IsTrue(one.last == 0x9c5b88920cac338c, L"the hash after 600 ticks of one region");
+    Assert::IsTrue(one.chain == 0x820154c753208b32, L"the chain of 600 tick hashes of one region");
     const GoldenRun three = Run600Ticks(3, 0);
-    Assert::IsTrue(three.last == 0x1fb44d513e801df2, L"the hash after 600 ticks of three regions");
-    Assert::IsTrue(three.chain == 0xa6785b974d409a8a, L"the chain of 600 tick hashes of three regions");
+    Assert::IsTrue(three.last == 0xe10457570d149ca6, L"the hash after 600 ticks of three regions");
+    Assert::IsTrue(three.chain == 0x0ad236554bcf026b, L"the chain of 600 tick hashes of three regions");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp093TheHashesAgreeAtAnyWorkerCount)

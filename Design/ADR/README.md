@@ -163,6 +163,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-160](ADR-160-claims-moved-areas-and-tribute-at-m3.md) | Claims, moved areas and tribute at M3 | Proposed | 2026-10-22 |
 | [ADR-161](ADR-161-expeditions-battles-the-loss-cap-and-the-respite-at-m3.md) | Expeditions, battles, the loss cap and the respite at M3 | Proposed | 2026-10-22 |
 | [ADR-162](ADR-162-the-ai-settlements-decisions-at-m3.md) | The AI settlements' decisions at M3 | Proposed | 2026-10-22 |
+| [ADR-163](ADR-163-the-run-renown-and-the-epilogues-data-at-m3.md) | The run, renown and the epilogue's data at M3 | Proposed | 2026-10-22 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

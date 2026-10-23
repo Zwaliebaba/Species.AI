@@ -217,11 +217,13 @@ struct Candidate
 };
 
 // MVP-055 and PIL-025: the attack the settlement may make on _target: a raid while its anger reaches its threshold, a
-// claim battle for its claim on what the target holds, as its temperament prefers (MVP-057); none for neither.
+// claim battle for its claim on what the target holds, as its temperament prefers (MVP-057); none for neither, and none
+// in the run's quiet minutes (MVP-060).
 std::optional<Candidate> CandidateOf(const RegionSimulation& _region, const Settlement& _settlement, std::uint8_t _target)
 {
   const std::optional<double> threshold = AngerThresholdOf(_region.Tuning(), _settlement.cladan.temperament);
-  if (!threshold || _target == _settlement.site || _region.SettlementAt(_target) == nullptr || UnderRespite(_region, _target))
+  if (!threshold || _target == _settlement.site || _region.SettlementAt(_target) == nullptr || UnderRespite(_region, _target) ||
+      _region.InQuietMinutes())
   {
     return std::nullopt;
   }

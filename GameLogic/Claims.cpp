@@ -4,7 +4,9 @@
 #include "Construction.h"
 #include "RegionSimulation.h"
 #include "Relations.h"
+#include "Renown.h"
 #include "ReplicatedState.h"
+#include "Statistics.h"
 #include "Territory.h"
 
 #include <algorithm>
@@ -190,6 +192,7 @@ std::expected<StableId, ClaimRefusal> MakeClaim(RegionSimulation& _region, std::
     claim.state = contested ? ClaimState::Contested : ClaimState::Waiting;
   }
   _region.Claims().push_back(claim);
+  RecordEvent(_region, _claimant, StatisticKind::ClaimMade, _area);
   return claim.id;
 }
 
@@ -204,7 +207,22 @@ std::optional<ClaimRefusal> WithdrawClaim(RegionSimulation& _region, std::uint8_
   {
     return ClaimRefusal::NoSuchClaim;
   }
+  // MVP-061 (ADR-163, DEC-1007): the weight its grievance holds when the claim is withdrawn is eased by its claimant, once
+  // the claim has stood mvp.claim.uncontested_minutes, so that a claim made only to be withdrawn earns nothing.
+  const auto stood = static_cast<std::uint64_t>(
+    std::llround(_region.Tuning().mvp.claim.uncontestedMinutes * SECONDS_PER_MINUTE / _region.Tuning().ref.sim.tickPeriod));
+  std::int64_t eased = 0;
+  for (const Grievance& grievance : _region.Grievances())
+  {
+    eased += grievance.cause == GrievanceCause::Claim && grievance.subject == _claim && !grievance.causeRemoved ? grievance.weightMicro : 0;
+  }
+  if (SettlementRenown* renown = RenownAt(_region, _claimant); renown != nullptr && _region.NextTick() >= found->madeTick + stood)
+  {
+    renown->easedMicro += eased;
+  }
+  const std::uint8_t area = found->area;
   End(_region, _claim);
+  RecordEvent(_region, _claimant, StatisticKind::ClaimWithdrawn, area);
   return std::nullopt;
 }
 
@@ -217,6 +235,7 @@ void SettleClaim(RegionSimulation& _region, StableId _claim, bool _claimantWon)
   }
   const Claim claim = *found;
   End(_region, _claim);
+  RecordEvent(_region, claim.claimant, _claimantWon ? StatisticKind::ClaimWon : StatisticKind::ClaimLost, claim.area);
   if (!_claimantWon)
   {
     return;
@@ -224,17 +243,18 @@ void SettleClaim(RegionSimulation& _region, StableId _claim, bool _claimantWon)
   if (claim.area == CLAIM_AREA_CENTRAL)
   {
     // The battle at the central resource site settles every claim on it.
-    std::vector<StableId> others;
+    std::vector<Claim> others;
     for (const Claim& other : _region.Claims())
     {
       if (other.area == CLAIM_AREA_CENTRAL)
       {
-        others.push_back(other.id);
+        others.push_back(other);
       }
     }
-    for (const StableId other : others)
+    for (const Claim& other : others)
     {
-      End(_region, other);
+      End(_region, other.id);
+      RecordEvent(_region, other.claimant, StatisticKind::ClaimLost, other.area);
     }
     Hold(_region, CLAIM_AREA_CENTRAL, claim.claimant);
     return;
@@ -266,6 +286,7 @@ void AdvanceClaims(RegionSimulation& _region, std::uint64_t _tick)
   {
     End(_region, held->id);
     Hold(_region, CLAIM_AREA_CENTRAL, held->claimant);
+    RecordEvent(_region, held->claimant, StatisticKind::ClaimWon, CLAIM_AREA_CENTRAL);
   }
 }
 
@@ -306,7 +327,13 @@ std::expected<std::int64_t, TributeRefusal> SendTribute(RegionSimulation& _regio
   const std::int64_t eased = ruPerWeight > 0.0
                                ? std::llround(static_cast<double>(paid) * static_cast<double>(WEIGHT_MICRO) / (ruPerWeight * 1'000.0))
                                : grievance->weightMicro;
+  const std::int64_t before = grievance->weightMicro;
   grievance->weightMicro = std::max<std::int64_t>(0, grievance->weightMicro - eased);
+  // MVP-061 (ADR-163): the weight the tribute eased counts towards its sender's renown.
+  if (SettlementRenown* renown = RenownAt(_region, _from); renown != nullptr)
+  {
+    renown->easedMicro += before - grievance->weightMicro;
+  }
   static_cast<void>(Withdraw(*sender, paid));
   const std::int64_t capacity = StoreCapacityMilliRu(_region.Tuning(), ActiveCount(_region, recipient->team, StructureKind::Storehouse));
   static_cast<void>(Deposit(*recipient, std::clamp<std::int64_t>(capacity - recipient->storesMilliRu, 0, paid), capacity));

@@ -269,8 +269,8 @@ std::unique_ptr<Species::WorldSimulation> SettledWorld(std::uint8_t _site)
 std::vector<std::byte> RegionStateOf(const Species::RegionSimulation& _region, std::uint32_t _version)
 {
   // The counts' bounds of the sections each version appended: version 11's grievances, version 12's claims and moved
-  // areas, version 13's expeditions, battles, battle results and respites. Version 14's AI settlements' decisions, the
-  // last section, go whole.
+  // areas, version 13's expeditions, battles, battle results and respites. Its statistics must be empty below version 15,
+  // whose kinds were written narrower.
   constexpr std::array<std::pair<std::uint32_t, std::uint64_t>, 7> COUNTS{
     {{11, 65'535}, {12, 36}, {12, 9}, {13, 4}, {13, 4}, {13, 65'535}, {13, 4}}};
   Neuron::BitWriter current;
@@ -279,6 +279,17 @@ std::vector<std::byte> RegionStateOf(const Species::RegionSimulation& _region, s
   for (const auto& [version, bound] : COUNTS)
   {
     bits -= version > _version ? Neuron::BitsFor(bound) : 0;
+  }
+  // Version 15's renown, the last section, and version 14's AI settlements' decisions before it, go whole.
+  if (_version < Species::STATE_VERSION_WITH_RENOWN)
+  {
+    Neuron::BitWriter renown;
+    renown.WriteBounded(_region.Renown().size(), 4);
+    for (const Species::SettlementRenown& settlement : _region.Renown())
+    {
+      Species::WriteSettlementRenown(renown, settlement);
+    }
+    bits -= renown.BitCount();
   }
   if (_version < Species::STATE_VERSION_WITH_SETTLEMENT_AI)
   {

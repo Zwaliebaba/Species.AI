@@ -182,6 +182,7 @@
     <ClCompile Include="RelationTests.cpp" />
     <ClCompile Include="ReplicationTests.cpp" />
     <ClCompile Include="RouteTests.cpp" />
+    <ClCompile Include="RunTests.cpp" />
     <ClCompile Include="SandboxTests.cpp" />
     <ClCompile Include="SavingTests.cpp" />
     <ClCompile Include="ScriptedStewardTests.cpp" />

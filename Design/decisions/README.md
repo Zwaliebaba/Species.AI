@@ -350,3 +350,4 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 | DEC-1004 | [The publisher's folder of the user-data root](species_design.md#dec-1004-the-publishers-folder-of-the-user-data-root) | Open | species_design.md |
 | DEC-1005 | [The provisional layout and palette of the settlement HUD](species_design.md#dec-1005-the-provisional-layout-and-palette-of-the-settlement-hud) | Open | species_design.md |
 | DEC-1006 | [How the AI settlements claim and raise their expeditions](species_design.md#dec-1006-how-the-ai-settlements-claim-and-raise-their-expeditions) | Open | species_design.md |
+| DEC-1007 | [Renown for a withdrawn claim](species_design.md#dec-1007-renown-for-a-withdrawn-claim) | Open | species_design.md |

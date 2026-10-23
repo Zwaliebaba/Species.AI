@@ -7,7 +7,9 @@
 #include "LeaderOrders.h"
 #include "RegionSimulation.h"
 #include "Relations.h"
+#include "Renown.h"
 #include "SettlementTasks.h"
+#include "Statistics.h"
 #include "StateValues.h"
 #include "Territory.h"
 #include "Upkeep.h"
@@ -349,6 +351,22 @@ void EndBattle(RegionSimulation& _region, std::size_t _index, BattleEnd _end, st
     }
   }
   _region.BattleResults().push_back(result);
+  // MVP-061 and MVP-064 (ADR-163): the defender's held battle or the claimant's won claim battle earns renown, and each
+  // side's statistics record the battle by its result's place.
+  if (SettlementRenown* renown = RenownAt(_region, result.attackerWon ? battle.attacker : battle.defender); renown != nullptr)
+  {
+    if (!result.attackerWon)
+    {
+      ++renown->defensesHeld;
+    }
+    else if (battle.claim != 0)
+    {
+      ++renown->claimsWon;
+    }
+  }
+  const auto place = static_cast<std::uint32_t>(_region.BattleResults().size() - 1);
+  RecordEvent(_region, battle.attacker, StatisticKind::BattleEnded, place);
+  RecordEvent(_region, battle.defender, StatisticKind::BattleEnded, place);
   EndExpedition(_region, battle.expedition, result.storesMovedMilliRu);
 }
 
@@ -406,6 +424,10 @@ std::expected<StableId, AttackRefusal> DeclareAttack(RegionSimulation& _region, 
   if (home == nullptr || _region.Terrain() == nullptr)
   {
     return std::unexpected(AttackRefusal::NoSettlement);
+  }
+  if (_region.InQuietMinutes())
+  {
+    return std::unexpected(AttackRefusal::Quiet);
   }
   if (ExpeditionOf(_region, _attacker) != nullptr)
   {
@@ -539,6 +561,22 @@ std::optional<AttackRefusal> WithdrawAttack(RegionSimulation& _region, std::uint
     EndExpedition(_region, expedition->id, 0);
   }
   return std::nullopt;
+}
+
+void EndUnfoughtExpeditions(RegionSimulation& _region)
+{
+  std::vector<StableId> unfought;
+  for (const Expedition& expedition : _region.Expeditions())
+  {
+    if (BattleOf(_region, expedition.id) == nullptr)
+    {
+      unfought.push_back(expedition.id);
+    }
+  }
+  for (const StableId id : unfought)
+  {
+    EndExpedition(_region, id, 0);
+  }
 }
 
 void AdvanceBattles(RegionSimulation& _region, std::uint64_t _tick)

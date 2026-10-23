@@ -3,7 +3,9 @@
 #include "Claims.h"
 #include "Construction.h"
 #include "RegionSimulation.h"
+#include "Renown.h"
 #include "Statistics.h"
+#include "Territory.h"
 #include "Upkeep.h"
 
 #include <algorithm>
@@ -29,11 +31,12 @@ void WriteStatisticEntry(Neuron::BitWriter& _writer, const StatisticEntry& _entr
   _writer.WriteSigned(_entry.strengthMilliRu, 64);
 }
 
-bool ReadStatisticEntry(Neuron::BitReader& _reader, StatisticEntry& _entry)
+bool ReadStatisticEntry(Neuron::BitReader& _reader, StatisticEntry& _entry, std::uint32_t _stateVersion)
 {
   _entry.tick = _reader.ReadBits(64);
   _entry.site = static_cast<std::uint8_t>(_reader.ReadBits(8));
-  _entry.kind = static_cast<StatisticKind>(_reader.ReadBounded(STATISTIC_KIND_MAX));
+  _entry.kind = static_cast<StatisticKind>(
+    _reader.ReadBounded(_stateVersion >= STATE_VERSION_WITH_RENOWN ? STATISTIC_KIND_MAX : STATISTIC_KIND_MAX_BEFORE_RENOWN));
   _entry.detail = static_cast<std::uint32_t>(_reader.ReadBits(32));
   _entry.workers = static_cast<std::uint32_t>(_reader.ReadBits(32));
   _entry.strengthMilliRu = _reader.ReadSigned(64);
@@ -68,6 +71,16 @@ std::vector<std::uint32_t> HeldResourceSites(const RegionSimulation& _region, co
   return held;
 }
 
+void RecordEvent(RegionSimulation& _region, std::uint8_t _site, StatisticKind _kind, std::uint32_t _detail)
+{
+  const Settlement* settlement = _region.SettlementAt(_site);
+  if (settlement != nullptr)
+  {
+    _region.RecordStatistic(
+      {_region.NextTick(), _site, _kind, _detail, Population(_region, *settlement), StrengthMilliRu(_region, *settlement)});
+  }
+}
+
 void RecordStatistics(RegionSimulation& _region, Settlement& _settlement, const std::vector<std::uint32_t>& _taken)
 {
   const TuningMvp& tuning = _region.Tuning();
@@ -90,11 +103,23 @@ void RecordStatistics(RegionSimulation& _region, Settlement& _settlement, const 
         structure.kind != StructureKind::Wellspring)
     {
       record(StatisticKind::StructureCompleted, static_cast<std::uint32_t>(structure.kind));
+      if (SettlementRenown* renown = RenownAt(_region, _settlement.site); renown != nullptr)
+      {
+        renown->builtMilliRu += structure.costMilliRu; // MVP-061: what this construction cost, a rebuild's its own
+      }
     }
   }
   for (const std::uint32_t site : _taken)
   {
     record(StatisticKind::ResourceSiteTaken, site);
+  }
+  // ADR-163: the tick each territory first reaches a halfway line, so that a world's contact hour can be judged.
+  for (std::size_t pair = 0; pair < VALLEY_PAIRS.size(); ++pair)
+  {
+    if (!_region.HalfwayReached(_settlement.site, pair) && ReachesHalfwayLine(_region, _settlement.site, pair))
+    {
+      record(StatisticKind::HalfwayReached, static_cast<std::uint32_t>(pair));
+    }
   }
   const std::int64_t step = tuning.mvp.stats.populationStep;
   while (step > 0 && std::int64_t{workers} >= std::int64_t{_settlement.populationMark} + step)

@@ -84,6 +84,9 @@
     <ClInclude Include="Relations.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="Renown.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="RouteStore.h">
       <Filter>Space</Filter>
     </ClInclude>
@@ -228,6 +231,9 @@
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="Relations.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Renown.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="RouteStore.cpp">

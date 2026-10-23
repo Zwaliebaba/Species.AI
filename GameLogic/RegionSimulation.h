@@ -16,6 +16,7 @@
 #include "ObstacleGrid.h"
 #include "RegionTerrain.h"
 #include "Relations.h"
+#include "Renown.h"
 #include "RouteStore.h"
 #include "ScriptedSteward.h"
 #include "Settlement.h"
@@ -88,6 +89,9 @@ public:
   // effects, its structures and then its bot navigation nodes, and its Essence orbs (R-SIM-218 steps 3 to 5);
   // then each AI, whose commands execute at the next tick (ADR-107).
   void Step(std::uint64_t _tick);
+  // MVP-063 (ADR-163): a tick of a world whose run has ended: the region's tick advances, its presentation events are
+  // cleared, and nothing else changes.
+  void Pass(std::uint64_t _tick);
 
   // The team slots 0 to _index, made when they do not exist yet.
   Team& EnsureTeam(std::uint8_t _index);
@@ -368,6 +372,29 @@ public:
   }
   // An entry appended to the statistics while they hold fewer than STATISTICS_MAX; a full record takes no more.
   void RecordStatistic(const StatisticEntry& _entry);
+  // ADR-163: the territory of the settlement at _site has reached the halfway line of valley border pair _pair, as the
+  // statistics record.
+  [[nodiscard]] bool HalfwayReached(std::uint8_t _site, std::size_t _pair) const noexcept;
+  // MVP-061 (ADR-163): the renown of the region's settlements, one for each, in their order.
+  [[nodiscard]] const std::vector<SettlementRenown>& Renown() const noexcept
+  {
+    return m_renown;
+  }
+  [[nodiscard]] std::vector<SettlementRenown>& Renown() noexcept
+  {
+    return m_renown;
+  }
+  // MVP-060 (ADR-163): the tick the world's run ends at, which the world owner gives its regions; never, for a region of
+  // no world. In the last mvp.run.quiet_minutes before it, no attack may be declared.
+  void SetRunEnd(std::uint64_t _endTick) noexcept
+  {
+    m_runEndTick = _endTick;
+  }
+  [[nodiscard]] std::uint64_t RunEndTick() const noexcept
+  {
+    return m_runEndTick;
+  }
+  [[nodiscard]] bool InQuietMinutes() const noexcept;
   // The structure in _slot while it still holds that slot with id _id, or null (R-SIM-325's rule for handles).
   [[nodiscard]] Structure* ResolveStructure(std::uint32_t _slot, StableId _id) noexcept;
   [[nodiscard]] const Structure* ResolveStructure(std::uint32_t _slot, StableId _id) const noexcept;
@@ -478,6 +505,8 @@ public:
 #endif
 
 private:
+  // ADR-163: the halfway lines the entry records reached.
+  void NoteHalfway(const StatisticEntry& _entry) noexcept;
   void StepSlice(std::uint32_t _slice);
   // R-SIM-218 step 2: each team's share of slice _slice of _slices, in team order.
   void AdvanceTeams(std::uint32_t _slice, std::uint32_t _slices, const MovementContext& _context);
@@ -528,21 +557,24 @@ private:
   const StructureRecords* m_records;
   SlicedPool<Structure> m_structures;
   std::vector<Settlement> m_settlements;
-  std::vector<CellRaster> m_territories;     // by settlement, derived, never state
-  std::vector<CellRaster> m_seen;            // by settlement, derived, never state
-  std::uint64_t m_seenUpdates = 0;           // never state
-  std::vector<ContactEvent> m_contacts;      // WLD-066, state from version 9
-  std::vector<StatisticEntry> m_statistics;  // MVP-064, state from version 9
-  std::vector<ScriptedSteward> m_scripted;   // ADR-138, state from version 10
-  std::vector<Grievance> m_grievances;       // MVP-050 (ADR-159), state from version 11
-  std::vector<Claim> m_claims;               // MVP-053 (ADR-160), state from version 12
-  std::vector<AreaHolding> m_holdings;       // MVP-053 (ADR-160), state from version 12
-  std::vector<Expedition> m_expeditions;     // MVP-041 (ADR-161), state from version 13
-  std::vector<Battle> m_battles;             // MVP-043 (ADR-161), state from version 13
-  std::vector<BattleResult> m_results;       // MVP-048 (ADR-161), state from version 13
-  std::vector<Respite> m_respites;           // MVP-047 (ADR-161), state from version 13
-  std::vector<SettlementAi> m_settlementAis; // MVP-055 (ADR-162), state from version 14
-  std::vector<EffectEvent> m_events;         // presentation, never state
+  std::vector<CellRaster> m_territories;                                  // by settlement, derived, never state
+  std::vector<CellRaster> m_seen;                                         // by settlement, derived, never state
+  std::uint64_t m_seenUpdates = 0;                                        // never state
+  std::vector<ContactEvent> m_contacts;                                   // WLD-066, state from version 9
+  std::vector<StatisticEntry> m_statistics;                               // MVP-064, state from version 9
+  std::vector<ScriptedSteward> m_scripted;                                // ADR-138, state from version 10
+  std::vector<Grievance> m_grievances;                                    // MVP-050 (ADR-159), state from version 11
+  std::vector<Claim> m_claims;                                            // MVP-053 (ADR-160), state from version 12
+  std::vector<AreaHolding> m_holdings;                                    // MVP-053 (ADR-160), state from version 12
+  std::vector<Expedition> m_expeditions;                                  // MVP-041 (ADR-161), state from version 13
+  std::vector<Battle> m_battles;                                          // MVP-043 (ADR-161), state from version 13
+  std::vector<BattleResult> m_results;                                    // MVP-048 (ADR-161), state from version 13
+  std::vector<Respite> m_respites;                                        // MVP-047 (ADR-161), state from version 13
+  std::vector<SettlementAi> m_settlementAis;                              // MVP-055 (ADR-162), state from version 14
+  std::vector<SettlementRenown> m_renown;                                 // MVP-061 (ADR-163), state from version 15
+  std::uint64_t m_runEndTick = std::numeric_limits<std::uint64_t>::max(); // the world owner's (ADR-163), not region state
+  std::uint16_t m_halfwayReached = 0; // a bit for each site and pair, from the statistics (ADR-163), not region state
+  std::vector<EffectEvent> m_events;  // presentation, never state
 #if ENGINE_DEVELOPMENT
   AdvanceObserver m_advanceObserver;
 #endif

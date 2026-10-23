@@ -3,6 +3,7 @@
 #include "Check.h"
 #include "RegionSimulation.h"
 #include "Relations.h"
+#include "Statistics.h"
 #include "Territory.h"
 
 #include <algorithm>
@@ -36,17 +37,22 @@ Grievance* FindGrievance(std::vector<Grievance>& _grievances, std::uint8_t _hold
   return found != _grievances.end() ? &*found : nullptr;
 }
 
-// The grievance of the key, made with no weight where the region has none, in the region's order.
-Grievance& GrievanceOf(std::vector<Grievance>& _grievances, std::uint8_t _holder, std::uint8_t _against, GrievanceCause _cause,
+// The grievance of the key, made with no weight in the region's order where the region has none, a new one recorded in
+// the holder's statistics (MVP-064, ADR-163).
+Grievance& GrievanceOf(RegionSimulation& _region, std::uint8_t _holder, std::uint8_t _against, GrievanceCause _cause,
                        std::uint64_t _subject)
 {
+  std::vector<Grievance>& grievances = _region.Grievances();
   const Grievance key{_holder, _against, _cause, _subject};
-  const auto place = std::ranges::lower_bound(_grievances, KeyOf(key), {}, [](const Grievance& _grievance) { return KeyOf(_grievance); });
-  if (place != _grievances.end() && KeyOf(*place) == KeyOf(key))
+  const auto place = std::ranges::lower_bound(grievances, KeyOf(key), {}, [](const Grievance& _grievance) { return KeyOf(_grievance); });
+  if (place != grievances.end() && KeyOf(*place) == KeyOf(key))
   {
     return *place;
   }
-  return *_grievances.insert(place, key);
+  const auto made = static_cast<std::size_t>(place - grievances.begin());
+  grievances.insert(place, key);
+  RecordEvent(_region, _holder, StatisticKind::GrievanceAdded, static_cast<std::uint32_t>(_cause));
+  return grievances[made];
 }
 
 // _share of a weight unit's millionths, as parts per billion.
@@ -110,7 +116,7 @@ void AddGrievance(RegionSimulation& _region, std::uint8_t _holder, std::uint8_t 
   {
     weight *= tuning.unprovokedFactor;
   }
-  Grievance& grievance = GrievanceOf(_region.Grievances(), _holder, _against, _cause, _subject);
+  Grievance& grievance = GrievanceOf(_region, _holder, _against, _cause, _subject);
   grievance.unprovoked = grievance.unprovoked || _unprovoked;
   grievance.weightMicro += std::llround(weight * static_cast<double>(WEIGHT_MICRO));
 }
@@ -163,7 +169,7 @@ void AdvanceRelations(RegionSimulation& _region, std::uint64_t _tick)
     {
       if (contact)
       {
-        Grievance& held = GrievanceOf(grievances, holder, against, GrievanceCause::Pressure, 0);
+        Grievance& held = GrievanceOf(_region, holder, against, GrievanceCause::Pressure, 0);
         held.causeRemoved = false;
         held.weightMicro += pressure;
       }

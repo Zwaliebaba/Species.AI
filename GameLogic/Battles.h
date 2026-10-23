@@ -153,6 +153,10 @@ struct Respite
 // ends, its grievance's cause removed and no respite started; in its battle, the battle ends Withdrawn.
 [[nodiscard]] std::optional<AttackRefusal> WithdrawAttack(RegionSimulation& _region, std::uint8_t _attacker);
 
+// MVP-060 (ADR-163): at the run's end, every expedition whose battle has not started ends as a withdrawal before its
+// battle does, with no battle, no result and no respite; battles in progress finish.
+void EndUnfoughtExpeditions(RegionSimulation& _region);
+
 // MVP-042 to MVP-048 (ADR-161): the attacks' step at the end of the tick _tick: a held expedition released by its warning
 // walks to its objective; a released one whose figures enter the target's territory, or the claimed area, starts its
 // battle while fewer than wld.scale.battles_per_region_max are in progress, in the order of declaration (MVP-015);

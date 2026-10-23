@@ -189,7 +189,9 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-060** (MUST) A world is a run of `mvp.run.length_hours` (8 hours of play at the session pace; 8 world days at the always-on pace). The world shows the time left, and no attack may be declared in its last `mvp.run.quiet_minutes` (15 minutes); battles in progress finish (WLD-221 narrowed to a fixed lifetime).
 
-**MVP-061** (MUST) Settlements earn renown (PIL-125), never by stores taken: `mvp.renown.defense_held` (3) for each battle won as a defender; `mvp.renown.claim_won` (3) for each claim battle won as a claimant; `mvp.renown.grievance_eased` (1) for each 20 weight of grievance eased by tribute or by a withdrawn claim; and `mvp.renown.structure_per_100ru` (1) for each 100 ru of structures completed.
+**MVP-061** (MUST) Settlements earn renown (PIL-125), never by stores taken: `mvp.renown.defense_held` (3) for each battle won as a defender; `mvp.renown.claim_won` (3) for each claim battle won as a claimant; `mvp.renown.grievance_eased` (1) for each 20 weight of grievance eased by tribute or by a withdrawn claim; and `mvp.renown.structure_per_100ru` (1) for each 100 ru of structures completed. Which withdrawn claims count is built as DEC-1007 states until the owner decides.
+
+> **Amendment 2026-10-22 (M3 task T8; [ADR-163](../ADR/ADR-163-the-run-renown-and-the-epilogues-data-at-m3.md)).** A run begins with its world, or, for a world saved before M3 task T8, where it continues. At its end an expedition whose battle has not started ends with no battle, the run waits for the battles in progress, and the world is then read-only: its tick advances and no command is taken. Renown is derived from its four sources, which each settlement's record counts. A claim battle won counts as `claim_won`, a battle won as defender, a raid withdrawn in its battle included, as `defense_held`, and a structure counts what its construction cost, a turret's rebuild its own.
 
 **MVP-062** (MUST) The standing of the four settlements by renown is visible throughout the run, with each settlement's renown broken down by source.
 
@@ -198,6 +200,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 **MVP-064** (MUST) The server records, for every settlement, its strength (MVP-038) and its Worker count every `mvp.stats.sample_minutes` (5 minutes), and every growth step, battle, claim and grievance, so that the epilogue and the playtest measures of §6 come from the run itself.
 
 > **Amendment 2026-10-22 (M2 task T8; [ADR-136](../ADR/ADR-136-settlement-commands-status-and-statistics-at-m2.md)).** The statistics are part of the world's state, saved and replayed with it. A growth step is a structure of the settlement built, its population reaching a new multiple of `mvp.stats.population_step` (10 Workers), or its territory taking in a resource site (the [M2 plan](m2_plan.md) §9, question 1). Each entry records the tick, the Worker count and the strength. Samples fall on the world ticks that are multiples of the sample period.
+
+> **Amendment 2026-10-22 (M3 task T8; [ADR-163](../ADR/ADR-163-the-run-renown-and-the-epilogues-data-at-m3.md)).** The statistics also record, for the settlement each names, the tick its territory first reaches each of its halfway lines, each new grievance with its cause, each claim made and whether it was withdrawn, lost or won (a central site held uncontested is won), and each battle it was a side of, by its result's place.
 
 > **Amendment 2026-10-22 (M2 task T19; [ADR-156](../ADR/ADR-156-the-settlement-drawn-at-its-plateau-and-the-owners-growth-run.md)).** A saved world's statistics are read from its newest snapshot by `SpeciesPerformance.exe --saved-world`, which judges them as the growth scene's, so the owner's growth run of M2 is measured from the run itself (the [M2 plan](m2_plan.md) §5).
 

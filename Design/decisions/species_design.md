@@ -15,6 +15,7 @@ This file records the decisions of the Species design and of the MVP built from 
 | [DEC-1004](#dec-1004-the-publishers-folder-of-the-user-data-root) | The publisher's folder of the user-data root | Open | PLT, MVP |
 | [DEC-1005](#dec-1005-the-provisional-layout-and-palette-of-the-settlement-hud) | The provisional layout and palette of the settlement HUD | Open | MVP, UI |
 | [DEC-1006](#dec-1006-how-the-ai-settlements-claim-and-raise-their-expeditions) | How the AI settlements claim and raise their expeditions | Open | MVP |
+| [DEC-1007](#dec-1007-renown-for-a-withdrawn-claim) | Renown for a withdrawn claim | Open | MVP, PIL |
 
 ## 1 World and sites
 
@@ -134,3 +135,17 @@ This file records the decisions of the Species design and of the MVP built from 
   - C — as stated, with the guard share raised for the muster's length, so that the expedition draws more Workers than those already on guard duty.
 - Recommendation: A for M3's headless phase. The valley run of M3 task T9 measures the battles' sizes and lengths against Playtest 1's lines, and the lever it changes then is this one or `muster_minutes`.
 - Decide by: the valley run of M3 task T9, before Playtest 1.
+
+### DEC-1007 Renown for a withdrawn claim
+- Status: Open
+- Affects: implementation/mvp_scope.md (MVP-061); gdd/00_vision_pillars_and_core_loops.md (PIL-125); ADR-163
+- Specified behaviour: MVP-061 gives `mvp.renown.grievance_eased` for each 20 weight of grievance eased by tribute or by a withdrawn claim. A claim costs nothing and gives its holder a grievance of `mvp.grievance.claim_weight` (30), so a claim made and withdrawn at once would earn renown for a grievance that its own claimant created a moment before, as often as it is repeated. Until the owner decides, the server builds the following.
+  - A withdrawn claim eases, towards its claimant's renown, the weight its grievance holds at the withdrawal, but only once the claim has stood `mvp.claim.uncontested_minutes` (30) since it was made.
+  - A claim withdrawn sooner still removes its grievance's cause (PIL-122), and earns no renown.
+  - Tribute eases the weight it removes, whenever it is sent.
+- Options:
+  - A — as stated;
+  - B — the scope's rule as written, every withdrawal crediting its grievance's weight, accepting that a steward can repeat it;
+  - C — no renown for a withdrawn claim, only for tribute.
+- Recommendation: A. It keeps the scope's reward for backing down from a real claim and closes the repetition, with no new key.
+- Decide by: Playtest 1, whose renown standing (MVP-062) shows whether easing is worth what it costs.

@@ -36,12 +36,28 @@ public:
 
   // The world owner's state as a snapshot of WORLD_STATE_VERSION 3 and later holds it, with the world seed (ADR-102).
   static constexpr std::uint32_t STATE_VERSION_WITH_SEED = 3;
+  // ... and of version 15 and later, with its run (ADR-163).
+  static constexpr std::uint32_t STATE_VERSION_WITH_RUN = 15;
+
+  /// MVP-060 and MVP-063 (ADR-163): the world's run: the tick it ends at, mvp.run.length_hours after the tick it began,
+  /// whether it has ended, which it does at that tick once no battle is in progress, and the tick it ended.
+  struct Run
+  {
+    std::uint64_t endTick = 0;
+    bool ended = false;
+    std::uint64_t endedTick = 0;
+
+    bool operator==(const Run&) const = default;
+  };
 
   explicit WorldSimulation(const Desc& _desc);
 
+  // One tick: every region as a job, then the world owner's own step and its run's end (MVP-060). A world whose run has
+  // ended is read-only (MVP-063): its tick advances and nothing else.
   void Step(std::uint64_t _tick, Neuron::WorkerPool& _workers);
 
-  // The world owner's own values, canonically: the world tick, the world seed, its id counter and its queued commands.
+  // The world owner's own values, canonically: the world tick, the world seed, its id counter, its queued commands and
+  // its run.
   // The simulation key is held apart: a snapshot saves it, and no hash covers it (ADR-082 item 1).
   void WriteState(Neuron::BitWriter& _writer) const;
   // The world owner's values and then each region's, as a snapshot of _stateVersion holds them (ADR-099), into a world
@@ -86,6 +102,18 @@ public:
   {
     return m_ids;
   }
+  // MVP-060 (ADR-163): the world's run, and the ticks left in it.
+  [[nodiscard]] const Run& RunState() const noexcept
+  {
+    return m_run;
+  }
+  [[nodiscard]] std::uint64_t TicksLeft() const noexcept
+  {
+    return m_run.endTick > m_nextTick ? m_run.endTick - m_nextTick : 0;
+  }
+  // The run ends at _endTick from now on, which the regions read for its quiet minutes; for the tests and tools that
+  // shorten a run.
+  void SetRunEnd(std::uint64_t _endTick);
   // ADR-137: the world record, which no state hash covers and the snapshot holds.
   [[nodiscard]] WorldRecord& Record() noexcept
   {
@@ -104,6 +132,10 @@ private:
   Neuron::CommandQueue m_commands;
   std::vector<std::unique_ptr<RegionSimulation>> m_regions;
   WorldRecord m_record;
+  Run m_run;
 };
+
+// MVP-060: the ticks of a run, mvp.run.length_hours at the session pace (MVP-070).
+[[nodiscard]] std::uint64_t RunTicks(const TuningMvp& _tuning) noexcept;
 
 } // namespace Species

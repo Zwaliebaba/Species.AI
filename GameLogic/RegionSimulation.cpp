@@ -604,7 +604,29 @@ void RegionSimulation::RecordStatistic(const StatisticEntry& _entry)
   if (m_statistics.size() < STATISTICS_MAX)
   {
     m_statistics.push_back(_entry);
+    NoteHalfway(_entry);
   }
+}
+
+void RegionSimulation::NoteHalfway(const StatisticEntry& _entry) noexcept
+{
+  if (_entry.kind == StatisticKind::HalfwayReached && _entry.site < SETTLEMENTS_MAX && _entry.detail < VALLEY_PAIRS.size())
+  {
+    m_halfwayReached = static_cast<std::uint16_t>(m_halfwayReached | (1U << (_entry.site * VALLEY_PAIRS.size() + _entry.detail)));
+  }
+}
+
+bool RegionSimulation::HalfwayReached(std::uint8_t _site, std::size_t _pair) const noexcept
+{
+  return _site < SETTLEMENTS_MAX && _pair < VALLEY_PAIRS.size() && (m_halfwayReached >> (_site * VALLEY_PAIRS.size() + _pair) & 1U) != 0;
+}
+
+bool RegionSimulation::InQuietMinutes() const noexcept
+{
+  const auto& run = m_tuning->mvp.run;
+  const auto quiet =
+    static_cast<std::uint64_t>(std::max<std::int64_t>(0, std::llround(run.quietMinutes * 60.0 / m_tuning->ref.sim.tickPeriod)));
+  return m_runEndTick != std::numeric_limits<std::uint64_t>::max() && m_nextTick + quiet >= m_runEndTick;
 }
 
 void RegionSimulation::RecordContacts()
@@ -739,6 +761,7 @@ const Settlement& RegionSimulation::FoundSettlement(std::uint8_t _site, bool _st
   settlement.wellspringId = m_structures.At(settlement.wellspringSlot).id;
   EnsureTeam(settlement.team);
   const Settlement& founded = m_settlements.emplace_back(std::move(settlement));
+  m_renown.push_back({founded.site, 0, 0, 0, 0}); // MVP-061 (ADR-163)
   m_territories.push_back(ComputeTerritory(*this, founded));
   for (std::int64_t worker = 0; worker < m_tuning->mvp.settlement.startWorkers; ++worker)
   {
@@ -769,6 +792,13 @@ std::uint32_t RegionSimulation::SpawnAtDoor(const Settlement& _settlement)
   spawn.position = StructurePoint(wellspring, Neuron::RestPositionOf(record, *doors.front()));
   spawn.velocity = (StructureDirection(wellspring, Neuron::RestFrontOf(record, *doors.front())) + Neuron::Vec3{x, y, z}) * door.doorSpeed;
   return SpawnFigures(spawn).front();
+}
+
+void RegionSimulation::Pass(std::uint64_t _tick)
+{
+  ENGINE_ASSERT(_tick == m_nextTick);
+  m_events.clear();
+  m_nextTick = _tick + 1;
 }
 
 void RegionSimulation::Step(std::uint64_t _tick)
@@ -1042,6 +1072,11 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
   {
     WriteSettlementAi(_writer, ai);
   }
+  _writer.WriteBounded(m_renown.size(), SETTLEMENTS_MAX);
+  for (const SettlementRenown& renown : m_renown)
+  {
+    WriteSettlementRenown(_writer, renown);
+  }
 }
 
 bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stateVersion)
@@ -1207,14 +1242,16 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
         return false;
       }
     }
-    // A statistics entry names a settled site.
+    // A statistics entry names a settled site; the halfway lines reached are known from them (ADR-163).
     m_statistics.resize(_reader.ReadBounded(STATISTICS_MAX));
+    m_halfwayReached = 0;
     for (StatisticEntry& entry : m_statistics)
     {
-      if (!ReadStatisticEntry(_reader, entry) || SettlementAt(entry.site) == nullptr)
+      if (!ReadStatisticEntry(_reader, entry, _stateVersion) || SettlementAt(entry.site) == nullptr)
       {
         return false;
       }
+      NoteHalfway(entry);
     }
   }
   // A scripted steward commands, as an AI, the team of a settlement; a region of version 9 has none.
@@ -1364,6 +1401,31 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
       {
         m_settlementAis.push_back(MakeSettlementAi(steward, ExpeditionTeamOf(settlement->site)));
       }
+    }
+  }
+  // A settlement's renown is its own, one for each in the settlements' order; a region before version 15 starts its
+  // settlements' renown at none (ADR-163).
+  m_renown.clear();
+  if (_stateVersion >= STATE_VERSION_WITH_RENOWN)
+  {
+    m_renown.resize(_reader.ReadBounded(SETTLEMENTS_MAX));
+    if (m_renown.size() != m_settlements.size())
+    {
+      return false;
+    }
+    for (std::size_t place = 0; place < m_renown.size(); ++place)
+    {
+      if (!ReadSettlementRenown(_reader, m_renown[place]) || m_renown[place].site != m_settlements[place].site)
+      {
+        return false;
+      }
+    }
+  }
+  else
+  {
+    for (const Settlement& settlement : m_settlements)
+    {
+      m_renown.push_back({settlement.site, 0, 0, 0, 0});
     }
   }
   // An order marker follows a route the region holds, from its first point to its last (R-UNIT-185).
