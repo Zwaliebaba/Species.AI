@@ -11,11 +11,14 @@ built here from the owner's meshes by a small CMO reader and writer, so no binar
 port, a collidable mesh without its collision asset and the reverse, a collision node of no render node (ADR-129), a
 stray file, a damaged record, and a string table with a character no system font of its roles draws (ADR-147), a text
 that is no message, a numbered argument, an unknown marker, a cycle of embedded strings, a malformed id and a language
-its file name does not give (ADR-146). The tool is the Debug|x64 build's unless --tool names
+its file name does not give (ADR-146), and a sound source at another rate, of 16 bits, stereo for a positioned sound or
+with no frames (AST-079, ADR-171). Every sound row of the MVP without an authored file has its synthesized stand-in, and
+an authored WAV source replaces its stand-in (AST-082, O98). The tool is the Debug|x64 build's unless --tool names
 another; the check writes nothing into the checkout.
 """
 import argparse
 import csv
+import math
 import os
 import shutil
 import struct
@@ -28,6 +31,9 @@ TOOL = os.path.join(ROOT, 'x64', 'Debug', 'SpeciesContentBuild.exe')
 MANIFEST = os.path.join('Design', 'assets', 'asset_manifest.csv')
 LEADER = 'GameData/Meshes/LeaderFigure.cmo'
 WEAPON = 'GameData/Meshes/ThrownWeapon.cmo'
+LASER = 'GameData/Audio/sfx/laser_bolt/laser_bolt_spawn_01.wav'
+DEATH = 'GameData/Audio/sfx/worker/worker_die_01.wav'
+BATTLE_START = 'GameData/Audio/ui/ui_battle_start.wav'
 DWELLING = 'GameData/Meshes/Dwelling.cmo'
 STOREHOUSE_COLLISION = 'GameData/Meshes/StorehouseCollision.cmo'
 WELLSPRING_COLLISION = 'GameData/Meshes/WellspringCollision.cmo'
@@ -220,6 +226,26 @@ def remove(path):
   return lambda root: os.remove(os.path.join(root, path))
 
 
+def wav(rate=48000, bits=24, channels=1, frames=4800):
+  """A RIFF WAVE file of integer PCM holding a 1 kHz sine at half scale (AST-079's fixtures)."""
+  scale = (1 << (bits - 1)) - 1
+  data = bytearray()
+  for frame in range(frames):
+    value = int(round(0.5 * scale * math.sin(2 * math.pi * 1000 * frame / rate)))
+    data += value.to_bytes(bits // 8, 'little', signed=True) * channels
+  block = channels * bits // 8
+  fmt = struct.pack('<HHIIHH', 1, channels, rate, rate * block, block, bits)
+  return b'RIFF' + struct.pack('<I', 4 + 8 + len(fmt) + 8 + len(data)) + b'WAVE' + b'fmt ' + struct.pack('<I', len(fmt)) + fmt + \
+         b'data' + struct.pack('<I', len(data)) + bytes(data)
+
+
+def authored(path, data):
+  def apply(root):
+    os.makedirs(os.path.dirname(os.path.join(root, path)), exist_ok=True)
+    write(root, path, data)
+  return apply
+
+
 FIXTURES = [
   ('a texture in another format than its row', lambda r: patch_u32(r, 'GameData/Textures/Cursor/World.dds', 128, 99),
    'GameData/Textures/Cursor/World.dds', 'asks for BC4_UNORM'),
@@ -270,6 +296,10 @@ FIXTURES = [
    'not a string id'),
   ('a string table whose language is not its file name\'s (DAT-206)', replace_text(STRINGS, '"en-US"', '"en-GB"'), STRINGS,
    'language field'),
+  ('a sound source at 44.1 kHz (AST-079)', authored(LASER, wav(rate=44100)), LASER, 'at 44100 Hz'),
+  ('a sound source of 16 bits (AST-079)', authored(LASER, wav(bits=16)), LASER, '16-bit integer PCM'),
+  ('a stereo source of a positioned sound (AEN-072)', authored(DEATH, wav(channels=2)), DEATH, 'positioned, so mono'),
+  ('a sound source with no frames (AEN-179)', authored(DEATH, wav(frames=0)), DEATH, 'no sample frames'),
 ]
 
 
@@ -301,6 +331,50 @@ def stand_ins(files):
       elif dxgi == 99 and data[148] & 0x7F != BC7_MODE_6:
         faults.append(f'{key}\'s first block is not of BC7 mode 6')
   return rows, faults
+
+
+# O98 (ADR-171): the sound rows the content build synthesizes, and the layout of a cooked resident sound.
+SOUND_CATEGORIES = ('Audio by source and event', 'UI sounds', 'Ambience', 'Music')
+SOUND_HEADER = struct.Struct('<IIHI') # the version, the rate, the channels and the frames
+
+
+def sound_stand_ins(files):
+  """The sound rows that should have a stand-in, and the faults of their stand-ins in a run's files."""
+  rows, faults = 0, []
+  with open(os.path.join(ROOT, MANIFEST), encoding='utf-8-sig', newline='') as fh:
+    for row in csv.DictReader(fh):
+      source = row['species_filename']
+      if (row['priority'] != 'mvp' or row['category'] not in SOUND_CATEGORIES or row['placeholder'] != 'synthesised tone'
+          or not source.startswith('GameData/') or not source.endswith('.wav') or os.path.exists(os.path.join(ROOT, source))):
+        continue
+      rows += 1
+      key = source[len('GameData/'):-len('.wav')].lower()
+      data = files.get(key)
+      if data is None:
+        faults.append(f'{source} has no stand-in at {key} (AST-082)')
+        continue
+      version, rate, channels, frames = SOUND_HEADER.unpack_from(data)
+      if version != 1 or rate != 48000 or channels != 1 or frames == 0 or len(data) != SOUND_HEADER.size + 2 * frames:
+        faults.append(f'{key} is not a mono 48 kHz resident sound of version 1 (ADR-171)')
+  return rows, faults
+
+
+def authored_sound(tool, work):
+  """An authored WAV source replaces its stand-in at the same key (AST-082): the fault, or None."""
+  case = os.path.join(work, 'authored')
+  root = copy_tree(case)
+  authored(BATTLE_START, wav(frames=24000))(root)
+  out = os.path.join(case, 'out')
+  result = run(tool, root, out)
+  try:
+    if result.returncode != 0:
+      return f'an authored sound source fails the build:\n{result.stderr}'
+    data = folder_bytes(out).get('audio/ui/ui_battle_start')
+    if data is None or SOUND_HEADER.unpack_from(data)[3] != 24000:
+      return 'an authored sound source does not replace its stand-in at audio/ui/ui_battle_start (AST-082)'
+    return None
+  finally:
+    shutil.rmtree(case)
 
 
 def run(tool, root, out):
@@ -350,6 +424,13 @@ def main():
     rows, faults = stand_ins(outputs[0])
     failures += faults
     print(f'CheckContentBuild: {rows} texture rows of the MVP have no authored file, {rows - len(faults)} with their stand-in')
+    rows, faults = sound_stand_ins(outputs[0])
+    failures += faults
+    print(f'CheckContentBuild: {rows} sound rows of the MVP have no authored file, {rows - len(faults)} with their synthesized stand-in')
+    if fault := authored_sound(tool, work):
+      failures.append(fault)
+    else:
+      print('CheckContentBuild: an authored sound source replaces its stand-in')
     for name, change, file, part in FIXTURES:
       case = os.path.join(work, 'case')
       root = copy_tree(case)

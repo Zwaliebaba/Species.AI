@@ -113,6 +113,9 @@
     <ClCompile Include="SipHashTests.cpp">
       <Filter>Maths</Filter>
     </ClCompile>
+    <ClCompile Include="SoundAssetTests.cpp">
+      <Filter>Content</Filter>
+    </ClCompile>
     <ClCompile Include="StartupOptionsTests.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
