@@ -505,14 +505,23 @@ void WorldServer::Receive(Neuron::ConnectionId _connection, const Neuron::Receiv
 #endif
   // MVP-098 (ADR-136, ADR-165): a request for a settlement's status or its valley's is read, not queued, by a steward who
   // commands the settlement's team; the status goes after the next tick, which the outcome names.
-  if (!reader.Failed() && (header.type == ReadSettlementStatusCommand::TYPE || header.type == ReadValleyStatusCommand::TYPE))
+  // From M3 task T14 (ADR-169) the epilogue is asked for the same way.
+  if (!reader.Failed() && (header.type == ReadSettlementStatusCommand::TYPE || header.type == ReadValleyStatusCommand::TYPE ||
+                           header.type == ReadEpilogueCommand::TYPE))
   {
     const bool valley = header.type == ReadValleyStatusCommand::TYPE;
+    const bool epilogue = header.type == ReadEpilogueCommand::TYPE;
     std::uint8_t team = 0;
     CommandResult result = CommandResult::Applied;
     if (valley)
     {
       ReadValleyStatusCommand request;
+      result = CheckAnswered(header, reader, _message.bytes.size(), request);
+      team = request.team;
+    }
+    else if (epilogue)
+    {
+      ReadEpilogueCommand request;
       result = CheckAnswered(header, reader, _message.bytes.size(), request);
       team = request.team;
     }
@@ -534,7 +543,7 @@ void WorldServer::Receive(Neuron::ConnectionId _connection, const Neuron::Receiv
     }
     if (result == CommandResult::Applied)
     {
-      (valley ? steward.valleyTeams : steward.statusTeams).push_back(team);
+      (epilogue ? steward.epilogueTeams : valley ? steward.valleyTeams : steward.statusTeams).push_back(team);
     }
     steward.reports.push_back({sequence, m_world->NextTick(), result, 0});
     return;
@@ -707,6 +716,20 @@ void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender
       ++valleys;
     }
     steward.valleyTeams.erase(steward.valleyTeams.begin(), steward.valleyTeams.begin() + static_cast<std::ptrdiff_t>(valleys));
+    // ADR-169: each epilogue requested, after the valley's.
+    std::size_t epilogues = 0;
+    while (epilogues < steward.epilogueTeams.size())
+    {
+      const auto settlement = std::ranges::find(region.Settlements(), steward.epilogueTeams[epilogues], &Settlement::team);
+      if (settlement != region.Settlements().end() &&
+          !_sender.Send(connection, Neuron::Channel::Reliable, Neuron::EncodeMessage(EpilogueOf(region, *settlement, _tick, ended)))
+             .has_value())
+      {
+        break;
+      }
+      ++epilogues;
+    }
+    steward.epilogueTeams.erase(steward.epilogueTeams.begin(), steward.epilogueTeams.begin() + static_cast<std::ptrdiff_t>(epilogues));
     if (!steward.terrainSent && m_terrain)
     {
       // MVP-011: the seed and digest go once on the reliable channel, with the team the steward commands (ADR-119); a

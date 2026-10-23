@@ -8,6 +8,7 @@
 #include "Renown.h"
 #include "SettlementCommands.h"
 #include "SettlementTasks.h"
+#include "Statistics.h"
 #include "Upkeep.h"
 
 #include <algorithm>
@@ -15,6 +16,7 @@
 #include <functional>
 #include <limits>
 #include <optional>
+#include <vector>
 
 namespace Species
 {
@@ -214,6 +216,100 @@ SettlementStatus StatusOf(const RegionSimulation& _region, const Settlement& _se
     status.queue.push_back({site->id, site->kind, static_cast<std::uint16_t>(permille)});
   }
   return status;
+}
+
+Epilogue EpilogueOf(const RegionSimulation& _region, const Settlement& _settlement, std::uint64_t _tick, bool _runEnded)
+{
+  const TuningMvp& tuning = _region.Tuning();
+  const auto points = [](std::int64_t _points)
+  { return static_cast<std::uint32_t>(std::clamp<std::int64_t>(_points, 0, std::numeric_limits<std::uint32_t>::max())); };
+  Epilogue epilogue;
+  epilogue.tick = _tick;
+  epilogue.team = _settlement.team;
+  epilogue.runEndTick = _region.RunEndTick();
+  epilogue.runEnded = _runEnded;
+  for (const std::uint8_t site : Standing(_region))
+  {
+    EpilogueLine line;
+    line.site = site;
+    line.renown.site = site;
+    if (const auto renown = std::ranges::find(_region.Renown(), site, &SettlementRenown::site); renown != _region.Renown().end())
+    {
+      const RenownPoints renowned = RenownOf(tuning, *renown);
+      line.renown = {site, points(renowned.defense), points(renowned.claims), points(renowned.easing), points(renowned.structures)};
+    }
+    // MVP-064 (ADR-163): the statistics are in tick order, so the last entry holds the Workers at the last record.
+    std::vector<std::int64_t> samples;
+    std::optional<std::uint64_t> lastGrowth;
+    for (const StatisticEntry& entry : _region.Statistics())
+    {
+      if (entry.site != site)
+      {
+        continue;
+      }
+      line.workersMost = std::max(line.workersMost, entry.workers);
+      line.workersLast = entry.workers;
+      switch (entry.kind)
+      {
+      case StatisticKind::Sample:
+        samples.push_back(entry.strengthMilliRu);
+        break;
+      case StatisticKind::StructureCompleted:
+        ++line.structures;
+        break;
+      case StatisticKind::GrievanceAdded:
+        ++line.grievances;
+        break;
+      case StatisticKind::ClaimMade:
+        ++line.claimsMade;
+        break;
+      case StatisticKind::ClaimWithdrawn:
+        ++line.claimsWithdrawn;
+        break;
+      case StatisticKind::ClaimLost:
+        ++line.claimsLost;
+        break;
+      case StatisticKind::ClaimWon:
+        ++line.claimsWon;
+        break;
+      case StatisticKind::BattleEnded:
+        if (entry.detail < _region.BattleResults().size())
+        {
+          const BattleResult& result = _region.BattleResults()[entry.detail];
+          ++((result.attacker == site) == result.attackerWon ? line.battlesWon : line.battlesLost);
+        }
+        break;
+      case StatisticKind::HalfwayReached:
+        if (site == _settlement.site && epilogue.firstHalfwayTick == 0)
+        {
+          epilogue.firstHalfwayTick = entry.tick;
+        }
+        break;
+      case StatisticKind::PopulationStep:
+      case StatisticKind::ResourceSiteTaken:
+        break;
+      }
+      // The M2 plan's growth steps of the steward's settlement, and the largest gap between two.
+      if (site == _settlement.site && IsGrowthStep(entry.kind))
+      {
+        ++epilogue.growthSteps;
+        if (lastGrowth.has_value())
+        {
+          epilogue.largestGapTicks = std::max(epilogue.largestGapTicks, entry.tick - *lastGrowth);
+        }
+        lastGrowth = entry.tick;
+      }
+    }
+    // At most EPILOGUE_SAMPLES_MAX of the samples, evenly taken, the first and the last among them.
+    const std::size_t kept = std::min<std::size_t>(samples.size(), EPILOGUE_SAMPLES_MAX);
+    for (std::size_t index = 0; index < kept; ++index)
+    {
+      const std::size_t from = kept > 1 ? index * (samples.size() - 1) / (kept - 1) : 0;
+      line.strengthMilliRu.push_back(std::max<std::int64_t>(samples[from], 0));
+    }
+    epilogue.settlements.push_back(std::move(line));
+  }
+  return epilogue;
 }
 
 ValleyStatus ValleyStatusOf(const RegionSimulation& _region, const Settlement& _settlement, std::uint64_t _tick, bool _runEnded)

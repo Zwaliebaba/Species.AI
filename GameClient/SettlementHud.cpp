@@ -68,6 +68,11 @@ constexpr std::string_view STRING_RESULT_PUBLIC = "ui.hud.result_public";
 // BattleEnd's selectors in ui.hud.result_end, by its value.
 constexpr std::array<std::string_view, 5> END_SELECTORS{"objective", "loss_cap", "rout", "withdrawn", "time"};
 constexpr double SECONDS_PER_MINUTE = 60.0;
+// ADR-169: the world panel's time left and standing.
+constexpr std::string_view STRING_TIME_LEFT = "ui.hud.time_left";
+constexpr std::string_view STRING_STANDING = "ui.hud.standing";
+constexpr std::string_view STRING_RENOWN = "ui.hud.renown";
+constexpr std::int64_t SECONDS_PER_HOUR = 3'600;
 
 // The selectors of the strings' select arguments, in GrowthState's, WorkerTask's, IdleReason's and StructureKind's orders.
 constexpr std::array<std::string_view, 3> GROWTH_SELECTORS{"growing", "at_limit", "stores_short"};
@@ -433,6 +438,30 @@ std::vector<ResultRow> ResultRowsOf(const BattleResultNotice& _result, std::uint
   return rows;
 }
 
+std::int64_t RenownTotal(const RenownLine& _line) noexcept
+{
+  return std::int64_t{_line.defense} + _line.claims + _line.easing + _line.structures;
+}
+
+std::vector<RenownLine> StandingOf(const ValleyStatus& _valley)
+{
+  std::vector<RenownLine> standing = _valley.renown;
+  std::ranges::sort(standing, [](const RenownLine& _a, const RenownLine& _b)
+                    { return RenownTotal(_a) != RenownTotal(_b) ? RenownTotal(_a) > RenownTotal(_b) : _a.site < _b.site; });
+  return standing;
+}
+
+RunTime RunTimeOf(const ValleyStatus& _valley, std::uint64_t _tick, double _tickSeconds) noexcept
+{
+  if (_valley.runEnded || _tick >= _valley.runEndTick)
+  {
+    return {RunTime::State::Ended, 0};
+  }
+  // The replica's tick runs on between statuses, so the time left counts down every frame.
+  const auto seconds = static_cast<std::int64_t>(std::ceil(static_cast<double>(_valley.runEndTick - _tick) * _tickSeconds));
+  return {_tick >= _valley.quietTick ? RunTime::State::Quiet : RunTime::State::Running, seconds};
+}
+
 HudModel HudModelOf(const ClientSession& _session, const TuningMvp& _tuning, const TuningPresentation& _presentation,
                     std::vector<HudNotice> _notices, std::span<const SettlementNotice> _arrived, double _nowSeconds, const HudVerbs& _verbs)
 {
@@ -634,7 +663,10 @@ void SettlementHud::Layout(const Neuron::UiMetrics& _metrics)
   }
 
   // The world's panel, bottom left.
-  m_world = Neuron::UiRect::FromSize(margin, height - margin - row - 2.0f * padding, Units(hud.panelWidth), row + 2.0f * padding);
+  // ADR-169: under the seed, once the valley's status has come, the time left, the standing's heading and its rows.
+  const std::size_t worldRows = 1 + (m_model.valley.has_value() ? 2 + m_model.valley->renown.size() : 0);
+  const float worldHeight = row * static_cast<float>(worldRows) + 2.0f * padding;
+  m_world = Neuron::UiRect::FromSize(margin, height - margin - worldHeight, Units(hud.panelWidth), worldHeight);
   m_zones.push_back({HudZone::World, 0, m_world});
 
   // ADR-166: the relations panel, bottom right, once the valley's status has come.
@@ -1148,7 +1180,43 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
   {
     const std::string seed = std::to_string(*m_model.seed);
     const std::array arguments{Neuron::FormatArgument{"seed", std::string_view(seed)}};
-    line(STRING_SEED, arguments, m_world.left + padding, m_world.top + padding, m_world.Height() - 2.0f * padding, text);
+    line(STRING_SEED, arguments, m_world.left + padding, m_world.top + padding, row, text);
+  }
+  // MVP-060 and MVP-062 (ADR-169): the time left in the run, and the standing with each settlement's renown by source.
+  if (m_model.valley.has_value())
+  {
+    const float left = m_world.left + padding;
+    float worldTop = m_world.top + padding + row;
+    const RunTime run = RunTimeOf(*m_model.valley, m_model.tick, m_model.tickSeconds);
+    const std::string minutes = std::format("{:02}", run.secondsLeft / 60 % 60);
+    const std::string seconds = std::format("{:02}", run.secondsLeft % 60);
+    const std::array timeArguments{Neuron::FormatArgument{"state", std::string_view(run.state == RunTime::State::Ended   ? "ended"
+                                                                                    : run.state == RunTime::State::Quiet ? "quiet"
+                                                                                                                         : "running")},
+                                   Neuron::FormatArgument{"hours", run.secondsLeft / SECONDS_PER_HOUR},
+                                   Neuron::FormatArgument{"minutes", std::string_view(minutes)},
+                                   Neuron::FormatArgument{"seconds", std::string_view(seconds)}};
+    line(STRING_TIME_LEFT, timeArguments, left, worldTop, row, run.state == RunTime::State::Running ? text : negative);
+    worldTop += row;
+    line(STRING_STANDING, {}, left, worldTop, row, text);
+    worldTop += row;
+    std::int64_t place = 0;
+    for (const RenownLine& renown : StandingOf(*m_model.valley))
+    {
+      ++place;
+      image(UiImage::HudMeter, Neuron::UiRect::FromSize(left, std::round(worldTop + (row - icon) * 0.5f), icon, icon),
+            TeamColor(renown.site));
+      const std::string name = cladanName(renown.site);
+      const std::array arguments{Neuron::FormatArgument{"place", place},
+                                 Neuron::FormatArgument{"cladan", std::string_view(name)},
+                                 Neuron::FormatArgument{"total", RenownTotal(renown)},
+                                 Neuron::FormatArgument{"defense", std::int64_t{renown.defense}},
+                                 Neuron::FormatArgument{"claims", std::int64_t{renown.claims}},
+                                 Neuron::FormatArgument{"easing", std::int64_t{renown.easing}},
+                                 Neuron::FormatArgument{"structures", std::int64_t{renown.structures}}};
+      line(STRING_RENOWN, arguments, left + icon + padding, worldTop, row, renown.site == m_model.settlement->site ? positive : text);
+      worldTop += row;
+    }
   }
 
   // MVP-048 (ADR-168): the result card of the settlement's first battle not yet closed, over the rest.

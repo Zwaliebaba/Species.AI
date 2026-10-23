@@ -50,7 +50,10 @@ enum class GameMessageType : Neuron::MessageTypeId
   // The valley's status and the battle results (M3 task T10, ADR-165).
   ReadValleyStatus,
   ValleyStatus,
-  BattleResultNotice
+  BattleResultNotice,
+  // The run's epilogue (M3 task T14, ADR-169).
+  ReadEpilogue,
+  Epilogue
 };
 
 [[nodiscard]] constexpr Neuron::MessageTypeId TypeIdOf(GameMessageType _type) noexcept

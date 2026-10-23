@@ -8,6 +8,7 @@
 #include "RelationMessages.h"
 #include "Relations.h"
 #include "Renown.h"
+#include "SettlementCommands.h"
 #include "SettlementMessages.h"
 #include "Statistics.h"
 #include "TestSupport.h"
@@ -200,7 +201,8 @@ public:
 
 // The command reports among what a server published, and its notices into _notices when given.
 std::vector<Species::CommandReport> ReportsOf(Species::WorldServer& _server, std::uint64_t _tick,
-                                              std::vector<Species::SettlementNotice>* _notices = nullptr)
+                                              std::vector<Species::SettlementNotice>* _notices = nullptr,
+                                              std::vector<Species::Epilogue>* _epilogues = nullptr)
 {
   KeptMessages kept;
   _server.Publish(_tick, kept);
@@ -215,6 +217,14 @@ std::vector<Species::CommandReport> ReportsOf(Species::WorldServer& _server, std
         if (_notices != nullptr)
         {
           _notices->push_back(_notice);
+        }
+      });
+    dispatcher.Register<Species::Epilogue>(
+      [_epilogues](const Species::Epilogue& _epilogue)
+      {
+        if (_epilogues != nullptr)
+        {
+          _epilogues->push_back(_epilogue);
         }
       });
     static_cast<void>(dispatcher.Dispatch(message));
@@ -420,6 +430,24 @@ public:
     Assert::IsTrue(battles.size() == 2 && battles[0].site == STEWARD_SITE && battles[1].site == TARGET_SITE && battles[0].detail == 0 &&
                      battles[1].detail == 0,
                    L"the battle for each side, by its result's place");
+
+    // ADR-169: the epilogue is read from these records, every settlement in the standing's order.
+    const Species::Epilogue epilogue = Species::EpilogueOf(region, SettlementAt(region, STEWARD_SITE), world->NextTick(), false);
+    const std::vector<std::uint8_t> standing = Species::Standing(region);
+    Assert::IsTrue(epilogue.settlements.size() == 4 && std::ranges::equal(epilogue.settlements, standing, {}, &Species::EpilogueLine::site),
+                   L"each settlement, in the standing's order");
+    const auto lineOf = [&](std::uint8_t _site) { return *std::ranges::find(epilogue.settlements, _site, &Species::EpilogueLine::site); };
+    const Species::EpilogueLine steward = lineOf(STEWARD_SITE);
+    Assert::IsTrue(steward.claimsMade == 3 && steward.claimsWithdrawn == 1 && steward.claimsLost == 1 && steward.claimsWon == 1,
+                   L"its claims and their ends");
+    const bool attackerWon = region.BattleResults().front().attackerWon;
+    Assert::IsTrue(steward.battlesWon == (attackerWon ? 1U : 0U) && steward.battlesLost == (attackerWon ? 0U : 1U) &&
+                     lineOf(TARGET_SITE).battlesWon == (attackerWon ? 0U : 1U),
+                   L"the battle won by one side and lost by the other");
+    Assert::IsTrue(lineOf(0).grievances >= 1, L"site 0's Cladan took a grievance");
+    Assert::IsTrue(epilogue.firstHalfwayTick == halfway.front().tick && !epilogue.runEnded, L"its first halfway line, the run going on");
+    Assert::IsTrue(steward.workersMost > 0 && steward.workersLast > 0 && !steward.strengthMilliRu.empty(),
+                   L"its Workers and its strength at the founding sample");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp063AWorldThatEndedIsReadOnlyAfterARestart)
@@ -466,11 +494,19 @@ public:
       server.Receive(
         STEWARD_CONNECTION,
         Neuron::ReceivedMessage{Neuron::Channel::Reliable, Neuron::EncodeMessage(Species::ReadSettlementStatusCommand{STEWARD_SITE})});
+      server.Receive(STEWARD_CONNECTION,
+                     Neuron::ReceivedMessage{Neuron::Channel::Reliable, Neuron::EncodeMessage(Species::ReadEpilogueCommand{STEWARD_SITE})});
       server.Step(tick, pool);
-      const std::vector<Species::CommandReport> reports = ReportsOf(server, tick++);
-      Assert::IsTrue(reports.size() == 2 && reports[0].result == Species::CommandResult::NotPermitted &&
-                       reports[1].result == Species::CommandResult::Applied,
-                     L"a command not permitted, a status request answered");
+      std::vector<Species::Epilogue> epilogues;
+      const std::vector<Species::CommandReport> reports = ReportsOf(server, tick++, nullptr, &epilogues);
+      Assert::IsTrue(reports.size() == 3 && reports[0].result == Species::CommandResult::NotPermitted &&
+                       reports[1].result == Species::CommandResult::Applied && reports[2].result == Species::CommandResult::Applied,
+                     L"a command not permitted, a status request and the epilogue's answered");
+      // ADR-169: the epilogue of the ended run, every settlement's.
+      const Species::RegionSimulation& region = server.Simulation()->Region(0);
+      Assert::IsTrue(epilogues.size() == 1 && epilogues[0].runEnded && epilogues[0].team == STEWARD_SITE &&
+                       epilogues[0].settlements.size() == region.Settlements().size() && epilogues[0].runEndTick == region.RunEndTick(),
+                     L"the epilogue of the ended run, each of its settlements'");
       ended = RegionBytes(server.Simulation()->Region(0));
       server.Freeze(tick);
     }

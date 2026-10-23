@@ -377,6 +377,41 @@ public:
                    L"another's claim, none");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp062TheStandingAndTheTimeLeft)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-060")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-062")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp062TheStandingAndTheTimeLeft)
+  {
+    // ADR-169: the standing orders the settlements by their renown's total, the lower site first on a tie, as the
+    // server's Standing does; the time left counts down to the run's end from the replica's tick, in the quiet minutes
+    // from their first tick, and the run that ended has none. The world panel grows a row for each, and a heading.
+    Species::ValleyStatus valley;
+    valley.renown = {{0, 1, 0, 0, 2}, {1, 3, 3, 0, 0}, {2, 0, 0, 3, 0}, {3, 6, 0, 0, 0}};
+    const std::vector<Species::RenownLine> standing = Species::StandingOf(valley);
+    Assert::IsTrue(standing.size() == 4 && standing[0].site == 1 && standing[1].site == 3 && standing[2].site == 0 && standing[3].site == 2,
+                   L"6, 6 by site, then 3 and 3 by site");
+    ExpectEqual(6, Species::RenownTotal(standing[0]), L"its sources' sum");
+    valley.runEndTick = 10'000;
+    valley.quietTick = 9'000;
+    using State = Species::RunTime::State;
+    Assert::IsTrue(Species::RunTimeOf(valley, 1'000, 0.1) == Species::RunTime{State::Running, 900}, L"900 s left");
+    Assert::IsTrue(Species::RunTimeOf(valley, 9'995, 0.1) == Species::RunTime{State::Quiet, 1}, L"half a second left rounds up");
+    Assert::IsTrue(Species::RunTimeOf(valley, 10'000, 0.1).state == State::Ended, L"ended at its tick");
+    valley.runEnded = true;
+    Assert::IsTrue(Species::RunTimeOf(valley, 1'000, 0.1).state == State::Ended, L"or when the server says so");
+    Species::HudModel model = SettlementModel();
+    Species::SettlementHud hud(CommittedPresentation(), CommittedTuning());
+    hud.SetModel(model, MetricsAt({1920, 1080}));
+    const auto heightOf = [&]
+    { return std::ranges::find(hud.Zones(), Species::HudZone::World, &Species::HudZoneRect::zone)->rect.Height(); };
+    const float alone = heightOf();
+    model.valley = ValleyOfSiteZero();
+    hud.SetModel(model, MetricsAt({1920, 1080}));
+    const double row = std::round(CommittedPresentation().mvp.hud.rowHeight * 1080.0 / 600.0);
+    Assert::AreEqual(row * 6.0, static_cast<double>(heightOf() - alone), 1e-3, L"the time left, the heading and four settlements");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp048AResultsRowsAreItsRecord)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-048")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"PIL-046")

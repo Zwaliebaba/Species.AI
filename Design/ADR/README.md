@@ -169,6 +169,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-166](ADR-166-the-relations-panel-and-the-notifications-of-m3.md) | The relations panel and the notifications of M3 | Proposed | 2026-10-23 |
 | [ADR-167](ADR-167-the-conflict-verbs-and-markers-at-m3.md) | The conflict verbs and markers at M3 | Proposed | 2026-10-23 |
 | [ADR-168](ADR-168-the-battle-result-card-at-m3.md) | The battle result card at M3 | Proposed | 2026-10-23 |
+| [ADR-169](ADR-169-the-epilogue-the-standing-and-the-time-left-at-m3.md) | The epilogue, the standing and the time left at M3 | Proposed | 2026-10-23 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

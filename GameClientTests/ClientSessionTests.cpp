@@ -410,6 +410,16 @@ public:
     Assert::IsTrue(results.size() == 2 && results[0].expedition == raid.expedition && results[1].area == claim.area,
                    L"both results, in order");
     Assert::IsTrue(f.session->TakeBattleResults().empty(), L"taken once");
+    // ADR-169: and the latest epilogue.
+    Assert::IsFalse(f.session->LatestEpilogue().has_value(), L"no epilogue before the first");
+    Species::Epilogue epilogue;
+    epilogue.tick = 30;
+    epilogue.team = 2;
+    epilogue.runEnded = true;
+    epilogue.settlements.push_back({});
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(epilogue)).has_value(), L"sent");
+    f.session->Update();
+    Assert::IsTrue(f.session->LatestEpilogue() == epilogue, L"the epilogue kept");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp048EachOwnResultWaitsOnTheCardUntilClosed)

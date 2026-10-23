@@ -131,6 +131,11 @@ public:
   {
     return m_valleyStatus;
   }
+  // MVP-063 (ADR-169): the latest epilogue the server answered a ReadEpilogueCommand with; none before the first.
+  [[nodiscard]] const std::optional<Epilogue>& LatestEpilogue() const noexcept
+  {
+    return m_epilogue;
+  }
   // MVP-005: the seed of the world whose terrain the client built; none before it.
   [[nodiscard]] std::optional<std::uint64_t> WorldSeed() const noexcept;
   // MVP-011: the client refused the world, because the terrain it built from the server's seed differs, and closed.
@@ -167,6 +172,7 @@ private:
   std::vector<SettlementNotice> m_notices;
   std::optional<SettlementStatus> m_status;
   std::optional<ValleyStatus> m_valleyStatus;
+  std::optional<Epilogue> m_epilogue;
   std::vector<BattleResultNotice> m_results;
   std::uint64_t m_commandsSent = 0; // the reliable messages sent, which the server numbers from 0
   bool m_refused = false;

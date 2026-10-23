@@ -175,6 +175,30 @@ struct ResultRow
 [[nodiscard]] std::vector<ResultRow> ResultRowsOf(const BattleResultNotice& _result, std::uint8_t _site, double _tickSeconds,
                                                   std::size_t _waiting);
 
+// MVP-062 (ADR-169): the settlements' renown in the order of the standing, the most first and the lower site on a tie, as
+// the server's Standing orders them.
+[[nodiscard]] std::vector<RenownLine> StandingOf(const ValleyStatus& _valley);
+// A renown line's total.
+[[nodiscard]] std::int64_t RenownTotal(const RenownLine& _line) noexcept;
+
+// MVP-060 (ADR-169): where the run stands at the replica's tick _tick, ticks _tickSeconds long: running or in its quiet
+// minutes with the whole seconds left, or ended.
+struct RunTime
+{
+  enum class State : std::uint8_t
+  {
+    Running,
+    Quiet,
+    Ended
+  };
+
+  State state = State::Running;
+  std::int64_t secondsLeft = 0;
+
+  friend bool operator==(const RunTime&, const RunTime&) = default;
+};
+[[nodiscard]] RunTime RunTimeOf(const ValleyStatus& _valley, std::uint64_t _tick, double _tickSeconds) noexcept;
+
 // MVP-050, MVP-102 (ADR-166): the relations panel's rows for the settlement at site _site after tick _tick of the
 // valley status: the warning of each attack declared on it, its own expedition, its respite, each other Cladan's anger
 // toward it with the grievances that make it, and every claim; at most _rowsMax rows, the last of a longer list saying

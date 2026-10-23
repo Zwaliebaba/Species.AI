@@ -35,5 +35,10 @@ struct BattleResult;
 // for another; _area is the claimed area of a claim battle, which the claim's end no longer holds.
 [[nodiscard]] BattleResultNotice ResultNoticeOf(const RegionSimulation& _region, const BattleResult& _result,
                                                 std::optional<std::uint8_t> _area, bool _side);
+// MVP-063 (ADR-169): the epilogue of the region after the tick _tick, for the settlement of the steward who asked: every
+// settlement's history from the region's renown, statistics and battle results, in the standing's order, its strength
+// at most EPILOGUE_SAMPLES_MAX of its samples evenly taken; and the settlement's growth steps, the largest gap between
+// two, and its first halfway line. _runEnded is the world's.
+[[nodiscard]] Epilogue EpilogueOf(const RegionSimulation& _region, const Settlement& _settlement, std::uint64_t _tick, bool _runEnded);
 
 } // namespace Species

@@ -235,6 +235,58 @@ public:
     raid.expedition = 0;
     Assert::IsFalse(Decoded<Species::BattleResultNotice>(Neuron::EncodeMessage(raid)).has_value(), L"expedition 0");
   }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp063TheEpilogueRoundTripsAtItsBound)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-063")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-062")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp063TheEpilogueRoundTripsAtItsBound)
+  {
+    // ADR-169: the request and the epilogue at their largest are exactly their bounds and read back whole; a strength
+    // below zero does not decode.
+    constexpr std::uint64_t MAX = std::numeric_limits<std::uint64_t>::max();
+    constexpr std::uint32_t MAX32 = std::numeric_limits<std::uint32_t>::max();
+    const std::optional<Species::ReadEpilogueCommand> request =
+      Decoded<Species::ReadEpilogueCommand>(Neuron::EncodeMessage(Species::ReadEpilogueCommand{255}));
+    Assert::IsTrue(request && request->team == 255 && Neuron::EncodeMessage(*request).size() == Species::ReadEpilogueCommand::MAX_BYTES,
+                   L"the request");
+    Species::Epilogue epilogue;
+    epilogue.tick = MAX;
+    epilogue.team = 255;
+    epilogue.runEndTick = MAX - 1;
+    epilogue.runEnded = true;
+    for (std::uint8_t site = 0; site < Species::VALLEY_SETTLEMENTS_MAX; ++site)
+    {
+      Species::EpilogueLine line;
+      line.site = static_cast<std::uint8_t>(3 - site);
+      line.renown = {line.site, MAX32, MAX32 - 1, MAX32 - 2, MAX32 - 3};
+      line.battlesWon = MAX32;
+      line.battlesLost = 1;
+      line.claimsMade = 2;
+      line.claimsWon = 3;
+      line.claimsLost = 4;
+      line.claimsWithdrawn = 5;
+      line.structures = 6;
+      line.grievances = 7;
+      line.workersMost = 300;
+      line.workersLast = 299;
+      line.strengthMilliRu.assign(Species::EPILOGUE_SAMPLES_MAX, std::numeric_limits<std::int64_t>::max());
+      epilogue.settlements.push_back(line);
+    }
+    epilogue.growthSteps = MAX32;
+    epilogue.largestGapTicks = MAX;
+    epilogue.firstHalfwayTick = MAX - 2;
+    const std::vector<std::byte> bytes = Neuron::EncodeMessage(epilogue);
+    ExpectEqual(static_cast<std::int64_t>(Species::Epilogue::MAX_BYTES), static_cast<std::int64_t>(bytes.size()), L"at its bound");
+    const std::optional<Species::Epilogue> read = Decoded<Species::Epilogue>(bytes);
+    Assert::IsTrue(read && read->tick == MAX && read->team == 255 && read->runEndTick == MAX - 1 && read->runEnded &&
+                     read->settlements == epilogue.settlements && read->growthSteps == MAX32 && read->largestGapTicks == MAX &&
+                     read->firstHalfwayTick == MAX - 2,
+                   L"every field");
+    Species::Epilogue negative = epilogue;
+    negative.settlements[1].strengthMilliRu[7] = -1;
+    Assert::IsFalse(Decoded<Species::Epilogue>(Neuron::EncodeMessage(negative)).has_value(), L"a strength below zero");
+  }
 };
 
 } // namespace GameSharedTests

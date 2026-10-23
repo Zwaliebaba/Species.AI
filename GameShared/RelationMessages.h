@@ -399,4 +399,68 @@ struct BattleResultNotice
   void Decode(Neuron::BitReader& _reader);
 };
 
+/// MVP-063 (ADR-169): the steward asks for the epilogue of the settlement of a team it commands; the world server answers
+/// after the next tick with the Epilogue, whether or not the run has ended, and while it has.
+struct ReadEpilogueCommand
+{
+  static constexpr Neuron::MessageTypeId TYPE = TypeIdOf(GameMessageType::ReadEpilogue);
+  static constexpr std::uint8_t VERSION = 1;
+  static constexpr std::size_t MAX_BYTES = 4; // the 3-byte header and the team
+
+  std::uint8_t team = 0;
+
+  void Encode(Neuron::BitWriter& _writer) const;
+  void Decode(Neuron::BitReader& _reader);
+};
+
+// MVP-063 (ADR-169): a settlement's strength over the run, at most this many samples evenly taken from the server's.
+inline constexpr std::uint64_t EPILOGUE_SAMPLES_MAX = 48;
+
+/// MVP-063 and PIL-125 (ADR-169): a settlement's history over the run: its renown by source, the battles it won and lost
+/// on either side, its claims made and how each ended, the structures it completed, the grievances its Cladan took, its
+/// most Workers and its Workers at the last record, and its strength over the run.
+struct EpilogueLine
+{
+  std::uint8_t site = 0;
+  RenownLine renown;
+  std::uint32_t battlesWon = 0;
+  std::uint32_t battlesLost = 0;
+  std::uint32_t claimsMade = 0;
+  std::uint32_t claimsWon = 0;
+  std::uint32_t claimsLost = 0;
+  std::uint32_t claimsWithdrawn = 0;
+  std::uint32_t structures = 0;
+  std::uint32_t grievances = 0;
+  std::uint32_t workersMost = 0;
+  std::uint32_t workersLast = 0;
+  std::vector<std::int64_t> strengthMilliRu; // evenly over the server's samples, the first and the last among them
+
+  friend bool operator==(const EpilogueLine&, const EpilogueLine&) = default;
+};
+
+/// MVP-063 (ADR-169): the epilogue of the settlement of the team: the tick, the run's end and whether it has ended; every
+/// settlement's history in the order of the standing (MVP-062); and the steward's statistics: its settlement's growth
+/// steps, the largest gap between two in ticks, and the tick its territory first reached a halfway line, 0 for never.
+struct Epilogue
+{
+  static constexpr Neuron::MessageTypeId TYPE = TypeIdOf(GameMessageType::Epilogue);
+  static constexpr std::uint8_t VERSION = 1;
+  static constexpr std::size_t MAX_BYTES =
+    3 + (64 + 8 + 64 + 1 + 3 + VALLEY_SETTLEMENTS_MAX * (2 + 4 * 32 + 10 * 32 + 6 + EPILOGUE_SAMPLES_MAX * 64) + 32 + 64 + 64 + 7) / 8;
+
+  std::uint64_t tick = 0;
+  std::uint8_t team = 0;
+  std::uint64_t runEndTick = 0;
+  bool runEnded = false;
+  std::vector<EpilogueLine> settlements;
+  std::uint32_t growthSteps = 0;
+  std::uint64_t largestGapTicks = 0;
+  std::uint64_t firstHalfwayTick = 0;
+
+  friend bool operator==(const Epilogue&, const Epilogue&) = default;
+
+  void Encode(Neuron::BitWriter& _writer) const;
+  void Decode(Neuron::BitReader& _reader);
+};
+
 } // namespace Species

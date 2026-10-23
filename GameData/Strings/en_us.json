@@ -63,6 +63,9 @@
     "ui.hud.result_respite": "{defender} is under a respite for {minutes, number, integer} min",
     "ui.hud.result_renown": "{winner} gains {renown, number, integer} renown",
     "ui.hud.result_close": "{more, plural, =0 {Click to close} one {Click to close: # more result} other {Click to close: # more results}}",
-    "ui.hud.result_public": "{winner} beat {loser} {kind, select, claim {for {area}} other {in a raid}}"
+    "ui.hud.result_public": "{winner} beat {loser} {kind, select, claim {for {area}} other {in a raid}}",
+    "ui.hud.time_left": "{state, select, quiet {Quiet minutes, {hours, number, integer}:{minutes}:{seconds} left} ended {The run has ended} other {{hours, number, integer}:{minutes}:{seconds} left in the run}}",
+    "ui.hud.standing": "Standing",
+    "ui.hud.renown": "{place, number, integer}. {cladan} {total, number, integer}: {defense, number, integer} defense, {claims, number, integer} claims, {easing, number, integer} easing, {structures, number, integer} building"
   }
 }

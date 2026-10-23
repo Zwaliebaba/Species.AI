@@ -2,6 +2,8 @@
 
 #include "RelationMessages.h"
 
+#include <initializer_list>
+
 namespace Species
 {
 
@@ -356,6 +358,71 @@ void BattleResultNotice::Decode(Neuron::BitReader& _reader)
   {
     _reader.Fail(); // a battle ends after it starts, and only a claim battle moves an area
   }
+}
+
+void ReadEpilogueCommand::Encode(Neuron::BitWriter& _writer) const
+{
+  _writer.WriteBits(team, 8);
+}
+
+void ReadEpilogueCommand::Decode(Neuron::BitReader& _reader)
+{
+  team = static_cast<std::uint8_t>(_reader.ReadBits(8));
+}
+
+void Epilogue::Encode(Neuron::BitWriter& _writer) const
+{
+  _writer.WriteBits(tick, 64);
+  _writer.WriteBits(team, 8);
+  _writer.WriteBits(runEndTick, 64);
+  _writer.WriteBool(runEnded);
+  _writer.WriteBounded(settlements.size(), VALLEY_SETTLEMENTS_MAX);
+  for (const EpilogueLine& line : settlements)
+  {
+    _writer.WriteBounded(line.site, LOCAL_SITE_MAX);
+    for (const std::uint32_t count : {line.renown.defense, line.renown.claims, line.renown.easing, line.renown.structures, line.battlesWon,
+                                      line.battlesLost, line.claimsMade, line.claimsWon, line.claimsLost, line.claimsWithdrawn,
+                                      line.structures, line.grievances, line.workersMost, line.workersLast})
+    {
+      _writer.WriteBits(count, 32);
+    }
+    _writer.WriteBounded(line.strengthMilliRu.size(), EPILOGUE_SAMPLES_MAX);
+    for (const std::int64_t strength : line.strengthMilliRu)
+    {
+      _writer.WriteBits(static_cast<std::uint64_t>(strength), 64);
+    }
+  }
+  _writer.WriteBits(growthSteps, 32);
+  _writer.WriteBits(largestGapTicks, 64);
+  _writer.WriteBits(firstHalfwayTick, 64);
+}
+
+void Epilogue::Decode(Neuron::BitReader& _reader)
+{
+  tick = _reader.ReadBits(64);
+  team = static_cast<std::uint8_t>(_reader.ReadBits(8));
+  runEndTick = _reader.ReadBits(64);
+  runEnded = _reader.ReadBool();
+  settlements.resize(static_cast<std::size_t>(_reader.ReadBounded(VALLEY_SETTLEMENTS_MAX)));
+  for (EpilogueLine& line : settlements)
+  {
+    line.site = ReadSite(_reader);
+    line.renown.site = line.site;
+    for (std::uint32_t* count : {&line.renown.defense, &line.renown.claims, &line.renown.easing, &line.renown.structures, &line.battlesWon,
+                                 &line.battlesLost, &line.claimsMade, &line.claimsWon, &line.claimsLost, &line.claimsWithdrawn,
+                                 &line.structures, &line.grievances, &line.workersMost, &line.workersLast})
+    {
+      *count = ReadCount(_reader);
+    }
+    line.strengthMilliRu.resize(static_cast<std::size_t>(_reader.ReadBounded(EPILOGUE_SAMPLES_MAX)));
+    for (std::int64_t& strength : line.strengthMilliRu)
+    {
+      strength = ReadAmount(_reader);
+    }
+  }
+  growthSteps = ReadCount(_reader);
+  largestGapTicks = _reader.ReadBits(64);
+  firstHalfwayTick = _reader.ReadBits(64);
 }
 
 } // namespace Species
