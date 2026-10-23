@@ -51,6 +51,11 @@ struct EffectsView
   double unscaledSeconds = 0.0;
   double unscaledStep = 0.0;
   double realSeconds = 0.0;
+  // DEC-964's settings, from the settings store (R-META-511, ADR-150): interface.reduced_flash scales the full-screen
+  // flash by vfx.screen.reduced_flash_scale (VFX-235), interface.reduced_motion the shake's offset by
+  // vfx.screen.reduced_motion_scale (VFX-232).
+  bool reducedFlash = false;
+  bool reducedMotion = false;
 };
 
 /// What a frame of the effects draws: pass 10a's grenades, flashes, rings and full-screen flash, pass 10b's laser bolts

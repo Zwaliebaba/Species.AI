@@ -149,11 +149,16 @@
     <ClInclude Include="CrowdLook.h" />
     <ClInclude Include="DevelopmentOverlay.h" />
     <ClInclude Include="EffectsLook.h" />
+    <ClInclude Include="ClientSettings.h" />
+    <ClInclude Include="FrontEnd.h" />
+    <ClInclude Include="GameUi.h" />
     <ClInclude Include="InputBindings.h" />
     <ClInclude Include="LeaderLook.h" />
     <ClInclude Include="ReplicaTiming.h" />
     <ClInclude Include="RoutePreview.h" />
     <ClInclude Include="SettlementCamera.h" />
+    <ClInclude Include="SettlementHud.h" />
+    <ClInclude Include="SettlementVerbs.h" />
     <ClInclude Include="SettlementView.h" />
     <ClInclude Include="StewardAreas.h" />
     <ClInclude Include="StructureLook.h" />
@@ -161,6 +166,7 @@
     <ClInclude Include="UiLook.h" />
     <ClInclude Include="WorldMarkers.h" />
     <ClInclude Include="WorldPresentation.h" />
+    <ClInclude Include="WorldSaves.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
@@ -169,11 +175,16 @@
     <ClCompile Include="CrowdLook.cpp" />
     <ClCompile Include="DevelopmentOverlay.cpp" />
     <ClCompile Include="EffectsLook.cpp" />
+    <ClCompile Include="ClientSettings.cpp" />
+    <ClCompile Include="FrontEnd.cpp" />
+    <ClCompile Include="GameUi.cpp" />
     <ClCompile Include="InputBindings.cpp" />
     <ClCompile Include="LeaderLook.cpp" />
     <ClCompile Include="ReplicaTiming.cpp" />
     <ClCompile Include="RoutePreview.cpp" />
     <ClCompile Include="SettlementCamera.cpp" />
+    <ClCompile Include="SettlementHud.cpp" />
+    <ClCompile Include="SettlementVerbs.cpp" />
     <ClCompile Include="SettlementView.cpp" />
     <ClCompile Include="StewardAreas.cpp" />
     <ClCompile Include="StructureLook.cpp" />
@@ -181,6 +192,7 @@
     <ClCompile Include="UiLook.cpp" />
     <ClCompile Include="WorldMarkers.cpp" />
     <ClCompile Include="WorldPresentation.cpp" />
+    <ClCompile Include="WorldSaves.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

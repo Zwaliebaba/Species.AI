@@ -405,12 +405,13 @@ public:
     place(3, 13, 0, Species::FigureKind::Leader, false, {6.0, 0.0, 0.0});
     place(4, 14, 0, Species::FigureKind::Leader, false, {0.0, 0.0, 0.0});
     const Neuron::Ray ray = Neuron::PickRayAt(pointer.x, pointer.y, frame, VIEW, 1.0);
-    const auto hovered = Species::LeaderUnderRay(figures, 0, ray, frame, VIEW, CommittedPresentation());
+    const auto hovered = Species::LeaderUnderRay(figures, 0, ray, frame, VIEW, CommittedPresentation(), 2.0);
     Assert::IsTrue(hovered == Species::StableId{14}, L"the own living Leader centred under the pointer");
-    Assert::IsFalse(Species::LeaderUnderRay(figures, 2, ray, frame, VIEW, CommittedPresentation()).has_value(), L"no Leader of team 2");
+    Assert::IsFalse(Species::LeaderUnderRay(figures, 2, ray, frame, VIEW, CommittedPresentation(), 2.0).has_value(),
+                    L"no Leader of team 2");
     // Far off the pointer, no sphere is met.
     const Neuron::Ray elsewhere = Neuron::PickRayAt(10.0, 10.0, frame, VIEW, 1.0);
-    Assert::IsFalse(Species::LeaderUnderRay(figures, 0, elsewhere, frame, VIEW, CommittedPresentation()).has_value());
+    Assert::IsFalse(Species::LeaderUnderRay(figures, 0, elsewhere, frame, VIEW, CommittedPresentation(), 2.0).has_value());
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl352ACursorSitsOnItsHotspot)
@@ -430,6 +431,10 @@ public:
     const Neuron::CursorQuad unavailable = Species::CursorAt(Species::CursorKind::Unavailable, {500, 300}, CommittedPresentation());
     Assert::IsTrue(unavailable.image == 2 && unavailable.sidePixels == 60.0f && unavailable.left == 470.0f, L"60 px, centred");
     Assert::IsTrue(unavailable.color[0] == 1.0f && unavailable.color[1] == 0.0f && unavailable.color[2] == 0.0f, L"red");
+    // ADR-153: the placement cursor, mvp.cursor.place_size, centred on ref.ctrl.cursor.set.place_hotspot, white.
+    const Neuron::CursorQuad place = Species::CursorAt(Species::CursorKind::Place, {500, 300}, CommittedPresentation());
+    Assert::IsTrue(place.image == 3 && place.sidePixels == 48.0f && place.left == 476.0f && place.top == 276.0f, L"48 px, centred");
+    Assert::IsTrue(place.color[0] == 1.0f && place.color[1] == 1.0f && place.color[2] == 1.0f, L"white");
   }
 };
 

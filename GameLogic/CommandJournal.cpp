@@ -80,7 +80,8 @@ StableId ConnectSteward(WorldSimulation& _world, bool _sandbox, bool _watched)
   }
   else if (!_sandbox && !_watched)
   {
-    // The MVP's world has one steward; each settlement a steward runs is the latest steward's.
+    // The MVP's world has one steward; each settlement a steward runs is the latest steward's, taken from a scripted
+    // steward that ran it (ADR-156).
     RegionSimulation& region = _world.Region(0);
     std::vector<std::uint8_t> teams;
     for (const Settlement& settlement : region.Settlements())
@@ -92,6 +93,7 @@ StableId ConnectSteward(WorldSimulation& _world, bool _sandbox, bool _watched)
     }
     for (const std::uint8_t team : teams)
     {
+      region.RemoveScriptedStewards(team);
       region.SetCommander(team, steward, false);
     }
   }

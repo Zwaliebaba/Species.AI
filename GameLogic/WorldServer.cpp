@@ -154,13 +154,18 @@ std::uint64_t WorldServer::Open()
   if (!m_desc.snapshotFolder.empty())
   {
     // PIL-131 (ADR-137): a world that froze cleanly left a marker naming its final snapshot. It goes as the world opens,
-    // so that a stop that leaves none is unclean.
-    const std::optional<std::uint64_t> cleanTick = CleanStopTick(m_desc.snapshotFolder / CLEAN_STOP_FILE_NAME);
-    if (!Neuron::RemoveFile(m_desc.snapshotFolder / CLEAN_STOP_FILE_NAME))
+    // so that a stop that leaves none is unclean; ADR-155: a world that is only continued keeps it until it continues.
+    const std::filesystem::path marker = m_desc.snapshotFolder / CLEAN_STOP_FILE_NAME;
+    const std::optional<std::uint64_t> cleanTick = CleanStopTick(marker);
+    const auto removeMarker = [&marker]
     {
-      Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Error, "the marker of a clean stop could not be removed");
-    }
-    // MVP-075: the newest snapshot that validates; a refused one is logged and the next older one tried.
+      if (!Neuron::RemoveFile(marker))
+      {
+        Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Error, "the marker of a clean stop could not be removed");
+      }
+    };
+    // MVP-075: the newest snapshot that validates; a refused one is logged, kept with its reason, and the next older one
+    // tried.
     const Neuron::SnapshotStore store(m_desc.snapshotFolder, SnapshotsKept());
     for (const std::filesystem::path& snapshot : store.Snapshots())
     {
@@ -170,6 +175,7 @@ std::uint64_t WorldServer::Open()
       {
         Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "the snapshot {} is refused: {}",
                     snapshot.filename().string(), Neuron::SnapshotErrorText(restored.error()));
+        m_opened.refusals.push_back({snapshot, restored.error()});
         continue;
       }
       // The terrain is not state: the restored world builds it again from its seed (ADR-102).
@@ -178,8 +184,11 @@ std::uint64_t WorldServer::Open()
       {
         Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "the snapshot {} is refused: its seed gives no terrain",
                     snapshot.filename().string());
+        m_opened.refusals.push_back({snapshot, std::nullopt});
         continue;
       }
+      removeMarker();
+      m_opened.restored = true;
       Adopt(std::move(*restored), std::move(terrain));
       // MVP-075, PIL-131: a world that did not freeze cleanly at this snapshot lost what it ran after it, a freeze of
       // cause "unclean stop" from the snapshot's tick.
@@ -196,6 +205,17 @@ std::uint64_t WorldServer::Open()
       Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Info, "the world opens from {} at tick {}",
                   snapshot.filename().string(), m_world->NextTick());
       return m_world->NextTick();
+    }
+    if (m_desc.restoreOnly)
+    {
+      // ADR-155: nothing to continue; the world opens new without its folder, which keeps every snapshot it refused.
+      Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning,
+                  "no snapshot of {} can be continued; the world opens new and saves nothing there", m_desc.snapshotFolder.string());
+      m_desc.snapshotFolder.clear();
+    }
+    else
+    {
+      removeMarker();
     }
   }
   // MVP-005: a seed the steward gave, or one the server draws.

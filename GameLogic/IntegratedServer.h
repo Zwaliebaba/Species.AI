@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AssetError.h"
+#include "ContinueFault.h"
 #include "LooseContent.h"
 #include "PlatformClock.h"
 #include "Transport.h"
@@ -11,9 +12,14 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <variant>
 
 namespace Species
 {
+
+// Why the integrated server did not start: its records could not be loaded (MVP-099, ADR-129), or the world it was to
+// continue has no snapshot that validates (MVP-075, ADR-155).
+using StartFault = std::variant<Neuron::AssetError, ContinueFault>;
 
 /// The in-process server of a session-paced world (O10, MVP-070): the one header through which the client's
 /// composition root composes it, offering start, stop and a transport endpoint and nothing else (ADR-083 item 2,
@@ -34,6 +40,7 @@ public:
     std::uint32_t syntheticFigures = 0;            // ADR-126: the sandbox's sides are a synthetic battle of this many figures
     std::optional<std::uint8_t> stewardSite;       // MVP-012: a new world that is no sandbox has the steward's settlement here
     std::filesystem::path snapshotFolder;          // MVP-075 (ADR-137): where the world is saved and continued; none: never
+    bool restoreOnly = false;                      // ADR-155: the world in snapshotFolder is continued, or the server does not start
   };
 
   explicit IntegratedServer(const Desc& _desc);
@@ -43,8 +50,8 @@ public:
   IntegratedServer& operator=(const IntegratedServer&) = delete;
 
   // Loads the tuning record, opens the world and starts the tick thread; why the record cannot be loaded when it
-  // cannot, and the server stays stopped.
-  [[nodiscard]] std::expected<void, Neuron::AssetError> Start();
+  // cannot, or, for a world to continue, why it cannot be continued (ADR-155), and the server stays stopped.
+  [[nodiscard]] std::expected<void, StartFault> Start();
   void Stop();
   // The client's end of a new in-process connection; the server accepts it at the start of its next tick.
   [[nodiscard]] std::unique_ptr<Neuron::Transport> Connect();

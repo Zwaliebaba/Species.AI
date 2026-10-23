@@ -140,3 +140,7 @@ The growth scene on seeds 1 to 8, on the tuned values: every seed meets the gap 
 
 * Good, because the world's state does not change.
 * Bad, because a continued world loses its steward.
+
+## More Information
+
+* **Amendment 2026-10-22 (M2 task T19, [ADR-156](ADR-156-the-settlement-drawn-at-its-plateau-and-the-owners-growth-run.md)).** A steward who connects to a world that is not watched takes each settlement a steward runs from its scripted steward, which stops, so the world's snapshot still restores. `SpeciesPerformance.exe --saved-world` reads a saved world's growth from its statistics and judges it as the growth scene is, and every run of the tool reads its own growth snapshot back that way.

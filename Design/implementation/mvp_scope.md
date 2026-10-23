@@ -130,6 +130,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-041** (MUST) An expedition is a Leader, the Workers following it (R-UNIT-096) and up to `mvp.expedition.size_max` (200) Workers in all. The steward forms one by promoting a Worker (R-UNIT-152) and drawing Workers from guard duty to it, and sends it by declaring an attack on a target: a raid on a settlement, or a claim battle at a claimed area (MVP-053).
 
+> **Amendment 2026-10-22 (O98).** An expedition is up to three Leaders, each with the Workers following it and its reference formation of `ref.sim.team.formation_size_upgrade` (90, R-UNIT-162), and up to `mvp.expedition.size_max` (200) Workers in all. The steward promotes each Leader and draws Workers from guard duty to them, and orders and declares the three as one; an AI settlement fields its expeditions the same way.
+
 **MVP-042** (MUST) Declaring an attack pays `mvp.conflict.attack_cost_ru` (300 ru), or `pil.conflict.unprovoked_cost_factor` (2) times as much for an unprovoked attack (PIL-063), warns the target at once, and holds the expedition at the target's territory edge until `mvp.conflict.warning_minutes` (5 minutes of world time) have passed since the warning (WLD-102, with the duration narrowed). No attack may be declared on a settlement under a respite (MVP-047).
 
 **MVP-043** (MUST) A battle starts when a hostile expedition, released by the warning hold, enters the target's territory or the claimed area (PIL-041). The battlefield is the target's territory and `wld.view.settlement_margin` (800 wu) around it, or the claimed area and the same margin.
@@ -195,6 +197,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 > **Amendment 2026-10-22 (M2 task T8; [ADR-136](../ADR/ADR-136-settlement-commands-status-and-statistics-at-m2.md)).** The statistics are part of the world's state, saved and replayed with it. A growth step is a structure of the settlement built, its population reaching a new multiple of `mvp.stats.population_step` (10 Workers), or its territory taking in a resource site (the [M2 plan](m2_plan.md) §9, question 1). Each entry records the tick, the Worker count and the strength. Samples fall on the world ticks that are multiples of the sample period.
 
+> **Amendment 2026-10-22 (M2 task T19; [ADR-156](../ADR/ADR-156-the-settlement-drawn-at-its-plateau-and-the-owners-growth-run.md)).** A saved world's statistics are read from its newest snapshot by `SpeciesPerformance.exe --saved-world`, which judges them as the growth scene's, so the owner's growth run of M2 is measured from the run itself (the [M2 plan](m2_plan.md) §5).
+
 ### 2.8 World clock, presence and the deputy (O54)
 
 **MVP-070** (MUST) In M0 to M3 the world runs at the session pace (PIL-100, PIL-104) while the client runs it, on the integrated server in the client's process behind the in-process transport (O10, ADR-084, ADR-088 item 1); closing the client saves the world (MVP-075) and freezes it (O4). The session factor is `mvp.pace.session_factor` (24), so one hour of play is one world day of the economy, relations and protection timers (PIL-101 and WLD-200 narrowed from 12).
@@ -208,6 +212,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 **MVP-074** (MUST) A steward who returns sees the away report first (PIL-073): its summary (battles and their results, Workers and stores lost and gained, construction finished, grievances recorded, claims moved, freezes) on one page, readable in `pil.session.report_read_minutes` (2 minutes), and the list of every deputy action with the standing order that permitted it (PIL-026). The away report and the settlement status are server messages, not client logic (PIL-075, O6).
 
 **MVP-075** (MUST) The server saves the world as a versioned snapshot every `mvp.persist.snapshot_seconds` (60 seconds of world time) and when it stops cleanly: it writes a temporary file, flushes it and replaces the previous snapshot by an atomic rename through the platform layer, keeping the last `mvp.persist.snapshots_kept` (3). At start it loads the newest snapshot that validates and records the time since that snapshot as a freeze of cause "unclean stop" when the previous stop was not clean (PIL-131). Saving starts at M2, because a session-paced world is continued across sessions. The journaled record store of O42 is deferred (§5.2).
+
+> **Amendment 2026-10-22 (M2 task T18; [ADR-155](../ADR/ADR-155-the-front-end-and-saved-worlds-at-m2.md)).** The client saves each world in a folder of its own under the user-data root, `saves\world-NNNN`. A world continued from the front end opens only from a snapshot that validates: with none, its folder is left as it was and the front end shows why (MVP-095).
 
 **MVP-076** (SHOULD) The server SHOULD write the commands it executes since the last snapshot to a command journal beside it, so that a defect is reproduced from the snapshot and the journal on the same build (ADR-081 Level 1, ADR-088's journal).
 
@@ -232,6 +238,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 > **Amendment 2026-10-22 (O90; M2 task T13, [ADR-143](../ADR/ADR-143-territory-lines-and-border-areas-drawn-at-m2.md); DEC-1002, Open).** Every settlement's territory line runs halfway between the cells it holds and the cells it does not, as the replica holds them, at a lift over the terrain. Each valley border area's halfway line and edge are marked with spots of `fx.particle_dot`, in a neutral colour while no holder is replicated (WLD-063); the holders and the claims are marked with M3's claims (MVP-053). Outside the steward's areas the terrain and the sea are darkened towards black by a mask of the areas, and no Worker, Leader, orb or structure is drawn there ([ADR-144](../ADR/ADR-144-black-fog-outside-the-stewards-areas-at-m2.md)); the lines and spots lie over the fog. The line's width, lift and alpha, the spots' size, spacing and colour and the fog's strength and edge are the provisional presentation keys of table 3, which the owner tunes after T13's run (DEC-1002).
 
 **MVP-085** (MUST) The client draws at `mvp.client.fps_target` (60 frames per second) at 1,920 × 1,080 with up to `mvp.client.figures_max` (1,500) figures on screen on the reference test machine (DBG-209), which is the owner's PC, pinned at M1 (O58), and draws the replica one tick behind with interpolation (ADR-084).
+
+> **Amendment 2026-10-22 (M2 task T19; [ADR-156](../ADR/ADR-156-the-settlement-drawn-at-its-plateau-and-the-owners-growth-run.md)).** From M2 the performance script also draws the steward's settlement at its plateau with the HUD, and judges it against the same 99th-percentile frame interval as the sandbox's battle (O75).
 
 **MVP-086** (MUST) The MVP's meshes and textures are produced by development tools under `Tools/` (procedural shape kits and texture generators, or a digital content creation tool with an exporter) and written in the cooked formats the runtime loads (ADR-017, ADR-019), so that the runtime path is the one later content takes. The tools may use pinned third-party code restored by NuGet (O29, O30); nothing of them ships (R14).
 
@@ -275,9 +283,19 @@ The MVP builds only one region and one steward, but it keeps the seams that are 
 
 > **Amendment 2026-10-22 (O90; M2 task T13, [ADR-142](../ADR/ADR-142-the-camera-flies-along-the-view-within-the-stewards-areas.md)).** The camera's forward and back keys fly it along its view, and its side keys pan it level (R-CTRL-471 as amended); the pointer stays free and the view turns towards it. In a world with the steward's settlement the camera's ground point stays in the steward's areas (WLD-244) as well as in the region's bounds.
 
-**MVP-102** (MUST) The HUD shows: the stores and their capacity, the Workers and the population limit, growth and the cause when it stops (MVP-035, MVP-037), the priorities, the construction bar and queue, a relations panel (each Cladan's anger toward the steward's settlement, every grievance with its cause, weight and fade, every claim), notifications (contact, claims, the warning with its countdown, battle start and end, structures completed), the battle result, the renown standing (MVP-062), the time left in the run, the away report (MVP-074) and the epilogue (MVP-063). Its icons, panels, fonts and strings are the UI rows of the [MVP assets](mvp_assets.md).
+**MVP-102** (MUST) The HUD shows: the stores and their capacity, the Workers and the population limit, growth and the cause when it stops (MVP-035, MVP-037), the priorities, the construction bar and queue, a relations panel (each Cladan's anger toward the steward's settlement, every grievance with its cause, weight and fade, every claim), notifications (contact, claims, the warning with its countdown, battle start and end, structures completed), the battle result, the renown standing (MVP-062), the time left in the run, the away report (MVP-074) and the epilogue (MVP-063). Its icons, panels, fonts and strings are the UI rows of the [MVP assets](mvp_assets.md). Its layout and palette are provisional until the owner judges them (O95, DEC-1005).
+
+> **Amendment 2026-10-22 (O95; M2 task T16, [ADR-152](../ADR/ADR-152-the-settlement-hud-at-m2.md); DEC-1005, Open).** M2 builds the settlement's part:
+> - **The settlement panel**, top left: the stores and their capacity, the Workers and the limit, growth or its stopping cause, the upkeep with the inactive structures, each priority with its share and its Workers, and the idle Workers by reason.
+> - **The construction bar and queue**, bottom centre: each structure with its cost.
+> - **The notification cards**, top right: the structures completed.
+> - **The world panel**, bottom left: the seed.
+>
+> Its measures and colours are `mvp.hud.*`.
 
 **MVP-103** (MUST) The front end of the MVP is one page: continue a world, start a new run (pace, seed, site), open the epilogue of an ended world, options for display and volume, and quit.
+
+> **Amendment 2026-10-22 (O80, O96; M2 task T18; [ADR-155](../ADR/ADR-155-the-front-end-and-saved-worlds-at-m2.md)).** M2's page continues the latest world, starts a new one on a seed typed or drawn and a site chosen, opens the options of O96 and quits; the pace is M4's and the epilogue M3's. A Debug build's `--sandbox` starts the battle sandbox in place of the page, and the client returns to the page only by starting again until ADR-083's Leaving state is built.
 
 ## 3 Milestones
 
@@ -423,6 +441,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.cursor.highlight_size` | 48 | physical px | — | provisional | MVP-101 | The pointer over a selectable Leader, `cursor.highlight` (O76) |
 | `mvp.cursor.unavailable_size` | 60 | physical px | — | provisional | MVP-101 | `cursor.unavailable` (O76), R-CTRL-350's size |
 | `mvp.cursor.world_hotspot` | 0.113, 0.082 | fraction of the size (x, y) | — | provisional | MVP-101 | The tip of the owner's arrow, in place of `ref.ctrl.cursor.set.world_hotspot` (0.055, 0.070), which misses it by 7 texels (ADR-119) |
+| `mvp.cursor.place_size` | 48 | physical px | — | provisional | MVP-101 | The placement cursor `cursor.place` (ADR-153), the size of the owner's other cursors in place of R-CTRL-350's 40 px; centred on `ref.ctrl.cursor.set.place_hotspot` |
 | `mvp.selection.disc_size_factor` | 0.8 | × the Worker card's half-size | — | provisional | MVP-101 | The disc on the ground under a selected Worker (O82, ADR-127) |
 | `mvp.selection.disc_alpha` | 0.35 | alpha, 0 to 1 | — | provisional | MVP-101 | The disc's strength in the control glow's colour |
 | `mvp.selection.circle_fade_seconds` | 0.4 | s of real time | — | provisional | MVP-101 | The released selection circle's fade |
@@ -430,6 +449,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.structure.inactive_brightness` | 0.35 | × the lit colour | — | provisional | MVP-083 | An inactive structure is dark (MVP-035) |
 | `mvp.structure.flash_size` | 40 | wu, half-size | — | provisional | MVP-083 | The completion flash of `fx.starburst` in the team colour |
 | `mvp.structure.flash_seconds` | 0.5 | s | — | provisional | MVP-083 | The flash fades over this time from its event |
+| `mvp.structure.ghost_brightness` | 0.5 | × the lit colour | — | provisional | MVP-101 | The placement ghost of R-CTRL-366 row 1b, drawn in RND-365's ghost blend (ADR-153); the owner tunes it at M2 task T17's run |
 | `mvp.wellspring.glow_blobs` | 5 | quads | — | provisional | MVP-083 | The Wellspring's cloudy glow, `fx.glow_cloudy` blobs circling its crystal in the team colour (O77) |
 | `mvp.wellspring.glow_radius` | 12 | wu | — | provisional | MVP-083 | The circle the blobs ride |
 | `mvp.wellspring.glow_size` | 22 | wu, half-size | — | provisional | MVP-083 | — |
@@ -447,6 +467,31 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.border_mark.alpha` | 0.6 | alpha, 0 to 1 | — | provisional | MVP-084 | — |
 | `mvp.view_fog.strength` | 0.85 | share darkened, 0 to 1 | — | provisional | MVP-084 | The black fog outside the steward's areas (WLD-244, ADR-144); the terrain and the sea keep the rest of their colour |
 | `mvp.view_fog.edge_width` | 64 | wu | — | provisional | MVP-084 | The fog's edge, a ramp centred on the areas' edge |
+| `mvp.hud.status_period` | 1 | s, real time | — | provisional | MVP-098 | How often the HUD asks for its settlement's status (O95, DEC-1005, ADR-152); the stores and Workers come from the replica every tick |
+| `mvp.hud.notice_seconds` | 6 | s, real time | — | provisional | MVP-102 | How long a notification card stays |
+| `mvp.hud.notice_fade` | 1 | s, real time | — | provisional | MVP-102 | Its fade at the end |
+| `mvp.hud.notices_max` | 5 | cards | — | provisional | MVP-102 | The newest are kept |
+| `mvp.hud.margin` | 8 | HUD units (RND-377) | — | provisional | MVP-102 | The HUD's measures, in the 600-unit-high HUD space, times the UI scale (UI-168); the owner judges the layout at T16's run |
+| `mvp.hud.padding` | 6 | HUD units | — | provisional | MVP-102 | — |
+| `mvp.hud.panel_width` | 236 | HUD units | — | provisional | MVP-102 | The settlement and world panels |
+| `mvp.hud.row_height` | 17 | HUD units | — | provisional | MVP-102 | — |
+| `mvp.hud.icon_size` | 13 | HUD units | — | provisional | MVP-102 | — |
+| `mvp.hud.meter_height` | 4 | HUD units | — | provisional | MVP-102 | `icon.hud.meter`'s track and fill |
+| `mvp.hud.text_size` | 11 | HUD units | — | provisional | MVP-102 | Times the text scale, never below UI-171's minimum |
+| `mvp.hud.card_width` | 200 | HUD units | — | provisional | MVP-102 | `icon.hud.notification_card` |
+| `mvp.hud.card_height` | 20 | HUD units | — | provisional | MVP-102 | — |
+| `mvp.hud.bar_button_width` | 96 | HUD units | — | provisional | MVP-101 | The construction bar's entries |
+| `mvp.hud.bar_height` | 34 | HUD units | — | provisional | MVP-101 | — |
+| `mvp.hud.queue_size` | 26 | HUD units | — | provisional | MVP-102 | A queued site's square |
+| `mvp.hud.priority_step` | 10 | % | — | provisional | MVP-036 | A priority's arrow moves its share by this much, the other two shares the other way (ADR-153) |
+| `mvp.hud.disabled_alpha` | 0.35 | opacity | — | provisional | MVP-102 | An arrow that cannot move its share |
+| `mvp.hud.palette.accent` | 0.55, 0.6, 1.0, 0.85 | linear RGBA | — | provisional | MVP-102 | O95's provisional palette for RND-403's roles: the accent panel's tint |
+| `mvp.hud.palette.neutral` | 0.7, 0.7, 0.75, 0.75 | linear RGBA | — | provisional | MVP-102 | The neutral panel's tint |
+| `mvp.hud.palette.text` | 1.0, 1.0, 1.0, 1.0 | linear RGBA | — | provisional | MVP-102 | — |
+| `mvp.hud.palette.positive` | 0.6, 1.0, 0.4, 1.0 | linear RGBA | — | provisional | MVP-102 | Positive captions: growth, an affordable cost, a notice |
+| `mvp.hud.palette.negative` | 1.0, 0.3, 0.3, 1.0 | linear RGBA | — | provisional | MVP-102 | Negative captions: growth stopped, idle Workers, a cost the stores cannot pay |
+| `mvp.hud.palette.meter_track` | 1.0, 1.0, 1.0, 0.15 | linear RGBA | — | provisional | MVP-102 | — |
+| `mvp.hud.palette.meter_fill` | 0.3, 0.6, 0.9, 0.9 | linear RGBA | — | provisional | MVP-102 | — |
 
 *Table 3 — The tuning values of the MVP.*
 
@@ -484,6 +529,7 @@ The first guesses were set against two targets, which M2 and Playtest 1 check. O
 | PIL-125 | Renown and the epilogue in the MVP | O53 |
 | PIL-068, WLD-004, WLD-120 to WLD-127 | One region, three AI settlements, no free site | One steward, no late joiner |
 | PIL-110 (Table 10, stage 1) | The MVP is stage 1's smallest world game in one region, with renown and a lifetime added | O50, O53 |
+| WLD-244 | An expedition outside a battle is followed by markers of its Leaders over the fog and at the screen's edge, not in the strategic view; no figure is drawn and the settlement view is not widened | The MVP builds no strategic view (§5.1); O98 |
 | O42 | Versioned snapshots instead of the journaled store | A solo world loses at most a minute; the store follows when worlds are shared |
 
 *Table 4 — The Final requirements that the MVP narrows.*

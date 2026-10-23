@@ -9,7 +9,8 @@ The evidence that the MVP's playtests produce (`Design/implementation/mvp_scope.
 | `Playtest1.md` | the session log of Playtest 1: an hour of play and a run (§6.1) | after every session of M3's playtest |
 | `Playtest2.md` | the session log of Playtest 2: coming back (§6.2) | after every session of M4's playtest |
 | `M0.md` to `M4.md` | one record per milestone: the build that met its exit criteria and the evidence for each one (§3) | when the milestone ends |
-| `M1.md`, its performance section | the reference test machine, pinned by the first run, and each run of the performance job with every figure against its budget (DBG-208, DBG-209) | by `Build/RunPerformance.py`, on every run on the reference test machine |
+| `M1.md` and `M2.md`, their performance sections | the reference test machine, pinned by the first run, and each run of the performance job with every figure against its budget (DBG-208, DBG-209) | by `Build/RunPerformance.py`, on every run on the reference test machine |
+| `M2.md`, the owner's growth run | the growth of the steward's own world, read from the server's statistics in its newest snapshot and judged as the growth scene is (ADR-156) | by `Build/RunPerformance.py --saved-world`, after each session of the growth run |
 
 ## The session log
 

@@ -41,9 +41,12 @@
 // scenes it times the generation of a corpus of valleys with their land route graphs (WLD-165, ADR-104), and a log call
 // while eight threads flood the logger (DBG T2, ADR-091). From M2 task T10 it runs the growth scene of a corpus of
 // seeds with the scripted steward and measures the settlement at work at its plateau and the region with four
-// (ADR-138); these read the structure records of the content folder.
+// (ADR-138); these read the structure records of the content folder. From M2 task T19, --saved-world runs no scene: it
+// reads the growth of the steward's own world from the server's statistics in its newest snapshot, for the owner's
+// growth run (ADR-156).
 //
 //   SpeciesPerformance.exe [--quick] [--scenes <name,...>] [--out <file.json>] [--content <folder> | --tuning-source <GameData>]
+//   SpeciesPerformance.exe --saved-world <world folder> [--out <file.json>] [--content <folder> | --tuning-source <GameData>]
 //
 // --quick runs every scene for a few ticks, to show that it runs; its figures measure nothing. The tuning record is
 // the cooked one of the loose-content folder beside the executable, as the programs read it, unless an option names
@@ -116,6 +119,7 @@ struct Options
   std::filesystem::path out;
   std::filesystem::path content;
   std::filesystem::path tuningSource;
+  std::filesystem::path savedWorld; // ADR-156: a saved world's folder to read rather than the scenes
 };
 
 bool Wanted(const Options& _options, std::string_view _scene)
@@ -353,6 +357,68 @@ std::string LogFloodJson(const std::optional<Performance::LogFlood>& _flood)
                      static_cast<double>(slowest) / perThread, _flood->written, _flood->dropped);
 }
 
+// The JSON of _text, written to _options' file or to standard output.
+int Write(const Options& _options, const std::string& _text)
+{
+  if (_options.out.empty())
+  {
+    std::fwrite(_text.data(), 1, _text.size(), stdout);
+    return 0;
+  }
+  std::ofstream file(_options.out, std::ios::binary);
+  file << _text;
+  if (!file)
+  {
+    Print(stderr, std::format("{} cannot be written", _options.out.string()));
+    return 1;
+  }
+  return 0;
+}
+
+// ADR-156: the growth of the steward's own world, judged as the growth scene's (the M2 plan §5): its growth steps as
+// [tick, kind, detail, Workers], and its samples as [tick, Workers, strength in ru].
+int RunSavedWorld(const Options& _options, const Species::TuningMvp& _tuning)
+{
+  const auto records = LoadRecords(_options);
+  if (!records)
+  {
+    Print(stderr, std::format("the structure records cannot be read: {}", records.error()));
+    return 1;
+  }
+  const std::optional<Performance::SavedWorldRun> saved = Performance::ReadSavedWorld(_options.savedWorld, _tuning, *records);
+  if (!saved)
+  {
+    Print(stderr, std::format("no snapshot in {} restores to a world with the steward's settlement", _options.savedWorld.string()));
+    return 1;
+  }
+  const double tickPeriod = _tuning.ref.sim.tickPeriod;
+  const auto hours = [tickPeriod](std::uint64_t _tick) { return static_cast<double>(_tick) * tickPeriod / SECONDS_PER_HOUR; };
+  const Performance::GrowthJudgement judgement = Performance::JudgeGrowth(saved->run, tickPeriod);
+  std::string steps;
+  for (const Species::StatisticEntry& step : saved->run.steps)
+  {
+    steps +=
+      std::format("{}[{}, {}, {}, {}]", steps.empty() ? "" : ", ", step.tick, static_cast<int>(step.kind), step.detail, step.workers);
+  }
+  std::string samples;
+  for (const Species::StatisticEntry& sample : saved->samples)
+  {
+    samples += std::format("{}[{}, {}, {:.3f}]", samples.empty() ? "" : ", ", sample.tick, sample.workers,
+                           static_cast<double>(sample.strengthMilliRu) / 1000.0);
+  }
+  const std::string json =
+    std::format("{{\n  \"tool\": \"{}\",\n  \"configuration\": \"{}\",\n  \"platform\": \"{}\",\n  \"tick_period_s\": {},\n"
+                "  \"saved_world\": {{\"snapshot\": \"{}\", \"seed\": {}, \"ticks\": {}, \"hours\": {:.3f}, \"largest_workers\": {}, "
+                "\"plateau_h\": {}, \"gap_minutes\": {:.2f}, \"gap_from_h\": {:.3f}, \"gap_met\": {}, \"plateau_met\": {},\n"
+                "    \"steps\": [{}],\n    \"samples\": [{}]}}\n}}\n",
+                PRODUCT_NAME, CONFIGURATION, PLATFORM, tickPeriod, saved->snapshot.filename().string(), saved->run.seed, saved->run.ticks,
+                hours(saved->run.ticks), saved->run.largestWorkers,
+                judgement.plateauTick ? std::format("{:.3f}", hours(*judgement.plateauTick)) : std::string("null"),
+                hours(judgement.largestGapTicks) * 60.0, hours(judgement.gapFromTick), judgement.gapMet ? "true" : "false",
+                judgement.plateauMet ? "true" : "false", steps, samples);
+  return Write(_options, json);
+}
+
 int Run(const Options& _options)
 {
   const auto tuning = LoadTuning(_options);
@@ -360,6 +426,10 @@ int Run(const Options& _options)
   {
     Print(stderr, std::format("the tuning record cannot be read: {}", tuning.error()));
     return 1;
+  }
+  if (!_options.savedWorld.empty())
+  {
+    return RunSavedWorld(_options, *tuning);
   }
   auto generated = Species::GenerateRegionTerrain(SCENE_SEED, *tuning);
   if (!generated)
@@ -444,6 +514,13 @@ int Run(const Options& _options)
           {
             Print(stderr, std::format("the snapshot cannot be saved in {}", folder.string()));
           }
+          else if (const auto saved = Performance::ReadSavedWorld(folder, *tuning, *records);
+                   !saved || saved->run.steps != growth.back().steps)
+          {
+            // ADR-156: the snapshot read as a saved world gives the run's own growth steps.
+            Print(stderr, "the snapshot read as a saved world does not give the run's growth steps");
+            return 1;
+          }
           std::error_code ignored;
           std::filesystem::remove_all(folder, ignored);
         }
@@ -523,17 +600,9 @@ int Run(const Options& _options)
                            static_cast<double>(snapshot->encodeNanoseconds) / 1e6, static_cast<double>(snapshot->saveNanoseconds) / 1e6)
              : std::string("null"),
     LogFloodJson(logFlood));
-  if (_options.out.empty())
+  if (const int code = Write(_options, json); code != 0 || _options.out.empty())
   {
-    std::fwrite(json.data(), 1, json.size(), stdout);
-    return 0;
-  }
-  std::ofstream file(_options.out, std::ios::binary);
-  file << json;
-  if (!file)
-  {
-    Print(stderr, std::format("{} cannot be written", _options.out.string()));
-    return 1;
+    return code;
   }
   Print(stdout, std::format("{} scenes, {} travel edges and {} valleys generated into {}", runs.size(), travel.size(), generation.size(),
                             _options.out.string()));
@@ -573,6 +642,10 @@ std::optional<Options> ParseOptions(std::span<const std::string_view> _arguments
     {
       options.tuningSource = std::filesystem::path(_arguments[++i]);
     }
+    else if (argument == "--saved-world" && hasValue)
+    {
+      options.savedWorld = std::filesystem::path(_arguments[++i]);
+    }
     else
     {
       Print(stderr, std::format("unknown option {}", argument));
@@ -597,8 +670,8 @@ int main(int _argc, char** _argv)
     const std::optional<Options> options = ParseOptions(values);
     if (!options)
     {
-      Print(stderr, "usage: SpeciesPerformance.exe [--quick] [--scenes <name,...>] [--out <file>] [--content <folder> | --tuning-source "
-                    "<GameData>]");
+      Print(stderr, "usage: SpeciesPerformance.exe [--quick] [--scenes <name,...>] [--saved-world <world folder>] [--out <file>] "
+                    "[--content <folder> | --tuning-source <GameData>]");
       return 2;
     }
     return Run(*options);

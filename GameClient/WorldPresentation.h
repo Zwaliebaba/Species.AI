@@ -1,9 +1,14 @@
 #pragma once
 
+#include "ClientSettings.h"
+#include "SettlementHud.h"
 #include "ClientSession.h"
 #include "DevelopmentOverlay.h"
 #include "EffectsLook.h"
+#include "FrontEnd.h"
 #include "FrameProfile.h"
+#include "GameUi.h"
+#include "InputRouter.h"
 #include "LeaderLook.h"
 #include "LooseContent.h"
 #include "MessageLocale.h"
@@ -41,17 +46,65 @@ public:
     const TuningPresentation* presentation = nullptr;
     const Neuron::LooseContent* content = nullptr;
     const Neuron::PlatformClock* clock = nullptr;
-    bool uiTest = false; // a Debug build's `--ui-test`: the UI's test page over every frame (ADR-145)
+    bool uiTest = false;    // a Debug build's `--ui-test`: the UI's test screen (ADR-145, ADR-149)
+    DisplayOptions display; // the display options of the settings store (ADR-150)
   };
 
   explicit WorldPresentation(Desc _desc);
 
   // Once per frame, after the session's update: builds the world's surfaces when the session's terrain is new.
   void Update(const ClientSession& _session);
+  // ADR-152: once per frame, after the session's update: the settlement HUD's model, with the settlement verbs of _view
+  // (ADR-153), its status requests and its layout for a client area of _client at _dpiScale.
+  void UpdateHud(ClientSession& _session, const SettlementView& _view, Neuron::SizePx _client, float _dpiScale);
+  [[nodiscard]] const SettlementHud& Hud() const noexcept
+  {
+    return *m_hud;
+  }
+  // ADR-149: once per frame, before the camera and the verbs read _router: the UI's update, which withholds from the
+  // world the actions that a focused window takes (UI-006).
+  void UpdateUi(Neuron::InputRouter& _router, Neuron::SizePx _client, float _dpiScale, bool _windowFocused)
+  {
+    m_ui->Update(_router, _client, _dpiScale, _windowFocused);
+  }
+  [[nodiscard]] const GameUi& Ui() const noexcept
+  {
+    return *m_ui;
+  }
+  // ADR-155: the front end's screen over no world, its pages made by _frontEnd; and the screen closed as a world starts.
+  void OpenFrontEnd(FrontEnd& _frontEnd, FrontEndPage _page)
+  {
+    m_ui->OpenFrontEnd(_frontEnd,
+                       static_cast<GamePage>(static_cast<Neuron::UiPageId>(GamePage::FrontEndMain) + static_cast<Neuron::UiPageId>(_page)));
+  }
+  void CloseFrontEnd()
+  {
+    m_ui->CloseFrontEnd();
+  }
+  // ADR-146: the en-US strings and their locale, which the front end formats its texts with.
+  [[nodiscard]] const Neuron::StringTable& Strings() const noexcept
+  {
+    return *m_strings;
+  }
+  [[nodiscard]] const Neuron::MessageLocale& Locale() const noexcept
+  {
+    return *m_locale;
+  }
+  // ADR-150: the display options from the store, taken at once; the sea detail takes effect when the next world's
+  // surfaces are built.
+  void SetDisplay(const DisplayOptions& _display);
+  [[nodiscard]] const DisplayOptions& Display() const noexcept
+  {
+    return m_desc.display;
+  }
   // The inputs of the frame drawn now, seen through _view; _framesPerSecond is the renderer's counter (R-SIM-576), which a
   // Debug build's development overlay shows (DBG-095, ADR-118), and _dpiScale the window's, which text sizes take
   // (UI-170, ADR-147). The frame takes the session's presentation events, which its effects play (ADR-123).
   [[nodiscard]] Neuron::FrameInputs Frame(ClientSession& _session, const SettlementView& _view, double _framesPerSecond, float _dpiScale);
+  // ADR-155: the inputs of a front-end frame, with no world: the background, the UI's pages, and the standard pointer at
+  // _pointer (UI-465); in a Debug build with the overlay shown, the frame-rate line.
+  [[nodiscard]] Neuron::FrameInputs FrontEndFrame(Neuron::PointPx _pointer, Neuron::SizePx _client, double _framesPerSecond,
+                                                  float _dpiScale);
 
   [[nodiscard]] const std::shared_ptr<const Neuron::WorldScene>& World() const noexcept
   {
@@ -100,19 +153,23 @@ private:
   Neuron::FrameProfile m_profile;
   Neuron::PresentationClock m_presentationClock;
   std::unique_ptr<Neuron::TextSystem> m_text; // ADR-147: DirectWrite's layouts and the glyph atlas
+  std::unique_ptr<GameUi> m_ui;               // ADR-149: the UI core with the game's pages
+  std::unique_ptr<SettlementHud> m_hud;       // ADR-152: the settlement's HUD
   std::uint64_t m_frames = 0;
   bool m_overlayShown = false;
 };
 
 // The world's surfaces from a region's terrain, the records and the textures of the content: none when a texture is
 // missing or damaged, which is logged.
+// _seaDetail is render.sea_detail, 0 to 3 (RND-144).
 [[nodiscard]] std::shared_ptr<const Neuron::WorldScene> BuildWorldScene(const RegionTerrain& _terrain, const TuningMvp& _tuning,
                                                                         const TuningPresentation& _presentation,
-                                                                        const Neuron::LooseContent& _content);
+                                                                        const Neuron::LooseContent& _content, std::int64_t _seaDetail);
 
 // The looks of the records (ADR-116): what the CPU builds and the passes read.
 [[nodiscard]] Neuron::TerrainLook TerrainLookOf(const TuningMvp& _tuning, const TuningPresentation& _presentation) noexcept;
-[[nodiscard]] Neuron::SeaLook SeaLookOf(const TuningMvp& _tuning, const TuningPresentation& _presentation) noexcept;
+[[nodiscard]] Neuron::SeaLook SeaLookOf(const TuningMvp& _tuning, const TuningPresentation& _presentation,
+                                        std::int64_t _seaDetail) noexcept;
 [[nodiscard]] Neuron::WorldLook WorldLookOf(const TuningMvp& _tuning, const TuningPresentation& _presentation,
                                             const Neuron::Vec3& _regionOrigin) noexcept;
 

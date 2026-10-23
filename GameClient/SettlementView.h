@@ -8,6 +8,8 @@
 #include "ReplicaTiming.h"
 #include "RoutePreview.h"
 #include "SettlementCamera.h"
+#include "SettlementHud.h"
+#include "SettlementVerbs.h"
 #include "StewardAreas.h"
 #include "TuningMvp.h"
 #include "TuningPresentation.h"
@@ -24,18 +26,15 @@
 namespace Species
 {
 
-// The cursors of mvp_assets.md table 7, in the order of CursorImages: the default pointer, over a selectable Leader, and
-// unavailable (ADR-119).
+// The cursors of mvp_assets.md table 7, in the order of CursorImages: the default pointer, over a selectable Leader,
+// unavailable (ADR-119), and placing a structure (ADR-153).
 enum class CursorKind : std::uint8_t
 {
   World,
   Highlight,
-  Unavailable
+  Unavailable,
+  Place
 };
-
-// rnd.option.worker_scale_factor.default: the Worker distance scale factor, which also scales a Leader's picking sphere
-// with the camera's distance (R-UNIT-142, R-UNIT-192). A named constant until the settings store exists (ADR-116).
-inline constexpr double WORKER_DISTANCE_SCALE_FACTOR = 2.0;
 
 // The cursors' art from the content (AST-014 keys `textures/cursor/<name>` and `<name>shadow`): none when a file is
 // missing or damaged, which is logged.
@@ -43,9 +42,11 @@ inline constexpr double WORKER_DISTANCE_SCALE_FACTOR = 2.0;
 
 // R-CTRL-055 for the hover of M1 (ADR-119): the living Leader of _ownTeam whose picking sphere the ray meets with the
 // smallest screen distance between the sphere's projected centre and the projected hit point; the earlier on a tie.
+// The sphere grows with the camera's distance by the Worker distance scale factor _scaleFactor, as the Leader's figure
+// does (R-UNIT-142, R-UNIT-192).
 [[nodiscard]] std::optional<StableId> LeaderUnderRay(std::span<const InterpolatedFigure> _figures, std::uint8_t _ownTeam,
                                                      const Neuron::Ray& _ray, const Neuron::FrameView& _frame, Neuron::SizePx _view,
-                                                     const TuningPresentation& _presentation);
+                                                     const TuningPresentation& _presentation, double _scaleFactor);
 
 // The cursor of a kind at the pointer: its image, its side and hotspot (mvp.cursor.*, ref.ctrl.cursor.set.*) and colour.
 [[nodiscard]] Neuron::CursorQuad CursorAt(CursorKind _kind, Neuron::PointPx _pointer, const TuningPresentation& _presentation) noexcept;
@@ -56,7 +57,9 @@ inline constexpr double WORKER_DISTANCE_SCALE_FACTOR = 2.0;
 /// sends through the session, and the cursor it shows; with T17b (ADR-125), the route preview of the selection, the
 /// world markers, whose marker under the pointer the verbs read as a Leader under it, and the badge near the pointer;
 /// with O82 (ADR-127), the primary button's orders, the ordered route kept fading, and the badge's count; with M2 task
-/// T13 (ADR-142), the steward's areas, which bound the camera. Frame thread only.
+/// T13 (ADR-142), the steward's areas, which bound the camera; with M2 task T17 (ADR-153), the settlement verbs, which take
+/// a press over the HUD and the presses of placing before the battle verbs, with the placement cursor and ghost. Frame
+/// thread only.
 class SettlementView
 {
 public:
@@ -65,14 +68,17 @@ public:
     const TuningMvp* tuning = nullptr; // the client's records, outliving the view
     const TuningPresentation* presentation = nullptr;
     Neuron::ProjectionPlanes planes;
-    bool scriptedVerbs = false; // ADR-125: a Debug render check's scripted verbs in place of the router's
+    bool scriptedVerbs = false;     // ADR-125: a Debug render check's scripted verbs in place of the router's
+    double workerScaleFactor = 2.0; // render.worker_scale_factor (RND-442, ADR-150), which scales the picking sphere
   };
 
   explicit SettlementView(const Desc& _desc);
 
   // Once per frame, before the session's update: _dtSeconds is the real frame step, _view the client area the pointer is
-  // in. The verbs read the outcomes the session received since the last frame and send their commands through it.
-  void Update(ClientSession& _session, Neuron::InputRouter& _router, double _dtSeconds, Neuron::SizePx _view, bool _focused);
+  // in, and _hud the HUD whose zones of the last frame take the presses over them (UI-461), none where no HUD is drawn.
+  // The verbs read the outcomes the session received since the last frame and send their commands through it.
+  void Update(ClientSession& _session, Neuron::InputRouter& _router, double _dtSeconds, Neuron::SizePx _view, bool _focused,
+              const SettlementHud* _hud);
   // CAM-060's entry pose about the ground point _ground in place of the steward's site, in the world entered: the frame
   // bench aims its fixed camera at a scene's fight this way (O79, ADR-126). Nothing while no world is entered.
   void EnterAt(const Neuron::Vec3& _ground);
@@ -107,6 +113,11 @@ public:
   [[nodiscard]] const BattleVerbs& Verbs() const noexcept
   {
     return m_verbs;
+  }
+  // ADR-153: the settlement verbs: placing, the priorities and the refusals the HUD shows.
+  [[nodiscard]] const SettlementVerbs& Settlement() const noexcept
+  {
+    return m_settlement;
   }
   [[nodiscard]] const RoutePreview& Preview() const noexcept
   {
@@ -147,6 +158,7 @@ private:
   const RegionTerrain* m_terrain = nullptr; // the terrain the camera entered
   CameraBounds m_region;
   BattleVerbs m_verbs;
+  SettlementVerbs m_settlement;
   RoutePreview m_preview;
   WorldMarkers m_markers;
   std::vector<Neuron::OverlayQuad> m_badge;

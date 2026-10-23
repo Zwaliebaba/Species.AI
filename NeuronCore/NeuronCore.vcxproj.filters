@@ -114,6 +114,15 @@
     <ClInclude Include="NativeWindowHandle.h">
       <Filter>Platform</Filter>
     </ClInclude>
+    <ClInclude Include="SettingsFile.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="SettingsStore.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="UserData.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
     <ClInclude Include="PlatformClock.h">
       <Filter>Platform</Filter>
     </ClInclude>
@@ -265,6 +274,15 @@
     </ClCompile>
     <ClCompile Include="MessagePattern.cpp">
       <Filter>Content</Filter>
+    </ClCompile>
+    <ClCompile Include="SettingsFile.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="SettingsStore.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="UserData.cpp">
+      <Filter>Platform</Filter>
     </ClCompile>
     <ClCompile Include="PlatformClock.cpp">
       <Filter>Platform</Filter>

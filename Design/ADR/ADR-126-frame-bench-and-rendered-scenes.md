@@ -67,8 +67,8 @@ Chosen option: 1, because it measures the game's own frame with no scene code in
 * **The measurement** (O79):
   - **The warm-up.** It runs 10 s from the first world frame drawn after the camera is aimed.
   - **The measured span.** 1,200 ticks by the session's server tick, about 2 minutes. A quick run takes 1 s and 20 ticks.
-  - **A frame interval** is the time from one frame boundary to the next, after the frame is presented.
-  - **A frame's work** is its interval less the renderer's waits, as on the frame page (ADR-120).
+  - **A frame interval** is the time from one frame's start, once the swap chain can take it, to the next frame's start ([ADR-148](ADR-148-the-frame-starts-at-the-latency-wait.md)).
+  - **A frame's work** is its interval less the renderer's waits in it, as on the frame page (ADR-120): its fence and present, and the next frame's wait to begin.
   - **Not measured.** A frame not presented, minimised or occluded, is counted and not measured.
   - **The figures.** The 50th, 95th and 99th percentiles of both, by the frame page's rule (lower index), with their longest and mean.
   - **Missed frames.** An interval of *n* display periods, rounded, misses *n* − 1 of them, with the period 1000 ÷ `mvp.client.fps_target` ms.
@@ -76,7 +76,7 @@ Chosen option: 1, because it measures the game's own frame with no scene code in
   - **The output** is JSON, as the headless tool's is.
 * **The script** (ADR-110 amendment, DBG-209 amendment):
   - **What it runs.** `Build\RunPerformance.py` runs the bench after the headless tool, unless `--headless-only` is given.
-  - **The rows.** Each rendered scene adds rows to the run's table: the 99th-percentile frame interval, the median and longest interval, the work's 99th percentile, the missed frames, and the figures alive and on screen.
+  - **The rows.** Each rendered scene adds rows to the run's table: the 99th-percentile frame interval, the median and longest interval, the work's 99th percentile, the missed frames, ADR-148's rows (the GPU time, the waits, the refreshes that showed no new frame and the longest frames), and the figures alive and on screen.
   - **What is judged.** Only `sandbox-drawn`'s 99th percentile is judged, and only when it was drawn at 1,920 × 1,080. Otherwise its row says it was not judged.
   - **The pins (O75).** A later run stops when its processor, memory or graphics adapter differs from the pinned ones, so T10's pin stays valid. Its rendered scenes stop when the display differs from the one their first run pinned, which the record keeps as a pin of its own. The driver, the OS build and the display are written with each run and stop nothing else.
   - **The pinning run** only reports, for the machine and for the display alike (DBG-208).
@@ -130,3 +130,9 @@ Chosen option: 1, because it measures the game's own frame with no scene code in
   * **The window.** On a primary display larger than 1,920 × 1,080 the bench opens a window of that client size, centred, in place of the borderless window, and draws both scenes in it. On a display of that size it keeps the borderless window, as `Species.exe` does. The rest of its composition is unchanged.
   * **The pin.** The script's first rendered run pins a 60 Hz display on which `sandbox-drawn` was drawn at 1,920 × 1,080, so the panel is pinned as `2880 x 1920 at 60 Hz`. The confirmation's self-test now has eighteen fixtures.
   * **The cost.** A window that does not cover its display is composed by the desktop window manager, where the borderless window players run may be presented directly, so the frame is measured at MVP-085's size but not in the players' window mode. A display of 1,920 × 1,080 pinned later re-baselines the rendered results (DBG-209).
+* **Amendment 2026-10-22 ([ADR-148](ADR-148-the-frame-starts-at-the-latency-wait.md), owner decision O93).** The frame interval runs from one frame's start, after the frame-latency wait, to the next. The interval after the present, which the first rendered run measured, carries the variation of the frames' work and can count work spikes that the frame queue absorbs as missed frames.
+  * **The new figures.** The bench's result also gives each scene's GPU time, its waits for the frame-latency object, the fence and the present, the display's statistics (presents shown, refreshes, and refreshes that showed no new frame), and its 10 longest frames with where their time went. The script reports them; only the interval is judged.
+  * **The confirmation.** The self-test now has nineteen fixtures, the new one recording ADR-148's rows.
+  * **The first run.** The rendered figures of 2026-10-22 01:22 were measured on the old interval and are not comparable with later runs.
+* **Amendment 2026-10-22 (M2 task T19, [ADR-156](ADR-156-the-settlement-drawn-at-its-plateau-and-the-owners-growth-run.md)).** The bench draws a third scene, `settlement-drawn`: seed 1's world, grown headless before the window opens until the steward's settlement reaches `mvp.settlement.population_max` or the run's length passes, then continued from its snapshot with the HUD and seen from over the Wellspring. The performance script judges it against the same frame budget as the sandbox's battle, and a first rendered run pins the display only when both were drawn at 1,920 × 1,080.
+* **Amendment 2026-10-22 (owner decision O100, [ADR-110](ADR-110-cost-measurement-marker-timing-and-performance-script.md) amendment).** The reference test machine is the owner's x64 laptop, and `Release|x64` is measured. Its panel is 1,920 × 1,080, so the bench draws its scenes in the borderless window, as `Species.exe` does, and O85's window is not used on it; the owner sets the panel to 60 Hz for the run. The bench's result also names the adapter the scenes drew on (`FrameRenderer::AdapterName`), which on the laptop is the high-performance adapter of RND-020, not the one that drives the panel.

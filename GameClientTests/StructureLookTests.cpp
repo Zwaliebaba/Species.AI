@@ -443,6 +443,35 @@ public:
     }
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl366ThePlacementGhostIsItsStructureInPass12)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-366")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"RND-365")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(RCtrl366ThePlacementGhostIsItsStructureInPass12)
+  {
+    static const Neuron::SceneMeshes MESHES = Meshes();
+    std::vector<Neuron::MeshBatch> batches;
+    const Species::StructureGhost dwelling{Species::StructureKind::Dwelling, Ground(), std::numbers::pi * 0.5, 2};
+    Species::AppendGhost(dwelling, MESHES, CommittedPresentation(), batches);
+    Assert::IsTrue(batches.size() == 1 && batches.front().instances.size() == 1, L"one ghost");
+    const Neuron::MeshBatch& ghost = batches.front();
+    Assert::IsTrue(ghost.pass == Neuron::ScenePass::Routes && ghost.entry == "cursor_ghost", L"in pass 12 with the ghost blend (ADR-153)");
+    Assert::IsTrue(ghost.mesh == static_cast<std::uint16_t>(Species::SceneMesh::Dwelling), L"the dwelling's mesh");
+    const Neuron::SceneMeshInstance& instance = ghost.instances.front();
+    Assert::IsTrue(Near(instance.position, Ground()) && Near(instance.axisZ, {1.0, 0.0, 0.0}), L"at the pointer, facing its yaw");
+    Assert::IsTrue(instance.tint == TintOf(2) && instance.tintWeight == 1.0f, L"in its team's colour");
+    Assert::AreEqual(CommittedPresentation().mvp.structure.ghostBrightness, static_cast<double>(instance.brightness), 1e-6,
+                     L"at mvp.structure.ghost_brightness");
+    batches.clear();
+    Species::AppendGhost({Species::StructureKind::Turret, Ground(), 0.0, 2}, MESHES, CommittedPresentation(), batches);
+    Assert::IsTrue(batches.size() == 1 && batches.front().mesh == static_cast<std::uint16_t>(Species::SceneMesh::TurretHead),
+                   L"a turret's ghost is its head");
+    batches.clear();
+    Species::AppendGhost(dwelling, Neuron::SceneMeshes{}, CommittedPresentation(), batches);
+    Assert::IsTrue(batches.empty(), L"no meshes, no ghost");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(RBldg416ATurretsAimTurnsTheShorterWayRound)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-BLDG-416")
   END_TEST_METHOD_ATTRIBUTE()

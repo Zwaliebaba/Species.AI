@@ -35,6 +35,9 @@
     <ClCompile Include="AppWindowTests.cpp">
       <Filter>Window</Filter>
     </ClCompile>
+    <ClCompile Include="BindingNotationTests.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
     <ClCompile Include="FrameGraphTests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
@@ -66,6 +69,12 @@
       <Filter>Resources</Filter>
     </ClCompile>
     <ClCompile Include="TextSystemTests.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="UiCoreTests.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="UiLayoutTests.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="UiTextTests.cpp">

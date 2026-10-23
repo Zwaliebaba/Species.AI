@@ -1,6 +1,17 @@
 #include "pch.h"
 
+#include "BindingNotation.h"
+#include "ClientSettings.h"
 #include "InputBindings.h"
+#include "Log.h"
+
+#include <array>
+#include <cstdint>
+#include <expected>
+#include <format>
+#include <optional>
+#include <utility>
+#include <variant>
 
 namespace Species
 {
@@ -51,6 +62,15 @@ std::vector<Neuron::ActionBindings> DefaultBindings()
   bind(GameAction::OrderSpecial, "action.order.special", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Primary, Down)});
   bind(GameAction::OrderMoveModifier, "action.order.move_modifier", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Shift, Held)});
   bind(GameAction::OrderDemote, "action.order.demote", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::C, Down)});
+  // Table 3.6-B rows 1 to 5 and 7 (UI-204: the arrow keys with repeat, Enter and Esc), and table 3.6-A rows 60 and 61.
+  bind(GameAction::MenuLeft, "action.menu.left", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Left, Repeat)});
+  bind(GameAction::MenuRight, "action.menu.right", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Right, Repeat)});
+  bind(GameAction::MenuUp, "action.menu.up", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Up, Repeat)});
+  bind(GameAction::MenuDown, "action.menu.down", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Down, Repeat)});
+  bind(GameAction::MenuActivate, "action.menu.activate", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Enter, Down)});
+  bind(GameAction::MenuClose, "action.menu.close", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Escape, Down)});
+  bind(GameAction::UiPointerDown, "action.ui.pointer_down", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Primary, Down)});
+  bind(GameAction::UiPointerHeld, "action.ui.pointer_held", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Primary, Held)});
   bind(GameAction::WindowToggleMode, "action.window.toggle_mode", Neuron::ValueKind::Boolean,
        {Neuron::AllOf({KeyBinding(KeyCode::Alt, Held), KeyBinding(KeyCode::Enter, Down)})});
 #if ENGINE_DEVELOPMENT
@@ -63,6 +83,108 @@ std::vector<Neuron::ActionBindings> DefaultBindings()
        {Neuron::ChordOf({KeyCode::Control, KeyCode::Shift, KeyCode::F8})});
 #endif
   return actions;
+}
+
+namespace
+{
+
+struct LayoutEntry
+{
+  std::string_view action;
+  Neuron::KeyCode german;
+  Neuron::KeyCode french;
+};
+
+// Table 4.13-B.
+constexpr std::array LAYOUT_ENTRIES{
+  LayoutEntry{"action.camera.pan_left", Neuron::KeyCode::A, Neuron::KeyCode::Q},
+  LayoutEntry{"action.camera.pan_right", Neuron::KeyCode::D, Neuron::KeyCode::D},
+  LayoutEntry{"action.camera.pan_forward", Neuron::KeyCode::W, Neuron::KeyCode::Z},
+  LayoutEntry{"action.camera.pan_back", Neuron::KeyCode::S, Neuron::KeyCode::S},
+  LayoutEntry{"action.camera.raise", Neuron::KeyCode::Q, Neuron::KeyCode::A},
+  LayoutEntry{"action.camera.lower", Neuron::KeyCode::E, Neuron::KeyCode::E},
+  LayoutEntry{"action.camera.zoom", Neuron::KeyCode::Y, Neuron::KeyCode::W},
+};
+
+constexpr std::string_view LAYOUT_GERMAN = "de-DE";
+constexpr std::string_view LAYOUT_FRENCH = "fr-FR";
+
+} // namespace
+
+std::string ActiveLayoutTag(const Neuron::SettingsStore& _settings, std::string_view _systemLayoutTag)
+{
+  const std::string stored =
+    _settings.Get(SETTING_KEYBOARD_LAYOUT).has_value() ? _settings.GetText(SETTING_KEYBOARD_LAYOUT) : std::string{};
+  return stored.empty() ? std::string(_systemLayoutTag) : stored;
+}
+
+std::vector<Neuron::BindingReplacement> LayoutLayer(std::string_view _layoutTag)
+{
+  std::vector<Neuron::BindingReplacement> layer;
+  if (_layoutTag != LAYOUT_GERMAN && _layoutTag != LAYOUT_FRENCH)
+  {
+    Neuron::Log(Neuron::LogCategory::Input, Neuron::LogLevel::Info, "the keyboard layout {} has no layout layer (INP-164)", _layoutTag);
+    return layer;
+  }
+  const bool german = _layoutTag == LAYOUT_GERMAN;
+  for (const LayoutEntry& entry : LAYOUT_ENTRIES)
+  {
+    layer.push_back({std::string(entry.action), Neuron::KeyBinding(german ? entry.german : entry.french, Neuron::Condition::Held),
+                     std::format("the layout layer {}", _layoutTag)});
+  }
+  return layer;
+}
+
+std::vector<Neuron::BindingReplacement> UserLayer(const Neuron::SettingsStore& _settings)
+{
+  std::vector<Neuron::BindingReplacement> layer;
+  for (const std::string& key : _settings.KeysWithPrefix(SETTING_BINDING_FAMILY))
+  {
+    std::expected<Neuron::InputBinding, std::string> binding = Neuron::ParseBinding(_settings.GetText(key));
+    if (!binding.has_value())
+    {
+      Neuron::Log(Neuron::LogCategory::Input, Neuron::LogLevel::Warning, "{}: the binding is skipped (INP-171): {}", key, binding.error());
+      continue;
+    }
+    layer.push_back({key.substr(SETTING_BINDING_FAMILY.size()), std::move(*binding), key});
+  }
+  return layer;
+}
+
+std::vector<Neuron::BindingReplacement> BindingLayers(const Neuron::SettingsStore& _settings, std::string_view _systemLayoutTag)
+{
+  std::vector<Neuron::BindingReplacement> layers = LayoutLayer(ActiveLayoutTag(_settings, _systemLayoutTag));
+  std::vector<Neuron::BindingReplacement> user = UserLayer(_settings);
+  layers.insert(layers.end(), std::make_move_iterator(user.begin()), std::make_move_iterator(user.end()));
+  return layers;
+}
+
+Neuron::SettingAccess SettingAccessOf(const Neuron::SettingsStore& _settings)
+{
+  Neuron::SettingAccess access;
+  access.exists = [&_settings](std::string_view _key) { return _settings.Knows(_key); };
+  access.number = [&_settings](std::string_view _key) -> std::optional<double>
+  {
+    const std::optional<Neuron::SettingValue> value = _settings.Get(_key);
+    if (!value.has_value())
+    {
+      return std::nullopt;
+    }
+    if (const auto* flag = std::get_if<bool>(&*value))
+    {
+      return *flag ? 1.0 : 0.0;
+    }
+    if (const auto* integer = std::get_if<std::int64_t>(&*value))
+    {
+      return static_cast<double>(*integer);
+    }
+    if (const auto* decimal = std::get_if<double>(&*value))
+    {
+      return *decimal;
+    }
+    return std::nullopt;
+  };
+  return access;
 }
 
 } // namespace Species

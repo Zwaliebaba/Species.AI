@@ -981,6 +981,10 @@ void EffectsLook::DrawScreen(double _flashAlpha, double _shakeRequest, const Eff
 {
   const TuningPresentation& presentation = *m_presentation;
   const auto& screen = presentation.vfx.screen;
+  if (_view.reducedFlash)
+  {
+    _flashAlpha *= screen.reducedFlashScale; // VFX-235, DEC-964: before the onsets are counted, so fewer reach the threshold
+  }
   // VFX-235: a flash that reaches the threshold is an onset; at most the onsets of the window are shown, and a refused
   // onset's flash is not drawn until it falls below the threshold again.
   std::erase_if(m_flashOnsets, [&](double _onset) { return _view.realSeconds - _onset >= screen.flashWindow; });
@@ -1033,8 +1037,10 @@ void EffectsLook::DrawScreen(double _flashAlpha, double _shakeRequest, const Eff
     m_shakeYaw = 0.0;
     m_shakeRoll = 0.0;
   }
-  _draws.shakeYawRadians = m_shakeYaw;
-  _draws.shakeRollRadians = m_shakeRoll;
+  // VFX-232, DEC-964: the offset, never the shake's decay or its draws, is scaled by the motion setting.
+  const double motion = _view.reducedMotion ? screen.reducedMotionScale : 1.0;
+  _draws.shakeYawRadians = m_shakeYaw * motion;
+  _draws.shakeRollRadians = m_shakeRoll * motion;
 }
 
 void EffectsLook::Draw(std::span<const InterpolatedEffect> _effects, const Neuron::TerrainField& _field, const EffectsView& _view,

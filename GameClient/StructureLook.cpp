@@ -11,6 +11,7 @@
 #include <cmath>
 #include <numbers>
 #include <string_view>
+#include <utility>
 
 namespace Species
 {
@@ -23,6 +24,7 @@ constexpr Neuron::Vec3 WORLD_UP{0.0, 1.0, 0.0};
 constexpr std::string_view SOLID_ENTRY = "mesh_lit_fog";
 constexpr std::string_view PAD_ENTRY = "port_pad";
 constexpr std::string_view GLOW_ENTRY = "glow_additive_fog";
+constexpr std::string_view GHOST_ENTRY = "cursor_ghost"; // ADR-153
 // The node of the Wellspring's floating crystal (ADR-128), which its cloudy glow circles.
 constexpr std::string_view WELLSPRING_CORE_NODE = "wellspring_core";
 constexpr double PERMILLE = 1'000.0;
@@ -162,6 +164,28 @@ Neuron::SceneQuad GlowQuad(const Neuron::Vec3& _position, double _half, const st
 }
 
 } // namespace
+
+void AppendGhost(const StructureGhost& _ghost, const Neuron::SceneMeshes& _meshes, const TuningPresentation& _presentation,
+                 std::vector<Neuron::MeshBatch>& _out)
+{
+  if (_meshes.meshes.size() < static_cast<std::size_t>(SceneMesh::Count))
+  {
+    return;
+  }
+  // R-CTRL-366 row 1b: a turret's ghost is its head (mvp_assets.md), which is the turret drawn on the ground at M2.
+  const SceneMesh mesh = _ghost.kind == StructureKind::Turret ? SceneMesh::TurretHead : MeshOf(_ghost.kind);
+  Neuron::MeshBatch batch;
+  batch.pass = Neuron::ScenePass::Routes;
+  batch.entry = GHOST_ENTRY;
+  batch.mesh = static_cast<std::uint16_t>(mesh);
+  batch.cullRadius = RadiusOf(*_meshes.meshes[static_cast<std::size_t>(mesh)]);
+  Neuron::SceneMeshInstance instance = InstanceOf(AxesOf(_ghost.position, _ghost.yawRadians));
+  instance.tint = Rgb(TeamColor(_ghost.team), _presentation.rnd.tint.factor);
+  instance.tintWeight = 1.0f;
+  instance.brightness = static_cast<float>(_presentation.mvp.structure.ghostBrightness);
+  batch.instances.push_back(instance);
+  _out.push_back(std::move(batch));
+}
 
 StructureLook::StructureLook(const TuningPresentation& _presentation) noexcept
   : m_presentation(_presentation)

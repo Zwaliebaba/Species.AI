@@ -63,6 +63,8 @@ The performance job of DBG-208 is, for the MVP, a script that the owner runs on 
 
 Its first run pins the machine. Every later run compares the configuration with the pinned one and stops on a difference, because a change of the machine re-baselines every result (DBG-209). Once the machine is pinned, a result above its budget fails the run.
 
+> **Amendment 2026-10-22 (O100).** The reference test machine is now the owner's x64 laptop, an Intel Core i7-12700H with an NVIDIA GeForce RTX 3070 Ti Laptop GPU, and the script builds and measures `Release|x64`. Its own panel is 1,920 × 1,080, so the frame-rate scenes run borderless at MVP-085's size, with the panel set to 60 Hz for the run, and O85's window is not used on it. The change re-baselines every result: the ARM64 PC's pin and runs stay in `playtests/M1.md` as history, and the laptop's first run pins it and shows again the exit criteria of the pinned machine and the measured costs. The ARM64 configurations stay as the development build (ADR-094).
+
 ## 5 Tasks
 
 The tasks land in this order on one pull request for the whole of M1, each as one or more changes that cite the requirements they implement (O71, as O67 did for M0). A task that adds a tuning value adds its key to the MVP scope's table 3 and to the tuning record in the same change (MVP-003, MVP-099).

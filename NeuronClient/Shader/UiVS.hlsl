@@ -1,10 +1,12 @@
 #include "Ui.hlsli"
 
-struct UiInstance // TextGlyphInstance, one per quad
+struct UiInstance // UiQuadInstance, one per quad
 {
   float4 rectangle : RECTANGLE;
   float4 uv : TEXCOORD;
-  float4 color : COLOR;
+  float4 colorFrom : COLOR0;
+  float4 colorTo : COLOR1;
+  uint4 shape : SHAPE;
 };
 
 // Two triangles over the quad's rectangle; the UI draws with culling off.
@@ -17,6 +19,8 @@ UiVertex main(uint _vertex : SV_VertexID, UiInstance _quad)
   UiVertex vertex;
   vertex.position = float4(pixel.x * g_pass.values[0].z * 2.0 - 1.0, 1.0 - pixel.y * g_pass.values[0].w * 2.0, 0.0, 1.0);
   vertex.uv = lerp(_quad.uv.xy, _quad.uv.zw, corner);
-  vertex.color = _quad.color;
+  // UI-184, ADR-149: a gradient from the top edge to the bottom, or from the left edge to the right.
+  const float along = _quad.shape.x == UI_GRADIENT_ACROSS ? corner.x : corner.y;
+  vertex.color = along < 0.5 ? _quad.colorFrom : _quad.colorTo;
   return vertex;
 }

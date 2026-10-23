@@ -177,7 +177,7 @@ enum class ScenePass : std::uint8_t
   Effects,        // pass 10a
   Lasers,         // pass 10b
   Orbs,           // pass 11
-  Routes,         // pass 12
+  Routes,         // pass 12: the route preview (ADR-125) and the placement ghost (ADR-153)
   Particles,      // pass 15
   Count
 };
@@ -320,12 +320,15 @@ enum class UiSource : std::uint8_t
 };
 
 /// One quad of the UI (UI-184, ADR-145): its rectangle on the target in pixels from its top-left corner (left, top,
-/// right, bottom), its texture coordinates in the same order, and its colour.
+/// right, bottom), its texture coordinates in the same order, and its color; with a second color, its color runs from the
+/// top edge's to the bottom edge's, or across from the left edge's to the right edge's (ADR-149).
 struct UiQuad
 {
   std::array<float, 4> rectangle{};
   std::array<float, 4> uv{0.0f, 0.0f, 1.0f, 1.0f};
   std::array<float, 4> color{1.0f, 1.0f, 1.0f, 1.0f};
+  std::optional<std::array<float, 4>> colorTo;
+  bool across = false;
 };
 
 /// A scissor rectangle of the UI in whole pixels (UI-181), from its top-left corner to its bottom-right one.
@@ -366,7 +369,7 @@ struct FrameInputs
   CameraPose camera;
   double presentationSeconds = 0.0; // the smooth presentation time (R-SIM-570)
   double skyTicks = 0.0;            // the ticks displayed since the world's first (RND-152)
-  float brightness = 1.0f;          // rnd.option.brightness.default (RND-275)
+  float brightness = 1.0f;          // render.brightness (RND-275), rnd.option.brightness.default 1
   // The development overlay (DBG-004, Debug builds): its rectangles and its text, in the UI's batches over them (ADR-147),
   // and the dots drawn in the world.
   std::vector<OverlayRect> overlayRects;

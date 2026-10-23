@@ -30,6 +30,21 @@ struct StructureDraws
   std::vector<Neuron::QuadBatch> quads;
 };
 
+/// The placement ghost of R-CTRL-366 row 1b (M2 task T17, ADR-153): the structure the steward places, at the pointer
+/// ground point and facing away from its Wellspring as the server will place it (MVP-032), in its team's colour.
+struct StructureGhost
+{
+  StructureKind kind = StructureKind::Dwelling;
+  Neuron::Vec3 position;
+  double yawRadians = 0.0;
+  std::uint8_t team = 0;
+};
+
+// ADR-153: the ghost's batch in pass 12 with `cursor_ghost` (RND-365): the structure's mesh, a turret's head as the MVP
+// assets make it, at mvp.structure.ghost_brightness; nothing while _meshes lacks a scene mesh.
+void AppendGhost(const StructureGhost& _ghost, const Neuron::SceneMeshes& _meshes, const TuningPresentation& _presentation,
+                 std::vector<Neuron::MeshBatch>& _out);
+
 /// The structures drawn from the replica (M2 task T12, ADR-140; MVP-083, RND-163 to RND-170, R-BLDG-017, R-BLDG-045,
 /// R-BLDG-046, R-BLDG-428). Each structure's mesh stands on its place, facing its front, tinted in its settlement's colour
 /// (ADR-020); a construction site is sunk by what remains of its work and rises with it, and an inactive structure is

@@ -9,5 +9,5 @@ struct UiVertex
 {
   float4 position : SV_Position;
   float2 uv : TEXCOORD0;
-  nointerpolation float4 color : COLOR0;
+  float4 color : COLOR0; // interpolated from the top edge's color to the bottom edge's (ADR-149)
 };

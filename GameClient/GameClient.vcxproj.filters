@@ -39,6 +39,15 @@
     <ClInclude Include="EffectsLook.h">
       <Filter>View</Filter>
     </ClInclude>
+    <ClInclude Include="ClientSettings.h">
+      <Filter>Session</Filter>
+    </ClInclude>
+    <ClInclude Include="FrontEnd.h">
+      <Filter>View</Filter>
+    </ClInclude>
+    <ClInclude Include="GameUi.h">
+      <Filter>View</Filter>
+    </ClInclude>
     <ClInclude Include="InputBindings.h">
       <Filter>Input</Filter>
     </ClInclude>
@@ -53,6 +62,12 @@
     </ClInclude>
     <ClInclude Include="SettlementCamera.h">
       <Filter>View</Filter>
+    </ClInclude>
+    <ClInclude Include="SettlementHud.h">
+      <Filter>View</Filter>
+    </ClInclude>
+    <ClInclude Include="SettlementVerbs.h">
+      <Filter>Input</Filter>
     </ClInclude>
     <ClInclude Include="SettlementView.h">
       <Filter>View</Filter>
@@ -75,6 +90,9 @@
     <ClInclude Include="WorldPresentation.h">
       <Filter>Session</Filter>
     </ClInclude>
+    <ClInclude Include="WorldSaves.h">
+      <Filter>Session</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Build</Filter>
     </ClInclude>
@@ -95,6 +113,15 @@
     <ClCompile Include="EffectsLook.cpp">
       <Filter>View</Filter>
     </ClCompile>
+    <ClCompile Include="ClientSettings.cpp">
+      <Filter>Session</Filter>
+    </ClCompile>
+    <ClCompile Include="FrontEnd.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="GameUi.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
     <ClCompile Include="InputBindings.cpp">
       <Filter>Input</Filter>
     </ClCompile>
@@ -109,6 +136,12 @@
     </ClCompile>
     <ClCompile Include="SettlementCamera.cpp">
       <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="SettlementHud.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="SettlementVerbs.cpp">
+      <Filter>Input</Filter>
     </ClCompile>
     <ClCompile Include="SettlementView.cpp">
       <Filter>View</Filter>
@@ -129,6 +162,9 @@
       <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="WorldPresentation.cpp">
+      <Filter>Session</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldSaves.cpp">
       <Filter>Session</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">

@@ -13,6 +13,39 @@
 namespace Species
 {
 
+namespace
+{
+
+// ADR-155: the steward's reason, from the newest snapshot refused.
+ContinueFault ContinueFaultOf(const WorldServer::OpenOutcome& _opened) noexcept
+{
+  if (_opened.refusals.empty())
+  {
+    return ContinueFault::NoSnapshot;
+  }
+  const std::optional<Neuron::SnapshotError> error = _opened.refusals.front().error;
+  if (!error.has_value())
+  {
+    return ContinueFault::Damaged;
+  }
+  switch (*error)
+  {
+  case Neuron::SnapshotError::Unreadable:
+    return ContinueFault::Unreadable;
+  case Neuron::SnapshotError::FormatVersion:
+  case Neuron::SnapshotError::StateVersion:
+    return ContinueFault::Version;
+  case Neuron::SnapshotError::NotASnapshot:
+  case Neuron::SnapshotError::Truncated:
+  case Neuron::SnapshotError::Damaged:
+  case Neuron::SnapshotError::MalformedState:
+    break;
+  }
+  return ContinueFault::Damaged;
+}
+
+} // namespace
+
 // In the order they are made and the reverse of the order they end: the listener and the world outlive the host.
 struct IntegratedServer::Parts
 {
@@ -30,7 +63,7 @@ IntegratedServer::IntegratedServer(const Desc& _desc)
 
 IntegratedServer::~IntegratedServer() = default;
 
-std::expected<void, Neuron::AssetError> IntegratedServer::Start()
+std::expected<void, StartFault> IntegratedServer::Start()
 {
   ENGINE_CHECK(m_parts->host == nullptr, "the integrated server starts once");
   ENGINE_CHECK(m_desc.content != nullptr, "the integrated server loads its tuning from mounted content");
@@ -60,6 +93,7 @@ std::expected<void, Neuron::AssetError> IntegratedServer::Start()
   world.syntheticFigures = m_desc.syntheticFigures;
   world.stewardSite = m_desc.stewardSite;
   world.snapshotFolder = m_desc.snapshotFolder;
+  world.restoreOnly = m_desc.restoreOnly;
   world.calendar = [clock = m_desc.clock] { return clock->CalendarUtc(); }; // ADR-137: the world record's wall times
   m_parts->world = std::make_unique<WorldServer>(world);
   Neuron::ServerHost::Desc host;
@@ -69,6 +103,12 @@ std::expected<void, Neuron::AssetError> IntegratedServer::Start()
   host.listener = &m_parts->listener;
   m_parts->host = std::make_unique<Neuron::ServerHost>(std::move(host), *m_parts->world);
   m_parts->host->Start();
+  // ADR-155: a world that cannot be continued stops at once; it opened without its folder, so the freeze saves nothing.
+  if (m_desc.restoreOnly && !m_parts->world->Opened().restored)
+  {
+    m_parts->host->Stop();
+    return std::unexpected(ContinueFaultOf(m_parts->world->Opened()));
+  }
   return {};
 }
 
