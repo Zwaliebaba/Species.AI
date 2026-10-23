@@ -79,6 +79,18 @@ CommandEffect SetPrioritiesCommanded(RegionSimulation& _region, const SetPriorit
   return CommandEffect::Applied;
 }
 
+// O106 (ADR-178): the team's settlement holds its growth or lets it run, from the next tick's step.
+CommandEffect HoldGrowthCommanded(RegionSimulation& _region, const HoldGrowthCommand& _command)
+{
+  Settlement* settlement = SettlementOfTeam(_region, _command.team);
+  if (settlement == nullptr || settlement->growthHeld == _command.held)
+  {
+    return CommandEffect::NoEffect;
+  }
+  settlement->growthHeld = _command.held;
+  return CommandEffect::Applied;
+}
+
 // MVP-053 (ADR-160): a claim by the team's settlement.
 CommandExecution MakeClaimCommanded(RegionSimulation& _region, const MakeClaimCommand& _command)
 {
@@ -155,6 +167,7 @@ void RegisterSettlementCommands(RegionSimulation& _region)
   Add<PlaceStructureCommand>(_region, &PlaceStructureCommanded);
   Add<RebuildTurretCommand>(_region, &RebuildTurretCommanded);
   Add<SetPrioritiesCommand>(_region, &SetPrioritiesCommanded);
+  Add<HoldGrowthCommand>(_region, &HoldGrowthCommanded);
   Add<MakeClaimCommand>(_region, &MakeClaimCommanded);
   Add<WithdrawClaimCommand>(_region, &WithdrawClaimCommanded);
   Add<SendTributeCommand>(_region, &SendTributeCommanded);
@@ -172,8 +185,12 @@ SettlementStatus StatusOf(const RegionSimulation& _region, const Settlement& _se
   status.capacityMilliRu = StoreCapacityMilliRu(tuning, ActiveCount(_region, _settlement.team, StructureKind::Storehouse));
   status.population = Population(_region, _settlement);
   status.populationLimit = PopulationLimitOf(_region, _settlement);
-  // MVP-024: the order of AdvanceSettlement's own conditions.
-  if (status.population >= status.populationLimit)
+  // MVP-024: the order of AdvanceSettlement's own conditions, the steward's hold first (O106).
+  if (_settlement.growthHeld)
+  {
+    status.growth = GrowthState::Held;
+  }
+  else if (status.population >= status.populationLimit)
   {
     status.growth = GrowthState::AtLimit;
   }

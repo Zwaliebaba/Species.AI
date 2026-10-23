@@ -11,7 +11,7 @@ namespace
 {
 
 constexpr std::uint64_t SHARE_MAX = 100;
-constexpr std::uint64_t GROWTH_STATE_MAX = static_cast<std::uint64_t>(GrowthState::StoresShort);
+constexpr std::uint64_t GROWTH_STATE_MAX = static_cast<std::uint64_t>(GrowthState::Held);
 constexpr std::uint64_t PROGRESS_MAX = 1'000;
 // A local site, 0 to 3 (WLD-040), and the value that names none.
 constexpr std::uint8_t NO_SITE = 4;
@@ -95,6 +95,18 @@ void SetPrioritiesCommand::Decode(Neuron::BitReader& _reader)
   {
     _reader.Fail();
   }
+}
+
+void HoldGrowthCommand::Encode(Neuron::BitWriter& _writer) const
+{
+  _writer.WriteBits(team, 8);
+  _writer.WriteBool(held);
+}
+
+void HoldGrowthCommand::Decode(Neuron::BitReader& _reader)
+{
+  team = ReadTeam(_reader);
+  held = _reader.ReadBool();
 }
 
 void ReadSettlementStatusCommand::Encode(Neuron::BitWriter& _writer) const

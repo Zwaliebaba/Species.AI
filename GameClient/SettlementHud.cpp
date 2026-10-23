@@ -75,7 +75,7 @@ constexpr std::string_view STRING_RENOWN = "ui.hud.renown";
 constexpr std::int64_t SECONDS_PER_HOUR = 3'600;
 
 // The selectors of the strings' select arguments, in GrowthState's, WorkerTask's, IdleReason's and StructureKind's orders.
-constexpr std::array<std::string_view, 3> GROWTH_SELECTORS{"growing", "at_limit", "stores_short"};
+constexpr std::array<std::string_view, 4> GROWTH_SELECTORS{"growing", "at_limit", "stores_short", "held"};
 constexpr std::array<std::string_view, 3> TASK_SELECTORS{"gather", "construct", "guard"};
 constexpr std::array<std::string_view, 4> IDLE_SELECTORS{"no_free_port", "queue_empty", "store_full", "share_met"};
 // PlacementRefusal's selectors, from NotBuildable (ADR-153).
@@ -103,6 +103,7 @@ constexpr std::array<UiImage, 3> PRIORITY_ICONS{UiImage::IconPriorityGather, UiI
 // The rows of the settlement panel before its idle rows: the stores, the Workers, growth, the upkeep and the three
 // priorities, which start at PRIORITY_ROW.
 constexpr std::size_t FIXED_ROWS = 7;
+constexpr std::size_t GROWTH_ROW = 2;
 constexpr std::size_t PRIORITY_ROW = 4;
 // The share a priority reaches at most (MVP-036).
 constexpr std::uint8_t SHARE_MAX = 100;
@@ -134,6 +135,21 @@ UiImage KindIcon(StructureKind _kind) noexcept
   return _kind == StructureKind::Dwelling     ? UiImage::IconDwelling
          : _kind == StructureKind::Storehouse ? UiImage::IconStorehouse
                                               : UiImage::IconTurret;
+}
+
+// O106 (ADR-178): the growth the HUD shows: the hold sent while no status holds it yet, else the status's. A hold let go
+// shows the timer the status gave, which waited while held.
+GrowthState GrowthShown(const SettlementStatus& _status, const HudVerbs& _verbs) noexcept
+{
+  if (!_verbs.growthHeld.has_value())
+  {
+    return _status.growth;
+  }
+  if (*_verbs.growthHeld)
+  {
+    return GrowthState::Held;
+  }
+  return _status.growth == GrowthState::Held ? GrowthState::Growing : _status.growth;
 }
 
 template <class Color> std::array<float, 4> Rgba(const Color& _color, double _alphaScale = 1.0) noexcept
@@ -717,14 +733,19 @@ std::vector<HudRow> SettlementHud::SettlementRows(const Neuron::StringTable& _st
     return rows;
   }
   const SettlementStatus& status = *m_model.status;
-  // MVP-024, MVP-035, MVP-102: growth, or the cause when it stops.
+  // MVP-024, MVP-035, MVP-102: growth, or the cause when it stops; O106 (ADR-178): the hold sent until a status holds it,
+  // and the room for its button.
   {
-    const auto growth = static_cast<std::size_t>(status.growth);
+    const GrowthState state = GrowthShown(status, m_model.verbs);
+    const auto growth = static_cast<std::size_t>(state);
     const auto seconds = static_cast<std::int64_t>(std::ceil(static_cast<double>(status.growthTicks) * m_model.tickSeconds));
     const std::array arguments{Neuron::FormatArgument{"state", GROWTH_SELECTORS.at(std::min(growth, GROWTH_SELECTORS.size() - 1))},
                                Neuron::FormatArgument{"seconds", seconds}};
     add(UiImage::IconGrowth, _strings.Format(STRING_GROWTH, arguments, _locale),
-        status.growth == GrowthState::Growing ? positive : negative);
+        state == GrowthState::Growing ? positive
+        : state == GrowthState::Held  ? text
+                                      : negative)
+      .trailing = Units(hud.iconSize) + Units(hud.padding);
   }
   // MVP-035: the upkeep an hour, and at the row's end the structures it made inactive.
   {
@@ -1156,6 +1177,10 @@ void SettlementHud::Layout(const Neuron::UiMetrics& _metrics)
       m_zones.push_back({HudZone::PriorityLower, static_cast<std::uint8_t>(task), m_arrows[task][0]});
       m_zones.push_back({HudZone::PriorityRaise, static_cast<std::uint8_t>(task), m_arrows[task][1]});
     }
+    // O106 (ADR-178): the growth row's hold button at its right end.
+    const float top = std::round(m_panelInner.top + padding + row * static_cast<float>(GROWTH_ROW) + (row - icon) * 0.5f);
+    m_holdButton = Neuron::UiRect::FromSize(m_panelInner.right - padding - icon, top, icon, icon);
+    m_zones.push_back({HudZone::GrowthHold, 0, m_holdButton});
   }
 
   // The construction bar, bottom centre, and the queue's row above it; ADR-175: each entry as wide as the widest name or
@@ -1368,6 +1393,13 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
     for (const HudRow& panelRow : SettlementRows(_strings, _locale))
     {
       drawRow(panelRow, left, right, top);
+      // O106 (ADR-178): the hold button, on the accent plate while the growth is held.
+      if (panelRow.icon == UiImage::IconGrowth && m_model.status.has_value())
+      {
+        const bool held = GrowthShown(*m_model.status, m_model.verbs) == GrowthState::Held;
+        plate(held, m_holdButton, true);
+        image(UiImage::IconRespite, m_holdButton, Rgba(palette.text));
+      }
       if (panelRow.task.has_value() && *panelRow.task < m_arrows.size() && m_model.status.has_value())
       {
         const std::size_t task = *panelRow.task;

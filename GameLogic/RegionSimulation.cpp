@@ -190,6 +190,8 @@ StableId RegionSimulation::AddScriptedSteward(std::uint8_t _team)
   SetCommander(_team, id, true);
   // ADR-162: an AI settlement's decisions, sent as its steward.
   const auto settlement = std::ranges::find(m_settlements, _team, &Settlement::team);
+  // O106 (ADR-178): a scripted steward never holds growth, so a settlement it takes grows again.
+  settlement->growthHeld = false;
   if (settlement->cladan.temperament != Temperament::None &&
       std::ranges::find(m_settlementAis, _team, &SettlementAi::team) == m_settlementAis.end())
   {
@@ -1085,6 +1087,11 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
   {
     WriteClaimEnd(_writer, end);
   }
+  // O106 (ADR-178): whether each settlement's growth is held, in the settlements' order.
+  for (const Settlement& settlement : m_settlements)
+  {
+    _writer.WriteBool(settlement.growthHeld);
+  }
 }
 
 bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stateVersion)
@@ -1450,6 +1457,11 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
         return false;
       }
     }
+  }
+  // O106 (ADR-178): whether each settlement's growth is held; a region before version 17 holds none.
+  for (Settlement& settlement : m_settlements)
+  {
+    settlement.growthHeld = _stateVersion >= STATE_VERSION_WITH_GROWTH_HOLD && _reader.ReadBool();
   }
   // An order marker follows a route the region holds, from its first point to its last (R-UNIT-185).
   for (std::uint32_t slot = 0; slot < m_effects.Capacity(); ++slot)

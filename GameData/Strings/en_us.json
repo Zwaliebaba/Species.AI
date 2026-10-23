@@ -6,7 +6,7 @@
     "ui.title.game_name": "Species",
     "ui.hud.stores": "{stores, number, integer} of {capacity, number, integer}",
     "ui.hud.workers": "{population, plural, one {# Worker} other {# Workers}} of {limit, number, integer}",
-    "ui.hud.growth": "{state, select, growing {Next Worker in {seconds, number, integer} s} at_limit {Growth stopped: at the population limit} stores_short {Growth stopped: the stores are short} other {Growth stopped}}",
+    "ui.hud.growth": "{state, select, growing {Next Worker in {seconds, number, integer} s} at_limit {Growth stopped: at the population limit} stores_short {Growth stopped: the stores are short} held {Growth held: the stores fill for building} other {Growth stopped}}",
     "ui.hud.upkeep": "Upkeep {upkeep, number, integer} an hour",
     "ui.hud.inactive": "{count, number, integer} inactive",
     "ui.hud.priority": "{task, select, gather {Gathering} construct {Construction} guard {Guard duty} other {Task}} {share, number, integer}%, {workers, plural, one {# Worker} other {# Workers}}",

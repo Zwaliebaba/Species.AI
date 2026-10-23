@@ -77,6 +77,29 @@ public:
                    L"its growth, its reasons and its last site");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp024AHoldAndAHeldGrowthRoundTrip)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-024")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-098")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp024AHoldAndAHeldGrowthRoundTrip)
+  {
+    // O106 (ADR-178): the hold names its team and whether it holds, at its bound, and a status's held growth reads back.
+    const std::vector<std::byte> hold = Neuron::EncodeMessage(Species::HoldGrowthCommand{2, true});
+    ExpectEqual(static_cast<std::int64_t>(Species::HoldGrowthCommand::MAX_BYTES), static_cast<std::int64_t>(hold.size()),
+                L"a hold at its bound");
+    Neuron::MessageDispatcher dispatcher;
+    std::optional<Species::HoldGrowthCommand> held;
+    dispatcher.Register<Species::HoldGrowthCommand>([&held](const Species::HoldGrowthCommand& _hold) { held = _hold; });
+    Assert::IsTrue(dispatcher.Dispatch(hold) && held && held->team == 2 && held->held, L"its team and its hold");
+    Species::SettlementStatus status;
+    status.priorities = {50, 30, 20};
+    status.growth = Species::GrowthState::Held;
+    std::optional<Species::SettlementStatus> read;
+    dispatcher.Register<Species::SettlementStatus>([&read](const Species::SettlementStatus& _status) { read = _status; });
+    Assert::IsTrue(dispatcher.Dispatch(Neuron::EncodeMessage(status)) && read && read->growth == Species::GrowthState::Held,
+                   L"a held growth");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp094ASettlementCommandOutOfItsBoundsIsMalformed)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-094")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-036")

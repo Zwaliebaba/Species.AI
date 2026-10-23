@@ -5,6 +5,7 @@
 #include "Check.h"
 #include "CommandJournal.h"
 #include "Files.h"
+#include "Growth.h"
 #include "PlatformThread.h"
 #include "RegionSimulation.h"
 #include "SimulationRecord.h"
@@ -280,8 +281,12 @@ std::vector<std::byte> RegionStateOf(const Species::RegionSimulation& _region, s
   {
     bits -= version > _version ? Neuron::BitsFor(bound) : 0;
   }
-  // Version 16's claim ends, the last section, version 15's renown and version 14's AI settlements' decisions before it,
-  // go whole.
+  // Version 17's growth holds, the last section, a bit for each settlement, and version 16's claim ends, version 15's
+  // renown and version 14's AI settlements' decisions before it, go whole.
+  if (_version < Species::STATE_VERSION_WITH_GROWTH_HOLD)
+  {
+    bits -= _region.Settlements().size();
+  }
   if (_version < Species::STATE_VERSION_WITH_CLAIM_COOLDOWN)
   {
     Neuron::BitWriter ends;

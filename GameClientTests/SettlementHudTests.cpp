@@ -95,9 +95,9 @@ public:
     Species::SettlementHud hud(CommittedPresentation(), CommittedTuning());
     const Neuron::UiMetrics metrics = MetricsAt({1280, 720});
     hud.SetModel(SettlementModel(), metrics);
-    // The settlement panel, three construction bar entries, the queue, the notices and the world's panel; and each
-    // priority's two arrows (ADR-153).
-    ExpectEqual(7 + 6, static_cast<std::int64_t>(hud.Zones().size()), L"every panel and arrow is a zone");
+    // The settlement panel, three construction bar entries, the queue, the notices and the world's panel; each
+    // priority's two arrows (ADR-153); and the growth row's hold button (ADR-178).
+    ExpectEqual(7 + 6 + 1, static_cast<std::int64_t>(hud.Zones().size()), L"every panel, arrow and button is a zone");
     const auto& keys = CommittedPresentation().mvp.hud;
     const double unit = 720.0 / 600.0;
     const Neuron::UiRect panel = hud.Zones()[0].rect;
@@ -119,6 +119,12 @@ public:
     Assert::IsTrue(raise != hud.Zones().end() && panel.Contains(raise->rect.left + 1.0f, raise->rect.top + 1.0f), L"guard's raise arrow");
     const auto arrow = hud.ZoneAt({static_cast<std::int32_t>(raise->rect.left + 1.0f), static_cast<std::int32_t>(raise->rect.top + 1.0f)});
     Assert::IsTrue(arrow.has_value() && arrow->zone == Species::HudZone::PriorityRaise && arrow->index == 2, L"the arrow, not the panel");
+    // O106 (ADR-178): the hold button at the growth row's end, over its panel.
+    const auto hold =
+      std::ranges::find_if(hud.Zones(), [](const Species::HudZoneRect& _zone) { return _zone.zone == Species::HudZone::GrowthHold; });
+    Assert::IsTrue(hold != hud.Zones().end() && panel.Contains(hold->rect.left + 1.0f, hold->rect.top + 1.0f) &&
+                     hold->rect.top < raise->rect.top,
+                   L"the hold button, above the priorities");
 
     Species::HudModel sandbox;
     hud.SetModel(sandbox, metrics);
@@ -206,6 +212,11 @@ public:
     ExpectEqual(count(idle, Neuron::UiSource::Glyphs, 0), count(drawn(refused), Neuron::UiSource::Glyphs, 0), L"a refusal past its time");
     refused.refusalAgeSeconds = 0.0;
     Assert::IsTrue(count(drawn(refused), Neuron::UiSource::Glyphs, 0) > count(idle, Neuron::UiSource::Glyphs, 0), L"a fresh refusal shows");
+    // O106 (ADR-178): the hold sent puts its button on the accent plate until a status holds it.
+    Species::HudVerbs holding;
+    holding.growthHeld = true;
+    ExpectEqual(count(idle, Neuron::UiSource::Image, accent) + 1, count(drawn(holding), Neuron::UiSource::Image, accent),
+                L"the hold button on the accent plate");
     // MVP-036: the shares sent fill the meters until a status holds them.
     Species::HudVerbs sent;
     sent.shares = std::array<std::uint8_t, 3>{100, 0, 0};
@@ -321,7 +332,7 @@ public:
       return quads;
     };
     ExpectEqual(6, imageQuads(Species::UiImage::IconAttack), L"the warning, the expedition, the attack cause and three raids");
-    ExpectEqual(2, imageQuads(Species::UiImage::IconRespite), L"its respite and another Cladan's");
+    ExpectEqual(3, imageQuads(Species::UiImage::IconRespite), L"its respite, another Cladan's and the growth hold's button (ADR-178)");
     ExpectEqual(6, imageQuads(Species::UiImage::IconClaim), L"two claims, a claim cause, the claimable site and its button, the card");
     ExpectEqual(3, imageQuads(Species::UiImage::IconTribute), L"a tribute for each grievance against it");
     ExpectEqual(1, imageQuads(Species::UiImage::IconWithdraw), L"its expedition's withdrawal");

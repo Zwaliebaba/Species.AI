@@ -386,6 +386,44 @@ public:
     Assert::IsTrue(verbs.Update(frame, TEAM, view, areas).commands.empty(), L"gathering is at 100 already");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp024TheHoldButtonSendsTheHoldShownUntilAStatusHoldsIt)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-024")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp024TheHoldButtonSendsTheHoldShownUntilAStatusHoldsIt)
+  {
+    // O106 (ADR-178): the growth row's button holds a growing settlement, and a second press lets it go again from the
+    // hold sent, not the status's; the hold shows until a status of its tick holds it, and a refused hold shows no more.
+    Species::SettlementVerbs verbs(CommittedTuning(), CommittedPresentation());
+    const Species::StateReplica::View replica = Replica(1'000'000);
+    const Species::StewardAreas areas = AreasOf(replica);
+    Species::PlacementView view = Species::PlacementViewOf(replica, TEAM, Status(10));
+    Species::SettlementFrame frame;
+    frame.primaryDown = true;
+    frame.hudZone = Zone(Species::HudZone::GrowthHold, 0);
+    Species::SettlementVerbResult result = verbs.Update(frame, TEAM, view, areas);
+    const auto* hold = result.commands.size() == 1 ? std::get_if<Species::HoldGrowthCommand>(&result.commands.front()) : nullptr;
+    Assert::IsTrue(result.tookPrimary && hold != nullptr && hold->team == TEAM && hold->held, L"the button holds the growth");
+    verbs.Sent(7, result.commands.front());
+    Assert::IsTrue(verbs.ForHud().growthHeld == std::optional<bool>(true), L"shown at once");
+    result = verbs.Update(frame, TEAM, view, areas);
+    const auto* release = result.commands.size() == 1 ? std::get_if<Species::HoldGrowthCommand>(&result.commands.front()) : nullptr;
+    Assert::IsTrue(release != nullptr && !release->held, L"a second press lets it go");
+    verbs.Sent(8, result.commands.front());
+    verbs.Reported({7, 20, Species::CommandResult::Applied, 0});
+    verbs.Reported({8, 21, Species::CommandResult::Applied, 0});
+    frame = {};
+    view.status = Status(20);
+    static_cast<void>(verbs.Update(frame, TEAM, view, areas));
+    Assert::IsTrue(verbs.ForHud().growthHeld == std::optional<bool>(false), L"a status older than the hold does not hold it");
+    view.status = Status(21);
+    static_cast<void>(verbs.Update(frame, TEAM, view, areas));
+    Assert::IsFalse(verbs.ForHud().growthHeld.has_value(), L"the status of its tick does");
+    verbs.Sent(9, Species::HoldGrowthCommand{TEAM, true});
+    verbs.Reported({9, 22, Species::CommandResult::NoEffect, 0});
+    Assert::IsFalse(verbs.ForHud().growthHeld.has_value(), L"a hold with no effect shows no more");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp101TheConflictVerbsSendTheirCommands)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-053")

@@ -18,13 +18,13 @@ namespace Species
 namespace
 {
 
-// MVP-024: while the settlement is below its population limit and its stores hold an orb's cost, its timer counts down,
-// and at 0 its Wellspring pays for an orb at its centre.
+// MVP-024: while the settlement's growth is not held (O106) and it is below its population limit and its stores hold an
+// orb's cost, its timer counts down, and at 0 its Wellspring pays for an orb at its centre.
 void Grow(RegionSimulation& _region, Settlement& _settlement, std::uint32_t _population)
 {
   const TuningMvp& tuning = _region.Tuning();
   const std::int64_t cost = MilliRuOf(tuning.mvp.essence.orbCostRu);
-  if (_population >= PopulationLimitOf(_region, _settlement) || _settlement.storesMilliRu < cost)
+  if (_settlement.growthHeld || _population >= PopulationLimitOf(_region, _settlement) || _settlement.storesMilliRu < cost)
   {
     return;
   }

@@ -68,6 +68,7 @@ struct HudVerbs
   std::optional<PlacementRefusal> refusal;           // the server's last refusal of a placement,
   double refusalAgeSeconds = 0.0;                    // and how long ago it came, in real time
   std::optional<std::array<std::uint8_t, 3>> shares; // the priorities sent, shown until a status holds them
+  std::optional<bool> growthHeld;                    // O106 (ADR-178): the hold sent, shown until a status holds it
   // ADR-167: the attack being declared, and the server's last refusal of a conflict command with its kind and reason.
   std::optional<PendingAttack> pending;
   std::optional<std::pair<ConflictKind, std::uint8_t>> conflictRefusal;
@@ -223,7 +224,8 @@ enum class HudZone : std::uint8_t
   PriorityLower,  // a priority's lowering arrow
   Relations,      // the relations panel (ADR-166)
   RelationAction, // a button of a relations row (ADR-167); its index is the row's place × 2 + the action's
-  Result          // the result card (ADR-168)
+  Result,         // the result card (ADR-168)
+  GrowthHold      // the growth row's button that holds the growth or lets it run (O106, ADR-178)
 };
 
 struct HudZoneRect
@@ -273,7 +275,8 @@ struct HudRow
 
 /// MVP-102's settlement HUD at M2 (ADR-152, recipe D of UI-460): panels over the world in the HUD space of RND-377,
 /// with no focus of their own, drawn in the UI pass. The settlement panel holds the stores and their capacity, the
-/// Workers and the population limit, growth and the cause when it stops, the upkeep and the inactive structures, the
+/// Workers and the population limit, growth and the cause when it stops with the button that holds it (O106, ADR-178),
+/// the upkeep and the inactive structures, the
 /// priorities with their Workers, and the idle Workers by reason (MVP-037); the construction bar holds each structure
 /// with its cost, the queue each site with its progress; the notification cards the structures completed; and the
 /// world's panel its seed. From M3 task T11 (ADR-166) it asks for the valley's status with the settlement's, shows the
@@ -362,6 +365,7 @@ private:
   Neuron::UiRect m_world;
   std::array<Neuron::UiRect, BUILD_KINDS.size()> m_build{};
   std::array<std::array<Neuron::UiRect, 2>, 3> m_arrows{}; // each priority's lowering and raising arrows (ADR-153)
+  Neuron::UiRect m_holdButton;                             // the growth row's hold button (O106, ADR-178)
   Neuron::UiRect m_queue;
   Neuron::UiRect m_relations;
   std::vector<RelationRow> m_relationRows;
