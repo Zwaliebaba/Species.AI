@@ -102,3 +102,4 @@ Chosen options: 1 and 3.
   - `GameClient/ClientSession` (`LatestEpilogue`), `SettlementHud` (`StandingOf`, `RenownTotal`, `RunTimeOf`, the world panel);
   - `GameData/Strings/en_us.json` (`ui.hud.time_left`, `ui.hud.standing`, `ui.hud.renown`);
   - `GameSharedTests/RelationMessageTests`, `GameLogicTests/RunTests`, `GameClientTests/SettlementHudTests`, `ClientSessionTests`.
+* **Amendment 2026-10-23 (M3 task T14, [ADR-170](ADR-170-the-world-menu-the-epilogue-page-and-leaving-at-m3.md)).** The second step's page is ADR-170's: the world's menu asks for the epilogue once the run has ended, and its page shows it in sections, the standing and each settlement's history.

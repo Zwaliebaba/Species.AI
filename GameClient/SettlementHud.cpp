@@ -438,6 +438,12 @@ std::vector<ResultRow> ResultRowsOf(const BattleResultNotice& _result, std::uint
   return rows;
 }
 
+std::string CladanName(std::uint8_t _site, const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale)
+{
+  const std::array arguments{Neuron::FormatArgument{"cladan", Selector(CLADAN_SELECTORS, _site)}};
+  return _strings.Format(STRING_CLADAN, arguments, _locale);
+}
+
 std::int64_t RenownTotal(const RenownLine& _line) noexcept
 {
   return std::int64_t{_line.defense} + _line.claims + _line.easing + _line.structures;
@@ -766,11 +772,7 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
 
   // ADR-166: a Cladan's name, from its colour, and an area's: the central site, or a half of a valley border area by the
   // settlement whose half it is and the neighbour it faces.
-  const auto cladanName = [&](std::uint8_t _site)
-  {
-    const std::array arguments{Neuron::FormatArgument{"cladan", Selector(CLADAN_SELECTORS, _site)}};
-    return _strings.Format(STRING_CLADAN, arguments, _locale);
-  };
+  const auto cladanName = [&](std::uint8_t _site) { return CladanName(_site, _strings, _locale); };
   const auto areaName = [&](std::uint8_t _area)
   {
     if (_area >= CLAIM_AREA_CENTRAL)

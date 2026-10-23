@@ -54,6 +54,9 @@
     <ClInclude Include="LeaderLook.h">
       <Filter>View</Filter>
     </ClInclude>
+    <ClInclude Include="PageSkeleton.h">
+      <Filter>View</Filter>
+    </ClInclude>
     <ClInclude Include="ReplicaTiming.h">
       <Filter>Replication</Filter>
     </ClInclude>
@@ -85,6 +88,9 @@
       <Filter>View</Filter>
     </ClInclude>
     <ClInclude Include="WorldMarkers.h">
+      <Filter>View</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldMenu.h">
       <Filter>View</Filter>
     </ClInclude>
     <ClInclude Include="WorldPresentation.h">
@@ -128,6 +134,9 @@
     <ClCompile Include="LeaderLook.cpp">
       <Filter>View</Filter>
     </ClCompile>
+    <ClCompile Include="PageSkeleton.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
     <ClCompile Include="ReplicaTiming.cpp">
       <Filter>Replication</Filter>
     </ClCompile>
@@ -159,6 +168,9 @@
       <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="WorldMarkers.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldMenu.cpp">
       <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="WorldPresentation.cpp">

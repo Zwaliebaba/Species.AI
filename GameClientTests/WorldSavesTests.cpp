@@ -89,6 +89,35 @@ public:
     const std::optional<Species::SavedWorld> third = Species::CreateWorld(saves.Path(), std::nullopt, 0);
     Assert::IsTrue(third.has_value() && third->number == 8, L"numbered above world-0007");
   }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp063AnEndedRunIsRecordedAndListed)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-063")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp063AnEndedRunIsRecordedAndListed)
+  {
+    // ADR-170: the run's end is written into the description, kept with the seed, and the ended worlds that hold a
+    // snapshot are listed, the highest number first.
+    const TemporaryFolder saves;
+    std::optional<Species::SavedWorld> first = Species::CreateWorld(saves.Path(), 7, 1);
+    std::optional<Species::SavedWorld> second = Species::CreateWorld(saves.Path(), 8, 3);
+    std::optional<Species::SavedWorld> third = Species::CreateWorld(saves.Path(), 9, 0);
+    if (!first.has_value() || !second.has_value() || !third.has_value())
+    {
+      Assert::Fail(L"made");
+      return;
+    }
+    Assert::IsTrue(Species::EndedWorlds(saves.Path()).empty(), L"no run has ended");
+    Assert::IsTrue(Species::RecordRunEnded(*first) && Species::RecordRunEnded(*second) && first->ended, L"recorded");
+    Assert::IsTrue(Species::RecordWorldSeed(*first, 70), L"and the seed after it");
+    Write(first->folder / L"world-00000000000000000600.snapshot", "a snapshot's bytes");
+    Write(third->folder / L"world-00000000000000000600.snapshot", "a snapshot's bytes");
+    const std::vector<Species::SavedWorld> worlds = Species::ListWorlds(saves.Path());
+    Assert::IsTrue(worlds.size() == 3 && !worlds[0].ended && worlds[1].ended && worlds[2].ended, L"read back");
+    Assert::IsTrue(worlds[2].seed == std::optional<std::uint64_t>(70) && worlds[2].site == 1, L"with the seed and site");
+    const std::vector<Species::SavedWorld> ended = Species::EndedWorlds(saves.Path());
+    Assert::IsTrue(ended.size() == 1 && ended[0].number == 1, L"only the ended world that saved");
+    Assert::IsTrue(Species::LatestWorld(saves.Path()).value_or(Species::SavedWorld{}).number == 3, L"Continue still opens the latest");
+  }
 };
 
 } // namespace GameClientTests

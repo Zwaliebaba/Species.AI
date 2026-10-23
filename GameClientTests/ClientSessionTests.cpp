@@ -1,7 +1,10 @@
 #include "pch.h"
 
 #include "ClientSession.h"
+#include "GameUi.h"
 #include "InProcessTransport.h"
+#include "MessageCodec.h"
+#include "MessageLocale.h"
 #include "PlatformClock.h"
 #include "PresentationEvents.h"
 #include "RegionTerrain.h"
@@ -11,8 +14,12 @@
 #include "SettlementMessages.h"
 #include "StateUpdate.h"
 #include "TestSupport.h"
+#include "UiCore.h"
+#include "UiLook.h"
+#include "WorldMenu.h"
 #include "WorldTerrain.h"
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -474,6 +481,112 @@ public:
     verbs.resultsClosed = 6;
     hud.Update(*f.session, 1.2, metrics, verbs);
     Assert::IsTrue(hud.Model().results.empty(), L"and the second");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp063TheEpilogueIsAskedForOnceTheRunEndsAndOpensOnce)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-063")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp063TheEpilogueIsAskedForOnceTheRunEndsAndOpensOnce)
+  {
+    // ADR-170: the world's menu asks for the epilogue once the valley status says the run has ended, once, and keeps the
+    // ended run's epilogue when it comes, whose page then opens once.
+    Fixture f;
+    const Species::WorldTerrain sent{SeedOne().seed, SeedOne().digest, std::uint8_t{2}};
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(sent)).has_value());
+    const Species::ReplicatedSettlement own{2, 2, 2, 120'500, 1'500'000, 20, 40, 5'600};
+    f.Send(Species::StateUpdate{3, 0, {RecordOf(Species::SettlementObjectId(2), own, nullptr)}});
+    f.session->Update();
+    const Neuron::MessageLocale locale("en-US");
+    Species::WorldMenu::Desc desc;
+    desc.presentation = &CommittedPresentation();
+    desc.tuning = &CommittedTuning();
+    desc.strings = &CommittedStrings();
+    desc.locale = &locale;
+    Species::WorldMenu menu(desc);
+    std::vector<std::uint8_t> asked;
+    Neuron::MessageDispatcher server;
+    server.Register<Species::ReadEpilogueCommand>([&asked](const Species::ReadEpilogueCommand& _command)
+                                                  { asked.push_back(_command.team); });
+    const auto drain = [&]()
+    {
+      while (std::optional<Neuron::ReceivedMessage> message = f.server->Receive())
+      {
+        static_cast<void>(server.Dispatch(message->bytes));
+      }
+    };
+    menu.Update(*f.session);
+    drain();
+    Assert::IsTrue(menu.Site() == std::optional<std::uint8_t>(2) && !menu.RunEnded() && asked.empty(),
+                   L"nothing asked while the run goes on");
+
+    Species::ValleyStatus valley;
+    valley.tick = 4;
+    valley.team = 2;
+    valley.runEnded = true;
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(valley)).has_value());
+    f.session->Update();
+    menu.Update(*f.session);
+    menu.Update(*f.session);
+    drain();
+    Assert::IsTrue(menu.RunEnded() && asked == std::vector<std::uint8_t>{2}, L"the run's end asks for the epilogue, once");
+    Assert::IsFalse(menu.Ended().has_value() || menu.TakeEpilogueArrived(), L"which has not come yet");
+
+    Species::Epilogue epilogue;
+    epilogue.tick = 5;
+    epilogue.team = 2;
+    epilogue.runEnded = true;
+    for (const std::uint8_t site : std::array<std::uint8_t, 4>{2, 0, 3, 1})
+    {
+      Species::EpilogueLine line;
+      line.site = site;
+      line.renown.site = site;
+      epilogue.settlements.push_back(line);
+    }
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(epilogue)).has_value());
+    f.session->Update();
+    menu.Update(*f.session);
+    Assert::IsTrue(menu.Ended() == std::optional<Species::Epilogue>(epilogue), L"the epilogue kept");
+    Assert::IsTrue(menu.TakeEpilogueArrived(), L"its page opens");
+    menu.Update(*f.session);
+    Assert::IsFalse(menu.TakeEpilogueArrived(), L"once");
+    // Its page over the menu: a row for each section, the standing shown first, Leave to the front end, and Back.
+    Neuron::UiCore ui(
+      [&menu](Neuron::UiPageId _page) -> std::unique_ptr<Neuron::UiPage>
+      { return menu.MakePage(static_cast<Species::WorldMenuPage>(_page - static_cast<Neuron::UiPageId>(Species::GamePage::WorldMenu))); });
+    const Neuron::UiMetrics metrics = Species::UiMetricsOf(CommittedPresentation(), {1920, 1080}, 1.0f, std::nullopt, std::nullopt);
+    ui.OpenScreen(static_cast<Neuron::UiPageId>(Species::GamePage::WorldMenu));
+    ui.Request({Neuron::UiPageRequest::Kind::Push, static_cast<Neuron::UiPageId>(Species::GamePage::WorldEpilogue)});
+    ui.Update({}, metrics);
+    ui.Update({}, metrics);
+    const Neuron::UiWindow* page = ui.Focused();
+    Assert::IsTrue(ui.Stack().size() == 2 && page != nullptr && Neuron::ValidateWindow(*page).empty(),
+                   L"UI-372: the epilogue passes the validator");
+    Assert::IsTrue(page->Contains(page->Find("section_4")) && page->Contains(page->Find("line_7")) && !page->Contains(page->Find("line_8")),
+                   L"five sections, and as many lines as the longest");
+    Assert::IsTrue(page->Cursor() == page->Find("section_0"), L"the cursor starts on the standing");
+    const Neuron::UiRect lastLine = page->RectOf(page->Find("line_7"));
+    const Neuron::UiRect rightBox = page->RectOf(page->Find("right_box"));
+    const Neuron::UiRect leave = page->RectOf(page->Find("leave"));
+    const Neuron::UiRect back = page->RectOf(page->Find("back"));
+    Assert::IsTrue(lastLine.bottom <= rightBox.bottom && leave.bottom <= back.top, L"the text and the rows fit their boxes");
+    Neuron::UiInput activate;
+    activate.activate = true;
+    for (int step = 0; step < 5; ++step)
+    {
+      Neuron::UiInput down;
+      down.down = true;
+      ui.Update(down, metrics);
+    }
+    Assert::IsTrue(page->Cursor() == page->Find("leave"), L"Leave below the sections");
+    ui.Update(activate, metrics);
+    Assert::IsTrue(menu.TakeChoice().value_or(Species::WorldMenuChoice{}).kind == Species::WorldMenuChoice::Kind::Leave, L"which leaves");
+    Neuron::UiInput close;
+    close.close = true;
+    ui.Update(close, metrics);
+    ui.Update({}, metrics);
+    Assert::IsTrue(ui.Stack().size() == 1 && !menu.TakeChoice().has_value(), L"Back returns to the menu");
+    menu.Reset();
+    Assert::IsFalse(menu.RunEnded() || menu.Ended().has_value() || menu.Site().has_value(), L"a new world starts with none");
   }
 };
 

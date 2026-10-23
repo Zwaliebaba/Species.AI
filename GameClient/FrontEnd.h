@@ -18,6 +18,7 @@
 #include <string>
 #include <string_view>
 #include <variant>
+#include <vector>
 
 namespace Species
 {
@@ -29,12 +30,14 @@ struct FrontEndChoice
   {
     Continue, // the latest world (SetLatest)
     NewWorld, // a new world with its seed and site
-    Quit
+    Quit,
+    Epilogue // ADR-170: an ended world, opened on its epilogue
   };
 
   Kind kind = Kind::Quit;
   std::optional<std::uint64_t> seed; // NewWorld: the seed typed; none: the server draws one (MVP-005)
   std::uint8_t site = 0;             // NewWorld: the steward's site (MVP-012)
+  std::optional<SavedWorld> world;   // Epilogue: the ended world
 };
 
 // The front end's pages, by their UI page ids (GamePage's FrontEnd entries).
@@ -42,15 +45,19 @@ enum class FrontEndPage : std::uint8_t
 {
   Main,
   NewWorld,
-  Options
+  Options,
+  PastRuns // ADR-170
 };
 
 // The seed field's digits at most: a 64-bit seed's (MVP-005).
 inline constexpr std::size_t SEED_DIGITS_MAX = 20;
 // The master volume's step on the options page, in percent (O96).
 inline constexpr std::int64_t VOLUME_STEP = 10;
+// ADR-170: the ended worlds the past runs' page lists at most, the newest first.
+inline constexpr std::size_t PAST_RUNS_MAX = 6;
 
-/// MVP-103's front end at M2 (M2 task T18, ADR-155, O80, O96): the main page with Continue, New world, Options and Quit;
+/// MVP-103's front end at M2 (M2 task T18, ADR-155, O80, O96): the main page with Continue, New world, Options and Quit,
+/// and from M3 task T14 (ADR-170) Past runs, whose page opens an ended world on its epilogue;
 /// the new world's page with its seed field and its site; and the options page with the window mode, anti-aliasing,
 /// vertical sync and the master volume, which it writes to the settings store as they change and saves when the page
 /// is left. Its pages are the UI core's (ADR-149), built on the page grid of UI-163 with the strings of en-US. It holds
@@ -74,6 +81,12 @@ public:
   void SetLatest(std::optional<SavedWorld> _latest);
   // ADR-155: why the last Continue failed, shown on the main page until the steward chooses again.
   void SetContinueFault(std::optional<ContinueFault> _fault);
+  // MVP-063 (ADR-170): the worlds whose run has ended, the newest first, whose epilogues the past runs' page opens.
+  void SetEnded(std::vector<SavedWorld> _ended);
+  [[nodiscard]] const std::vector<SavedWorld>& Ended() const noexcept
+  {
+    return m_ended;
+  }
   // The page of _page's id, for the UI core's factory; none for another id.
   [[nodiscard]] std::unique_ptr<Neuron::UiPage> MakePage(FrontEndPage _page);
 
@@ -105,6 +118,7 @@ public:
 private:
   Desc m_desc;
   std::optional<SavedWorld> m_latest;
+  std::vector<SavedWorld> m_ended;
   std::optional<ContinueFault> m_fault;
   std::optional<FrontEndChoice> m_choice;
   bool m_displayChanged = false;

@@ -265,6 +265,25 @@ void WorldPresentation::UpdateHud(ClientSession& _session, const SettlementView&
                 _view.Settlement().ForHud(), _view.Markers().IconPlaces());
 }
 
+void WorldPresentation::LeaveWorld()
+{
+  ClearWorld();
+  m_hud = std::make_unique<SettlementHud>(*m_desc.presentation, *m_desc.tuning);
+}
+
+void WorldPresentation::ClearWorld()
+{
+  m_terrain = nullptr;
+  m_world.reset();
+  m_firstDisplayTick.reset();
+  m_leaders = LeaderLook{};
+  m_effects.Clear();
+  m_structures.Clear();
+  m_territories.Clear();
+  m_viewMask.reset();
+  m_viewMaskRevision.reset();
+}
+
 void WorldPresentation::Update(const ClientSession& _session)
 {
   const RegionTerrain* terrain = _session.Terrain();
@@ -272,16 +291,10 @@ void WorldPresentation::Update(const ClientSession& _session)
   {
     return;
   }
+  ClearWorld();
   m_terrain = terrain;
-  m_firstDisplayTick.reset();
-  m_effects.Clear();
-  m_structures.Clear();
-  m_territories.Clear();
-  m_viewMask.reset();
-  m_viewMaskRevision.reset();
   if (terrain == nullptr)
   {
-    m_world.reset();
     return;
   }
   const Neuron::Nanoseconds before = m_desc.clock->Now();

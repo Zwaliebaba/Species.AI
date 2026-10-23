@@ -87,7 +87,7 @@ Chosen option: 1.
 * Good, because every world keeps its own folder, ready for M3's epilogue of ended worlds.
 * Good, because the client still knows nothing of a snapshot's contents.
 * Bad, because a world that cannot be continued costs a new world's opening before the server stops.
-* Bad, because the client returns to the front end only by quitting and starting again at M2.
+* Bad, because the client returns to the front end only by quitting and starting again at M2; M3 adds leaving from the world's menu ([ADR-170](ADR-170-the-world-menu-the-epilogue-page-and-leaving-at-m3.md)).
 * It forecloses: a new world written over an old one; a client that reads snapshots.
 
 ### Confirmation
@@ -136,3 +136,4 @@ Chosen option: 1.
 * Amends [ADR-083](ADR-083-server-process-ownership-and-threading.md) item 3 (the client's states at M2), [ADR-099](ADR-099-world-snapshots.md) and [ADR-137](ADR-137-saving-the-journal-cut-and-the-world-record-at-m2.md) (the saves folder, the restore-only open); adds `saves\` to table 3.1-A of the [platform layer](../architecture/components/platform_layer.md).
 * Owner decisions O80, O96; MVP-005, MVP-011, MVP-012, MVP-075, MVP-095, MVP-103; PLT-016, PLT-017, PLT-025, PLT-030; UI-163, UI-372, UI-373, UI-383.
 * The code: `GameClient/FrontEnd`, `WorldSaves`, `GameUi`, `WorldPresentation` (`FrontEndFrame`), `ClientSettings` (`MASTER_VOLUME_MAX`); `GameShared/ContinueFault`; `GameLogic/IntegratedServer`, `WorldServer` (`restoreOnly`, `Opened`); `NeuronClient/FrameRenderer` (`PresentedFrames`); `NeuronCore/StartupOptions` (`--sandbox`); `Species/Species.cpp`; `Build/CheckWorldFrame.py`.
+* **Amendment 2026-10-23 (M3 task T14, [ADR-170](ADR-170-the-world-menu-the-epilogue-page-and-leaving-at-m3.md)).** The description also records that the world's run has ended (`world.run_ended = true`, `RecordRunEnded`). The main page gains Past runs, inactive until a run has ended, whose page chooses an ended world's epilogue; that world is continued with `restoreOnly` as Continue's is, and Continue's caption says when the latest world's run has ended. The client leaves a world back to the front end from the world's menu.

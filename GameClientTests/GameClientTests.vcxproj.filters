@@ -89,6 +89,9 @@
     <ClCompile Include="WorldMarkersTests.cpp">
       <Filter>View</Filter>
     </ClCompile>
+    <ClCompile Include="WorldMenuTests.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
     <ClCompile Include="WorldPresentationTests.cpp">
       <Filter>Session</Filter>
     </ClCompile>

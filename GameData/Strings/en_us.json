@@ -38,6 +38,10 @@
     "ui.front.vsync": "Vertical sync",
     "ui.front.volume": "Master volume",
     "ui.front.volume_option": "{percent, number, integer}%",
+    "ui.front.continue_ended": "Continue the ended run of seed {seed}",
+    "ui.front.past_runs": "Past runs",
+    "ui.front.past_run": "The epilogue of run {number, number, integer}, seed {seed}",
+    "ui.front.no_past_run": "No run has ended yet.",
     "ui.hud.cladan": "{cladan, select, green {Green} red {Red} yellow {Yellow} blue {Blue} other {Unknown}}",
     "ui.hud.area": "{area, select, central {the central site} other {{owner}'s half facing {facing}}}",
     "ui.hud.relations": "Relations",
@@ -66,6 +70,21 @@
     "ui.hud.result_public": "{winner} beat {loser} {kind, select, claim {for {area}} other {in a raid}}",
     "ui.hud.time_left": "{state, select, quiet {Quiet minutes, {hours, number, integer}:{minutes}:{seconds} left} ended {The run has ended} other {{hours, number, integer}:{minutes}:{seconds} left in the run}}",
     "ui.hud.standing": "Standing",
-    "ui.hud.renown": "{place, number, integer}. {cladan} {total, number, integer}: {defense, number, integer} defense, {claims, number, integer} claims, {easing, number, integer} easing, {structures, number, integer} building"
+    "ui.hud.renown": "{place, number, integer}. {cladan} {total, number, integer}: {defense, number, integer} defense, {claims, number, integer} claims, {easing, number, integer} easing, {structures, number, integer} building",
+    "ui.world.menu": "Menu",
+    "ui.world.resume": "Return to the world",
+    "ui.world.epilogue": "Epilogue",
+    "ui.world.leave": "Leave to the front end",
+    "ui.world.epilogue_waits": "The epilogue opens when the run ends.",
+    "ui.epilogue.place": "{place, number, integer}. {cladan}: {total, number, integer} renown",
+    "ui.epilogue.sources": "{defense, number, integer} defense, {claims, number, integer} claims, {easing, number, integer} easing, {structures, number, integer} building",
+    "ui.epilogue.yours": "{cladan} (yours)",
+    "ui.epilogue.growth": "{steps, plural, one {# growth step} other {# growth steps}}, the longest gap {minutes, plural, one {# minute} other {# minutes}}",
+    "ui.epilogue.contact": "{reached, select, yes {First halfway line at {hours, number, integer}:{minutes}} other {No halfway line reached}}",
+    "ui.epilogue.battles": "Battles: {won, number, integer} won, {lost, number, integer} lost",
+    "ui.epilogue.claims": "Claims: {made, number, integer} made, {won, number, integer} won, {lost, number, integer} lost, {withdrawn, number, integer} withdrawn",
+    "ui.epilogue.structures": "{structures, plural, one {# structure} other {# structures}} raised, {grievances, plural, one {# grievance} other {# grievances}} taken",
+    "ui.epilogue.workers": "Workers: {most, number, integer} at most, {last, number, integer} at the end",
+    "ui.epilogue.strength": "Strength: {first, number, integer} first, {peak, number, integer} peak, {last, number, integer} last"
   }
 }

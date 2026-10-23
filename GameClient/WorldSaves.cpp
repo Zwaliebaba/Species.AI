@@ -23,6 +23,8 @@ namespace
 // The description's keys (DAT-196).
 constexpr std::string_view SEED_KEY = "world.seed";
 constexpr std::string_view SITE_KEY = "world.site";
+constexpr std::string_view RUN_ENDED_KEY = "world.run_ended"; // ADR-170: "true" once the client saw the run end
+constexpr std::string_view TRUE_TEXT = "true";
 constexpr std::uint64_t SITE_COUNT = 4;          // WLD-040: the region's settlement sites
 constexpr std::uint32_t WORLD_NUMBER_MAX = 9999; // the most that WORLD_NUMBER_DIGITS digits hold
 
@@ -56,11 +58,16 @@ template <class T> std::optional<T> ParseNumber(std::string_view _text)
 // The world's description written through atomic replacement (PLT-089).
 bool WriteDescription(const SavedWorld& _world)
 {
-  std::array<Neuron::SettingsEntryText, 2> entries{
-    Neuron::SettingsEntryText{std::string(SITE_KEY), std::to_string(_world.site)},
-    Neuron::SettingsEntryText{std::string(SEED_KEY), _world.seed ? std::to_string(*_world.seed) : std::string{}}};
-  const std::span<const Neuron::SettingsEntryText> current(entries.data(), _world.seed ? entries.size() : 1);
-  const std::string text = Neuron::WriteSettingsText({}, current);
+  std::vector<Neuron::SettingsEntryText> entries{Neuron::SettingsEntryText{std::string(SITE_KEY), std::to_string(_world.site)}};
+  if (_world.seed.has_value())
+  {
+    entries.push_back({std::string(SEED_KEY), std::to_string(*_world.seed)});
+  }
+  if (_world.ended)
+  {
+    entries.push_back({std::string(RUN_ENDED_KEY), std::string(TRUE_TEXT)});
+  }
+  const std::string text = Neuron::WriteSettingsText({}, entries);
   if (!Neuron::ReplaceFileAtomically(_world.folder / WORLD_DESCRIPTION_FILE, std::as_bytes(std::span(text))))
   {
     Neuron::Log(Neuron::LogCategory::Platform, Neuron::LogLevel::Error, "the description of {} could not be written",
@@ -106,6 +113,10 @@ std::optional<SavedWorld> ReadWorld(const std::filesystem::path& _folder, std::u
       {
         return std::nullopt;
       }
+    }
+    else if (line.key == RUN_ENDED_KEY)
+    {
+      world.ended = line.value == TRUE_TEXT;
     }
   }
   return site ? std::optional<SavedWorld>(std::move(world)) : std::nullopt;
@@ -184,6 +195,20 @@ bool RecordWorldSeed(SavedWorld& _world, std::uint64_t _seed)
 {
   _world.seed = _seed;
   return WriteDescription(_world);
+}
+
+bool RecordRunEnded(SavedWorld& _world)
+{
+  _world.ended = true;
+  return WriteDescription(_world);
+}
+
+std::vector<SavedWorld> EndedWorlds(const std::filesystem::path& _saves)
+{
+  std::vector<SavedWorld> worlds = ListWorlds(_saves);
+  std::erase_if(worlds,
+                [](const SavedWorld& _world) { return !_world.ended || Neuron::ListFiles(_world.folder, WORLD_SNAPSHOT_SUFFIX).empty(); });
+  return worlds;
 }
 
 } // namespace Species

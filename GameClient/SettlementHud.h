@@ -20,6 +20,7 @@
 #include <deque>
 #include <optional>
 #include <span>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -174,6 +175,9 @@ struct ResultRow
 // stores and Essence moved, the area moved, the grievance, the respite and the renown that are not none, and the close.
 [[nodiscard]] std::vector<ResultRow> ResultRowsOf(const BattleResultNotice& _result, std::uint8_t _site, double _tickSeconds,
                                                   std::size_t _waiting);
+
+// MVP-013 (ADR-166): a Cladan's name by its colour, `ui.hud.cladan` with its site's selector.
+[[nodiscard]] std::string CladanName(std::uint8_t _site, const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale);
 
 // MVP-062 (ADR-169): the settlements' renown in the order of the standing, the most first and the lower site on a tie, as
 // the server's Standing orders them.

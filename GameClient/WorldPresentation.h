@@ -54,6 +54,9 @@ public:
 
   // Once per frame, after the session's update: builds the world's surfaces when the session's terrain is new.
   void Update(const ClientSession& _session);
+  // ADR-170: the world has ended for the client, which leaves to the front end: its surfaces, looks and HUD are dropped,
+  // so that the next world builds its own even when its terrain lands at the same address.
+  void LeaveWorld();
   // ADR-152: once per frame, after the session's update: the settlement HUD's model, with the settlement verbs of _view
   // (ADR-153), its status requests and its layout for a client area of _client at _dpiScale.
   void UpdateHud(ClientSession& _session, const SettlementView& _view, Neuron::SizePx _client, float _dpiScale);
@@ -80,6 +83,19 @@ public:
   void CloseFrontEnd()
   {
     m_ui->CloseFrontEnd();
+  }
+  // ADR-170: the world's menu while a world runs, none as it ends; its screen opened over the world on _page, and closed.
+  void AttachWorldMenu(WorldMenu* _menu)
+  {
+    m_ui->AttachWorldMenu(_menu);
+  }
+  void OpenWorldMenu(GamePage _page)
+  {
+    m_ui->OpenWorldMenu(_page);
+  }
+  void CloseWorldMenu()
+  {
+    m_ui->CloseWorldMenu();
   }
   // ADR-146: the en-US strings and their locale, which the front end formats its texts with.
   [[nodiscard]] const Neuron::StringTable& Strings() const noexcept
@@ -133,6 +149,9 @@ public:
   [[nodiscard]] FramePageInputs FramePageOf(const ClientSession& _session, double _framesPerSecond) const;
 
 private:
+  // The world's surfaces and looks dropped, for no terrain.
+  void ClearWorld();
+
   Desc m_desc;
   const RegionTerrain* m_terrain = nullptr; // the terrain the world was built from
   std::shared_ptr<const Neuron::WorldScene> m_world;

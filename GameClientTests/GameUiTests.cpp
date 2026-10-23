@@ -2,8 +2,10 @@
 
 #include "GameUi.h"
 #include "InputBindings.h"
+#include "MessageLocale.h"
 #include "TestSupport.h"
 #include "UiLook.h"
+#include "WorldMenu.h"
 
 #include <chrono>
 #include <cstdint>
@@ -119,6 +121,62 @@ public:
     Assert::IsTrue(ui.TestSampleArea().has_value(), L"the samples' box while the root page shows");
   }
 #endif
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr170TheCloseActionOpensTheWorldsMenu)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-063")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-006")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr170TheCloseActionOpensTheWorldsMenu)
+  {
+    // ADR-170: in a world with no window open, the close action opens the world's menu, whose own close action returns.
+    KeysBackEnd keys;
+    const std::vector<Neuron::ActionBindings> bindings = Species::DefaultBindings();
+    Neuron::InputRouter router(bindings, keys, nullptr);
+    Species::GameUi ui(CommittedPresentation());
+    const Neuron::MessageLocale locale("en-US");
+    Species::WorldMenu::Desc desc;
+    desc.presentation = &CommittedPresentation();
+    desc.tuning = &CommittedTuning();
+    desc.strings = &CommittedStrings();
+    desc.locale = &locale;
+    Species::WorldMenu menu(desc);
+    const auto press = [&](Neuron::KeyCode _key, std::int64_t _second)
+    {
+      keys.Press(_key);
+      router.AdvanceFrame({}, CLIENT, std::chrono::seconds(_second));
+      ui.Update(router, CLIENT, 1.0f, true);
+      keys.Press(_key, false);
+      router.AdvanceFrame({}, CLIENT, std::chrono::milliseconds(_second * 1'000 + 100));
+      ui.Update(router, CLIENT, 1.0f, true);
+    };
+    press(Neuron::KeyCode::Escape, 1);
+    Assert::IsTrue(ui.Core().Stack().empty(), L"no menu without a world");
+
+    ui.AttachWorldMenu(&menu);
+    press(Neuron::KeyCode::Escape, 2);
+    Assert::IsTrue(ui.Core().Stack().size() == 1 &&
+                     ui.Core().Stack().front() == static_cast<Neuron::UiPageId>(Species::GamePage::WorldMenu),
+                   L"the close action opens the menu");
+    Assert::IsFalse(menu.TakeChoice().has_value(), L"and does no more");
+    press(Neuron::KeyCode::Escape, 3);
+    Assert::IsTrue(menu.TakeChoice().value_or(Species::WorldMenuChoice{Species::WorldMenuChoice::Kind::Quit}).kind ==
+                     Species::WorldMenuChoice::Kind::Resume,
+                   L"the menu's close action returns to the world");
+    ui.CloseWorldMenu();
+    router.AdvanceFrame({}, CLIENT, std::chrono::seconds(4));
+    ui.Update(router, CLIENT, 1.0f, true);
+    Assert::IsTrue(ui.Core().Stack().empty(), L"and the menu closes");
+
+    ui.OpenWorldMenu(Species::GamePage::WorldEpilogue);
+    router.AdvanceFrame({}, CLIENT, std::chrono::seconds(5));
+    ui.Update(router, CLIENT, 1.0f, true);
+    ui.Update(router, CLIENT, 1.0f, true);
+    Assert::AreEqual(std::size_t{2}, ui.Core().Stack().size(), L"the epilogue opens over the menu");
+    ui.AttachWorldMenu(nullptr);
+    router.AdvanceFrame({}, CLIENT, std::chrono::seconds(6));
+    ui.Update(router, CLIENT, 1.0f, true);
+    Assert::IsTrue(ui.Core().Stack().empty(), L"a world that ends closes its menu");
+  }
 };
 
 } // namespace GameClientTests

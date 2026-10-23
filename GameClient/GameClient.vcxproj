@@ -154,6 +154,7 @@
     <ClInclude Include="GameUi.h" />
     <ClInclude Include="InputBindings.h" />
     <ClInclude Include="LeaderLook.h" />
+    <ClInclude Include="PageSkeleton.h" />
     <ClInclude Include="ReplicaTiming.h" />
     <ClInclude Include="RoutePreview.h" />
     <ClInclude Include="SettlementCamera.h" />
@@ -165,6 +166,7 @@
     <ClInclude Include="TerritoryLook.h" />
     <ClInclude Include="UiLook.h" />
     <ClInclude Include="WorldMarkers.h" />
+    <ClInclude Include="WorldMenu.h" />
     <ClInclude Include="WorldPresentation.h" />
     <ClInclude Include="WorldSaves.h" />
     <ClInclude Include="pch.h" />
@@ -180,6 +182,7 @@
     <ClCompile Include="GameUi.cpp" />
     <ClCompile Include="InputBindings.cpp" />
     <ClCompile Include="LeaderLook.cpp" />
+    <ClCompile Include="PageSkeleton.cpp" />
     <ClCompile Include="ReplicaTiming.cpp" />
     <ClCompile Include="RoutePreview.cpp" />
     <ClCompile Include="SettlementCamera.cpp" />
@@ -191,6 +194,7 @@
     <ClCompile Include="TerritoryLook.cpp" />
     <ClCompile Include="UiLook.cpp" />
     <ClCompile Include="WorldMarkers.cpp" />
+    <ClCompile Include="WorldMenu.cpp" />
     <ClCompile Include="WorldPresentation.cpp" />
     <ClCompile Include="WorldSaves.cpp" />
     <ClCompile Include="pch.cpp">
