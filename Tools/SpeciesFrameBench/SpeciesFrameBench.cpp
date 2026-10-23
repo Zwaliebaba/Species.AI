@@ -68,8 +68,9 @@
 // settlement at its plateau with the HUD, seen from over its Wellspring (ADR-156), and from M3 task T9 the valley at war,
 // four settlements with two battles in progress, seen over the attack on the steward's settlement (ADR-164). After a
 // warm-up it records each frame's interval, from its start to the next frame's start (ADR-148), its work, its waits
-// apart, its time on the GPU and the refreshes the display took to show the frames, for a number of ticks, and writes
-// them as JSON for Build/RunPerformance.py.
+// apart, its time on the GPU and the refreshes the display took to show the frames, for a number of ticks; from M3 task T16
+// it also times a crowd order about once a second, from the frame that sends it to the present of the first frame that
+// displays it (ADR-079). It writes them as JSON for Build/RunPerformance.py.
 //
 //   SpeciesFrameBench.exe [--quick] [--scenes <name,...>] [--out <file.json>] [--warp]
 //
@@ -125,6 +126,10 @@ constexpr Neuron::SipHashKey VALLEY_KEY{0x62656e6368000002, 0x0123456789abcdef};
 constexpr std::uint64_t VALLEY_SETTLE_TICKS_QUICK = 20;
 constexpr std::wstring_view VALLEY_FOLDER = L"SpeciesFrameBench-valley";
 constexpr double SECONDS_PER_HOUR = 3600.0;
+// ADR-079 (M3 task T16): while measuring, one crowd order at a time, sent at most once a second, and given up on when its
+// tick has not been displayed within 5 s.
+constexpr Neuron::Nanoseconds ORDER_PERIOD{1'000'000'000};
+constexpr Neuron::Nanoseconds ORDER_TIMEOUT{5'000'000'000};
 
 // The pre-UI messages a failed start can show, as Species.exe has them (PLT-039); the bench runs unattended, so they are
 // logged rather than shown.
@@ -229,6 +234,10 @@ struct SceneResult
   Neuron::SizePx window;
   std::optional<GrownSettlement> grown;   // the settlement scene's world
   std::optional<ValleyAtWarWorld> valley; // the valley at war's
+  // ADR-079 (M3 task T16): each crowd order's time, in ms, from the start of the frame that sent it to the present of the
+  // first frame whose display time reaches the tick that applied it; and the orders given up on.
+  std::vector<double> orders;
+  std::uint32_t ordersLost = 0;
 };
 
 void Print(std::FILE* _stream, std::string_view _text)
@@ -592,6 +601,17 @@ SceneEnd RunScene(const Scene& _scene, const Options& _options, const Bench& _be
   std::optional<Neuron::Nanoseconds> warmStart;
   std::optional<std::uint64_t> firstTick;
   std::optional<FrameRecord> pending; // the last frame presented while measuring, until the next frame's start ends it
+  // ADR-079: the order in flight, by the sequence the server gives it, and the tick that applied it once reported; the
+  // order goes to the fight's point with no Workers selected, so it moves nothing and the scene's work is unchanged.
+  struct Order
+  {
+    std::uint64_t sequence = 0;
+    Neuron::Nanoseconds sent{0};
+    std::optional<std::uint64_t> tick;
+  };
+  std::optional<Order> order;
+  std::optional<Neuron::Nanoseconds> lastOrder;
+  Neuron::Vec3 orderAt;
   SceneEnd end = SceneEnd::Measured;
   while (true)
   {
@@ -626,12 +646,44 @@ SceneEnd RunScene(const Scene& _scene, const Options& _options, const Bench& _be
     view.Update(session, *_bench.router, stepSeconds, size, false, &world.Hud());
     if (!aimed && view.InWorld() && session.Terrain() != nullptr)
     {
-      view.EnterAt(_scene.kind == SceneKind::Valley ? _bench.valley->fight : FightOf(_scene.kind, *session.Terrain(), tuning));
+      orderAt = _scene.kind == SceneKind::Valley ? _bench.valley->fight : FightOf(_scene.kind, *session.Terrain(), tuning);
+      view.EnterAt(orderAt);
       aimed = true;
+    }
+    // ADR-079: the order's tick from its outcome, which the view took; then the next order, read at this frame's start as
+    // a player's input is (ADR-148).
+    if (order.has_value() && !order->tick.has_value())
+    {
+      for (const Species::CommandReport& report : view.Reports())
+      {
+        if (report.sequence == order->sequence)
+        {
+          order->tick = report.tick;
+        }
+      }
+    }
+    if (firstTick.has_value() && !order.has_value() && (!lastOrder.has_value() || frameStart - *lastOrder >= ORDER_PERIOD))
+    {
+      if (const std::optional<std::uint8_t> team = session.CommandedTeam(); team.has_value())
+      {
+        Species::OrderWorkersCommand command;
+        command.team = *team;
+        command.position = {orderAt.x, orderAt.z};
+        if (const std::optional<std::uint64_t> sequence = session.SendCommand(command); sequence.has_value())
+        {
+          order = Order{*sequence, frameStart, std::nullopt};
+          lastOrder = frameStart;
+        }
+      }
     }
     session.Update();
     world.Update(session);
     world.UpdateHud(session, view, size, _bench.window->DpiScale()); // ADR-152: drawn as the client draws it, where a settlement exists
+    // The display time this frame draws (ADR-084 item 5), read just before the presentation reads it, so never later.
+    const std::optional<std::uint64_t> latestTick = session.ServerTick();
+    const std::optional<double> displayTick = latestTick.has_value() && *latestTick > 0
+                                                ? std::optional(static_cast<double>(*latestTick - 1) + session.InterpolationFraction())
+                                                : std::nullopt;
     const Neuron::FrameInputs inputs = world.Frame(session, view, _bench.renderer->FramesPerSecond(), _bench.window->DpiScale());
     const std::uint64_t worldFrames = _bench.renderer->WorldFrames();
     const Neuron::FrameOutcome outcome =
@@ -644,6 +696,21 @@ SceneEnd RunScene(const Scene& _scene, const Options& _options, const Bench& _be
       continue;
     }
     _bench.clock->FrameBoundary();
+    // ADR-079: the order's time ends at the present of the first frame that displays its tick.
+    if (order.has_value())
+    {
+      const Neuron::Nanoseconds presented = _bench.clock->Now();
+      if (order->tick.has_value() && displayTick.has_value() && *displayTick >= static_cast<double>(*order->tick))
+      {
+        _result.orders.push_back(MillisecondsOf(presented - order->sent));
+        order.reset();
+      }
+      else if (presented - order->sent > ORDER_TIMEOUT)
+      {
+        ++_result.ordersLost;
+        order.reset();
+      }
+    }
     if (measuring)
     {
       const Neuron::FrameTiming& timing = _bench.renderer->LastFrameTiming();
@@ -761,7 +828,7 @@ std::string JsonOf(const std::vector<SceneResult>& _results, const Options& _opt
                   R"("gpu_frames": {}, "gpu_ms": {}, "latency_wait_ms": {}, "fence_wait_ms": {}, "present_ms": {}, )"
                   R"("display": {{"presents_shown": {}, "refreshes": {}, "held_refreshes": {}}}, "longest": {}, )"
                   R"("figures_alive": {{"min": {}, "max": {}}}, "figures_on_screen": {{"mean": {:.1f}, "max": {}}}, "grown": {}, )"
-                  R"("valley": {}}})",
+                  R"("valley": {}, "orders": {}, "orders_lost": {}, "order_ms": {}}})",
                   scenes.empty() ? "" : ",\n", result.name, SCENE_SEED, result.figures, result.ticks, records.size(),
                   result.suspendedFrames, result.window.width, result.window.height,
                   JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.interval); }))),
@@ -771,7 +838,8 @@ std::string JsonOf(const std::vector<SceneResult>& _results, const Options& _opt
                   JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.fenceWait); }))),
                   JsonOf(SummaryOf(ValuesOf(records, [](const FrameRecord& _frame) { return std::optional(_frame.present); }))),
                   result.presentsShown, result.refreshesShown, held, LongestJsonOf(records), result.aliveMax == 0 ? 0U : result.aliveMin,
-                  result.aliveMax, result.onScreenSum / frames, result.onScreenMax, GrownJsonOf(result.grown), ValleyJsonOf(result.valley));
+                  result.aliveMax, result.onScreenSum / frames, result.onScreenMax, GrownJsonOf(result.grown), ValleyJsonOf(result.valley),
+                  result.orders.size(), result.ordersLost, result.orders.empty() ? std::string("null") : JsonOf(SummaryOf(result.orders)));
   }
   return std::format("{{\n  \"tool\": \"{}\", \"configuration\": \"{}\", \"platform\": \"{}\", \"quick\": {}, \"fps_target\": {}, "
                      "\"figures_max\": {},\n  \"adapter\": \"{}\", \"display\": {{\"width\": {}, \"height\": {}, \"refresh_hz\": {}}},\n"

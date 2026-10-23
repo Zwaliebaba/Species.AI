@@ -322,7 +322,8 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
   const bool onRegion = ground.has_value() && ground->onTerrain && ground->position.x >= m_region.minX &&
                         ground->position.x <= m_region.maxX && ground->position.z >= m_region.minZ && ground->position.z <= m_region.maxZ;
   // M1 task T17 (ADR-124): the battle verbs follow the camera (R-CTRL-020 step 8), with the outcomes of their commands.
-  for (const CommandReport& report : _session.TakeReports())
+  m_reports = _session.TakeReports();
+  for (const CommandReport& report : m_reports)
   {
     m_verbs.Reported(report);
     m_settlement.Reported(report);

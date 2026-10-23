@@ -124,6 +124,12 @@ public:
   {
     return m_verbs;
   }
+  // ADR-095: the outcomes of the commands taken at the last update, in the order they arrived, which the frame bench reads
+  // to time an order to its display (ADR-079, M3 task T16).
+  [[nodiscard]] std::span<const CommandReport> Reports() const noexcept
+  {
+    return m_reports;
+  }
   // ADR-167: the team the battle verbs command in this frame; none while they command none.
   [[nodiscard]] std::optional<std::uint8_t> BattleTeam() const noexcept
   {
@@ -173,6 +179,7 @@ private:
   const RegionTerrain* m_terrain = nullptr; // the terrain the camera entered
   CameraBounds m_region;
   BattleVerbs m_verbs;
+  std::vector<CommandReport> m_reports;
   SettlementVerbs m_settlement;
   RoutePreview m_preview;
   WorldMarkers m_markers;

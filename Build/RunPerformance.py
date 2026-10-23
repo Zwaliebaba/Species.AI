@@ -28,7 +28,8 @@ its budget fails the run (exit code 1); the run that pins only reports. The sand
 the steward's settlement drawn at its plateau (ADR-156), pass when the 99th percentile of the frame interval, from one
 frame's start to the next (ADR-148), is at most 1000 ÷ mvp.client.fps_target + 1 ms (O75); their missed frames, GPU
 time, waits, the refreshes that showed no new frame and longest frames, the server's tick rate while drawn, how the
-settlement grew and the scene of mvp.client.figures_max figures are reported, as are a
+settlement grew and the scene of mvp.client.figures_max figures are reported. From M3 task T16 a crowd order's time to its
+display in each judged scene passes at most 275 ms at the 95th percentile (ADR-079). Also reported are a
 valley's generation and its land route graph, the route sweep and the log flood's detail (ADR-091, ADR-102, ADR-104).
 From M2 task T10 the growth scene of each seed is reported against M2's exit, with the snapshot of its settlement, and
 the settlement at work and the region with four scripted settlements are judged against the Worker's and the region's
@@ -77,6 +78,11 @@ PIN_MARK = re.compile(r'<!-- reference-machine (\{.*?\}) -->')
 DISPLAY_MARK = re.compile(r'<!-- reference-display (\{.*?\}) -->')  # O75: the rendered scenes' own pin
 FRAME_TOLERANCE_MS = 1.0  # O75: 60 frames per second is a 99th-percentile frame interval of 16.7 ms and 1 ms of tolerance
 RENDERED_SIZE = (1920, 1080)  # MVP-085
+# ADR-079 (M3 task T16): a crowd order reaches the display within 275 ms at the 95th percentile on the M3 build. The bench
+# times an order from the frame that sends it to the present of the first frame that displays its tick; ADR-079's model
+# then counts the input's wait for its frame (at most one frame), the queued frame and half a scan-out, 2.5 frames.
+ORDER_BUDGET_MS = 275.0
+ORDER_DISPLAY_FRAMES = 2.5
 RENDERED_REFRESH_HZ = 60  # O75: the rendered scenes run on a 60 Hz display, at 1,920 x 1,080 (O85)
 # The rendered scenes judged against the frame budget: the sandbox's battle (O75), from M2 task T19 the steward's
 # settlement at its plateau (ADR-156), and from M3 task T9 the valley at war (ADR-164); the rest are reported.
@@ -336,7 +342,7 @@ def rendered_rows(frames, tick_period_s=None):
        'reported'),
       (name, 'missed frames (O75)', f'{scene["missed_frames"]} of {scene["frames"]} ({scene["missed_frames"] / count:.2%})', '—',
        'reported'),
-    ] + pacing_rows(scene) + [
+    ] + pacing_rows(scene) + order_rows(scene, name in JUDGED_SCENES and size == RENDERED_SIZE) + [
       (name, 'figures alive and on screen', f'{scene["figures_alive"]["max"]} alive at most; {scene["figures_on_screen"]["mean"]:.0f} '
        f'on screen on average, {scene["figures_on_screen"]["max"]} at most', '—', 'reported'),
     ]
@@ -349,11 +355,43 @@ def rendered_rows(frames, tick_period_s=None):
     if valley:
       rows.append((name, 'the valley at war drawn (ADR-164)', f'{valley["battles"]} battles in progress and {valley["figures"]} figures '
                    f'after {valley["ticks"]} ticks', '2 battles', 'reported'))
+    above = above or order_late(scene, name in JUDGED_SCENES and size == RENDERED_SIZE)
     seconds = scene['interval_ms']['mean'] * scene['frames'] / 1000.0
     if seconds > 0:
       rows.append((name, 'server ticks per second while drawn (MVP-085)', f'{scene["ticks"] / seconds:.2f}',
                    f'{1.0 / tick_period_s:g}' if tick_period_s else '—', 'reported'))
   return rows, above
+
+
+def order_display_ms(scene):
+  """ADR-079: a crowd order's time to its display at the 95th percentile, the bench's time to the present plus 2.5 of the
+  scene's median frame intervals; none when the bench timed no order."""
+  if not scene.get('order_ms'):
+    return None
+  return scene['order_ms']['p95'] + ORDER_DISPLAY_FRAMES * scene['interval_ms']['p50']
+
+
+def order_late(scene, judged):
+  """Whether a judged scene's orders reach the display later than ADR-079's 275 ms, or one was given up on."""
+  if not judged or 'orders' not in scene:
+    return False
+  display = order_display_ms(scene)
+  return scene['orders_lost'] > 0 or (display is not None and display > ORDER_BUDGET_MS)
+
+
+def order_rows(scene, judged):
+  """ADR-079's row of a rendered scene (M3 task T16): a crowd order to its display at the 95th percentile, judged in a
+  judged scene drawn at 1,920 x 1,080. A result from an older bench has none."""
+  if 'orders' not in scene:
+    return []
+  display = order_display_ms(scene)
+  given_up = f', {scene["orders_lost"]} given up on' if scene['orders_lost'] else ''
+  if display is None:
+    measured, status = f'no order timed{given_up}', ('above budget' if judged and scene['orders_lost'] else 'not measured')
+  else:
+    measured = f'{display:.0f} ms ({scene["order_ms"]["p95"]:.0f} ms to the present; {scene["orders"]} orders{given_up})'
+    status = ('above budget' if order_late(scene, True) else 'within budget') if judged else 'reported'
+  return [(scene['name'], 'a crowd order to its display, 95th percentile (ADR-079)', measured, f'{ORDER_BUDGET_MS:.0f} ms', status)]
 
 
 def pacing_rows(scene):
@@ -652,7 +690,8 @@ def frames_like(frames, p99, size=RENDERED_SIZE, display=(*RENDERED_SIZE, RENDER
   """A copy of the bench's result with every scene's 99th-percentile interval and window, and the display it drew on,
   set: the self-test's fixtures."""
   return dict(frames, display={'width': display[0], 'height': display[1], 'refresh_hz': display[2]},
-              scenes=[dict(scene, interval_ms=dict(scene['interval_ms'], p99=p99), window={'width': size[0], 'height': size[1]})
+              scenes=[dict(scene, interval_ms=dict(scene['interval_ms'], p99=p99, p50=min(scene['interval_ms']['p50'], p99)),
+                           window={'width': size[0], 'height': size[1]}, **ORDERS_FIXTURE)
                       for scene in frames['scenes']])
 
 
@@ -664,6 +703,10 @@ SAVED_WORLD_FIXTURE = {
                   'steps': [[9169, 2, 30, 30], [16287, 2, 40, 40], [23837, 1, 3, 40], [30000, 3, 4, 44]],
                   'samples': [[0, 20, 400.0], [3000, 22, 461.088]]},
 }
+
+
+# ADR-079: a scene's timed orders, made up, within the budget at a median frame interval of up to 16.7 ms.
+ORDERS_FIXTURE = {'orders': 30, 'orders_lost': 0, 'order_ms': {'p50': 160.0, 'p95': 190.0, 'p99': 200.0, 'max': 205.0, 'mean': 165.0}}
 
 
 # The bench's result when the self-test runs none: the shape SpeciesFrameBench writes, its figures made up.
@@ -683,7 +726,7 @@ FRAMES_FIXTURE = {
                           {'interval': 16.9, 'work': 7.0, 'latency_wait': 9.5, 'fence_wait': 0.1, 'present': 0.3, 'gpu': None}],
               'figures_alive': {'min': figures, 'max': figures}, 'figures_on_screen': {'mean': figures * 0.8, 'max': figures},
               'grown': {'ticks': 154000, 'workers': 300, 'structures': 40} if name == 'settlement-drawn' else None,
-              'valley': {'ticks': 3100, 'battles': 2, 'figures': 1204} if name == 'valley-drawn' else None}
+              'valley': {'ticks': 3100, 'battles': 2, 'figures': 1204} if name == 'valley-drawn' else None, **ORDERS_FIXTURE}
              for name, figures in (('sandbox-drawn', 400), ('figures-max-drawn', 1500), ('settlement-drawn', 300), ('valley-drawn', 1204))],
 }
 
@@ -742,6 +785,10 @@ def self_test(tool, tuning_source, bench=None, warp=False):
     # ADR-156: the settlement drawn above the budget while the battle is within it.
     slow_settlement = dict(smooth, scenes=[dict(s, interval_ms=dict(s['interval_ms'], p99=25.0)) if s['name'] == 'settlement-drawn' else s
                                            for s in smooth['scenes']])
+    # ADR-079: the valley at war's orders late, and one of them given up on.
+    late_orders = dict(smooth, scenes=[dict(s, order_ms=dict(s['order_ms'], p95=260.0)) if s['name'] == 'valley-drawn' else s
+                                       for s in smooth['scenes']])
+    lost_order = dict(smooth, scenes=[dict(s, orders_lost=1) if s['name'] == 'sandbox-drawn' else s for s in smooth['scenes']])
 
     def recorded(*phrases):
       text = open(path, encoding='utf-8').read()
@@ -841,6 +888,12 @@ def self_test(tool, tuning_source, bench=None, warp=False):
       ('a settlement drawn above its frame budget fails (ADR-156)',
        lambda: record(path, reference, within, slow_settlement, 'fixture', 'slow settlement') == 1),
       ('a rendered run reports how the settlement grew', lambda: recorded('the settlement drawn (ADR-156)')),
+      ('a rendered run reports a crowd order\'s time to its display (ADR-079)',
+       lambda: recorded('a crowd order to its display, 95th percentile (ADR-079)')),
+      ('a rendered run whose orders reach the display late fails (ADR-079)',
+       lambda: record(path, reference, within, late_orders, 'fixture', 'late orders') == 1),
+      ('a rendered run that gave up on an order fails (ADR-079)',
+       lambda: record(path, reference, within, lost_order, 'fixture', 'lost order') == 1),
       ('the owner\'s growth run is recorded and judged in its own section (ADR-156)', grown_recorded),
       ('a gap open while the plateau may be forming is not judged yet (ADR-156)', forming_judged),
       ('a saved world founded with neighbors is told apart from one alone (O103)', neighbors_read),
