@@ -209,9 +209,9 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(O90TheForwardKeyFliesToThePointUnderThePointer)
   {
-    // The cursor lock keeps the pointer on its ground point and the camera turns to face it, so the forward key held
-    // brings the camera down onto that point: it comes to rest above it at the ground clearance, looking almost straight
-    // down (ADR-142). The back key held climbs away from it to the highest height.
+    // While the steward looks (O107, ADR-179), the cursor lock keeps the pointer on its ground point and the camera turns
+    // to face it, so the forward key held brings the camera down onto that point: it comes to rest above it at the ground
+    // clearance, looking almost straight down (ADR-142). The back key held climbs away from it to the highest height.
     Neuron::PointPx pointer;
     auto camera = EnteredCamera(pointer);
     const auto& entered = camera->PointerGround();
@@ -220,6 +220,7 @@ public:
     Species::CameraControls forward;
     forward.panForward = true;
     forward.fastPan = true;
+    forward.look = true;
     Run(*camera, forward, pointer, 0.01, 1'000);
     const double clearance = CommittedPresentation().ref.ctrl.camera.groundClearance;
     Assert::IsTrue(Neuron::HorizontalDistance(camera->Position(), ground) < 50.0, L"above the point");
@@ -300,8 +301,8 @@ public:
   TEST_METHOD(Wld244TheCameraStaysInTheStewardsAreas)
   {
     // With the steward's territory a disc of 300 wu about its site, its areas reach 1,100 wu from the site. Flying for
-    // 60 s towards a point beyond them, the camera's ground point never leaves them, and comes to rest at their edge
-    // (ADR-142).
+    // 60 s towards a point beyond them, looking at it (O107), the camera's ground point never leaves them, and comes to
+    // rest at their edge (ADR-142).
     constexpr double RADIUS = 300.0;
     const double reach = RADIUS + CommittedTuning().wld.view.settlementMargin;
     const double cell = CommittedTuning().mvp.territory.cellSize;
@@ -316,6 +317,7 @@ public:
     Species::CameraControls forward;
     forward.panForward = true;
     forward.fastPan = true;
+    forward.look = true;
     double farthest = 0.0;
     for (int n = 0; n < 240; ++n)
     {
@@ -341,9 +343,14 @@ public:
     camera->UpdatePointerGround(pointer, VIEW, SeedOne().field);
     const auto& before = camera->PointerGround();
     Assert::IsTrue(before.has_value() && before->onTerrain);
-    const auto start = before.value_or(Species::SettlementCamera::GroundPoint{});
+    // O107 (ADR-179): without the look held, the pointer stays where it is on the screen while the camera moves.
     Species::CameraControls right;
     right.panRight = true;
+    Run(*camera, right, pointer, 0.016, 5);
+    Assert::IsTrue(pointer.x == 700 && pointer.y == 650, L"the free pointer stays put");
+    camera->UpdatePointerGround(pointer, VIEW, SeedOne().field);
+    const auto start = camera->PointerGround().value_or(Species::SettlementCamera::GroundPoint{});
+    right.look = true;
     Run(*camera, right, pointer, 0.016, 30);
     Assert::IsTrue(camera->PointerGround().has_value(), L"still a ground point");
     const auto end = camera->PointerGround().value_or(Species::SettlementCamera::GroundPoint{});
@@ -366,8 +373,12 @@ public:
     pointer = {1'500, 540}; // to the right of the centre
     camera->UpdatePointerGround(pointer, VIEW, SeedOne().field);
     Run(*camera, {}, pointer, 0.016, 5);
+    Assert::AreEqual(0.0, Neuron::Length(camera->Front() - front), 1e-12, L"O107: the pointer alone does not turn it");
+    Species::CameraControls looking;
+    looking.look = true;
+    Run(*camera, looking, pointer, 0.016, 5);
     const Neuron::Vec3 right = Neuron::Normalized({-front.z, 0.0, front.x}); // world up × front, negated
-    Assert::IsTrue(Neuron::Dot(camera->Front() - front, right) > 0.0, L"the front turned to the right");
+    Assert::IsTrue(Neuron::Dot(camera->Front() - front, right) > 0.0, L"the look held turns the front to the right");
     // Looking around freezes the position while the front still follows the pointer.
     const Neuron::Vec3 position = camera->Position();
     Species::CameraControls look;

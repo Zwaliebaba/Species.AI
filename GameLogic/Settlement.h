@@ -54,8 +54,8 @@ struct Cladan
 /// site, whether a steward runs it or it is an AI settlement (PIL-007), its Cladan, its fidelity, its Wellspring, its
 /// stores in integer thousandths of a resource unit (MVP-030), its territory's radius, which never shrinks (MVP-026),
 /// its construction sites in the order they are built (MVP-032, ADR-132), its Wellspring's growth timer (MVP-024,
-/// ADR-134), its priorities and its upkeep's state (MVP-035, MVP-036, ADR-135), and its population's mark for the
-/// statistics (MVP-064, ADR-136).
+/// ADR-134) and whether its steward holds it (O106, ADR-178), its priorities and its upkeep's state (MVP-035, MVP-036,
+/// ADR-135), and its population's mark for the statistics (MVP-064, ADR-136).
 struct Settlement
 {
   std::uint8_t site = 0;
@@ -69,6 +69,8 @@ struct Settlement
   double territoryRadius = 0.0; // wu
   std::vector<StructureRef> queue;
   std::int32_t growthTicks = 0; // MVP-024: until the Wellspring's next orb, counting only while it may grow (ADR-134)
+  // O106 (ADR-178): its steward holds its growth, so its Wellspring grows no Worker and its timer waits.
+  bool growthHeld = false;
   // MVP-036 (ADR-135): its shares of gathering, construction and guard duty in percent, in WorkerTask's order from
   // Gather, summing to 100.
   std::array<std::uint8_t, 3> priorities{};

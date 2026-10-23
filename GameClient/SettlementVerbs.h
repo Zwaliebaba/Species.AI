@@ -24,9 +24,10 @@
 namespace Species
 {
 
-// A command of the settlement verbs (MVP-101), as the client sends it; from M3 task T12 (ADR-167) the conflict verbs'.
+// A command of the settlement verbs (MVP-101), as the client sends it; from M3 task T12 (ADR-167) the conflict verbs', and
+// from O106 (ADR-178) the growth hold.
 using SettlementCommand = std::variant<PlaceStructureCommand, SetPrioritiesCommand, MakeClaimCommand, WithdrawClaimCommand,
-                                       SendTributeCommand, DeclareAttackCommand, WithdrawAttackCommand>;
+                                       SendTributeCommand, DeclareAttackCommand, WithdrawAttackCommand, HoldGrowthCommand>;
 
 /// MVP-101 (ADR-167): what the conflict verbs read of the client's settlement: the latest valley status, its local site,
 /// the Leaders that would lead an expedition, and its stores.
@@ -102,7 +103,8 @@ struct SettlementVerbResult
 /// The client's settlement verbs (M2 task T17, ADR-153; MVP-032, MVP-036, MVP-101):
 /// - **The HUD.** A press over the HUD reaches no world verb. The primary press on a construction bar entry enters
 ///   placing that structure, or leaves it when it is the one being placed; on a priority's arrow it raises or lowers that
-///   share by mvp.hud.priority_step and sends the shares, which the HUD shows until a status holds them.
+///   share by mvp.hud.priority_step and sends the shares, which the HUD shows until a status holds them; on the growth
+///   row's button it holds the growth or lets it run (O106, ADR-178), shown in the same way.
 /// - **Placing** is a mode that takes the primary and secondary presses before the battle verbs: the primary press on the
 ///   region sends the placement at the pointer ground point and stays in the mode; the secondary press leaves it, as it
 ///   releases a selection (O82). The mode shows the ghost and the cursor of what the client foresees at the pointer.
@@ -127,7 +129,7 @@ public:
   // the verbs ignore when it is not one of theirs.
   void Sent(std::uint64_t _sequence, const SettlementCommand& _command);
   void Reported(const CommandReport& _report);
-  // A new world: the mode, the refusal, the shares sent and the attack being declared are dropped.
+  // A new world: the mode, the refusal, the shares and hold sent and the attack being declared are dropped.
   void Reset() noexcept;
   // ADR-167: the attack being declared.
   [[nodiscard]] const std::optional<PendingAttack>& Pending() const noexcept
@@ -167,6 +169,12 @@ private:
     std::uint64_t sequence = 0;
     std::optional<std::uint64_t> tick; // its report's tick, once applied
   };
+  struct SentHold
+  {
+    bool held = false;
+    std::uint64_t sequence = 0;
+    std::optional<std::uint64_t> tick; // its report's tick, once applied
+  };
 
   void PressHud(const HudZoneRect& _zone, std::uint8_t _team, const PlacementView& _view, const SettlementFrame& _frame,
                 SettlementVerbResult& _result);
@@ -181,6 +189,7 @@ private:
   std::optional<PlacementRefusal> m_refusal;
   double m_refusalAgeSeconds = 0.0;
   std::optional<SentShares> m_shares;
+  std::optional<SentHold> m_hold;                                         // O106 (ADR-178)
   std::optional<PendingAttack> m_pending;                                 // ADR-167
   std::vector<std::pair<std::uint64_t, ConflictKind>> m_conflicts;        // the conflict commands sent and not yet reported
   std::optional<std::pair<ConflictKind, std::uint8_t>> m_conflictRefusal; // the last refused, and its reason

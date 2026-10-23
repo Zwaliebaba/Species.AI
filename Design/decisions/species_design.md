@@ -18,6 +18,7 @@ This file records the decisions of the Species design and of the MVP built from 
 | [DEC-1007](#dec-1007-renown-for-a-withdrawn-claim) | Renown for a withdrawn claim | Open | MVP, PIL |
 | [DEC-1008](#dec-1008-the-valley-runs-misses-of-playtest-1s-lines) | The valley run's misses of Playtest 1's lines | Resolved | MVP, PIL |
 | [DEC-1009](#dec-1009-the-first-sound-sets-mix-and-the-turrets-sighting) | The first sound set's mix and the turret's sighting | Open | MVP, AEN |
+| [DEC-1010](#dec-1010-the-openings-choice-between-growing-and-building) | The opening's choice between growing and building | Resolved | MVP, PIL |
 
 ## 1 World and sites
 
@@ -196,3 +197,20 @@ This file records the decisions of the Species design and of the MVP built from 
 - Recommendation: A. The repeated claims are a rule's gap, not a value's, and no value of the present keys spaces them; the battle and growth values wait for M2's evidence, as O98 has it.
 - Decide by: M3 task T9's tuning, after the owner's M2 runs and before Playtest 1.
 - Resolution (2026-10-23, owner decision O102): option A. No claim may be made on an area until `mvp.claim.cooldown_minutes` have passed since the last claim on it ended, and `mvp.battle.objective_hold_s` rises. The owner gave no values, so the valley run swept them on seeds 1 to 4 for a run each: a cooldown of 60 or 120 minutes against a hold of 30, 120 or 180 s. The cooldown of 120 minutes cut the claims from 57 to 48 against 60 minutes, and a hold of 120 s raised the claim battles' median length from 1.0 to 2.9 minutes and the battles within 4 to 12 minutes from 17 % to 27 %, the most of the four; a hold of 180 s gave no more. Both values are provisional (MVP-053, MVP-045). Four lines stay missed, the steward's battles at 12 to 19 a run among them: those battles are now mostly raids (38 of 61), and many battles end in a rout or at `pil.battle.max_minutes`, which `mvp.battle.rout_share`, the loss cap and the AI's expeditions decide (DEC-1006). Those values are retuned on the owner's M2 evidence, as the option states; the valley run of seeds 1 to 8 on the chosen values is in `playtests/M3.md`.
+
+## 5 Settlement and economy
+
+### DEC-1010 The opening's choice between growing and building
+- Status: Resolved
+- Affects: implementation/mvp_scope.md (MVP-024, MVP-101, MVP-102); ADR-134, ADR-152, ADR-153
+- Specified behaviour: MVP-024 has the Wellspring turn `mvp.essence.orb_cost_ru` (27 ru) of the stores into an orb every `mvp.essence.wellspring_interval_s` (12 s) while the settlement is below its population limit and the stores hold that cost.
+  - In the opening the stores hold less than 27 ru for most of each interval: every 27 ru gathered is spent at the next orb.
+  - So nothing on the construction bar (a dwelling at 300 ru, a storehouse at 200, a turret at 400, MVP-034) can be paid for until the population reaches its first limit of 40 and growth stops.
+  - The steward's only levers in that time are the priorities and Leaders. On the owner's M3 build the HUD showed 24 ru of stores with "Growth stopped: the stores are short", and the owner found nothing to do.
+- Options:
+  - A — a growth hold: a switch the steward sets on the settlement panel, sent as a command, under which the Wellspring grows no orb and its timer waits, so the stores fill for building; a grow-or-build choice from the first minute;
+  - B — a reserve: the Wellspring spends only what the stores hold above the cheapest structure's cost (200 ru), by itself; slower early growth, and no choice for the steward;
+  - C — the opening as designed: grow to the limit, then build dwellings to raise it.
+- Recommendation: A. It gives the steward a decision with a visible cost (Workers not grown) without changing the economy that M2's growth scene tuned, which a steward who never holds still meets as measured.
+- Decide by: before the owner's next session of the M3 build.
+- Resolution (2026-10-23, owner decision O106): option A. The steward's settlement panel has a hold button at the growth row's end; while held, the Wellspring grows no orb and its timer waits where it stands, and the status names the hold as the growth's state before any other cause (MVP-024, MVP-098 and MVP-101 amendments, [ADR-178](../ADR/ADR-178-the-stewards-growth-hold.md)). A scripted or AI steward never holds, and lets go a hold it takes over.

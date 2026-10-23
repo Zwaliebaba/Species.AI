@@ -230,6 +230,7 @@ void SettlementVerbs::Reset() noexcept
   m_refusal.reset();
   m_refusalAgeSeconds = 0.0;
   m_shares.reset();
+  m_hold.reset();
   m_pending.reset();
   m_conflicts.clear();
   m_conflictRefusal.reset();
@@ -251,6 +252,10 @@ SettlementVerbResult SettlementVerbs::Update(const SettlementFrame& _frame, std:
   if (m_shares.has_value() && m_shares->tick.has_value() && _view.status.has_value() && _view.status->tick >= *m_shares->tick)
   {
     m_shares.reset();
+  }
+  if (m_hold.has_value() && m_hold->tick.has_value() && _view.status.has_value() && _view.status->tick >= *m_hold->tick)
+  {
+    m_hold.reset();
   }
   if (m_conflictRefusal.has_value())
   {
@@ -373,6 +378,14 @@ void SettlementVerbs::PressHud(const HudZoneRect& _zone, std::uint8_t _team, con
   case HudZone::Result:
     ++m_resultsClosed; // ADR-168: the press closes the result the card shows
     break;
+  case HudZone::GrowthHold:
+    // O106 (ADR-178): the button holds the growth, or lets it run, from the hold last sent or the status's.
+    if (_view.status.has_value())
+    {
+      const bool held = m_hold.has_value() ? m_hold->held : _view.status->growth == GrowthState::Held;
+      _result.commands.emplace_back(HoldGrowthCommand{_team, !held});
+    }
+    break;
   case HudZone::Settlement:
   case HudZone::Queue:
   case HudZone::Notices:
@@ -452,6 +465,10 @@ void SettlementVerbs::Sent(std::uint64_t _sequence, const SettlementCommand& _co
   {
     m_shares = SentShares{priorities->shares, _sequence, std::nullopt};
   }
+  else if (const auto* hold = std::get_if<HoldGrowthCommand>(&_command); hold != nullptr)
+  {
+    m_hold = SentHold{hold->held, _sequence, std::nullopt};
+  }
   else if (const std::optional<ConflictKind> kind = ConflictKindOf(_command))
   {
     m_conflicts.emplace_back(_sequence, *kind);
@@ -504,6 +521,17 @@ void SettlementVerbs::Reported(const CommandReport& _report)
       m_shares.reset();
     }
   }
+  if (m_hold.has_value() && m_hold->sequence == _report.sequence)
+  {
+    if (_report.result == CommandResult::Applied)
+    {
+      m_hold->tick = _report.tick;
+    }
+    else
+    {
+      m_hold.reset();
+    }
+  }
 }
 
 HudVerbs SettlementVerbs::ForHud() const
@@ -516,6 +544,10 @@ HudVerbs SettlementVerbs::ForHud() const
   if (m_shares.has_value())
   {
     verbs.shares = m_shares->shares;
+  }
+  if (m_hold.has_value())
+  {
+    verbs.growthHeld = m_hold->held;
   }
   verbs.pending = m_pending;
   verbs.conflictRefusal = m_conflictRefusal;

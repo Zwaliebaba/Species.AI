@@ -136,6 +136,7 @@ The frame page's other rows wait for their components: the render page for GPU t
 
 * **Amendment 2026-10-22 (M2 task T14, owner decision O92, [ADR-147](ADR-147-the-directwrite-text-system-at-m2.md)).** The frame page's lines and the frame-time graph's rectangles keep their unscaled insets. They are now scaled by the window's DPI scale instead of the whole-number scale. Their line height is the development role's at `dbg.overlay.text_size`.
 * **Amendment 2026-10-22 ([ADR-148](ADR-148-the-frame-starts-at-the-latency-wait.md), owner decision O93).** A frame starts at `FrameRenderer::BeginFrame`, which waits for the frame-latency object and the cap before the frame's input step.
+* **Amendment 2026-10-23 (owner decision O106, [ADR-176](ADR-176-the-frame-page-under-the-settlement-panel.md)).** In a world the frame page stands under the HUD's settlement panel, 10 pixels below its plate, on a dark backdrop that reaches past its rows and graph. The frame-rate line is the page's first row. On the front end the frame-rate line keeps its bottom-right anchor.
   * **The history.** A frame's time runs from one frame's start to the next, and its work is that time less the waits in it: its fence and present, and the next frame's wait to begin.
   * **The wait step** holds both the begin waits and the render waits.
   * **The GPU time.** The renderer now reads each frame's GPU time from two timestamps (`FrameTiming`). The frame page does not show it yet; its GPU rows still wait for the render page.

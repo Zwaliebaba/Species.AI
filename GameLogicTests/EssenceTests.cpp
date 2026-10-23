@@ -1,16 +1,20 @@
 #include "pch.h"
 
+#include "BitReader.h"
 #include "Construction.h"
 #include "EssenceOrb.h"
 #include "Growth.h"
 #include "TestSupport.h"
 #include "WorkerPool.h"
 #include "WorldSimulation.h"
+#include "WorldSnapshot.h"
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <numbers>
+#include <utility>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -115,6 +119,56 @@ public:
     const std::int64_t spent = stores - settlement.storesMilliRu;
     const std::int64_t orbs = 20 * Species::MilliRuOf(CommittedTuning().mvp.essence.orbCostRu);
     Assert::IsTrue(spent >= orbs && spent < orbs + Species::MilliRuOf(20.0), L"20 orbs paid");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp024AHeldGrowthGrowsNoWorkerAndItsTimerWaits)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-024")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp024AHeldGrowthGrowsNoWorkerAndItsTimerWaits)
+  {
+    // O106 (ADR-178): while its growth is held, a settlement with full stores grows no Worker, pays for no orb and its
+    // timer waits where it stands; let go, it grows again from there. The hold is saved, and a region of version 16
+    // holds none.
+    Neuron::WorkerPool pool(0);
+    const std::unique_ptr<Species::WorldSimulation> world = SettledWorld();
+    Species::RegionSimulation& region = world->Region(0);
+    Species::Settlement& settlement = region.Settlements().front();
+    settlement.storesMilliRu = Species::MilliRuOf(1000.0);
+    settlement.priorities = {0, 0, 100}; // guard duty alone, so that nothing is gathered
+    const std::int32_t interval = Species::GrowthIntervalTicks(CommittedTuning());
+    std::uint64_t tick = 0;
+    for (; tick < static_cast<std::uint64_t>(interval) / 2; ++tick)
+    {
+      world->Step(tick, pool);
+    }
+    settlement.growthHeld = true;
+    const std::int32_t waiting = settlement.growthTicks;
+    const std::uint32_t population = Species::Population(region, settlement);
+    const std::int64_t stores = settlement.storesMilliRu;
+    for (const std::uint64_t end = tick + 3 * static_cast<std::uint64_t>(interval); tick < end; ++tick)
+    {
+      world->Step(tick, pool);
+    }
+    ExpectEqual(population, Species::Population(region, settlement), L"no Worker while held");
+    ExpectEqual(waiting, settlement.growthTicks, L"the timer waits");
+    Assert::IsTrue(stores - settlement.storesMilliRu < Species::MilliRuOf(CommittedTuning().mvp.essence.orbCostRu),
+                   L"no orb paid for, only upkeep");
+
+    auto restored = Species::RestoreWorld(Species::SnapshotOf(*world), CommittedTuning(), &TestRecords());
+    Assert::IsTrue(restored.has_value() && restored.value()->Region(0).Settlements().front().growthHeld, L"the hold is saved");
+    const std::vector<std::byte> older = RegionStateOf(region, 16);
+    Species::RegionSimulation sixteen(0, SETTLED_TEST_KEY, region.NextTick(), CommittedTuning(), ValleyTerrain(), &TestRecords());
+    Neuron::BitReader reader(older);
+    Assert::IsTrue(sixteen.ReadState(reader, 16) && reader.Finish() && !sixteen.Settlements().front().growthHeld,
+                   L"a version-16 region reads whole, with no hold");
+
+    settlement.growthHeld = false;
+    // Up to the tick before its next interval would pay for a second orb.
+    for (const std::uint64_t end = tick + static_cast<std::uint64_t>(waiting + interval) - 1; tick < end; ++tick)
+    {
+      world->Step(tick, pool);
+    }
+    ExpectEqual(population + 1, Species::Population(region, settlement), L"let go, it grows when its timer runs out");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp023AnOrbInTheTerritoryDriftsToItsWellspringAndBecomesAWorker)

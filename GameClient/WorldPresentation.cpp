@@ -496,17 +496,21 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
   {
     AppendUiTestPage(*m_text, *m_desc.presentation, *m_uiImages, *m_strings, *m_locale, *area, _dpiScale, inputs.ui);
   }
-  // DBG-095, DBG-096, ADR-120: while the overlay is shown, the frame-rate line, whose objects are counted while a world
-  // exists, and the frame page, its text in the development role (ADR-147).
+  // DBG-095, DBG-096, ADR-120: while the overlay is shown, the frame page, its first row the frame-rate line with the
+  // objects counted, its text in the development role (ADR-147). ADR-176: it stands under the HUD's settlement panel.
   if (m_overlayShown)
   {
-    const FramePageInputs figures = FramePageOf(_session, _framesPerSecond);
+    std::optional<float> below;
+    for (const HudZoneRect& zone : m_hud->Zones())
+    {
+      if (zone.zone == HudZone::Settlement)
+      {
+        below = zone.rect.bottom / _dpiScale;
+      }
+    }
     const auto textSize = static_cast<float>(m_desc.presentation->dbg.overlay.textSize);
-    std::vector<Neuron::OverlayLine> lines{FrameRateLine(*m_desc.presentation, _framesPerSecond, figures.objects)};
-    FramePage page =
-      BuildFramePage(figures, *m_desc.presentation, *m_desc.tuning, m_text->Metrics(Neuron::FontRole::Development, textSize).heightPixels);
-    lines.insert(lines.end(), std::make_move_iterator(page.lines.begin()), std::make_move_iterator(page.lines.end()));
-    Neuron::AppendOverlayLines(inputs.overlayText, *m_text, lines, _view.ViewSize(), textSize, _dpiScale);
+    FramePage page = BuildFramePage(FramePageOf(_session, _framesPerSecond), *m_desc.presentation, *m_desc.tuning, *m_text, below);
+    Neuron::AppendOverlayLines(inputs.overlayText, *m_text, page.lines, _view.ViewSize(), textSize, _dpiScale);
     inputs.overlayRects = std::move(page.rects);
   }
   // ADR-121: with the crowds drawn, the figure dots are a world layer of the overlay (DBG-099), shown with it.

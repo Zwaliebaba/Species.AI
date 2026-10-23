@@ -153,3 +153,4 @@ Chosen options: 1, 3 and 5.
 * The code: `GameClient/StewardAreas`, `SettlementCamera`, `SettlementView`.
 * ADR-119 is amended with this record.
 * **Amendment 2026-10-23 (M3 task T12, [ADR-167](ADR-167-the-conflict-verbs-and-markers-at-m3.md)).** The battlefield of each battle that the valley status lists with the steward's settlement as a side joins the steward's areas while it is listed (WLD-244), so the camera may follow the expedition into its battle.
+* **Amendment 2026-10-23 (owner decision O107, [ADR-179](ADR-179-the-camera-turns-only-while-the-middle-button-is-held.md)).** The forward key brings the camera down onto the point under the pointer only while the steward looks (`action.camera.look`, the middle button held); otherwise it flies along the view as the camera faces.

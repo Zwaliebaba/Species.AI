@@ -16,6 +16,11 @@
 #include <string_view>
 #include <vector>
 
+namespace Neuron
+{
+class TextSystem;
+}
+
 namespace Species
 {
 
@@ -86,19 +91,21 @@ struct FramePageInputs
   std::optional<ServerStats> server; // the latest of a Debug server's statistics
 };
 
-/// The frame page's lines and the frame-time graph's rectangles, laid out at the target's top-left corner.
+/// The frame page's lines, and its backdrop and the frame-time graph's rectangles, laid out from the target's left edge.
 struct FramePage
 {
   std::vector<Neuron::OverlayLine> lines;
   std::vector<Neuron::OverlayRect> rects;
 };
 
-// DBG-096, DBG-097, DBG-089: the frame page, besides the frame-rate line: the percentiles of the frame time, and of the
-// frame's work against its budget (rnd.budget.target_frame_rate); each step's share; the counts; the server's tick
-// against half the tick period (ADR-080 item 6); and the frame-time graph. A row over its budget is drawn in
-// dbg.overlay.warning_rgb. _lineHeightPixels is the development role's at dbg.overlay.text_size, at a DPI scale of 1.
+// DBG-096, DBG-097, DBG-089: the frame page: the frame-rate line (DBG-095, ADR-176); the percentiles of the frame time,
+// and of the frame's work against its budget (rnd.budget.target_frame_rate); each step's share; the counts; the server's
+// tick against half the tick period (ADR-080 item 6); and the frame-time graph, all on a dark backdrop. A row over its
+// budget is drawn in dbg.overlay.warning_rgb. Its text is measured in _text's development role at dbg.overlay.text_size;
+// every figure is in pixels at a DPI scale of 1. ADR-176: the page stands under _belowPixels, the bottom of the HUD's
+// settlement panel, when the HUD shows one, else at the target's top-left corner.
 [[nodiscard]] FramePage BuildFramePage(const FramePageInputs& _inputs, const TuningPresentation& _presentation, const TuningMvp& _tuning,
-                                       float _lineHeightPixels);
+                                       Neuron::TextSystem& _text, std::optional<float> _belowPixels);
 // ADR-120: the frame page's figures as one line of the log, written every tenth roll-up period so that the overlay can
 // be checked against it.
 [[nodiscard]] std::string StatisticsLine(const FramePageInputs& _inputs, const TuningPresentation& _presentation);

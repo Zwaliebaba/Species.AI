@@ -285,6 +285,7 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
       controls.lower = _router.Query(ActionOf(GameAction::CameraLower));
       controls.zoom = _router.Query(ActionOf(GameAction::CameraZoom));
       controls.lookAround = _router.Query(ActionOf(GameAction::CameraLookAround));
+      controls.look = _router.Query(ActionOf(GameAction::CameraLook));
       Neuron::ActionValue wheel;
       if (_router.Query(ActionOf(GameAction::CameraHeightWheel), &wheel))
       {

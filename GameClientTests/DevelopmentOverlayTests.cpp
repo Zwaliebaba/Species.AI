@@ -5,10 +5,13 @@
 #include "StableId.h"
 #include "StateUpdate.h"
 #include "TestSupport.h"
+#include "TextSystem.h"
 #include "Tuning.h"
+#include "UiLook.h"
 
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <optional>
 #include <string>
@@ -170,27 +173,60 @@ public:
     inputs.profile = &profile;
     inputs.counts.sides = {{300, 1}, {299, 1}};
     inputs.counts.orbs = 4;
-    const Species::FramePage page = Species::BuildFramePage(inputs, CommittedPresentation(), CommittedTuning(), 16.0f);
-    Assert::IsTrue(page.lines.size() >= 7, L"frame, work, steps, two teams, orbs and server, and the graph's labels");
-    Assert::IsTrue(Contains(page.lines[0].text, "frame p50 100.0") && Contains(page.lines[0].text, "p99 100.0 ms"), L"the percentiles");
-    Assert::IsTrue(Contains(page.lines[1].text, "work p50 10.0") && Contains(page.lines[1].text, "of 16.7"),
+    inputs.framesPerSecond = 144.0;
+    inputs.objects = 605;
+    Neuron::TextSystem text(Species::TextSystemDesc(CommittedPresentation()));
+    const Species::FramePage page = Species::BuildFramePage(inputs, CommittedPresentation(), CommittedTuning(), text, std::nullopt);
+    Assert::IsTrue(page.lines.size() >= 8, L"the frame rate, frame, work, steps, two teams, orbs and server, and the graph's labels");
+    Assert::AreEqual(std::string("144 fps · 605 objects"), page.lines[0].text, L"DBG-095 as ADR-176 has it: the frame rate first");
+    Assert::IsTrue(Contains(page.lines[1].text, "frame p50 100.0") && Contains(page.lines[1].text, "p99 100.0 ms"), L"the percentiles");
+    Assert::IsTrue(Contains(page.lines[2].text, "work p50 10.0") && Contains(page.lines[2].text, "of 16.7"),
                    L"the work against a frame at 60 per second");
-    Assert::IsTrue(Contains(page.lines[2].text, "render 10.0%") && Contains(page.lines[2].text, "wait 90.0%"),
+    Assert::IsTrue(Contains(page.lines[3].text, "render 10.0%") && Contains(page.lines[3].text, "wait 90.0%"),
                    L"each step's share of the period");
-    Assert::IsTrue(Contains(page.lines[3].text, "team 0 300 Workers") && Contains(page.lines[4].text, "team 1 299 Workers"),
+    Assert::IsTrue(Contains(page.lines[4].text, "team 0 300 Workers") && Contains(page.lines[5].text, "team 1 299 Workers"),
                    L"a line per team");
-    Assert::IsTrue(Contains(page.lines[5].text, "orbs 4") && Contains(page.lines[6].text, "no statistics"), L"the counts and the server");
+    Assert::IsTrue(Contains(page.lines[6].text, "orbs 4") && Contains(page.lines[7].text, "no statistics"), L"the counts and the server");
+    const float lineHeight =
+      text.Metrics(Neuron::FontRole::Development, static_cast<float>(CommittedPresentation().dbg.overlay.textSize)).heightPixels;
     Assert::IsTrue(page.lines[0].corner == Neuron::OverlayCorner::TopLeft && page.lines[0].insetX == 10.0f &&
-                     page.lines[0].insetY == 10.0f && page.lines[1].insetY == 28.0f,
-                   L"from the top-left corner, a cell and two pixels apart");
-    // DBG-089: a backdrop, a line per frame of the history and a guide line per mark.
-    Assert::AreEqual(std::size_t{1 + 200 + 3}, page.rects.size());
-    const Neuron::OverlayRect& newest = page.rects[1];
+                     page.lines[0].insetY == 10.0f && std::abs(page.lines[1].insetY - (10.0f + lineHeight + 2.0f)) < 1e-3f,
+                   L"from the top-left corner, a line and two pixels apart");
+    // ADR-176: the backdrop; DBG-089: the graph's backdrop, a line per frame of the history and a guide line per mark.
+    Assert::AreEqual(std::size_t{1 + 1 + 200 + 3}, page.rects.size());
+    const Neuron::OverlayRect& graph = page.rects[1];
+    const Neuron::OverlayRect& newest = page.rects[2];
     Assert::IsTrue(newest.left == 10.0f + 199.0f && newest.width == 1.0f && newest.height == 50.0f,
                    L"the newest frame at the right, 0.5 px per ms");
-    Assert::IsTrue(page.rects[200].left == 10.0f, L"the oldest at the left");
-    const Neuron::OverlayRect& guide = page.rects[201];
-    Assert::IsTrue(guide.height == 1.0f && guide.top == page.rects[0].top, L"the 200 ms guide at the graph's top");
+    Assert::IsTrue(page.rects[201].left == 10.0f, L"the oldest at the left");
+    const Neuron::OverlayRect& guide = page.rects[202];
+    Assert::IsTrue(guide.height == 1.0f && guide.top == graph.top, L"the 200 ms guide at the graph's top");
+    // ADR-176: the backdrop lies under every line and the graph.
+    const Neuron::OverlayRect& backdrop = page.rects[0];
+    Assert::IsTrue(backdrop.color[3] > 0.0f && backdrop.color[3] < 1.0f, L"a see-through backdrop");
+    for (const Neuron::OverlayLine& line : page.lines)
+    {
+      const float width =
+        text.Layout(line.text, Neuron::FontRole::Development, static_cast<float>(CommittedPresentation().dbg.overlay.textSize)).widthPixels;
+      Assert::IsTrue(line.insetX >= backdrop.left && line.insetX + width <= backdrop.left + backdrop.width && line.insetY >= backdrop.top &&
+                       line.insetY + lineHeight <= backdrop.top + backdrop.height,
+                     L"every line on the backdrop");
+    }
+    Assert::IsTrue(graph.top + graph.height <= backdrop.top + backdrop.height, L"and the graph");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Dbg096TheFramePageStandsUnderTheSettlementPanel)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"DBG-096")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"DBG-095")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Dbg096TheFramePageStandsUnderTheSettlementPanel)
+  {
+    Species::FramePageInputs inputs;
+    Neuron::TextSystem text(Species::TextSystemDesc(CommittedPresentation()));
+    const Species::FramePage page = Species::BuildFramePage(inputs, CommittedPresentation(), CommittedTuning(), text, 300.0f);
+    Assert::AreEqual(310.0f, page.lines[0].insetY, L"ADR-176: the corner's gap under the panel's bottom");
+    Assert::AreEqual(304.0f, page.rects[0].top, L"the backdrop from its padding above the first line");
+    Assert::AreEqual(std::size_t{1}, page.rects.size(), L"no graph without a profile");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Dbg097ARowOverItsBudgetIsInTheWarningColor)
@@ -208,19 +244,20 @@ public:
     Neuron::FrameProfile within(ProfileDesc());
     FillProfile(within, 16.7, 10.0);
     inputs.profile = &within;
-    Species::FramePage page = Species::BuildFramePage(inputs, CommittedPresentation(), CommittedTuning(), 16.0f);
-    Assert::IsTrue(page.lines[1].color == white, L"6.7 ms of work is within 16.7 ms");
-    Assert::IsTrue(Contains(page.lines[4].text, "49.00 ms max of 50.0"), L"the tick's longest against half the tick period");
-    Assert::IsTrue(page.lines[4].color == white, L"a 49 ms tick is within half the tick period");
+    Neuron::TextSystem text(Species::TextSystemDesc(CommittedPresentation()));
+    Species::FramePage page = Species::BuildFramePage(inputs, CommittedPresentation(), CommittedTuning(), text, std::nullopt);
+    Assert::IsTrue(page.lines[2].color == white, L"6.7 ms of work is within 16.7 ms");
+    Assert::IsTrue(Contains(page.lines[5].text, "49.00 ms max of 50.0"), L"the tick's longest against half the tick period");
+    Assert::IsTrue(page.lines[5].color == white, L"a 49 ms tick is within half the tick period");
     Neuron::FrameProfile over(ProfileDesc());
     FillProfile(over, 20.0, 2.0);
     inputs.profile = &over;
     server.tickMaxMicroseconds = 51'000;
     inputs.server = server;
-    page = Species::BuildFramePage(inputs, CommittedPresentation(), CommittedTuning(), 16.0f);
-    Assert::IsTrue(page.lines[1].color == warning, L"18 ms of work is over its budget");
-    Assert::IsTrue(page.lines[0].color == white, L"the frame time's own row has no budget");
-    Assert::IsTrue(page.lines[4].color == warning, L"a 51 ms tick is over its budget");
+    page = Species::BuildFramePage(inputs, CommittedPresentation(), CommittedTuning(), text, std::nullopt);
+    Assert::IsTrue(page.lines[2].color == warning, L"18 ms of work is over its budget");
+    Assert::IsTrue(page.lines[1].color == white, L"the frame time's own row has no budget");
+    Assert::IsTrue(page.lines[5].color == warning, L"a 51 ms tick is over its budget");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Dbg096TheStatisticsLineCarriesThePagesFigures)

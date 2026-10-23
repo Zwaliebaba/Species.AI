@@ -138,10 +138,17 @@ SettlementCamera::PointerRequest SettlementCamera::Advance(double _dtSeconds, co
     Zoom(dt, _controls);
   }
   AdjustHeight(dt, _controls, _terrain);
+  // O107 (ADR-179): the camera turns towards the pointer, and the cursor lock holds the pointer on its ground point, only
+  // while the steward looks (action.camera.look) or looks around (R-CTRL-472); otherwise the pointer is free for the HUD
+  // and stays where it is on the screen while the keys move the camera.
+  const bool turning = _controls.look || _controls.lookAround;
   const std::optional<Neuron::ScreenPoint> before =
-    m_ground ? Neuron::ProjectToScreen(m_ground->position, View(_view), _view) : std::nullopt; // step 2
+    turning && m_ground ? Neuron::ProjectToScreen(m_ground->position, View(_view), _view) : std::nullopt; // step 2
   FreeMovement(dt, _controls, _terrain);
-  MouseLook(dt);
+  if (turning)
+  {
+    MouseLook(dt);
+  }
   // Step 9, R-CTRL-464: the pointer stays on its ground point while the camera moves.
   if (before && m_ground)
   {

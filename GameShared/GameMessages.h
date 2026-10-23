@@ -53,7 +53,9 @@ enum class GameMessageType : Neuron::MessageTypeId
   BattleResultNotice,
   // The run's epilogue (M3 task T14, ADR-169).
   ReadEpilogue,
-  Epilogue
+  Epilogue,
+  // The steward's growth hold (O106, ADR-178).
+  HoldGrowth
 };
 
 [[nodiscard]] constexpr Neuron::MessageTypeId TypeIdOf(GameMessageType _type) noexcept

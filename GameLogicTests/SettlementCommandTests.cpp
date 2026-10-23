@@ -190,6 +190,34 @@ public:
     Assert::IsTrue(settled.Settlement().priorities == std::array<std::uint8_t, 3>{20, 30, 50}, L"unchanged");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp024TheGrowthHoldIsACommand)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-024")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-098")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp024TheGrowthHoldIsACommand)
+  {
+    // O106 (ADR-178): the hold holds from the tick it executes in, and its status says so before any other cause; a hold
+    // the settlement already has does nothing; a scripted steward that takes the settlement lets it go.
+    Settled settled;
+    Assert::IsTrue(settled.Executed(Species::HoldGrowthCommand{SETTLED_TEAM, true}).effect == Neuron::CommandEffect::Applied &&
+                     settled.Settlement().growthHeld,
+                   L"held");
+    settled.Settlement().storesMilliRu = 0; // short as well
+    Assert::IsTrue(Species::StatusOf(settled.region, settled.Settlement(), 0).growth == Species::GrowthState::Held,
+                   L"the status says held");
+    Assert::IsTrue(settled.Executed(Species::HoldGrowthCommand{SETTLED_TEAM, true}).effect == Neuron::CommandEffect::NoEffect,
+                   L"held already");
+    Assert::IsTrue(settled.Executed(Species::HoldGrowthCommand{SETTLED_TEAM, false}).effect == Neuron::CommandEffect::Applied &&
+                     !settled.Settlement().growthHeld,
+                   L"let go");
+    Assert::IsTrue(Species::StatusOf(settled.region, settled.Settlement(), 0).growth == Species::GrowthState::StoresShort,
+                   L"then its own cause");
+    settled.Settlement().growthHeld = true;
+    settled.region.AddScriptedSteward(SETTLED_TEAM);
+    Assert::IsFalse(settled.Settlement().growthHeld, L"a scripted steward lets it go");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp034ARebuildIsACommand)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-034")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")

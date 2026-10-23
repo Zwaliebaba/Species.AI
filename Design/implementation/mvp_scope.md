@@ -79,6 +79,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-024** (MUST) Growth that needs no death (PIL-056): while the settlement is below its population limit and its stores hold at least `mvp.essence.orb_cost_ru` (27 ru), its Wellspring turns that cost into one orb every `mvp.essence.wellspring_interval_s` (12 s).
 
+> **Amendment 2026-10-23 (O106, [DEC-1010](../decisions/species_design.md#dec-1010-the-openings-choice-between-growing-and-building), [ADR-178](../ADR/ADR-178-the-stewards-growth-hold.md)).** The steward may hold their settlement's growth, and let it go again, by a command of MVP-101 from a button at the end of the settlement panel's growth row (MVP-102). While held, the Wellspring turns nothing into an orb and its timer waits where it stands, so the stores fill for building; the status gives the hold as the growth's state before any other cause (MVP-098). A scripted or AI steward never holds, and lets go a hold it takes over.
+
 **MVP-025** (MUST) An orb that reaches its Wellspring becomes a Worker at the Wellspring if the settlement is below its population limit; otherwise it waits there, glowing, up to `mvp.essence.wait_max` (20) waiting orbs, and an orb beyond that ascends. A waiting orb becomes a Worker as soon as there is room.
 
 **MVP-026** (MUST) The territory radius is `wld.territory.founding_radius` plus `mvp.territory.radius_per_worker` (4 wu) for each Worker above the starting count, up to `wld.territory.max_radius` (1,400 wu), and grows inside the bounds of WLD-060: it stops at the coast, at the halfway line of each valley border area (WLD-062, WLD-063) and at the edge of the home cell. Territory never shrinks in the MVP, except that a border area lost by a claim leaves it (WLD-086).

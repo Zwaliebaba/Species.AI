@@ -65,6 +65,21 @@ struct SetPrioritiesCommand
   void Decode(Neuron::BitReader& _reader);
 };
 
+/// O106 (ADR-178): the settlement holds its growth, or lets it run again. While held, its Wellspring grows no Worker and
+/// its growth timer waits where it stands, so the stores fill for building.
+struct HoldGrowthCommand
+{
+  static constexpr Neuron::MessageTypeId TYPE = TypeIdOf(GameMessageType::HoldGrowth);
+  static constexpr std::uint8_t VERSION = 1;
+  static constexpr std::size_t MAX_BYTES = 5; // the header, the team and a flag
+
+  std::uint8_t team = 0;
+  bool held = false;
+
+  void Encode(Neuron::BitWriter& _writer) const;
+  void Decode(Neuron::BitReader& _reader);
+};
+
 /// MVP-098, PIL-075: a request for the status of the settlement of the team, which its sender must command. The server
 /// answers it outside the queue: its outcome names the tick after which the status is taken, and a permitted request
 /// is followed by the status of that tick.
@@ -84,9 +99,10 @@ struct ReadSettlementStatusCommand
 // value that is never renumbered.
 enum class GrowthState : std::uint8_t
 {
-  Growing,    // its timer counts down to the next orb
-  AtLimit,    // the population has reached its limit, which a dwelling raises
-  StoresShort // the stores hold less than an orb's cost
+  Growing,     // its timer counts down to the next orb
+  AtLimit,     // the population has reached its limit, which a dwelling raises
+  StoresShort, // the stores hold less than an orb's cost
+  Held         // O106 (ADR-178): its steward holds it
 };
 
 /// A construction site as the status lists it: its stable id, its kind and its progress in thousandths.
@@ -107,7 +123,7 @@ inline constexpr std::uint64_t STATUS_QUEUE_MAX = 255;
 struct SettlementStatus
 {
   static constexpr Neuron::MessageTypeId TYPE = TypeIdOf(GameMessageType::SettlementStatus);
-  static constexpr std::uint8_t VERSION = 1;
+  static constexpr std::uint8_t VERSION = 2;            // 2: GrowthState::Held (ADR-178), in the same two bits
   static constexpr std::size_t FIXED_BITS = 711;        // every field but the sites, with the sites' count
   static constexpr std::size_t SITE_BITS = 64 + 3 + 10; // an id, a kind and a progress up to 1,000
   static constexpr std::size_t MAX_BYTES = 3 + (FIXED_BITS + STATUS_QUEUE_MAX * SITE_BITS + 7) / 8;
