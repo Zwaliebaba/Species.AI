@@ -280,7 +280,11 @@ double YawRadians(std::uint16_t _yaw) noexcept
 
 std::optional<StateRecord> MakeRecord(StableId _id, const ReplicatedState& _state, const ReplicatedState* _baseline)
 {
-  if (_baseline == nullptr || _baseline->index() != _state.index())
+  // A figure whose team changed goes whole too: a delta carries no team, and from M3 an expedition's figures leave their
+  // settlement's team for the expedition's and come back (ADR-161, ADR-165).
+  const auto* figure = std::get_if<ReplicatedFigure>(&_state);
+  const auto* held = _baseline != nullptr ? std::get_if<ReplicatedFigure>(_baseline) : nullptr;
+  if (_baseline == nullptr || _baseline->index() != _state.index() || (figure != nullptr && held != nullptr && held->team != figure->team))
   {
     return StateRecord{_id, RecordKind::Whole, _state, 0, {}};
   }

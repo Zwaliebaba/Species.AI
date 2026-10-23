@@ -23,4 +23,17 @@ void RegisterSettlementCommands(RegionSimulation& _region);
 // ReadSettlementStatusCommand; its construction sites are listed in build order, at most STATUS_QUEUE_MAX of them.
 [[nodiscard]] SettlementStatus StatusOf(const RegionSimulation& _region, const Settlement& _settlement, std::uint64_t _tick);
 
+struct BattleResult;
+
+// MVP-098 and MVP-102 (ADR-165): the valley as the settlement sees it after the tick _tick, as the server sends it to the
+// sender of a ReadValleyStatusCommand: every claim, area, battle, respite and settlement's renown, only the grievances held
+// by or against the settlement and the expeditions it sent or that are declared on it, and only the figures of a battle
+// it is a side of; at most VALLEY_CLAIMS_MAX claims and VALLEY_GRIEVANCES_MAX grievances. _runEnded is the world's.
+[[nodiscard]] ValleyStatus ValleyStatusOf(const RegionSimulation& _region, const Settlement& _settlement, std::uint64_t _tick,
+                                          bool _runEnded);
+// MVP-048 (ADR-165): the result as a steward sees it: whole for one whose settlement was a side (_side), its public line
+// for another; _area is the claimed area of a claim battle, which the claim's end no longer holds.
+[[nodiscard]] BattleResultNotice ResultNoticeOf(const RegionSimulation& _region, const BattleResult& _result,
+                                                std::optional<std::uint8_t> _area, bool _side);
+
 } // namespace Species

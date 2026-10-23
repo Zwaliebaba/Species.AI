@@ -28,16 +28,6 @@ inline constexpr std::uint8_t EXPEDITION_TEAM_FIRST = 4;
   return static_cast<std::uint8_t>(EXPEDITION_TEAM_FIRST + _site);
 }
 
-// MVP-042 and MVP-043: where an expedition stands; a value of the saved state that is never renumbered.
-enum class ExpeditionState : std::uint8_t
-{
-  Held = 0,     // declared, held by the warning until mvp.conflict.warning_minutes have passed
-  Released = 1, // released, its battle not yet started
-  Fighting = 2  // its battle in progress
-};
-
-inline constexpr std::uint64_t EXPEDITION_STATE_MAX = 2;
-
 /// MVP-041 and MVP-042 (O98, ADR-161): an attack of the settlement at site `attacker` on the settlement at site
 /// `target`, a raid or the claim battle of `claim`, by up to three of its Leaders and the Workers that followed them when
 /// it was declared, who form its expedition's team. Its stable id is the subject of the attack's grievance (MVP-051).
@@ -80,18 +70,6 @@ struct Battle
 
   bool operator==(const Battle&) const = default;
 };
-
-// MVP-045: how a battle ended; a value of the saved state that is never renumbered.
-enum class BattleEnd : std::uint8_t
-{
-  ObjectiveHeld = 0, // the attacker held the objective for mvp.battle.objective_hold_s
-  LossCap = 1,       // the defender's losses reached its loss cap
-  Rout = 2,          // the attacker fell below mvp.battle.rout_share of the Workers it sent
-  Withdrawn = 3,     // the attacker withdrew by command
-  Time = 4           // pil.battle.max_minutes passed
-};
-
-inline constexpr std::uint64_t BATTLE_END_MAX = 4;
 
 /// MVP-048 and PIL-046 (ADR-161): what a battle came to: its sides, its end and winner, the Workers each lost, the stores
 /// and Essence moved, whether a claimed area moved, the grievance its attack created and the respite it started. Its

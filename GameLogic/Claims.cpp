@@ -86,7 +86,48 @@ void End(RegionSimulation& _region, StableId _claim)
   }
 }
 
+// ADR-165: the claim's event of _kind for the stewards' notices: the claimant acts, against the half's pair neighbour or
+// the central resource site's holder, at the area's resource site.
+void RaiseClaim(RegionSimulation& _region, NoticeKind _kind, const Claim& _claim, std::optional<std::uint8_t> _other)
+{
+  const Structure* site = ResourceSiteOfArea(_region, _claim.area);
+  _region.Raise({_kind, _claim.claimant, _other, _claim.id, _claim.area, site != nullptr ? site->position : Neuron::Vec3{}});
+}
+
+// The settlement a claim on _area by _claimant is made against: the half's pair neighbour, or the central resource
+// site's holder, if any.
+std::optional<std::uint8_t> OpponentOf(const RegionSimulation& _region, std::uint8_t _claimant, std::uint8_t _area)
+{
+  if (_area == CLAIM_AREA_CENTRAL)
+  {
+    const std::optional<std::uint8_t> holder = MovedTo(_region, _area);
+    return holder != std::optional<std::uint8_t>(_claimant) ? holder : std::nullopt;
+  }
+  const auto& sites = VALLEY_PAIRS[PairOfArea(_area)];
+  return sites[0] == _claimant ? sites[1] : sites[0];
+}
+
 } // namespace
+
+const Structure* ResourceSiteOfArea(const RegionSimulation& _region, std::uint8_t _area)
+{
+  const SlicedPool<Structure>& structures = _region.Structures();
+  for (std::uint32_t slot = 0; slot < structures.Capacity(); ++slot)
+  {
+    if (!structures.Used(slot))
+    {
+      continue;
+    }
+    const Structure& site = structures.At(slot);
+    if (_area == CLAIM_AREA_CENTRAL
+          ? site.kind == StructureKind::ResourceSiteCentral
+          : site.kind == StructureKind::ResourceSite && InBorderHalf(_region, _area, site.position.x, site.position.z))
+    {
+      return &site;
+    }
+  }
+  return nullptr;
+}
 
 std::uint8_t OwnSiteOfArea(std::uint8_t _area) noexcept
 {
@@ -226,6 +267,7 @@ std::expected<StableId, ClaimRefusal> MakeClaim(RegionSimulation& _region, std::
   }
   _region.Claims().push_back(claim);
   RecordEvent(_region, _claimant, StatisticKind::ClaimMade, _area);
+  RaiseClaim(_region, NoticeKind::ClaimMade, claim, holder);
   return claim.id;
 }
 
@@ -253,9 +295,10 @@ std::optional<ClaimRefusal> WithdrawClaim(RegionSimulation& _region, std::uint8_
   {
     renown->easedMicro += eased;
   }
-  const std::uint8_t area = found->area;
+  const Claim claim = *found;
   End(_region, _claim);
-  RecordEvent(_region, _claimant, StatisticKind::ClaimWithdrawn, area);
+  RecordEvent(_region, _claimant, StatisticKind::ClaimWithdrawn, claim.area);
+  RaiseClaim(_region, NoticeKind::ClaimWithdrawn, claim, OpponentOf(_region, _claimant, claim.area));
   return std::nullopt;
 }
 
@@ -267,8 +310,10 @@ void SettleClaim(RegionSimulation& _region, StableId _claim, bool _claimantWon)
     return;
   }
   const Claim claim = *found;
+  const std::optional<std::uint8_t> opponent = OpponentOf(_region, claim.claimant, claim.area);
   End(_region, _claim);
   RecordEvent(_region, claim.claimant, _claimantWon ? StatisticKind::ClaimWon : StatisticKind::ClaimLost, claim.area);
+  RaiseClaim(_region, _claimantWon ? NoticeKind::ClaimWon : NoticeKind::ClaimLost, claim, opponent);
   if (!_claimantWon)
   {
     return;
@@ -288,6 +333,7 @@ void SettleClaim(RegionSimulation& _region, StableId _claim, bool _claimantWon)
     {
       End(_region, other.id);
       RecordEvent(_region, other.claimant, StatisticKind::ClaimLost, other.area);
+      RaiseClaim(_region, NoticeKind::ClaimLost, other, claim.claimant);
     }
     Hold(_region, CLAIM_AREA_CENTRAL, claim.claimant);
     return;
@@ -320,6 +366,7 @@ void AdvanceClaims(RegionSimulation& _region, std::uint64_t _tick)
     End(_region, held->id);
     Hold(_region, CLAIM_AREA_CENTRAL, held->claimant);
     RecordEvent(_region, held->claimant, StatisticKind::ClaimWon, CLAIM_AREA_CENTRAL);
+    RaiseClaim(_region, NoticeKind::ClaimWon, *held, std::nullopt);
   }
 }
 

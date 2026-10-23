@@ -2,23 +2,34 @@
 
 #include "BitReader.h"
 #include "BitWriter.h"
+#include "RelationMessages.h"
+#include "SettlementMessages.h"
+#include "StableId.h"
+#include "Vec3.h"
 
 #include <cstdint>
+#include <optional>
 
 namespace Species
 {
 
 class RegionSimulation;
 
-// MVP-051: what a grievance arose from; a value of the saved state that is never renumbered.
-enum class GrievanceCause : std::uint8_t
+/// MVP-102 (ADR-165): a guaranteed event of the valley in the tick being stepped, which the world server turns into the
+/// notices of the stewards whose settlements it concerns: its kind, the settlement that acted by its site (the claimant,
+/// the attacker, or the first of two in contact), the other settlement concerned, its subject by stable id, the notice's
+/// detail and a place. Never state.
+struct ValleyEvent
 {
-  Pressure = 0, // territory pressure while the two settlements are in contact (MVP-027)
-  Claim = 1,    // a claim made on an area the holder holds (MVP-053)
-  Attack = 2    // an attack declared on the holder (MVP-042)
-};
+  NoticeKind kind = NoticeKind::Contact;
+  std::uint8_t site = 0;
+  std::optional<std::uint8_t> other;
+  StableId subject = 0;
+  std::uint8_t detail = 0;
+  Neuron::Vec3 position;
 
-inline constexpr std::uint64_t GRIEVANCE_CAUSE_MAX = 2;
+  bool operator==(const ValleyEvent&) const = default;
+};
 
 // A weight unit in a grievance's integer millionths.
 inline constexpr std::int64_t WEIGHT_MICRO = 1'000'000;

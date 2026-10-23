@@ -4,12 +4,16 @@
 #include "Claims.h"
 #include "Construction.h"
 #include "RegionSimulation.h"
+#include "Relations.h"
+#include "Renown.h"
 #include "SettlementCommands.h"
 #include "SettlementTasks.h"
 #include "Upkeep.h"
 
 #include <algorithm>
+#include <cmath>
 #include <functional>
+#include <limits>
 #include <optional>
 
 namespace Species
@@ -17,6 +21,8 @@ namespace Species
 
 namespace
 {
+
+constexpr double SECONDS_PER_MINUTE = 60.0;
 
 using Neuron::CommandEffect;
 using Neuron::CommandExecution;
@@ -208,6 +214,111 @@ SettlementStatus StatusOf(const RegionSimulation& _region, const Settlement& _se
     status.queue.push_back({site->id, site->kind, static_cast<std::uint16_t>(permille)});
   }
   return status;
+}
+
+ValleyStatus ValleyStatusOf(const RegionSimulation& _region, const Settlement& _settlement, std::uint64_t _tick, bool _runEnded)
+{
+  const TuningMvp& tuning = _region.Tuning();
+  const std::uint8_t site = _settlement.site;
+  const auto points = [](std::int64_t _points)
+  { return static_cast<std::uint32_t>(std::clamp<std::int64_t>(_points, 0, std::numeric_limits<std::uint32_t>::max())); };
+  ValleyStatus status;
+  status.tick = _tick;
+  status.team = _settlement.team;
+  // MVP-060: the run's end and its quiet minutes, as InQuietMinutes reads them; a region of no run has neither.
+  status.runEndTick = _region.RunEndTick();
+  const auto quiet = static_cast<std::uint64_t>(
+    std::max<std::int64_t>(0, std::llround(tuning.mvp.run.quietMinutes * SECONDS_PER_MINUTE / tuning.ref.sim.tickPeriod)));
+  status.quietTick = status.runEndTick == std::numeric_limits<std::uint64_t>::max()
+                       ? status.runEndTick
+                       : status.runEndTick - std::min(quiet, status.runEndTick);
+  status.runEnded = _runEnded;
+  for (const SettlementRenown& renown : _region.Renown())
+  {
+    const RenownPoints renowned = RenownOf(tuning, renown);
+    status.renown.push_back(
+      {renown.site, points(renowned.defense), points(renowned.claims), points(renowned.easing), points(renowned.structures)});
+  }
+  for (std::uint8_t area = 0; area < VALLEY_AREAS; ++area)
+  {
+    status.areas[area] = {HolderOf(_region, area), CooldownEndOf(_region, area).value_or(0)};
+  }
+  for (const Claim& claim : _region.Claims())
+  {
+    if (status.claims.size() < VALLEY_CLAIMS_MAX)
+    {
+      status.claims.push_back({claim.id, claim.claimant, claim.area, claim.madeTick, claim.state});
+    }
+  }
+  for (const Grievance& grievance : _region.Grievances())
+  {
+    if ((grievance.holder == site || grievance.against == site) && status.grievances.size() < VALLEY_GRIEVANCES_MAX)
+    {
+      status.grievances.push_back({grievance.holder, grievance.against, grievance.cause, grievance.subject, grievance.unprovoked,
+                                   grievance.causeRemoved, std::max<std::int64_t>(0, grievance.weightMicro)});
+    }
+  }
+  for (const Expedition& expedition : _region.Expeditions())
+  {
+    if (expedition.attacker == site || expedition.target == site)
+    {
+      status.expeditions.push_back({expedition.id, expedition.attacker, expedition.target, expedition.claim, expedition.declaredTick,
+                                    expedition.state, expedition.unprovoked, expedition.sent});
+    }
+  }
+  for (const Battle& battle : _region.Battles())
+  {
+    BattleLine line{battle.expedition, battle.attacker, battle.defender, battle.claim, battle.startTick};
+    if (battle.attacker == site || battle.defender == site)
+    {
+      // WLD-244: the battlefield of a battle the settlement is a side of joins its steward's areas.
+      constexpr double RADIUS_LIMIT = static_cast<double>((std::uint32_t{1} << SETTLEMENT_RADIUS_BITS) - 1);
+      line.side = true;
+      line.objective = QuantizePosition(battle.objective);
+      line.fieldCenter = QuantizePosition(battle.fieldCenter);
+      line.fieldRadius =
+        static_cast<std::uint32_t>(std::clamp(std::round(battle.fieldRadius * POSITION_STEPS_PER_UNIT), 0.0, RADIUS_LIMIT));
+      line.attackerLost = battle.attackerLost;
+      line.defenderLost = battle.defenderLost;
+      line.lossCap = LossCapOf(_region, battle);
+    }
+    status.battles.push_back(line);
+  }
+  for (const Respite& respite : _region.Respites())
+  {
+    status.respites.push_back({respite.site, respite.until});
+  }
+  return status;
+}
+
+BattleResultNotice ResultNoticeOf(const RegionSimulation& _region, const BattleResult& _result, std::optional<std::uint8_t> _area,
+                                  bool _side)
+{
+  BattleResultNotice notice;
+  notice.expedition = _result.expedition;
+  notice.attacker = _result.attacker;
+  notice.defender = _result.defender;
+  notice.area = _result.claim != 0 ? _area : std::nullopt;
+  notice.end = _result.end;
+  notice.attackerWon = _result.attackerWon;
+  notice.startTick = _result.startTick;
+  notice.endTick = _result.endTick;
+  notice.areaMoved = _result.areaMoved && notice.area.has_value();
+  notice.side = _side;
+  if (_side)
+  {
+    // MVP-061: a defense held, or a claim battle won, gives its winner renown (ADR-163).
+    const auto& renown = _region.Tuning().mvp.renown;
+    notice.attackerLost = _result.attackerLost;
+    notice.defenderLost = _result.defenderLost;
+    notice.storesMovedMilliRu = std::max<std::int64_t>(0, _result.storesMovedMilliRu);
+    notice.essenceMoved = _result.essenceMoved;
+    notice.grievanceMicro = std::max<std::int64_t>(0, _result.grievanceMicro);
+    notice.respiteUntil = _result.respiteUntil;
+    const std::int64_t given = !_result.attackerWon ? renown.defenseHeld : _result.claim != 0 ? renown.claimWon : 0;
+    notice.renown = static_cast<std::uint32_t>(std::max<std::int64_t>(0, given));
+  }
+  return notice;
 }
 
 } // namespace Species

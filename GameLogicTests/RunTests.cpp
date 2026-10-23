@@ -198,8 +198,9 @@ public:
   std::uint64_t datagrams = 0;
 };
 
-// The command reports among what a server published.
-std::vector<Species::CommandReport> ReportsOf(Species::WorldServer& _server, std::uint64_t _tick)
+// The command reports among what a server published, and its notices into _notices when given.
+std::vector<Species::CommandReport> ReportsOf(Species::WorldServer& _server, std::uint64_t _tick,
+                                              std::vector<Species::SettlementNotice>* _notices = nullptr)
 {
   KeptMessages kept;
   _server.Publish(_tick, kept);
@@ -208,6 +209,14 @@ std::vector<Species::CommandReport> ReportsOf(Species::WorldServer& _server, std
   {
     Neuron::MessageDispatcher dispatcher;
     dispatcher.Register<Species::CommandReport>([&reports](const Species::CommandReport& _report) { reports.push_back(_report); });
+    dispatcher.Register<Species::SettlementNotice>(
+      [_notices](const Species::SettlementNotice& _notice)
+      {
+        if (_notices != nullptr)
+        {
+          _notices->push_back(_notice);
+        }
+      });
     static_cast<void>(dispatcher.Dispatch(message));
   }
   return reports;
@@ -437,12 +446,20 @@ public:
       Species::WorldServer server(desc);
       std::uint64_t tick = server.Open();
       server.Connect(STEWARD_CONNECTION);
+      std::vector<Species::SettlementNotice> notices;
       for (; tick < 120; ++tick)
       {
         server.Step(tick, pool);
-        static_cast<void>(ReportsOf(server, tick));
+        static_cast<void>(ReportsOf(server, tick, &notices));
       }
       Assert::IsTrue(server.Simulation()->RunState().ended && server.Simulation()->RunState().endedTick == 108, L"the run ended");
+      // ADR-165: the steward is told once when the quiet minutes begin and once when the run ends.
+      const auto quiet = std::ranges::find(notices, Species::NoticeKind::RunQuiet, &Species::SettlementNotice::kind);
+      const auto ending = std::ranges::find(notices, Species::NoticeKind::RunEnded, &Species::SettlementNotice::kind);
+      Assert::IsTrue(std::ranges::count(notices, Species::NoticeKind::RunQuiet, &Species::SettlementNotice::kind) == 1 &&
+                       std::ranges::count(notices, Species::NoticeKind::RunEnded, &Species::SettlementNotice::kind) == 1 &&
+                       quiet < ending && ending->tick + 1 == 108 && ending->team == STEWARD_SITE, // in the step that ended it
+                     L"the quiet minutes and the run's end, each noticed once");
       server.Receive(STEWARD_CONNECTION,
                      Neuron::ReceivedMessage{Neuron::Channel::Reliable,
                                              Neuron::EncodeMessage(Species::SetPrioritiesCommand{STEWARD_SITE, {40, 40, 20}})});

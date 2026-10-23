@@ -13,23 +13,13 @@ namespace Species
 {
 
 class RegionSimulation;
-enum class GrievanceCause : std::uint8_t;
+struct Structure;
 
 // The first state version whose regions hold claims, moved areas and territory events of more than one kind (M3 task T5,
 // ADR-160).
 inline constexpr std::uint32_t STATE_VERSION_WITH_CLAIMS = 12;
 // The first state version whose regions hold the tick each area's last claim ended (O100, DEC-1008).
 inline constexpr std::uint32_t STATE_VERSION_WITH_CLAIM_COOLDOWN = 16;
-
-// MVP-053: where a claim stands; a value of the saved state that is never renumbered.
-enum class ClaimState : std::uint8_t
-{
-  Open = 0,     // on an area another settlement holds: settled by a claim battle or the claimant's withdrawal
-  Waiting = 1,  // on the central resource site while nobody holds it: held after mvp.claim.uncontested_minutes
-  Contested = 2 // on the central resource site while nobody holds it, which another settlement also claims
-};
-
-inline constexpr std::uint64_t CLAIM_STATE_MAX = 2;
 
 /// MVP-053 (ADR-160): a claim of the settlement at site `claimant` on an area of the region (CLAIM_AREA_CENTRAL or a
 /// half of a valley border area), with the tick it was made. Its stable id is the subject of the grievance it gives the
@@ -78,6 +68,9 @@ struct ClaimEnd
 [[nodiscard]] std::optional<std::uint8_t> HolderOf(const RegionSimulation& _region, std::uint8_t _area);
 // The settlement a claim moved the area to, or none.
 [[nodiscard]] std::optional<std::uint8_t> MovedTo(const RegionSimulation& _region, std::uint8_t _area) noexcept;
+
+// MVP-053: the area's resource site, the one in the half or the central resource site, or none.
+[[nodiscard]] const Structure* ResourceSiteOfArea(const RegionSimulation& _region, std::uint8_t _area);
 
 // O100 (DEC-1008): the first tick a claim may be made on the area again, mvp.claim.cooldown_minutes after its last claim
 // ended; none when no claim on it has ended.

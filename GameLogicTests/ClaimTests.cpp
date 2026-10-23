@@ -323,6 +323,49 @@ public:
                    L"a version-15 region reads whole, with no area cooling down");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp102EachClaimsPathRaisesItsValleyEvent)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-102")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp102EachClaimsPathRaisesItsValleyEvent)
+  {
+    // ADR-165: a claim made, withdrawn, lost and won each raises the valley event of its notice, the claimant acting
+    // against the half's pair neighbour, with the claim as its subject, the area as its detail and the area's resource
+    // site as its place; the central site held after its wait is won against nobody; a step clears the events.
+    const std::unique_ptr<Species::WorldSimulation> world = ValleyWorld(SETTLED_TEST_KEY, NoCooldownTuning());
+    Species::RegionSimulation& region = world->Region(0);
+    region.SettlementAis().clear(); // the test's claims alone (ADR-162)
+    Reach(region, {STEWARD_SITE, NEIGHBOR_SITE});
+    const auto last = [&region] { return region.ValleyEvents().back(); };
+    const Species::StableId withdrawn = Species::MakeClaim(region, STEWARD_SITE, NEIGHBORS_HALF).value_or(0);
+    const Species::Structure* site = Species::ResourceSiteOfArea(region, NEIGHBORS_HALF);
+    Assert::IsTrue(site != nullptr && last() == Species::ValleyEvent{Species::NoticeKind::ClaimMade, STEWARD_SITE, NEIGHBOR_SITE, withdrawn,
+                                                                     NEIGHBORS_HALF, site->position},
+                   L"a claim made, against the half's holder, at its resource site");
+    Assert::IsFalse(Species::WithdrawClaim(region, STEWARD_SITE, withdrawn).has_value(), L"withdrawn");
+    Assert::IsTrue(last().kind == Species::NoticeKind::ClaimWithdrawn && last().subject == withdrawn &&
+                     last().other == std::optional<std::uint8_t>(NEIGHBOR_SITE),
+                   L"its withdrawal");
+    const Species::StableId lost = Species::MakeClaim(region, STEWARD_SITE, NEIGHBORS_HALF).value_or(0);
+    Species::SettleClaim(region, lost, false);
+    Assert::IsTrue(last().kind == Species::NoticeKind::ClaimLost && last().subject == lost, L"a claim battle lost");
+    const Species::StableId won = Species::MakeClaim(region, STEWARD_SITE, NEIGHBORS_HALF).value_or(0);
+    Species::SettleClaim(region, won, true);
+    Assert::IsTrue(last().kind == Species::NoticeKind::ClaimWon && last().subject == won && last().detail == NEIGHBORS_HALF &&
+                     last().other == std::optional<std::uint8_t>(NEIGHBOR_SITE),
+                   L"and one won, against the half's former holder");
+    const Species::StableId central = Species::MakeClaim(region, 0, Species::CLAIM_AREA_CENTRAL).value_or(0);
+    Assert::IsTrue(last().kind == Species::NoticeKind::ClaimMade && !last().other.has_value(), L"a claim on the unheld central site");
+    Species::AdvanceClaims(region, ClaimOf(region, central)->madeTick + WaitTicks());
+    Assert::IsTrue(last().kind == Species::NoticeKind::ClaimWon && last().site == 0 && last().subject == central &&
+                     !last().other.has_value(),
+                   L"held after its wait, won against nobody");
+    Neuron::WorkerPool pool(0);
+    world->Step(region.NextTick(), pool);
+    Assert::IsTrue(std::ranges::none_of(region.ValleyEvents(), [&](const Species::ValleyEvent& _event)
+                                        { return _event.subject == central || _event.subject == won; }),
+                   L"a step raises its own events alone");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp053AContestedCentralClaimWaitsForItsBattleOrAWithdrawal)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-053")
   END_TEST_METHOD_ATTRIBUTE()

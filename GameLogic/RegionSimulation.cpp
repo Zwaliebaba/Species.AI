@@ -643,6 +643,7 @@ void RegionSimulation::RecordContacts()
     if (ReachesHalfwayLine(*this, first, pair) && ReachesHalfwayLine(*this, second, pair))
     {
       m_contacts.push_back({m_nextTick, ContactEventKind::Contact, first, second, static_cast<std::uint8_t>(pair)});
+      Raise({NoticeKind::Contact, first, second, 0, static_cast<std::uint8_t>(pair), {}}); // ADR-165
     }
   }
 }
@@ -798,6 +799,7 @@ void RegionSimulation::Pass(std::uint64_t _tick)
 {
   ENGINE_ASSERT(_tick == m_nextTick);
   m_events.clear();
+  m_valleyEvents.clear();
   m_nextTick = _tick + 1;
 }
 
@@ -806,6 +808,7 @@ void RegionSimulation::Step(std::uint64_t _tick)
   ENGINE_ASSERT(_tick == m_nextTick);
   m_draws.SetTick(_tick);
   m_events.clear();
+  m_valleyEvents.clear();
   // R-SIM-510: the tick's commands, the tick clock (the region's tick: the world has no game speed), then the slices.
   // The markers divide the step by the objects it advances, for the cost measurement (DBG-045, ADR-110).
   {

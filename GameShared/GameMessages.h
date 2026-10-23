@@ -46,7 +46,11 @@ enum class GameMessageType : Neuron::MessageTypeId
   SendTribute,
   // The attacks (M3 task T6, ADR-161).
   DeclareAttack,
-  WithdrawAttack
+  WithdrawAttack,
+  // The valley's status and the battle results (M3 task T10, ADR-165).
+  ReadValleyStatus,
+  ValleyStatus,
+  BattleResultNotice
 };
 
 [[nodiscard]] constexpr Neuron::MessageTypeId TypeIdOf(GameMessageType _type) noexcept

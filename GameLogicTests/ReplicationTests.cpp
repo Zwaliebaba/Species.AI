@@ -17,11 +17,15 @@
 #include "StateHash.h"
 #include "StateReplica.h"
 #include "StateSender.h"
+#include "RelationMessages.h"
+#include "Snapshot.h"
 #include "StateUpdate.h"
 #include "TestSupport.h"
+#include "ValleyAtWar.h"
 #include "WorkerPool.h"
 #include "WorldServer.h"
 #include "WorldSimulation.h"
+#include "WorldSnapshot.h"
 #include "WorldTerrain.h"
 
 #include <algorithm>
@@ -77,6 +81,8 @@ public:
     m_dispatcher.Register<Species::ServerStats>([](const Species::ServerStats&) {});
     m_dispatcher.Register<Species::SettlementNotice>([this](const Species::SettlementNotice& _notice) { notices.push_back(_notice); });
     m_dispatcher.Register<Species::SettlementStatus>([this](const Species::SettlementStatus&) { ++statuses; });
+    m_dispatcher.Register<Species::ValleyStatus>([this](const Species::ValleyStatus& _status) { valleys.push_back(_status); });
+    m_dispatcher.Register<Species::BattleResultNotice>([this](const Species::BattleResultNotice& _result) { results.push_back(_result); });
     m_server.Connect(CLIENT_CONNECTION);
   }
 
@@ -126,6 +132,8 @@ public:
   std::uint64_t reports = 0;
   std::uint64_t statuses = 0;
   std::vector<Species::SettlementNotice> notices;
+  std::vector<Species::ValleyStatus> valleys;
+  std::vector<Species::BattleResultNotice> results;
 
 private:
   [[nodiscard]] std::optional<std::uint64_t> Send(Neuron::ConnectionId, Neuron::Channel _channel,
@@ -736,6 +744,121 @@ public:
       Assert::IsTrue(sites >= region.Settlements().size() + region.Terrain()->layout.sites.size(), L"every Wellspring and site");
     }
     Assert::IsTrue(hiddenMost >= 40, L"the other settlements' Workers at home are not sent");
+    ExpectEqual(0, static_cast<std::int64_t>(client.replica.Totals().missingBaselines), L"every baseline was there");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr084AValleyClientHoldsNothingOutsideItsSeenLayerInABattle)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-048")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-097")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-098")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-102")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr084AValleyClientHoldsNothingOutsideItsSeenLayerInABattle)
+  {
+    // M3 task T10 (ADR-165): in the valley at war, four settlements and two raids, one of them on the steward's
+    // settlement, the steward's client holds the server's view after every tick and nothing outside its seen layer but
+    // its own expedition's; its valley status lists both battles, but the figures of its own alone, and no grievance or
+    // expedition that is not its settlement's; and as the battles end it is told its own battle's end with its whole
+    // result, and only the other battle's public line.
+    static const Species::TuningMvp TUNING = []
+    {
+      Species::TuningMvp tuning = CommittedTuning();
+      tuning.mvp.conflict.warningMinutes = 0.1; // 60 ticks, so that both battles start as the valley settles
+      tuning.pil.battle.maxMinutes = 0.5;       // 300 ticks
+      return tuning;
+    }();
+    Species::ValleyAtWarDesc war;
+    war.key = SETTLED_TEST_KEY;
+    war.terrain = ValleyTerrain();
+    war.tuning = &TUNING;
+    war.structures = &TestRecords();
+    war.population = 60;
+    war.expedition = 10;
+    war.settleTicks = 2'000;
+    const std::unique_ptr<Species::WorldSimulation> world = Species::StartValleyAtWar(war);
+    const TemporaryFolder folder;
+    Assert::IsTrue(Neuron::SnapshotStore(folder.Path(), 1).Save(Species::SnapshotOf(*world)).has_value(), L"the valley at war saved");
+    Species::WorldServer::Desc desc;
+    desc.tuning = TUNING;
+    desc.structures = TestRecords();
+    desc.worldSeed = ValleyTerrain()->seed;
+    desc.snapshotFolder = folder.Path();
+    desc.restoreOnly = true;
+    Species::WorldServer server(desc);
+    std::uint64_t tick = server.Open();
+    Assert::IsTrue(server.Opened().restored && tick == world->NextTick() && world->Region(0).Battles().size() == 2,
+                   L"with both battles in progress, continued by the server");
+    AttachedClient client(server);
+    const auto steward = static_cast<std::uint8_t>(TUNING.mvp.sandbox.stewardSite);
+    const std::uint8_t expedition = Species::ExpeditionTeamOf(steward);
+    Neuron::WorkerPool pool(2);
+    for (const std::uint64_t last = tick + 400; tick < last; ++tick)
+    {
+      if (tick % 50 == 0)
+      {
+        client.SendCommand(Species::ReadValleyStatusCommand{steward});
+      }
+      client.Deliver();
+      server.Step(tick, pool);
+      client.Publish(tick);
+      client.Read();
+      Assert::IsTrue(client.replica.Latest() == ServerView(server, steward), L"the replica holds the server's view");
+      const Species::RegionSimulation& region = server.Simulation()->Region(0);
+      const Species::Sight sight = Species::Sight::OfSteward(region, region.CommanderOf(steward).sender);
+      const auto sees = [&sight](const Species::QuantizedPosition& _position)
+      {
+        const Neuron::Vec3 position = Species::PositionOf(_position);
+        return sight.Sees(position.x, position.z);
+      };
+      for (const auto& [id, state] : client.replica.Latest())
+      {
+        if (const auto* figure = std::get_if<Species::ReplicatedFigure>(&state))
+        {
+          Assert::IsTrue(figure->team == steward || figure->team == expedition || sees(figure->position),
+                         L"no other team's figure outside it, the attackers' among them");
+        }
+        if (const auto* settlement = std::get_if<Species::ReplicatedSettlement>(&state);
+            settlement != nullptr && settlement->team != steward)
+        {
+          Assert::IsTrue(settlement->storesMilliRu == 0 && settlement->population == 0, L"no other settlement's stores");
+        }
+      }
+    }
+    Assert::IsTrue(client.valleys.size() >= 7, L"a valley status for each request");
+    bool bothFought = false;
+    for (const Species::ValleyStatus& status : client.valleys)
+    {
+      Assert::IsTrue(status.team == steward && status.renown.size() == 4, L"the steward's, with every settlement's renown");
+      Assert::IsTrue(std::ranges::all_of(status.grievances, [&](const Species::GrievanceLine& _line)
+                                         { return _line.holder == steward || _line.against == steward; }),
+                     L"only the grievances held by or against its settlement");
+      Assert::IsTrue(std::ranges::all_of(status.expeditions, [&](const Species::ExpeditionLine& _line)
+                                         { return _line.attacker == steward || _line.target == steward; }),
+                     L"only the expeditions it sent or that are declared on it");
+      for (const Species::BattleLine& line : status.battles)
+      {
+        const bool side = line.attacker == steward || line.defender == steward;
+        Assert::IsTrue(line.side == side, L"a battle is its side's when its settlement fights in it");
+        Assert::IsTrue(side || (line.attackerLost == 0 && line.defenderLost == 0 && line.lossCap == 0 && line.fieldRadius == 0),
+                       L"another battle shows its public line alone");
+      }
+      bothFought = bothFought || status.battles.size() == 2;
+    }
+    Assert::IsTrue(bothFought, L"both battles listed while they are fought");
+    ExpectEqual(2, static_cast<std::int64_t>(client.results.size()), L"both battles ended, each with its result");
+    for (const Species::BattleResultNotice& result : client.results)
+    {
+      const bool side = result.attacker == steward || result.defender == steward;
+      Assert::IsTrue(result.side == side, L"the whole result of its own battle");
+      Assert::IsTrue(side || (result.attackerLost == 0 && result.defenderLost == 0 && result.storesMovedMilliRu == 0 &&
+                              result.essenceMoved == 0 && result.renown == 0),
+                     L"and the other battle's public line alone");
+    }
+    const auto ended = std::ranges::count(client.notices, Species::NoticeKind::BattleEnded, &Species::SettlementNotice::kind);
+    ExpectEqual(1, static_cast<std::int64_t>(ended), L"the end of its own battle is noticed, not the other's");
+    const auto own = std::ranges::find(client.notices, Species::NoticeKind::BattleEnded, &Species::SettlementNotice::kind);
+    Assert::IsTrue(own != client.notices.end() && own->team == steward && !own->ours && own->other.has_value(),
+                   L"as the defender, against its attacker");
     ExpectEqual(0, static_cast<std::int64_t>(client.replica.Totals().missingBaselines), L"every baseline was there");
   }
 

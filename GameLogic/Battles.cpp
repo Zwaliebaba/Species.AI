@@ -90,27 +90,6 @@ const Claim* ClaimNamed(const RegionSimulation& _region, StableId _claim) noexce
   return found != _region.Claims().end() ? &*found : nullptr;
 }
 
-// The claimed area's resource site: the one in the half, or the central resource site.
-const Structure* SiteOfArea(const RegionSimulation& _region, std::uint8_t _area)
-{
-  const SlicedPool<Structure>& structures = _region.Structures();
-  for (std::uint32_t slot = 0; slot < structures.Capacity(); ++slot)
-  {
-    if (!structures.Used(slot))
-    {
-      continue;
-    }
-    const Structure& site = structures.At(slot);
-    if (_area == CLAIM_AREA_CENTRAL
-          ? site.kind == StructureKind::ResourceSiteCentral
-          : site.kind == StructureKind::ResourceSite && InBorderHalf(_region, _area, site.position.x, site.position.z))
-    {
-      return &site;
-    }
-  }
-  return nullptr;
-}
-
 Neuron::Vec3 WellspringOf(const RegionSimulation& _region, std::uint8_t _site)
 {
   const Settlement* settlement = _region.SettlementAt(_site);
@@ -154,7 +133,7 @@ bool Entered(const RegionSimulation& _region, const Expedition& _expedition)
   }
   const Claim* claim = ClaimNamed(_region, _expedition.claim);
   const CellRaster* territory = _region.TerritoryOf(_expedition.target);
-  const Structure* site = claim != nullptr && claim->area == CLAIM_AREA_CENTRAL ? SiteOfArea(_region, CLAIM_AREA_CENTRAL) : nullptr;
+  const Structure* site = claim != nullptr && claim->area == CLAIM_AREA_CENTRAL ? ResourceSiteOfArea(_region, CLAIM_AREA_CENTRAL) : nullptr;
   const SlicedPool<Figure>& figures = _region.TeamAt(team).figures;
   for (std::uint32_t slot = 0; slot < figures.Capacity(); ++slot)
   {
@@ -277,6 +256,13 @@ void ReturnHome(RegionSimulation& _region, const Expedition& _expedition, std::i
 }
 
 // The expedition ends, its figures home with what they carry.
+// ADR-165: an event of the expedition for the stewards' notices: its attacker acts against its target.
+void RaiseAttack(RegionSimulation& _region, NoticeKind _kind, const Expedition& _expedition, std::uint8_t _detail,
+                 const Neuron::Vec3& _position)
+{
+  _region.Raise({_kind, _expedition.attacker, _expedition.target, _expedition.id, _detail, _position});
+}
+
 void EndExpedition(RegionSimulation& _region, StableId _expedition, std::int64_t _storesMilliRu)
 {
   const auto found = std::ranges::find(_region.Expeditions(), _expedition, &Expedition::id);
@@ -290,6 +276,18 @@ void EndExpedition(RegionSimulation& _region, StableId _expedition, std::int64_t
   ReturnHome(_region, expedition, _storesMilliRu);
 }
 
+// An expedition that ends before its battle: withdrawn, emptied, or unfought at the run's end; its notice says so
+// (ADR-165).
+void EndBeforeBattle(RegionSimulation& _region, StableId _expedition)
+{
+  const auto found = std::ranges::find(_region.Expeditions(), _expedition, &Expedition::id);
+  if (found != _region.Expeditions().end())
+  {
+    RaiseAttack(_region, NoticeKind::AttackEnded, *found, 0, ObjectiveOf(_region, *found));
+  }
+  EndExpedition(_region, _expedition, 0);
+}
+
 // MVP-045 to MVP-048: the battle ends: a won raid takes the capped stores, a claim battle settles its claim, the battle
 // relieves the attacker's grievances and starts the defender's respite, and its result is recorded.
 void EndBattle(RegionSimulation& _region, std::size_t _index, BattleEnd _end, std::uint64_t _tick)
@@ -297,6 +295,8 @@ void EndBattle(RegionSimulation& _region, std::size_t _index, BattleEnd _end, st
   const TuningMvp& tuning = _region.Tuning();
   const Battle battle = _region.Battles()[_index];
   _region.Battles().erase(_region.Battles().begin() + static_cast<std::ptrdiff_t>(_index));
+  _region.Raise({NoticeKind::BattleEnded, battle.attacker, battle.defender, battle.expedition,
+                 static_cast<std::uint8_t>(_end == BattleEnd::ObjectiveHeld || _end == BattleEnd::LossCap ? 1 : 0), battle.objective});
   _region.ForgetCachedEnemies();
   const auto found = std::ranges::find(_region.Expeditions(), battle.expedition, &Expedition::id);
   const std::int64_t grievance = found != _region.Expeditions().end() ? found->grievanceMicro : 0;
@@ -340,6 +340,7 @@ void EndBattle(RegionSimulation& _region, std::size_t _index, BattleEnd _end, st
       result.respiteUntil = _tick + TicksOf(tuning, tuning.mvp.protection.respiteMinutes * SECONDS_PER_MINUTE);
       std::erase_if(_region.Respites(), [&](const Respite& _respite) { return _respite.site == battle.defender; });
       _region.Respites().push_back({battle.defender, result.respiteUntil});
+      _region.Raise({NoticeKind::RespiteStarted, battle.defender, battle.attacker, battle.expedition, 0, battle.objective});
     }
   }
   _region.BattleResults().push_back(result);
@@ -367,7 +368,7 @@ void EndBattle(RegionSimulation& _region, std::size_t _index, BattleEnd _end, st
 Neuron::Vec3 ObjectiveOf(const RegionSimulation& _region, const Expedition& _expedition)
 {
   const Claim* claim = ClaimNamed(_region, _expedition.claim);
-  const Structure* site = claim != nullptr ? SiteOfArea(_region, claim->area) : nullptr;
+  const Structure* site = claim != nullptr ? ResourceSiteOfArea(_region, claim->area) : nullptr;
   return site != nullptr ? site->position : WellspringOf(_region, _expedition.target);
 }
 
@@ -536,6 +537,7 @@ std::expected<StableId, AttackRefusal> DeclareAttack(RegionSimulation& _region, 
   _region.SetCommander(team, commander.sender, commander.ai);
   _region.Expeditions().push_back(expedition);
   Walk(_region, expedition, team, StagingOf(_region, expedition));
+  RaiseAttack(_region, NoticeKind::AttackDeclared, expedition, _claim != 0 ? 1 : 0, ObjectiveOf(_region, expedition));
   return expedition.id;
 }
 
@@ -557,7 +559,7 @@ std::optional<AttackRefusal> WithdrawAttack(RegionSimulation& _region, std::uint
   }
   else
   {
-    EndExpedition(_region, expedition->id, 0);
+    EndBeforeBattle(_region, expedition->id);
   }
   return std::nullopt;
 }
@@ -574,7 +576,7 @@ void EndUnfoughtExpeditions(RegionSimulation& _region)
   }
   for (const StableId id : unfought)
   {
-    EndExpedition(_region, id, 0);
+    EndBeforeBattle(_region, id);
   }
 }
 
@@ -592,7 +594,7 @@ void AdvanceBattles(RegionSimulation& _region, std::uint64_t _tick)
   }
   for (const StableId id : emptied)
   {
-    EndExpedition(_region, id, 0);
+    EndBeforeBattle(_region, id);
   }
   // MVP-042, MVP-043 and MVP-015: the warning's release, then each released expedition's start, in the order declared.
   const std::uint64_t warning = TicksOf(tuning, tuning.mvp.conflict.warningMinutes * SECONDS_PER_MINUTE);
@@ -626,6 +628,7 @@ void AdvanceBattles(RegionSimulation& _region, std::uint64_t _tick)
     battle.defenderStrengthMilliRu = defender != nullptr ? StrengthMilliRu(_region, *defender) : 0;
     expedition.state = ExpeditionState::Fighting;
     _region.Battles().push_back(battle);
+    RaiseAttack(_region, NoticeKind::BattleStarted, expedition, 0, battle.objective);
     _region.ForgetCachedEnemies();
   }
   // MVP-045: each battle's objective hold, then its ends in order.

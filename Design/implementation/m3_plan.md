@@ -76,6 +76,8 @@ The parts of M3 that cost most rest on what M2 measures. M2's code is written, a
 - **Phase A, T2 to T9**, headless and tested in CI, starts before M2's exit (O98), on a pull request of its own, as M2's phase A did before M1's exit (O86). The tuning of T9 to M2's evidence waits for the owner's M2 runs.
 - **Phase B, T10 to T17**, starts at M2's exit, each task with its run checklist (M0 plan §2).
 
+> **Amendment 2026-10-23 (O101).** Phase B starts before M2's exit, on phase A's pull request, each task still with its run checklist; the owner runs them when M2's exit allows. The tuning to M2's evidence still waits for the owner's M2 runs, and T17 still needs Playtest 1.
+
 **Saved worlds across M3's state changes.** The owner's M2 growth run saves worlds of `WORLD_STATE_VERSION` 10 across sessions. ADR-137 lets a raise refuse its predecessor until M2's exit build, but phase A raises the version while that run may still be going on. So from M3's first raise every raise migrates version 10 and later (MVP-095): the owner's M2 world continues on any later build.
 
 ## 5 Tasks

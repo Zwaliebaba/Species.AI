@@ -457,6 +457,16 @@ public:
   {
     return m_events;
   }
+  // ADR-165: a guaranteed event of the valley in the tick being stepped, for the stewards' notices (MVP-102).
+  void Raise(const ValleyEvent& _event)
+  {
+    m_valleyEvents.push_back(_event);
+  }
+  // The valley events of the last step, in the order the rules raised them; a step clears the list first.
+  [[nodiscard]] const std::vector<ValleyEvent>& ValleyEvents() const noexcept
+  {
+    return m_valleyEvents;
+  }
 
   // Every mutable value of the region, canonically (ADR-083 item 4): what its hash covers and its snapshot holds.
   void WriteState(Neuron::BitWriter& _writer) const;
@@ -582,8 +592,9 @@ private:
   std::vector<SettlementRenown> m_renown;                                 // MVP-061 (ADR-163), state from version 15
   std::vector<ClaimEnd> m_claimEnds;                                      // O100 (DEC-1008), state from version 16
   std::uint64_t m_runEndTick = std::numeric_limits<std::uint64_t>::max(); // the world owner's (ADR-163), not region state
-  std::uint16_t m_halfwayReached = 0; // a bit for each site and pair, from the statistics (ADR-163), not region state
-  std::vector<EffectEvent> m_events;  // presentation, never state
+  std::uint16_t m_halfwayReached = 0;      // a bit for each site and pair, from the statistics (ADR-163), not region state
+  std::vector<EffectEvent> m_events;       // presentation, never state
+  std::vector<ValleyEvent> m_valleyEvents; // the stewards' notices (ADR-165), never state
 #if ENGINE_DEVELOPMENT
   AdvanceObserver m_advanceObserver;
 #endif

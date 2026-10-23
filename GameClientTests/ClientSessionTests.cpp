@@ -5,6 +5,7 @@
 #include "PlatformClock.h"
 #include "PresentationEvents.h"
 #include "RegionTerrain.h"
+#include "RelationMessages.h"
 #include "ReplicaTiming.h"
 #include "SettlementMessages.h"
 #include "StateUpdate.h"
@@ -370,6 +371,44 @@ public:
     Assert::IsTrue(notices.size() == 1 && notices[0].subject == notice.subject && notices[0].structure == Species::StructureKind::Dwelling,
                    L"the notice, decoded");
     Assert::IsTrue(f.session->TakeNotices().empty(), L"taken once");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr165TheValleyStatusAndTheBattleResultsArrive)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-048")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-098")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr165TheValleyStatusAndTheBattleResultsArrive)
+  {
+    // ADR-165: the session keeps the latest valley status the server answered, and the battle results to be taken once,
+    // in the order they arrived.
+    Fixture f;
+    Assert::IsFalse(f.session->LatestValleyStatus().has_value(), L"none before the first");
+    Species::ValleyStatus first;
+    first.tick = 10;
+    first.team = 2;
+    Species::ValleyStatus second = first;
+    second.tick = 20;
+    second.claims.push_back({Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 4), 2, 3, 15, Species::ClaimState::Open});
+    Species::BattleResultNotice raid;
+    raid.expedition = Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 7);
+    raid.attacker = 1;
+    raid.defender = 2;
+    raid.endTick = 18;
+    Species::BattleResultNotice claim = raid;
+    claim.expedition = Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 8);
+    claim.area = std::uint8_t{3};
+    for (const std::vector<std::byte>& bytes :
+         {Neuron::EncodeMessage(first), Neuron::EncodeMessage(raid), Neuron::EncodeMessage(second), Neuron::EncodeMessage(claim)})
+    {
+      Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, bytes).has_value(), L"sent");
+    }
+    f.session->Update();
+    const std::optional<Species::ValleyStatus>& status = f.session->LatestValleyStatus();
+    Assert::IsTrue(status && status->tick == 20 && status->claims == second.claims, L"the latest status");
+    const std::vector<Species::BattleResultNotice> results = f.session->TakeBattleResults();
+    Assert::IsTrue(results.size() == 2 && results[0].expedition == raid.expedition && results[1].area == claim.area,
+                   L"both results, in order");
+    Assert::IsTrue(f.session->TakeBattleResults().empty(), L"taken once");
   }
 };
 

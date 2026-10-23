@@ -13,6 +13,8 @@ namespace
 constexpr std::uint64_t SHARE_MAX = 100;
 constexpr std::uint64_t GROWTH_STATE_MAX = static_cast<std::uint64_t>(GrowthState::StoresShort);
 constexpr std::uint64_t PROGRESS_MAX = 1'000;
+// A local site, 0 to 3 (WLD-040), and the value that names none.
+constexpr std::uint8_t NO_SITE = 4;
 
 std::uint8_t ReadTeam(Neuron::BitReader& _reader) noexcept
 {
@@ -149,6 +151,9 @@ void SettlementNotice::Encode(Neuron::BitWriter& _writer) const
   _writer.WriteSigned(position.x, POSITION_HORIZONTAL_BITS);
   _writer.WriteSigned(position.y, POSITION_VERTICAL_BITS);
   _writer.WriteSigned(position.z, POSITION_HORIZONTAL_BITS);
+  _writer.WriteBounded(other.value_or(NO_SITE), NO_SITE);
+  _writer.WriteBool(ours);
+  _writer.WriteBits(detail, 8);
 }
 
 void SettlementNotice::Decode(Neuron::BitReader& _reader)
@@ -157,14 +162,19 @@ void SettlementNotice::Decode(Neuron::BitReader& _reader)
   kind = static_cast<NoticeKind>(_reader.ReadBounded(NOTICE_KIND_MAX));
   team = ReadTeam(_reader);
   subject = _reader.ReadBits(64);
-  if (subject == 0)
+  // 0 is never a stable id: only contact and the run name no subject.
+  if (subject == 0 && kind != NoticeKind::Contact && kind != NoticeKind::RunQuiet && kind != NoticeKind::RunEnded)
   {
-    _reader.Fail(); // 0 is never a stable id
+    _reader.Fail();
   }
   structure = static_cast<StructureKind>(_reader.ReadBounded(STRUCTURE_KIND_MAX));
   position.x = static_cast<std::int32_t>(_reader.ReadSigned(POSITION_HORIZONTAL_BITS));
   position.y = static_cast<std::int32_t>(_reader.ReadSigned(POSITION_VERTICAL_BITS));
   position.z = static_cast<std::int32_t>(_reader.ReadSigned(POSITION_HORIZONTAL_BITS));
+  const auto site = static_cast<std::uint8_t>(_reader.ReadBounded(NO_SITE));
+  other = site != NO_SITE ? std::optional<std::uint8_t>(site) : std::nullopt;
+  ours = _reader.ReadBool();
+  detail = static_cast<std::uint8_t>(_reader.ReadBits(8));
 }
 
 void SettlementStatus::Decode(Neuron::BitReader& _reader)

@@ -1,11 +1,14 @@
 #pragma once
 
 #include "GameMessages.h"
+#include "ReplicatedState.h"
 #include "StableId.h"
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
+#include <vector>
 
 namespace Species
 {
@@ -14,6 +17,51 @@ namespace Species
 // ADR-093), as the settlement's are (ADR-136). A command names its settlement by its team, which its sender must
 // command (ADR-087 item 2), and a field out of its bounds fails the decoding, so the queue drops the command as
 // malformed.
+
+// The valley's values that are both saved state (ADR-159 to ADR-161) and on the wire (ADR-165): each is never
+// renumbered.
+
+// MVP-051: what a grievance arose from.
+enum class GrievanceCause : std::uint8_t
+{
+  Pressure = 0, // territory pressure while the two settlements are in contact (MVP-027)
+  Claim = 1,    // a claim made on an area the holder holds (MVP-053)
+  Attack = 2    // an attack declared on the holder (MVP-042)
+};
+
+inline constexpr std::uint64_t GRIEVANCE_CAUSE_MAX = 2;
+
+// MVP-053: where a claim stands.
+enum class ClaimState : std::uint8_t
+{
+  Open = 0,     // on an area another settlement holds: settled by a claim battle or the claimant's withdrawal
+  Waiting = 1,  // on the central resource site while nobody holds it: held after mvp.claim.uncontested_minutes
+  Contested = 2 // on the central resource site while nobody holds it, which another settlement also claims
+};
+
+inline constexpr std::uint64_t CLAIM_STATE_MAX = 2;
+
+// MVP-042 and MVP-043: where an expedition stands.
+enum class ExpeditionState : std::uint8_t
+{
+  Held = 0,     // declared, held by the warning until mvp.conflict.warning_minutes have passed
+  Released = 1, // released, its battle not yet started
+  Fighting = 2  // its battle in progress
+};
+
+inline constexpr std::uint64_t EXPEDITION_STATE_MAX = 2;
+
+// MVP-045: how a battle ended.
+enum class BattleEnd : std::uint8_t
+{
+  ObjectiveHeld = 0, // the attacker held the objective for mvp.battle.objective_hold_s
+  LossCap = 1,       // the defender's losses reached its loss cap
+  Rout = 2,          // the attacker fell below mvp.battle.rout_share of the Workers it sent
+  Withdrawn = 3,     // the attacker withdrew by command
+  Time = 4           // pil.battle.max_minutes passed
+};
+
+inline constexpr std::uint64_t BATTLE_END_MAX = 4;
 
 // MVP-053 and WLD-086: the areas of a region that a claim names. Each half of a valley border area is its pair's index
 // in VALLEY_PAIRS times two plus its side, the half nearer that side's site; the valley's central resource site follows.
@@ -142,6 +190,201 @@ struct SendTributeCommand
   std::uint8_t cause = 0; // GrievanceCause's value
   std::uint64_t subject = 0;
   std::int64_t amountMilliRu = 0;
+
+  void Encode(Neuron::BitWriter& _writer) const;
+  void Decode(Neuron::BitReader& _reader);
+};
+
+// A region's local sites, 0 to 3 (WLD-040), the settlements a valley status lists at most, and the areas a claim names.
+inline constexpr std::uint64_t VALLEY_SITE_MAX = 3;
+inline constexpr std::size_t VALLEY_SETTLEMENTS_MAX = VALLEY_SITE_MAX + 1;
+inline constexpr std::size_t VALLEY_AREAS = CLAIM_AREA_MAX + 1;
+// The grievances and claims a valley status lists at most: the claims a region holds at most, and far more grievances
+// than one settlement's relations hold (ADR-165).
+inline constexpr std::uint64_t VALLEY_GRIEVANCES_MAX = 255;
+inline constexpr std::uint64_t VALLEY_CLAIMS_MAX = 36;
+
+/// MVP-098, MVP-102 (ADR-165): a request for the valley's status as the settlement of the team, which its sender must
+/// command, sees it. The server answers it outside the queue, as it answers a settlement's status (ADR-136): a permitted
+/// request is followed by the status of the tick after which it is taken.
+struct ReadValleyStatusCommand
+{
+  static constexpr Neuron::MessageTypeId TYPE = TypeIdOf(GameMessageType::ReadValleyStatus);
+  static constexpr std::uint8_t VERSION = 1;
+  static constexpr std::size_t MAX_BYTES = 4; // the header and the team
+
+  std::uint8_t team = 0;
+
+  void Encode(Neuron::BitWriter& _writer) const;
+  void Decode(Neuron::BitReader& _reader);
+};
+
+/// MVP-050: a grievance the Cladan at site `holder` holds against the settlement at site `against`, with its cause, what
+/// the cause names (0 for territory pressure), whether the attack was unprovoked, whether its cause is removed, and its
+/// weight in millionths of a weight unit.
+struct GrievanceLine
+{
+  std::uint8_t holder = 0;
+  std::uint8_t against = 0;
+  GrievanceCause cause = GrievanceCause::Pressure;
+  std::uint64_t subject = 0;
+  bool unprovoked = false;
+  bool causeRemoved = false;
+  std::int64_t weightMicro = 0;
+
+  friend bool operator==(const GrievanceLine&, const GrievanceLine&) = default;
+};
+
+/// MVP-053: a claim, by its stable id, its claimant's site, its area, the tick it was made and its state.
+struct ClaimLine
+{
+  StableId id = 0;
+  std::uint8_t claimant = 0;
+  std::uint8_t area = 0;
+  std::uint64_t madeTick = 0;
+  ClaimState state = ClaimState::Open;
+
+  friend bool operator==(const ClaimLine&, const ClaimLine&) = default;
+};
+
+/// MVP-053 (O100): an area's holder by site, none while nobody holds it, and the first tick a claim may be made on it
+/// again, 0 when no claim on it has ended.
+struct AreaLine
+{
+  std::optional<std::uint8_t> holder;
+  std::uint64_t claimableTick = 0;
+
+  friend bool operator==(const AreaLine&, const AreaLine&) = default;
+};
+
+/// MVP-041 and MVP-042: an expedition by its stable id, its attacker's and its target's sites, the claim its battle
+/// settles (0 for a raid), the tick it was declared, its state, whether the attack was unprovoked, and its Workers when
+/// it was declared.
+struct ExpeditionLine
+{
+  StableId id = 0;
+  std::uint8_t attacker = 0;
+  std::uint8_t target = 0;
+  StableId claim = 0;
+  std::uint64_t declaredTick = 0;
+  ExpeditionState state = ExpeditionState::Held;
+  bool unprovoked = false;
+  std::uint32_t sent = 0;
+
+  friend bool operator==(const ExpeditionLine&, const ExpeditionLine&) = default;
+};
+
+/// MVP-043 to MVP-046: a battle in progress, by its expedition, its sides, its claim and the tick it started; for a battle
+/// the steward's settlement is a side of (`side`), also its objective, its battlefield (WLD-244) and the figures each side
+/// has lost against the defender's loss cap, which another settlement's steward sees as none.
+struct BattleLine
+{
+  StableId expedition = 0;
+  std::uint8_t attacker = 0;
+  std::uint8_t defender = 0;
+  StableId claim = 0;
+  std::uint64_t startTick = 0;
+  bool side = false;
+  QuantizedPosition objective;
+  QuantizedPosition fieldCenter;
+  std::uint32_t fieldRadius = 0; // in 1/16 wu, as a settlement's radius (ADR-139)
+  std::uint32_t attackerLost = 0;
+  std::uint32_t defenderLost = 0;
+  std::uint32_t lossCap = 0;
+
+  friend bool operator==(const BattleLine&, const BattleLine&) = default;
+};
+
+/// MVP-047: a settlement under a respite until a tick.
+struct RespiteLine
+{
+  std::uint8_t site = 0;
+  std::uint64_t until = 0;
+
+  friend bool operator==(const RespiteLine&, const RespiteLine&) = default;
+};
+
+/// MVP-061 and MVP-062: a settlement's renown by source, as the tuning derives it from what it did (ADR-163).
+struct RenownLine
+{
+  std::uint8_t site = 0;
+  std::uint32_t defense = 0;
+  std::uint32_t claims = 0;
+  std::uint32_t easing = 0;
+  std::uint32_t structures = 0;
+
+  friend bool operator==(const RenownLine&, const RenownLine&) = default;
+};
+
+/// MVP-098 and MVP-102 (ADR-165): the valley as the settlement of the team sees it after a tick, for the relations panel,
+/// the warning, the battles, the renown standing and the time left: the run's end, its quiet minutes and whether it has
+/// ended (MVP-060, MVP-063); each settlement's renown (MVP-062); every area's holder and when it is claimable again; every
+/// claim; the grievances its Cladan holds and those held against it; its expedition and those declared on it; every
+/// battle in progress, with the figures of those it is a side of; and every respite. Each list is in the region's order.
+struct ValleyStatus
+{
+  static constexpr Neuron::MessageTypeId TYPE = TypeIdOf(GameMessageType::ValleyStatus);
+  static constexpr std::uint8_t VERSION = 1;
+  static constexpr std::size_t GRIEVANCE_BITS = 2 + 2 + 2 + 64 + 1 + 1 + 64;
+  static constexpr std::size_t CLAIM_BITS = 64 + 2 + 4 + 64 + 2;
+  static constexpr std::size_t AREA_BITS = 3 + 64;
+  static constexpr std::size_t EXPEDITION_BITS = 64 + 2 + 2 + 64 + 64 + 2 + 1 + 32;
+  static constexpr std::size_t POSITION_BITS = POSITION_HORIZONTAL_BITS * 2 + POSITION_VERTICAL_BITS;
+  static constexpr std::size_t BATTLE_BITS = 64 + 2 + 2 + 64 + 64 + 1 + POSITION_BITS * 2 + SETTLEMENT_RADIUS_BITS + std::size_t{32} * 3;
+  static constexpr std::size_t RESPITE_BITS = 2 + 64;
+  static constexpr std::size_t RENOWN_BITS = 2 + 32 * 4;
+  // The tick, the team, the run, the areas, and the six lists' counts.
+  static constexpr std::size_t FIXED_BITS = 64 + 8 + 64 + 64 + 1 + AREA_BITS * VALLEY_AREAS + 3 + 8 + 6 + 3 + 3 + 3;
+  static constexpr std::size_t MAX_BYTES =
+    3 + (FIXED_BITS + VALLEY_SETTLEMENTS_MAX * (RENOWN_BITS + EXPEDITION_BITS + BATTLE_BITS + RESPITE_BITS) +
+         VALLEY_GRIEVANCES_MAX * GRIEVANCE_BITS + VALLEY_CLAIMS_MAX * CLAIM_BITS + 7) /
+          8;
+
+  std::uint64_t tick = 0;
+  std::uint8_t team = 0;
+  std::uint64_t runEndTick = 0;
+  std::uint64_t quietTick = 0; // the first tick of the run's quiet minutes
+  bool runEnded = false;
+  std::vector<RenownLine> renown;
+  std::array<AreaLine, VALLEY_AREAS> areas{};
+  std::vector<ClaimLine> claims;
+  std::vector<GrievanceLine> grievances;
+  std::vector<ExpeditionLine> expeditions;
+  std::vector<BattleLine> battles;
+  std::vector<RespiteLine> respites;
+
+  void Encode(Neuron::BitWriter& _writer) const;
+  void Decode(Neuron::BitReader& _reader);
+};
+
+/// MVP-048 and PIL-046 (ADR-165): a battle's result, on the reliable channel to every steward once the battle has ended,
+/// after the notice of its end: its expedition, its sides, the claimed area if any, its end and winner, its ticks and
+/// whether a claimed area moved, which are the public line every steward sees; and, for a steward whose settlement was a
+/// side (`side`), the Workers each side lost, the stores and Essence moved, the grievance the attack created, the respite
+/// it started and the renown it gave, which another steward receives as none.
+struct BattleResultNotice
+{
+  static constexpr Neuron::MessageTypeId TYPE = TypeIdOf(GameMessageType::BattleResultNotice);
+  static constexpr std::uint8_t VERSION = 1;
+  static constexpr std::size_t MAX_BYTES = 3 + (64 + 2 + 2 + 4 + 3 + 1 + 64 + 64 + 1 + 1 + 32 * 2 + 64 + 32 + 64 + 64 + 32 + 7) / 8;
+
+  StableId expedition = 0;
+  std::uint8_t attacker = 0;
+  std::uint8_t defender = 0;
+  std::optional<std::uint8_t> area; // the claimed area of a claim battle; none for a raid
+  BattleEnd end = BattleEnd::ObjectiveHeld;
+  bool attackerWon = false;
+  std::uint64_t startTick = 0;
+  std::uint64_t endTick = 0;
+  bool areaMoved = false;
+  bool side = false;
+  std::uint32_t attackerLost = 0;
+  std::uint32_t defenderLost = 0;
+  std::int64_t storesMovedMilliRu = 0;
+  std::uint32_t essenceMoved = 0;
+  std::int64_t grievanceMicro = 0;
+  std::uint64_t respiteUntil = 0; // 0 for none
+  std::uint32_t renown = 0;       // the renown it gave its winner (MVP-061)
 
   void Encode(Neuron::BitWriter& _writer) const;
   void Decode(Neuron::BitReader& _reader);

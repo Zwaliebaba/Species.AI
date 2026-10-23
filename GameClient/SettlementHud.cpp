@@ -151,7 +151,11 @@ std::vector<HudNotice> AgeNotices(std::vector<HudNotice> _notices, std::span<con
   const auto& hud = _presentation.mvp.hud;
   for (const SettlementNotice& notice : _arrived)
   {
-    _notices.push_back({notice, _nowSeconds});
+    // ADR-165: M3's kinds have their cards from M3 task T11.
+    if (notice.kind == NoticeKind::StructureCompleted)
+    {
+      _notices.push_back({notice, _nowSeconds});
+    }
   }
   std::erase_if(_notices, [&](const HudNotice& _notice) { return _nowSeconds - _notice.arrivedSeconds >= hud.noticeSeconds; });
   const auto kept = static_cast<std::size_t>(std::max<std::int64_t>(hud.noticesMax, 0));
