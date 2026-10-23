@@ -253,6 +253,7 @@ void SettlementVerbs::PressHud(const HudZoneRect& _zone, std::uint8_t _team, con
   case HudZone::Settlement:
   case HudZone::Queue:
   case HudZone::Notices:
+  case HudZone::Relations:
   case HudZone::World:
     break;
   }
