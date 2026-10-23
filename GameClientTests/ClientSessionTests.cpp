@@ -516,7 +516,7 @@ public:
     };
     menu.Update(*f.session);
     drain();
-    Assert::IsTrue(menu.Site() == std::optional<std::uint8_t>(2) && !menu.RunEnded() && asked.empty(),
+    Assert::IsTrue(menu.Site() == std::optional<std::uint8_t>(std::uint8_t{2}) && !menu.RunEnded() && asked.empty(),
                    L"nothing asked while the run goes on");
 
     Species::ValleyStatus valley;
