@@ -590,7 +590,7 @@ private:
   std::vector<Respite> m_respites;                                        // MVP-047 (ADR-161), state from version 13
   std::vector<SettlementAi> m_settlementAis;                              // MVP-055 (ADR-162), state from version 14
   std::vector<SettlementRenown> m_renown;                                 // MVP-061 (ADR-163), state from version 15
-  std::vector<ClaimEnd> m_claimEnds;                                      // O100 (DEC-1008), state from version 16
+  std::vector<ClaimEnd> m_claimEnds;                                      // O102 (DEC-1008), state from version 16
   std::uint64_t m_runEndTick = std::numeric_limits<std::uint64_t>::max(); // the world owner's (ADR-163), not region state
   std::uint16_t m_halfwayReached = 0;      // a bit for each site and pair, from the statistics (ADR-163), not region state
   std::vector<EffectEvent> m_events;       // presentation, never state

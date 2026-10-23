@@ -44,7 +44,7 @@ inline constexpr std::uint32_t WORLD_STATE_FIRST_SAVED_VERSION = 9;
 // respites (M3 task T6, ADR-161); an older region has none. Version 14 added each region's AI settlements' decisions (M3
 // task T7, ADR-162); an older region makes them afresh. Version 15 added the world's run, each region's renown, and
 // statistics of more kinds (M3 task T8, ADR-163); an older world's run begins where it continues, and its renown at none.
-// Version 16 added the tick each area's last claim ended (O100, DEC-1008, ADR-160); an older region has none, so no area
+// Version 16 added the tick each area's last claim ended (O102, DEC-1008, ADR-160); an older region has none, so no area
 // cools down.
 // _tuning and _structures outlive the world.
 [[nodiscard]] std::expected<std::unique_ptr<WorldSimulation>, Neuron::SnapshotError>

@@ -10,7 +10,7 @@ decision-makers: Species technology lead (M3 task T10)
 
 M3 task T10 puts phase A's valley on the wire for the HUD of T11 to T14:
 - the relations: each Cladan's grievances and anger (MVP-050);
-- the claims and each area's holder (MVP-053), with O100's cooldown;
+- the claims and each area's holder (MVP-053), with O102's cooldown;
 - the warning, the expeditions and the battles in progress (MVP-042 to MVP-046), with the battlefield that WLD-244 adds to the steward's areas;
 - the battle results (MVP-048): whole for a side, the public line for every other steward;
 - the renown standing (MVP-062) and the run's time left, quiet minutes and end (MVP-060, MVP-063);
@@ -57,7 +57,7 @@ Chosen options: 1, 3 and 5.
   - the tick and the team;
   - the run's end tick, the first tick of its quiet minutes, and whether it has ended;
   - each settlement's renown by source, as the tuning derives it (ADR-163);
-  - each of the nine areas' holder and the first tick a claim may be made on it again (O100);
+  - each of the nine areas' holder and the first tick a claim may be made on it again (O102);
   - every claim, at most `VALLEY_CLAIMS_MAX` (36, the region's bound);
   - the grievances its Cladan holds and those held against it, each with its cause, subject, flags and weight in millionths, at most `VALLEY_GRIEVANCES_MAX` (255) in the region's order;
   - the expeditions it sent and those declared on it: the warning's countdown is its declaration tick and `mvp.conflict.warning_minutes`;
@@ -133,7 +133,7 @@ Chosen options: 1, 3 and 5.
   - [ADR-136](ADR-136-settlement-commands-status-and-statistics-at-m2.md): the valley's status beside the settlement's;
   - [ADR-139](ADR-139-replicating-the-settlement-at-m2.md): the notice's version 2 and M3's kinds.
 * Related: [ADR-159](ADR-159-grievances-anger-and-their-fade-at-m3.md) to [ADR-164](ADR-164-the-command-paths-confirmation-the-valley-run-and-the-valley-at-war-at-m3.md) (phase A).
-* Owner decisions O98, O100, O101; MVP-027, MVP-042, MVP-048, MVP-050, MVP-053, MVP-060 to MVP-063, MVP-090, MVP-097, MVP-098, MVP-102; PIL-084; WLD-242, WLD-244.
+* Owner decisions O98, O102, O101; MVP-027, MVP-042, MVP-048, MVP-050, MVP-053, MVP-060 to MVP-063, MVP-090, MVP-097, MVP-098, MVP-102; PIL-084; WLD-242, WLD-244.
 * The code:
   - `GameShared/RelationMessages` (the moved values, `ReadValleyStatusCommand`, `ValleyStatus`, `BattleResultNotice`), `SettlementMessages` (`NoticeKind`, `SettlementNotice`), `GameMessages`, `ReplicatedState` (`MakeRecord`);
   - `GameLogic/Relations` (`ValleyEvent`), `RegionSimulation` (`Raise`, `ValleyEvents`), `Claims` (`ResourceSiteOfArea`), `Battles`, `SettlementCommands` (`ValleyStatusOf`, `ResultNoticeOf`), `WorldServer`;

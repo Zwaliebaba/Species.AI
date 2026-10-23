@@ -78,7 +78,7 @@ enum class ClaimRefusal : std::uint8_t
   AlreadyHeld = 4,    // an area the claimant holds
   AlreadyClaimed = 5, // an area the claimant already claims
   NoSuchClaim = 6,    // a withdrawal that names no claim of the claimant's
-  CoolingDown = 7     // an area whose last claim ended less than mvp.claim.cooldown_minutes ago (O100, DEC-1008)
+  CoolingDown = 7     // an area whose last claim ended less than mvp.claim.cooldown_minutes ago (O102, DEC-1008)
 };
 
 inline constexpr std::uint8_t CLAIM_REFUSAL_MAX = static_cast<std::uint8_t>(ClaimRefusal::CoolingDown);
@@ -256,7 +256,7 @@ struct ClaimLine
   friend bool operator==(const ClaimLine&, const ClaimLine&) = default;
 };
 
-/// MVP-053 (O100): an area's holder by site, none while nobody holds it, and the first tick a claim may be made on it
+/// MVP-053 (O102): an area's holder by site, none while nobody holds it, and the first tick a claim may be made on it
 /// again, 0 when no claim on it has ended.
 struct AreaLine
 {

@@ -41,7 +41,7 @@ constexpr std::uint8_t NEIGHBORS_HALF = 3; // pair 1's half nearer site 3
 constexpr Neuron::ConnectionId STEWARD_CONNECTION = 1;
 
 // The committed tuning with a run of 3 minutes, its last half minute quiet, a short warning and battle, and no claim
-// cooldown, so that the tests' claims on one area follow each other (O100).
+// cooldown, so that the tests' claims on one area follow each other (O102).
 const Species::TuningMvp& ShortRunTuning()
 {
   static const Species::TuningMvp TUNING = []

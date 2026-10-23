@@ -80,7 +80,7 @@ public:
     // counts after its moved areas (ADR-161), none here. Changed by M3 task T7: each region writes its AI settlements'
     // decisions' count after its respites (ADR-162), none here. Changed by M3 task T8: the world owner writes its run
     // after its commands, ending 8 hours after tick 0, and each region its settlements' renown count after its AI
-    // settlements' decisions (ADR-163), none here. Changed by O100 (DEC-1008): each region writes the count of the areas
+    // settlements' decisions (ADR-163), none here. Changed by O102 (DEC-1008): each region writes the count of the areas
     // whose last claim has ended after its renown (ADR-160), none here.
     const GoldenRun one = Run600Ticks(1, 0);
     Assert::IsTrue(one.last == 0xfb8e7adc0c2aa9bf, L"the hash after 600 ticks of one region");

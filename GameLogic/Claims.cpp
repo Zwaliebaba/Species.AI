@@ -53,7 +53,7 @@ void Hold(RegionSimulation& _region, std::uint8_t _area, std::uint8_t _holder)
 }
 
 // The claim's end: removed, and its grievance's cause with it (PIL-122); a contested claim left alone on the central
-// resource site waits again; and the tick it ended, from which its area cools down (O100, DEC-1008).
+// resource site waits again; and the tick it ended, from which its area cools down (O102, DEC-1008).
 void End(RegionSimulation& _region, StableId _claim)
 {
   const auto found = std::ranges::find(_region.Claims(), _claim, &Claim::id);
@@ -230,7 +230,7 @@ std::optional<ClaimRefusal> CheckClaim(const RegionSimulation& _region, std::uin
   {
     return ClaimRefusal::AlreadyClaimed;
   }
-  // O100 (DEC-1008): an area whose last claim ended takes no claim until mvp.claim.cooldown_minutes have passed.
+  // O102 (DEC-1008): an area whose last claim ended takes no claim until mvp.claim.cooldown_minutes have passed.
   if (const std::optional<std::uint64_t> cooled = CooldownEndOf(_region, _area); cooled && _region.NextTick() < *cooled)
   {
     return ClaimRefusal::CoolingDown;

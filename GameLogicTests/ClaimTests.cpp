@@ -91,7 +91,7 @@ std::uint64_t WaitTicks()
 }
 
 // The committed tuning with no claim cooldown, for the tests that claim an area again at once (ADR-160), and with a
-// cooldown of 3 seconds, which a test steps through (O100, DEC-1008); both outlive the worlds.
+// cooldown of 3 seconds, which a test steps through (O102, DEC-1008); both outlive the worlds.
 const Species::TuningMvp& NoCooldownTuning()
 {
   static const Species::TuningMvp TUNING = []
@@ -188,7 +188,7 @@ public:
   {
     // ADR-160: a claim battle the claimant loses moves nothing; one it wins moves the half to it: its territory grows
     // into the half and the loser's leaves it, the move is a territory event, and the two are still in contact; the
-    // loser may claim it back (here at once, with no cooldown, O100), and winning returns it to its own side.
+    // loser may claim it back (here at once, with no cooldown, O102), and winning returns it to its own side.
     const std::unique_ptr<Species::WorldSimulation> world = ValleyWorld(SETTLED_TEST_KEY, NoCooldownTuning());
     Species::RegionSimulation& region = world->Region(0);
     Reach(region, {STEWARD_SITE, NEIGHBOR_SITE});
@@ -234,7 +234,7 @@ public:
     // ADR-160: a claim on the central resource site that nobody holds waits, with no grievance, and holds the site
     // mvp.claim.uncontested_minutes after it was made; its holder then counts the site among its held resource sites,
     // and a claim on it from another settlement is Open, against the holder (with no cooldown, which the cooldown's own
-    // test steps through, O100).
+    // test steps through, O102).
     const std::unique_ptr<Species::WorldSimulation> world = ValleyWorld(SETTLED_TEST_KEY, NoCooldownTuning());
     Species::RegionSimulation& region = world->Region(0);
     const Species::StableId id = Species::MakeClaim(region, 0, Species::CLAIM_AREA_CENTRAL).value_or(0);
@@ -265,7 +265,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp053AnAreaIsClaimedAgainOnlyAfterItsCooldown)
   {
-    // O100 (DEC-1008): no claim is made on an area until mvp.claim.cooldown_minutes have passed since the last claim on it
+    // O102 (DEC-1008): no claim is made on an area until mvp.claim.cooldown_minutes have passed since the last claim on it
     // ended, by a withdrawal, a claim battle or the central resource site's wait; each area cools down alone, the tick
     // of each area's last claim's end is saved, and a region of version 15 reads with none.
     const Species::TuningMvp& tuning = ShortCooldownTuning();

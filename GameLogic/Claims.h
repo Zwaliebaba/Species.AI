@@ -18,7 +18,7 @@ struct Structure;
 // The first state version whose regions hold claims, moved areas and territory events of more than one kind (M3 task T5,
 // ADR-160).
 inline constexpr std::uint32_t STATE_VERSION_WITH_CLAIMS = 12;
-// The first state version whose regions hold the tick each area's last claim ended (O100, DEC-1008).
+// The first state version whose regions hold the tick each area's last claim ended (O102, DEC-1008).
 inline constexpr std::uint32_t STATE_VERSION_WITH_CLAIM_COOLDOWN = 16;
 
 /// MVP-053 (ADR-160): a claim of the settlement at site `claimant` on an area of the region (CLAIM_AREA_CENTRAL or a
@@ -46,7 +46,7 @@ struct AreaHolding
   bool operator==(const AreaHolding&) const = default;
 };
 
-/// O100 (DEC-1008): the tick an area's last claim ended, by any end, from which no claim may be made on the area for
+/// O102 (DEC-1008): the tick an area's last claim ended, by any end, from which no claim may be made on the area for
 /// mvp.claim.cooldown_minutes. A region holds them in the order of their areas, one for each area a claim has ended on.
 struct ClaimEnd
 {
@@ -72,7 +72,7 @@ struct ClaimEnd
 // MVP-053: the area's resource site, the one in the half or the central resource site, or none.
 [[nodiscard]] const Structure* ResourceSiteOfArea(const RegionSimulation& _region, std::uint8_t _area);
 
-// O100 (DEC-1008): the first tick a claim may be made on the area again, mvp.claim.cooldown_minutes after its last claim
+// O102 (DEC-1008): the first tick a claim may be made on the area again, mvp.claim.cooldown_minutes after its last claim
 // ended; none when no claim on it has ended.
 [[nodiscard]] std::optional<std::uint64_t> CooldownEndOf(const RegionSimulation& _region, std::uint8_t _area);
 // MVP-053, WLD-086: why the settlement at site _claimant may not claim the area now, or none.

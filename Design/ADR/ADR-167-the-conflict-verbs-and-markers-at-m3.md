@@ -74,7 +74,7 @@ Chosen options: 1, 3, 5, 7, 9 and 11.
   - a grievance's tribute, for each grievance held against the steward's settlement;
   - its expedition's withdrawal;
   - its own claim's withdrawal and, for an open or contested claim, its battle;
-  - a claimable area's claim. The claimable rows follow the claims: each half of the settlement's valley pairs that its neighbour holds, and the central site while the settlement does not hold it, that the settlement does not already claim and whose cooldown has passed (O100), as `CheckClaim` decides on the server; `ui.hud.claimable` names it.
+  - a claimable area's claim. The claimable rows follow the claims: each half of the settlement's valley pairs that its neighbour holds, and the central site while the settlement does not hold it, that the settlement does not already claim and whose cooldown has passed (O102), as `CheckClaim` decides on the server; `ui.hud.claimable` names it.
 
   Each button is a zone of the HUD (`HudZone::RelationAction`, index = the row's place × 2 + the slot, for the first 128 rows), found before the panel under it.
 * **Declaring** (`AttackOf`, `SettlementVerbs::PressRelation`). The first press on a raid or a claim battle makes the attack pending:
@@ -196,7 +196,7 @@ Chosen options: 1, 3, 5, 7, 9 and 11.
   - [ADR-153](ADR-153-the-settlement-verbs-at-m2.md): the settlement verbs' conflict commands;
   - [ADR-161](ADR-161-expeditions-battles-the-loss-cap-and-the-respite-at-m3.md): `ExpeditionTeamOf` in GameShared;
   - [ADR-166](ADR-166-the-relations-panel-and-the-notifications-of-m3.md): the rows' buttons and the claimable rows.
-* Owner decisions O95, O98, O100, O101; DEC-1005; MVP-041, MVP-042, MVP-049, MVP-053, MVP-054, MVP-057, MVP-101; PIL-063; R-CTRL-384, R-CTRL-386; RND-357; WLD-244.
+* Owner decisions O95, O98, O102, O101; DEC-1005; MVP-041, MVP-042, MVP-049, MVP-053, MVP-054, MVP-057, MVP-101; PIL-063; R-CTRL-384, R-CTRL-386; RND-357; WLD-244.
 * The code:
   - `GameClient/SettlementVerbs` (`ExpeditionLeadersOf`, `AttackOf`, `PressRelation`), `SettlementHud` (`RelationActionsOf`, the buttons, the declare and refusal lines, the markers' icons), `SettlementView` (`BattleTeamOf`, `LeaderUnderRay`, the conflict view, the battlefields, the targets), `WorldMarkers` (`ConflictTargetsOf`, `LayTarget`, the away markers), `StewardAreas` (`Field`), `DevelopmentOverlay` (`TeamColor`), `WorldPresentation`;
   - `GameShared/RelationMessages` (`ExpeditionTeamOf`), `ResourceSites` (`ClaimAreaCenter`); `GameLogic/Battles.h`;

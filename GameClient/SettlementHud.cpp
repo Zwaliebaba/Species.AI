@@ -331,7 +331,7 @@ std::vector<RelationRow> RelationRowsOf(const ValleyStatus& _valley, std::uint8_
   }
   // MVP-053: every claim, then each area the settlement may claim now (ADR-167): a half of its valley pair that its
   // neighbour holds, or the central resource site that it does not hold, which it does not already claim and whose
-  // cooldown has passed (O100), as CheckClaim decides on the server.
+  // cooldown has passed (O102), as CheckClaim decides on the server.
   std::vector<RelationRow> claimable;
   for (std::uint8_t area = 0; area < VALLEY_AREAS; ++area)
   {

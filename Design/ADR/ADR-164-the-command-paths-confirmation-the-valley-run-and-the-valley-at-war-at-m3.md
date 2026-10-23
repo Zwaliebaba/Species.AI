@@ -129,7 +129,7 @@ GameLogicTests:
   - `Tools/SpeciesFrameBench/SpeciesFrameBench`;
   - `Build/RunPerformance.py`;
   - `GameLogicTests/CommandPathTests`, `SettlementAiTests`, `BattleTests`, `RunTests`.
-* **Amendment 2026-10-23 (O100).** The owner took [DEC-1008](../decisions/species_design.md#dec-1008-the-valley-runs-misses-of-playtest-1s-lines)'s option A with no values, so the valley run swept them. The probe ran seeds 1 to 4 for a run each with the Territorial stand-in, at a cooldown of 60 or 120 minutes and a hold of 30, 120 or 180 s, on the local harness:
+* **Amendment 2026-10-23 (O102).** The owner took [DEC-1008](../decisions/species_design.md#dec-1008-the-valley-runs-misses-of-playtest-1s-lines)'s option A with no values, so the valley run swept them. The probe ran seeds 1 to 4 for a run each with the Territorial stand-in, at a cooldown of 60 or 120 minutes and a hold of 30, 120 or 180 s, on the local harness:
 
   | Cooldown, hold | The steward's battles | Within 4 to 12 minutes | Claims | A claim battle's median |
   |---|---|---|---|---|

@@ -1436,7 +1436,7 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
       m_renown.push_back({settlement.site, 0, 0, 0, 0});
     }
   }
-  // O100 (DEC-1008): an area's last claim ended no later than the region's tick, one for each area, in the order of the
+  // O102 (DEC-1008): an area's last claim ended no later than the region's tick, one for each area, in the order of the
   // areas; a region before version 16 has none, so no area cools down.
   m_claimEnds.clear();
   if (_stateVersion >= STATE_VERSION_WITH_CLAIM_COOLDOWN)

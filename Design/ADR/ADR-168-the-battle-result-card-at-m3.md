@@ -20,7 +20,7 @@ These decisions are open:
 ## Decision Drivers
 
 * A battle's result is the news the steward waits for after the warning and the fight: it must not age away unread.
-* On O100's values the valley run of seeds 1 to 8 had 28 to 31 battles a run, 12 to 20 of them the steward's (`playtests/M3.md`), so 9 to 17 a run were between AI settlements.
+* On O102's values the valley run of seeds 1 to 8 had 28 to 31 battles a run, 12 to 20 of them the steward's (`playtests/M3.md`), so 9 to 17 a run were between AI settlements.
 * The HUD's layout and palette are provisional until the owner judges them (O95, DEC-1005).
 * The verbs take the HUD's presses, and the HUD reads the verbs' state each frame (`HudVerbs`).
 
