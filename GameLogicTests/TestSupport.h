@@ -75,7 +75,7 @@ inline constexpr Neuron::SipHashKey SETTLED_TEST_KEY{0x5e771e5e771e5e77, 0x0a0b0
 [[nodiscard]] std::unique_ptr<Species::WorldSimulation> ValleyWorld(const Neuron::SipHashKey& _key = SETTLED_TEST_KEY,
                                                                     const Species::TuningMvp& _tuning = CommittedTuning());
 // The region's state in the layout of _version, which wrote none of the sections M3 appends to a region after it: for a
-// region whose later sections are all empty, its state without their counts (ADR-159 to ADR-162).
+// region whose later sections are all empty, its state without their counts (ADR-159 to ADR-163, O100).
 [[nodiscard]] std::vector<std::byte> RegionStateOf(const Species::RegionSimulation& _region, std::uint32_t _version);
 
 // Runs each job on a thread of its own and returns once all have ended, so that a test's independent runs share the

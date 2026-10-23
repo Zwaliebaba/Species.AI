@@ -29,10 +29,11 @@ enum class ClaimRefusal : std::uint8_t
   NotHeld = 3,        // a half that its neighbour does not hold
   AlreadyHeld = 4,    // an area the claimant holds
   AlreadyClaimed = 5, // an area the claimant already claims
-  NoSuchClaim = 6     // a withdrawal that names no claim of the claimant's
+  NoSuchClaim = 6,    // a withdrawal that names no claim of the claimant's
+  CoolingDown = 7     // an area whose last claim ended less than mvp.claim.cooldown_minutes ago (O100, DEC-1008)
 };
 
-inline constexpr std::uint8_t CLAIM_REFUSAL_MAX = static_cast<std::uint8_t>(ClaimRefusal::NoSuchClaim);
+inline constexpr std::uint8_t CLAIM_REFUSAL_MAX = static_cast<std::uint8_t>(ClaimRefusal::CoolingDown);
 
 // MVP-054: why a tribute is refused, checked in this order; the reason of its command's outcome, a wire value that is
 // never renumbered.

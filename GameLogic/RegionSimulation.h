@@ -309,6 +309,14 @@ public:
   {
     return m_holdings;
   }
+  [[nodiscard]] const std::vector<ClaimEnd>& ClaimEnds() const noexcept
+  {
+    return m_claimEnds;
+  }
+  [[nodiscard]] std::vector<ClaimEnd>& ClaimEnds() noexcept
+  {
+    return m_claimEnds;
+  }
   // WLD-066 (ADR-160): a territory event that is no first contact, a claim's move of a border area.
   void RecordContactEvent(const ContactEvent& _event)
   {
@@ -572,6 +580,7 @@ private:
   std::vector<Respite> m_respites;                                        // MVP-047 (ADR-161), state from version 13
   std::vector<SettlementAi> m_settlementAis;                              // MVP-055 (ADR-162), state from version 14
   std::vector<SettlementRenown> m_renown;                                 // MVP-061 (ADR-163), state from version 15
+  std::vector<ClaimEnd> m_claimEnds;                                      // O100 (DEC-1008), state from version 16
   std::uint64_t m_runEndTick = std::numeric_limits<std::uint64_t>::max(); // the world owner's (ADR-163), not region state
   std::uint16_t m_halfwayReached = 0; // a bit for each site and pair, from the statistics (ADR-163), not region state
   std::vector<EffectEvent> m_events;  // presentation, never state

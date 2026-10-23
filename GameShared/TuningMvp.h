@@ -299,6 +299,9 @@ struct TuningMvp
     {
       // mvp.claim.uncontested_minutes, in minutes
       double uncontestedMinutes = 0.0;
+
+      // mvp.claim.cooldown_minutes, in minutes
+      double cooldownMinutes = 0.0;
     };
 
     struct Relation
@@ -2029,6 +2032,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Claim& _out)
 {
   _out.uncontestedMinutes = _reader.Decimal(_object, "uncontested_minutes", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.cooldownMinutes = _reader.Decimal(_object, "cooldown_minutes", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -3296,11 +3300,13 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Grie
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Claim& _in)
 {
   _writer.F64(_in.uncontestedMinutes);
+  _writer.F64(_in.cooldownMinutes);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Claim& _out)
 {
   _out.uncontestedMinutes = _reader.F64();
+  _out.cooldownMinutes = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Relation& _in)

@@ -942,10 +942,20 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "minutes",
               "x-species-presence": "required"
+            },
+            "cooldown_minutes": {
+              "type": "number",
+              "description": "mvp.claim.cooldown_minutes (MVP-053, ADR-160, DEC-1008)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "minutes",
+              "x-species-presence": "required"
             }
           },
           "required": [
-            "uncontested_minutes"
+            "uncontested_minutes",
+            "cooldown_minutes"
           ],
           "additionalProperties": false,
           "x-species-type": "object",

@@ -8,6 +8,7 @@
 #include "Statistics.h"
 #include "TestSupport.h"
 #include "Territory.h"
+#include "WorkerPool.h"
 #include "WorldSimulation.h"
 #include "WorldSnapshot.h"
 
@@ -89,6 +90,36 @@ std::uint64_t WaitTicks()
     std::llround(CommittedTuning().mvp.claim.uncontestedMinutes * 60.0 / CommittedTuning().ref.sim.tickPeriod));
 }
 
+// The committed tuning with no claim cooldown, for the tests that claim an area again at once (ADR-160), and with a
+// cooldown of 3 seconds, which a test steps through (O100, DEC-1008); both outlive the worlds.
+const Species::TuningMvp& NoCooldownTuning()
+{
+  static const Species::TuningMvp TUNING = []
+  {
+    Species::TuningMvp tuning = CommittedTuning();
+    tuning.mvp.claim.cooldownMinutes = 0.0;
+    return tuning;
+  }();
+  return TUNING;
+}
+
+const Species::TuningMvp& ShortCooldownTuning()
+{
+  static const Species::TuningMvp TUNING = []
+  {
+    Species::TuningMvp tuning = CommittedTuning();
+    tuning.mvp.claim.cooldownMinutes = 0.05; // 30 ticks
+    return tuning;
+  }();
+  return TUNING;
+}
+
+// The ticks of _tuning's mvp.claim.cooldown_minutes.
+std::uint64_t CooldownTicks(const Species::TuningMvp& _tuning)
+{
+  return static_cast<std::uint64_t>(std::llround(_tuning.mvp.claim.cooldownMinutes * 60.0 / _tuning.ref.sim.tickPeriod));
+}
+
 std::uint8_t SiteOf(const Species::RegionSimulation& _region, Species::Temperament _temperament)
 {
   return std::ranges::find(_region.Settlements(), _temperament,
@@ -157,8 +188,8 @@ public:
   {
     // ADR-160: a claim battle the claimant loses moves nothing; one it wins moves the half to it: its territory grows
     // into the half and the loser's leaves it, the move is a territory event, and the two are still in contact; the
-    // loser may claim it back, and winning returns it to its own side.
-    const std::unique_ptr<Species::WorldSimulation> world = ValleyWorld();
+    // loser may claim it back (here at once, with no cooldown, O100), and winning returns it to its own side.
+    const std::unique_ptr<Species::WorldSimulation> world = ValleyWorld(SETTLED_TEST_KEY, NoCooldownTuning());
     Species::RegionSimulation& region = world->Region(0);
     Reach(region, {STEWARD_SITE, NEIGHBOR_SITE});
     const std::size_t neighbors = CellsIn(region, NEIGHBOR_SITE, NEIGHBORS_HALF);
@@ -202,8 +233,9 @@ public:
   {
     // ADR-160: a claim on the central resource site that nobody holds waits, with no grievance, and holds the site
     // mvp.claim.uncontested_minutes after it was made; its holder then counts the site among its held resource sites,
-    // and a claim on it from another settlement is Open, against the holder.
-    const std::unique_ptr<Species::WorldSimulation> world = ValleyWorld();
+    // and a claim on it from another settlement is Open, against the holder (with no cooldown, which the cooldown's own
+    // test steps through, O100).
+    const std::unique_ptr<Species::WorldSimulation> world = ValleyWorld(SETTLED_TEST_KEY, NoCooldownTuning());
     Species::RegionSimulation& region = world->Region(0);
     const Species::StableId id = Species::MakeClaim(region, 0, Species::CLAIM_AREA_CENTRAL).value_or(0);
     const Species::Claim* claim = ClaimOf(region, id);
@@ -225,6 +257,70 @@ public:
     Assert::IsTrue(ClaimOf(region, open)->state == Species::ClaimState::Open &&
                      GrievanceOf(region, 0, 1, Species::GrievanceCause::Claim, open) != nullptr,
                    L"another's claim on it is Open, against the holder");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp053AnAreaIsClaimedAgainOnlyAfterItsCooldown)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-053")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-095")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp053AnAreaIsClaimedAgainOnlyAfterItsCooldown)
+  {
+    // O100 (DEC-1008): no claim is made on an area until mvp.claim.cooldown_minutes have passed since the last claim on it
+    // ended, by a withdrawal, a claim battle or the central resource site's wait; each area cools down alone, the tick
+    // of each area's last claim's end is saved, and a region of version 15 reads with none.
+    const Species::TuningMvp& tuning = ShortCooldownTuning();
+    const std::unique_ptr<Species::WorldSimulation> world = ValleyWorld(SETTLED_TEST_KEY, tuning);
+    Species::RegionSimulation& region = world->Region(0);
+    region.SettlementAis().clear(); // the test's claims alone (ADR-162)
+    Reach(region, {STEWARD_SITE, NEIGHBOR_SITE});
+    Assert::IsFalse(Species::CooldownEndOf(region, NEIGHBORS_HALF).has_value(), L"no claim on it has ended");
+
+    const Species::StableId withdrawn = Species::MakeClaim(region, STEWARD_SITE, NEIGHBORS_HALF).value_or(0);
+    Assert::IsFalse(Species::WithdrawClaim(region, STEWARD_SITE, withdrawn).has_value(), L"withdrawn");
+    const std::uint64_t cooled = region.NextTick() + CooldownTicks(tuning);
+    Assert::IsTrue(Species::CooldownEndOf(region, NEIGHBORS_HALF) == std::optional<std::uint64_t>(cooled), L"it cools down from its end");
+    Assert::IsTrue(Species::CheckClaim(region, STEWARD_SITE, NEIGHBORS_HALF) == Species::ClaimRefusal::CoolingDown,
+                   L"so it takes no claim");
+    Assert::IsFalse(Species::CheckClaim(region, NEIGHBOR_SITE, STEWARDS_HALF).has_value(), L"the pair's other half does");
+    Neuron::WorkerPool pool(0);
+    while (region.NextTick() + 1 < cooled)
+    {
+      world->Step(region.NextTick(), pool);
+    }
+    Assert::IsTrue(Species::CheckClaim(region, STEWARD_SITE, NEIGHBORS_HALF) == Species::ClaimRefusal::CoolingDown,
+                   L"still on the cooldown's last tick");
+    world->Step(region.NextTick(), pool);
+    Assert::IsFalse(Species::CheckClaim(region, STEWARD_SITE, NEIGHBORS_HALF).has_value(), L"and claimable once it has passed");
+
+    Species::SettleClaim(region, Species::MakeClaim(region, STEWARD_SITE, NEIGHBORS_HALF).value_or(0), true);
+    Assert::IsTrue(Species::HolderOf(region, NEIGHBORS_HALF) == std::optional<std::uint8_t>(STEWARD_SITE) &&
+                     Species::CheckClaim(region, NEIGHBOR_SITE, NEIGHBORS_HALF) == Species::ClaimRefusal::CoolingDown,
+                   L"a claim battle's end cools the half down too, so its loser does not claim it back at once");
+    const Species::StableId central = Species::MakeClaim(region, 0, Species::CLAIM_AREA_CENTRAL).value_or(0);
+    Species::AdvanceClaims(region, ClaimOf(region, central)->madeTick + WaitTicks());
+    Assert::IsTrue(Species::HolderOf(region, Species::CLAIM_AREA_CENTRAL) == std::optional<std::uint8_t>(std::uint8_t{0}) &&
+                     Species::CheckClaim(region, 1, Species::CLAIM_AREA_CENTRAL) == Species::ClaimRefusal::CoolingDown,
+                   L"and the central site's wait");
+
+    auto restored = Species::RestoreWorld(Species::SnapshotOf(*world), tuning, &TestRecords());
+    Assert::IsTrue(restored.has_value(), L"restores");
+    if (!restored)
+    {
+      return;
+    }
+    const std::unique_ptr<Species::WorldSimulation> back = std::move(restored.value());
+    back->Region(0).AttachTerrain(ValleyTerrain());
+    Assert::IsTrue(back->Region(0).ClaimEnds() == region.ClaimEnds() && region.ClaimEnds().size() == 2 &&
+                     Species::CheckClaim(back->Region(0), NEIGHBOR_SITE, NEIGHBORS_HALF) == Species::ClaimRefusal::CoolingDown,
+                   L"the ends are saved, and the half still cools down");
+
+    // Version 15's layout: the current one without the ends' count.
+    const std::unique_ptr<Species::WorldSimulation> plain = ValleyWorld(SETTLED_TEST_KEY, tuning);
+    const std::vector<std::byte> older = RegionStateOf(plain->Region(0), 15);
+    Species::RegionSimulation fifteen(0, SETTLED_TEST_KEY, plain->Region(0).NextTick(), tuning, ValleyTerrain(), &TestRecords());
+    Neuron::BitReader reader(older);
+    Assert::IsTrue(fifteen.ReadState(reader, 15) && reader.Finish() && fifteen.ClaimEnds().empty(),
+                   L"a version-15 region reads whole, with no area cooling down");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp053AContestedCentralClaimWaitsForItsBattleOrAWithdrawal)

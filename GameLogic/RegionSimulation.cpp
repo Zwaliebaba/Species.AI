@@ -1077,6 +1077,11 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
   {
     WriteSettlementRenown(_writer, renown);
   }
+  _writer.WriteBounded(m_claimEnds.size(), HOLDINGS_MAX);
+  for (const ClaimEnd& end : m_claimEnds)
+  {
+    WriteClaimEnd(_writer, end);
+  }
 }
 
 bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stateVersion)
@@ -1426,6 +1431,21 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
     for (const Settlement& settlement : m_settlements)
     {
       m_renown.push_back({settlement.site, 0, 0, 0, 0});
+    }
+  }
+  // O100 (DEC-1008): an area's last claim ended no later than the region's tick, one for each area, in the order of the
+  // areas; a region before version 16 has none, so no area cools down.
+  m_claimEnds.clear();
+  if (_stateVersion >= STATE_VERSION_WITH_CLAIM_COOLDOWN)
+  {
+    m_claimEnds.resize(_reader.ReadBounded(HOLDINGS_MAX));
+    for (std::size_t place = 0; place < m_claimEnds.size(); ++place)
+    {
+      if (!ReadClaimEnd(_reader, m_claimEnds[place]) || m_claimEnds[place].tick > m_nextTick ||
+          (place > 0 && m_claimEnds[place - 1].area >= m_claimEnds[place].area))
+      {
+        return false;
+      }
     }
   }
   // An order marker follows a route the region holds, from its first point to its last (R-UNIT-185).

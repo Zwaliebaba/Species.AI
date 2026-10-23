@@ -39,7 +39,8 @@ constexpr std::uint8_t TARGET_SITE = 3;
 constexpr std::uint8_t NEIGHBORS_HALF = 3; // pair 1's half nearer site 3
 constexpr Neuron::ConnectionId STEWARD_CONNECTION = 1;
 
-// The committed tuning with a run of 3 minutes, its last half minute quiet, and a short warning and battle.
+// The committed tuning with a run of 3 minutes, its last half minute quiet, a short warning and battle, and no claim
+// cooldown, so that the tests' claims on one area follow each other (O100).
 const Species::TuningMvp& ShortRunTuning()
 {
   static const Species::TuningMvp TUNING = []
@@ -52,6 +53,7 @@ const Species::TuningMvp& ShortRunTuning()
     tuning.mvp.persist.snapshotSeconds = 5.0;
     tuning.mvp.persist.snapshotsKept = 3;
     tuning.mvp.claim.uncontestedMinutes = 0.05; // 30 ticks
+    tuning.mvp.claim.cooldownMinutes = 0.0;
     return tuning;
   }();
   return TUNING;

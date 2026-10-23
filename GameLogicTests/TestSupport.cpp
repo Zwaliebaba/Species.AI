@@ -280,7 +280,18 @@ std::vector<std::byte> RegionStateOf(const Species::RegionSimulation& _region, s
   {
     bits -= version > _version ? Neuron::BitsFor(bound) : 0;
   }
-  // Version 15's renown, the last section, and version 14's AI settlements' decisions before it, go whole.
+  // Version 16's claim ends, the last section, version 15's renown and version 14's AI settlements' decisions before it,
+  // go whole.
+  if (_version < Species::STATE_VERSION_WITH_CLAIM_COOLDOWN)
+  {
+    Neuron::BitWriter ends;
+    ends.WriteBounded(_region.ClaimEnds().size(), Species::CLAIM_AREA_MAX + 1);
+    for (const Species::ClaimEnd& end : _region.ClaimEnds())
+    {
+      Species::WriteClaimEnd(ends, end);
+    }
+    bits -= ends.BitCount();
+  }
   if (_version < Species::STATE_VERSION_WITH_RENOWN)
   {
     Neuron::BitWriter renown;

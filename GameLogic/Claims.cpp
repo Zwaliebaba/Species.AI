@@ -53,10 +53,26 @@ void Hold(RegionSimulation& _region, std::uint8_t _area, std::uint8_t _holder)
 }
 
 // The claim's end: removed, and its grievance's cause with it (PIL-122); a contested claim left alone on the central
-// resource site waits again.
+// resource site waits again; and the tick it ended, from which its area cools down (O100, DEC-1008).
 void End(RegionSimulation& _region, StableId _claim)
 {
-  std::erase_if(_region.Claims(), [_claim](const Claim& _held) { return _held.id == _claim; });
+  const auto found = std::ranges::find(_region.Claims(), _claim, &Claim::id);
+  if (found == _region.Claims().end())
+  {
+    return;
+  }
+  const std::uint8_t area = found->area;
+  _region.Claims().erase(found);
+  std::vector<ClaimEnd>& ends = _region.ClaimEnds();
+  const auto place = std::ranges::lower_bound(ends, area, {}, &ClaimEnd::area);
+  if (place != ends.end() && place->area == area)
+  {
+    place->tick = _region.NextTick();
+  }
+  else
+  {
+    ends.insert(place, ClaimEnd{area, _region.NextTick()});
+  }
   RemoveCause(_region, GrievanceCause::Claim, _claim);
   if (std::ranges::count(_region.Claims(), std::uint8_t{CLAIM_AREA_CENTRAL}, &Claim::area) == 1)
   {
@@ -124,6 +140,18 @@ std::optional<std::uint8_t> HolderOf(const RegionSimulation& _region, std::uint8
   return std::nullopt;
 }
 
+std::optional<std::uint64_t> CooldownEndOf(const RegionSimulation& _region, std::uint8_t _area)
+{
+  const auto found = std::ranges::find(_region.ClaimEnds(), _area, &ClaimEnd::area);
+  if (found == _region.ClaimEnds().end())
+  {
+    return std::nullopt;
+  }
+  const auto cooldownTicks = static_cast<std::uint64_t>(std::max<std::int64_t>(
+    0, std::llround(_region.Tuning().mvp.claim.cooldownMinutes * SECONDS_PER_MINUTE / _region.Tuning().ref.sim.tickPeriod)));
+  return found->tick + cooldownTicks;
+}
+
 std::optional<ClaimRefusal> CheckClaim(const RegionSimulation& _region, std::uint8_t _claimant, std::uint8_t _area)
 {
   if (_region.SettlementAt(_claimant) == nullptr || _region.Terrain() == nullptr)
@@ -160,6 +188,11 @@ std::optional<ClaimRefusal> CheckClaim(const RegionSimulation& _region, std::uin
   if (std::ranges::any_of(_region.Claims(), [&](const Claim& _claim) { return _claim.claimant == _claimant && _claim.area == _area; }))
   {
     return ClaimRefusal::AlreadyClaimed;
+  }
+  // O100 (DEC-1008): an area whose last claim ended takes no claim until mvp.claim.cooldown_minutes have passed.
+  if (const std::optional<std::uint64_t> cooled = CooldownEndOf(_region, _area); cooled && _region.NextTick() < *cooled)
+  {
+    return ClaimRefusal::CoolingDown;
   }
   return std::nullopt;
 }
@@ -370,6 +403,19 @@ bool ReadAreaHolding(Neuron::BitReader& _reader, AreaHolding& _holding)
 {
   _holding.area = static_cast<std::uint8_t>(_reader.ReadBounded(CLAIM_AREA_MAX));
   _holding.holder = static_cast<std::uint8_t>(_reader.ReadBounded(LOCAL_SITE_MAX));
+  return !_reader.Failed();
+}
+
+void WriteClaimEnd(Neuron::BitWriter& _writer, const ClaimEnd& _end)
+{
+  _writer.WriteBounded(_end.area, CLAIM_AREA_MAX);
+  _writer.WriteBits(_end.tick, 64);
+}
+
+bool ReadClaimEnd(Neuron::BitReader& _reader, ClaimEnd& _end)
+{
+  _end.area = static_cast<std::uint8_t>(_reader.ReadBounded(CLAIM_AREA_MAX));
+  _end.tick = _reader.ReadBits(64);
   return !_reader.Failed();
 }
 

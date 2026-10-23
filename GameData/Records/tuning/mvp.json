@@ -117,7 +117,8 @@
       "battle_relief_lost": 25
     },
     "claim": {
-      "uncontested_minutes": 30
+      "uncontested_minutes": 30,
+      "cooldown_minutes": 60
     },
     "relation": {
       "tribute_ru_per_weight": 10

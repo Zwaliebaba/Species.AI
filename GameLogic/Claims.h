@@ -18,6 +18,8 @@ enum class GrievanceCause : std::uint8_t;
 // The first state version whose regions hold claims, moved areas and territory events of more than one kind (M3 task T5,
 // ADR-160).
 inline constexpr std::uint32_t STATE_VERSION_WITH_CLAIMS = 12;
+// The first state version whose regions hold the tick each area's last claim ended (O100, DEC-1008).
+inline constexpr std::uint32_t STATE_VERSION_WITH_CLAIM_COOLDOWN = 16;
 
 // MVP-053: where a claim stands; a value of the saved state that is never renumbered.
 enum class ClaimState : std::uint8_t
@@ -54,6 +56,16 @@ struct AreaHolding
   bool operator==(const AreaHolding&) const = default;
 };
 
+/// O100 (DEC-1008): the tick an area's last claim ended, by any end, from which no claim may be made on the area for
+/// mvp.claim.cooldown_minutes. A region holds them in the order of their areas, one for each area a claim has ended on.
+struct ClaimEnd
+{
+  std::uint8_t area = 0;
+  std::uint64_t tick = 0;
+
+  bool operator==(const ClaimEnd&) const = default;
+};
+
 // The valley border pair of a half, its index in VALLEY_PAIRS, and the site whose half it is.
 [[nodiscard]] constexpr std::size_t PairOfArea(std::uint8_t _area) noexcept
 {
@@ -67,6 +79,9 @@ struct AreaHolding
 // The settlement a claim moved the area to, or none.
 [[nodiscard]] std::optional<std::uint8_t> MovedTo(const RegionSimulation& _region, std::uint8_t _area) noexcept;
 
+// O100 (DEC-1008): the first tick a claim may be made on the area again, mvp.claim.cooldown_minutes after its last claim
+// ended; none when no claim on it has ended.
+[[nodiscard]] std::optional<std::uint64_t> CooldownEndOf(const RegionSimulation& _region, std::uint8_t _area);
 // MVP-053, WLD-086: why the settlement at site _claimant may not claim the area now, or none.
 [[nodiscard]] std::optional<ClaimRefusal> CheckClaim(const RegionSimulation& _region, std::uint8_t _claimant, std::uint8_t _area);
 // MVP-053 (ADR-160): the claim, which CheckClaim permits. A claim on a held area is Open and gives its holder's Cladan a
@@ -100,5 +115,7 @@ void WriteClaim(Neuron::BitWriter& _writer, const Claim& _claim);
 [[nodiscard]] bool ReadClaim(Neuron::BitReader& _reader, Claim& _claim);
 void WriteAreaHolding(Neuron::BitWriter& _writer, const AreaHolding& _holding);
 [[nodiscard]] bool ReadAreaHolding(Neuron::BitReader& _reader, AreaHolding& _holding);
+void WriteClaimEnd(Neuron::BitWriter& _writer, const ClaimEnd& _end);
+[[nodiscard]] bool ReadClaimEnd(Neuron::BitReader& _reader, ClaimEnd& _end);
 
 } // namespace Species
