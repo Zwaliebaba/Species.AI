@@ -37,6 +37,7 @@ struct FrontEndChoice
   Kind kind = Kind::Quit;
   std::optional<std::uint64_t> seed; // NewWorld: the seed typed; none: the server draws one (MVP-005)
   std::uint8_t site = 0;             // NewWorld: the steward's site (MVP-012)
+  std::uint8_t aiSettlements = 0;    // NewWorld: its AI settlements, AI_SETTLEMENTS_FULL or none (MVP-013, O103)
   std::optional<SavedWorld> world;   // Epilogue: the ended world
 };
 

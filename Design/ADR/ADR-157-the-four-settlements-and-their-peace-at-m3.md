@@ -43,7 +43,7 @@ Chosen option: 1.
   - **The deal.** The three temperaments are dealt among them by a Fisher–Yates shuffle, on one keyed draw (`DrawPurpose::TemperamentDeal`, subject 1) of the region's first tick.
   - **Their economy.** Each AI settlement is run by a scripted steward as its AI commander. `RegionSimulation::FoundSettlement` takes the temperament.
 * **The journal** is format 6, which holds the count. A journal of format 5 reads as one with no AI settlement (MVP-095).
-* **The servers.** `WorldServer::Desc` and `IntegratedServer::Desc` carry the count. Its default, 0, keeps the client's new world one settlement until phase B turns it on.
+* **The servers.** `WorldServer::Desc` and `IntegratedServer::Desc` carry the count. Its default, 0, kept the client's new world one settlement until phase B; since O103 the client passes the steward's choice of the New world page, three by default.
   - The growth scene and the frame bench's settlement keep one settlement.
   - M3's valley run (T9) founds three AI settlements.
 * **Peace** (`RegionSimulation::EnemiesOf`, now a member):
@@ -58,7 +58,7 @@ Chosen option: 1.
 * Good, because a world's four settlements and their temperaments follow from its start alone, and replay.
 * Good, because the settlements' Workers and turrets fight only in a battle, as PIL-041 has it.
 * Good, because M2's evidence keeps its one settlement.
-* Bad, because the client's world has no neighbours until phase B sets the count.
+* Bad, because the client's world had no neighbours until phase B set the count (O103: the steward's choice, three by default).
 * Bad, because the enemy test now walks the region's settlements, at most four, wherever the cached enemy query misses.
 * It forecloses: settlements that fight without a battle; temperaments that two AI settlements share.
 
@@ -106,3 +106,4 @@ The whole GameLogic suite passes unchanged, the turret tests against a wild team
   - `WorldServer`, `IntegratedServer`;
   - `GameLogicTests/ValleyTests`.
 * **Amendment 2026-10-22 (M3 task T6, [ADR-161](ADR-161-expeditions-battles-the-loss-cap-and-the-respite-at-m3.md)).** A settlement's expedition is a team of its own, at peace as its settlement is, and a battle in progress makes its expedition's team and its defender's team enemies of each other and of no other team. The actor grid's cache forgets its queries when a battle starts or ends.
+* **Amendment 2026-10-23 (owner decision O103).** The client's new world founds the AI settlements the steward chooses on the front end's New world page: three, the default, or none, which M2's growth run takes so that it still plays a world alone. The count is kept in the world's description (`world.ai_settlements`, [ADR-155](ADR-155-the-front-end-and-saved-worlds-at-m2.md)); a world continued reads its own from its journal and snapshot.

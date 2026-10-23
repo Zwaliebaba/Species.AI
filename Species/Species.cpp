@@ -651,12 +651,14 @@ int Run()
       }
       else
       {
-        // MVP-005, MVP-012: a new world from the seed typed or one the server draws, at the site chosen, in a new folder.
+        // MVP-005, MVP-012: a new world from the seed typed or one the server draws, at the site chosen, in a new folder,
+        // with the AI settlements chosen (MVP-013, O103).
         desc.worldSeed = _choice.seed;
         desc.stewardSite = _choice.site;
+        desc.aiSettlements = _choice.aiSettlements;
         if (savesFolder.has_value())
         {
-          saved = CreateWorld(*savesFolder, _choice.seed, _choice.site);
+          saved = CreateWorld(*savesFolder, _choice.seed, _choice.site, _choice.aiSettlements);
           desc.snapshotFolder = saved.has_value() ? saved->folder : std::filesystem::path{};
         }
       }

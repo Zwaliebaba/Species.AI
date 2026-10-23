@@ -23,7 +23,8 @@ namespace
 // The description's keys (DAT-196).
 constexpr std::string_view SEED_KEY = "world.seed";
 constexpr std::string_view SITE_KEY = "world.site";
-constexpr std::string_view RUN_ENDED_KEY = "world.run_ended"; // ADR-170: "true" once the client saw the run end
+constexpr std::string_view AI_SETTLEMENTS_KEY = "world.ai_settlements"; // O103: the AI settlements it was founded with
+constexpr std::string_view RUN_ENDED_KEY = "world.run_ended";           // ADR-170: "true" once the client saw the run end
 constexpr std::string_view TRUE_TEXT = "true";
 constexpr std::uint64_t SITE_COUNT = 4;          // WLD-040: the region's settlement sites
 constexpr std::uint32_t WORLD_NUMBER_MAX = 9999; // the most that WORLD_NUMBER_DIGITS digits hold
@@ -63,6 +64,7 @@ bool WriteDescription(const SavedWorld& _world)
   {
     entries.push_back({std::string(SEED_KEY), std::to_string(*_world.seed)});
   }
+  entries.push_back({std::string(AI_SETTLEMENTS_KEY), std::to_string(_world.aiSettlements)});
   if (_world.ended)
   {
     entries.push_back({std::string(RUN_ENDED_KEY), std::string(TRUE_TEXT)});
@@ -78,7 +80,7 @@ bool WriteDescription(const SavedWorld& _world)
 }
 
 // A world folder's description, or none when it does not read: a site within the region's four, and a seed that is a
-// number when it is there.
+// number and AI settlements at most AI_SETTLEMENTS_FULL when they are there.
 std::optional<SavedWorld> ReadWorld(const std::filesystem::path& _folder, std::uint32_t _number)
 {
   const auto bytes = Neuron::ReadWholeFile(_folder / WORLD_DESCRIPTION_FILE);
@@ -113,6 +115,15 @@ std::optional<SavedWorld> ReadWorld(const std::filesystem::path& _folder, std::u
       {
         return std::nullopt;
       }
+    }
+    else if (line.key == AI_SETTLEMENTS_KEY)
+    {
+      const std::optional<std::uint64_t> value = ParseNumber<std::uint64_t>(line.value);
+      if (!value || *value > AI_SETTLEMENTS_FULL)
+      {
+        return std::nullopt;
+      }
+      world.aiSettlements = static_cast<std::uint8_t>(*value);
     }
     else if (line.key == RUN_ENDED_KEY)
     {
@@ -161,7 +172,8 @@ std::optional<SavedWorld> LatestWorld(const std::filesystem::path& _saves)
   return std::nullopt;
 }
 
-std::optional<SavedWorld> CreateWorld(const std::filesystem::path& _saves, std::optional<std::uint64_t> _seed, std::uint8_t _site)
+std::optional<SavedWorld> CreateWorld(const std::filesystem::path& _saves, std::optional<std::uint64_t> _seed, std::uint8_t _site,
+                                      std::uint8_t _aiSettlements)
 {
   // Numbered above every folder of the form, a world or not, so that no folder is ever reused.
   std::uint32_t highest = 0;
@@ -181,6 +193,7 @@ std::optional<SavedWorld> CreateWorld(const std::filesystem::path& _saves, std::
   world.folder = _saves / std::format(L"{}{:0{}}", WORLD_FOLDER_PREFIX, world.number, WORLD_NUMBER_DIGITS);
   world.seed = _seed;
   world.site = _site;
+  world.aiSettlements = _aiSettlements;
   std::filesystem::create_directories(world.folder, error);
   if (error)
   {

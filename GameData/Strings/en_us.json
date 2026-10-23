@@ -32,6 +32,8 @@
     "ui.front.seed_too_large": "A seed is at most {largest}.",
     "ui.front.site": "Site",
     "ui.front.site_option": "Site {site, number, integer}",
+    "ui.front.neighbors": "Neighbors",
+    "ui.front.neighbors_option": "{count, select, three {Three AI settlements} none {None} other {None}}",
     "ui.front.window": "Play in a window",
     "ui.front.anti_aliasing": "Anti-aliasing (next start)",
     "ui.front.anti_aliasing_option": "{mode, select, off {Off} two {2x} four {4x} other {On}}",

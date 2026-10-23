@@ -38,6 +38,8 @@ constexpr std::string_view STRING_SEED = "ui.front.seed";
 constexpr std::string_view STRING_SEED_TOO_LARGE = "ui.front.seed_too_large";
 constexpr std::string_view STRING_SITE = "ui.front.site";
 constexpr std::string_view STRING_SITE_OPTION = "ui.front.site_option";
+constexpr std::string_view STRING_NEIGHBORS = "ui.front.neighbors";               // O103
+constexpr std::string_view STRING_NEIGHBORS_OPTION = "ui.front.neighbors_option"; // O103
 constexpr std::string_view STRING_WINDOW = "ui.front.window";
 constexpr std::string_view STRING_ANTI_ALIASING = "ui.front.anti_aliasing";
 constexpr std::string_view STRING_ANTI_ALIASING_OPTION = "ui.front.anti_aliasing_option";
@@ -54,7 +56,10 @@ constexpr std::array<std::string_view, 4> FAULT_SELECTORS{"no_snapshot", "unread
 // The anti-aliasing options, as the settings store spells them and as the string's selector names them (O96).
 constexpr std::array<std::string_view, 3> ANTI_ALIASING_VALUES{ANTI_ALIASING_OFF, ANTI_ALIASING_2X, ANTI_ALIASING_4X};
 constexpr std::array<std::string_view, 3> ANTI_ALIASING_SELECTORS{"off", "two", "four"};
-constexpr std::uint8_t SITE_COUNT = 4;     // WLD-040: the region's settlement sites
+constexpr std::uint8_t SITE_COUNT = 4; // WLD-040: the region's settlement sites
+// O103: the neighbors cycler's options, the AI settlements at the other sites (MVP-013) first, then none.
+constexpr std::array<std::string_view, 2> NEIGHBOR_SELECTORS{"three", "none"};
+constexpr std::array<std::uint8_t, 2> NEIGHBOR_COUNTS{AI_SETTLEMENTS_FULL, 0};
 constexpr std::int64_t PERCENT_FULL = 100; // the volume's 100 %
 /// The front end's page skeleton (ADR-155): the shared skeleton, with the front end for its strings and its Back.
 class SkeletonPage : public PageSkeleton
@@ -255,6 +260,16 @@ public:
     site.selected =
       static_cast<std::size_t>(std::clamp<std::int64_t>(m_frontEnd.Settings().tuning->mvp.sandbox.stewardSite, 0, SITE_COUNT - 1));
     m_site = Row(_window, std::move(site));
+    Neuron::UiWidgetDesc neighbors;
+    neighbors.kind = Neuron::UiWidgetKind::Cycler;
+    neighbors.id = "neighbors";
+    neighbors.text = m_frontEnd.Text(STRING_NEIGHBORS);
+    for (const std::string_view selector : NEIGHBOR_SELECTORS)
+    {
+      const std::array arguments{Neuron::FormatArgument{"count", selector}};
+      neighbors.options.push_back(m_frontEnd.Text(STRING_NEIGHBORS_OPTION, arguments));
+    }
+    m_neighbors = Row(_window, std::move(neighbors));
     m_start = Row(_window, Neuron::UiWidgetKind::PageButton, "start", m_frontEnd.Text(STRING_START));
     Finish(_window, true);
   }
@@ -280,6 +295,7 @@ public:
         FrontEndChoice choice{FrontEndChoice::Kind::NewWorld};
         choice.seed = *seed;
         choice.site = static_cast<std::uint8_t>(_window.Selected(m_site));
+        choice.aiSettlements = NEIGHBOR_COUNTS.at(_window.Selected(m_neighbors));
         m_frontEnd.Choose(choice);
       }
       else if (event.widget == m_back)
@@ -292,6 +308,7 @@ public:
 private:
   Neuron::UiHandle m_seed;
   Neuron::UiHandle m_site;
+  Neuron::UiHandle m_neighbors;
   Neuron::UiHandle m_start;
 };
 

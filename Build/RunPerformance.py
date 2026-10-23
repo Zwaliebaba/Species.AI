@@ -487,6 +487,21 @@ def record(path, config, result, frames, build_id, when):
   return 1 if (pinned is not None and above) or (display is not None and rendered_above) else 0
 
 
+def ai_settlements_of(folder):
+  """O103: the AI settlements a saved world was founded with, from its description (world.txt, DAT-196's form); 0 when it
+  names none, as a world described before M3 does."""
+  try:
+    with open(os.path.join(folder, 'world.txt'), encoding='utf-8') as f:
+      lines = f.read().splitlines()
+  except OSError:
+    return 0
+  for line in lines:
+    key, _, value = line.partition('=')
+    if key.strip() == 'world.ai_settlements':
+      return int(value.strip()) if value.strip().isdigit() else 0
+  return 0
+
+
 def run_saved_world(tool, folder, out, tuning_source=None):
   """ADR-156: the tool's reading of a saved world's growth."""
   args = [tool, '--saved-world', folder, '--out', out] + (['--tuning-source', tuning_source] if tuning_source else [])
@@ -777,6 +792,16 @@ def self_test(tool, tuning_source, bench=None, warp=False):
       result = lambda w: saved_world_rows(dict(SAVED_WORLD_FIXTURE, saved_world=w))[1][3]
       return result(world) == 'open: the plateau may be forming' and result(below) == 'above 20 min'
 
+    def neighbors_read():
+      # The description's count, and 0 for a description that names none or a folder that has none.
+      alone, valley, older = (os.path.join(folder, name) for name in ('alone', 'valley', 'older'))
+      for world, text in ((alone, 'world.site = 1\nworld.ai_settlements = 0\n'), (valley, 'world.site = 1\nworld.ai_settlements = 3\n'),
+                          (older, 'world.site = 2\n')):
+        os.makedirs(world)
+        with open(os.path.join(world, 'world.txt'), 'w', encoding='utf-8', newline='\n') as f:
+          f.write(text)
+      return (ai_settlements_of(alone), ai_settlements_of(valley), ai_settlements_of(older), ai_settlements_of(folder)) == (0, 3, 0, 0)
+
     checks = [
       ('the first run pins the machine and only reports', lambda: record(path, reference, result, None, 'fixture', 'pin') == 0 and
        pinned_machine(open(path, encoding='utf-8').read()) == reference),
@@ -818,6 +843,7 @@ def self_test(tool, tuning_source, bench=None, warp=False):
       ('a rendered run reports how the settlement grew', lambda: recorded('the settlement drawn (ADR-156)')),
       ('the owner\'s growth run is recorded and judged in its own section (ADR-156)', grown_recorded),
       ('a gap open while the plateau may be forming is not judged yet (ADR-156)', forming_judged),
+      ('a saved world founded with neighbors is told apart from one alone (O103)', neighbors_read),
       ('the quick valley run runs one seed (ADR-164)', lambda: [run['seed'] for run in valley_quick['valley']] == [1]),
       ('the valley run is judged over its corpus and recorded (ADR-164)', valley_judged),
       ('the valley run keeps its runs in its own section (ADR-164)', valley_recorded),
@@ -858,6 +884,11 @@ def main():
     build()
   tool = args.tool or os.path.join(ROOT, PLATFORM, CONFIGURATION, 'SpeciesPerformance.exe')
   if args.saved_world:
+    # O103: M2's growth run is a world alone; one founded with neighbors is not judged against it.
+    neighbors = ai_settlements_of(args.saved_world)
+    if neighbors:
+      sys.exit(f'RunPerformance: {args.saved_world} was founded with {neighbors} AI settlements; the growth run is judged on a world '
+               'started with Neighbors set to None (O103)')
     with tempfile.TemporaryDirectory() as folder:
       saved = run_saved_world(tool, args.saved_world, os.path.join(folder, 'saved.json'), args.tuning_source)
     for figure, measured, target, result in saved_world_rows(saved):

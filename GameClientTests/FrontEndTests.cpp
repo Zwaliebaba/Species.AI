@@ -196,22 +196,26 @@ public:
     h.Frame(input);
     h.Down();
     h.Down();
-    Assert::IsTrue(h.CursorOn("start"), L"the site, then Start");
+    h.Down();
+    Assert::IsTrue(h.CursorOn("start"), L"the site, the neighbors, then Start");
     h.Activate();
     // No choice reads as Quit's default, so each check below fails without one.
     Species::FrontEndChoice choice = h.frontEnd.TakeChoice().value_or(Species::FrontEndChoice{});
     Assert::IsTrue(choice.kind == Species::FrontEndChoice::Kind::NewWorld, L"a new world");
     Assert::IsTrue(choice.seed == std::optional<std::uint64_t>(42), L"from the seed typed");
     ExpectEqual(CommittedTuning().mvp.sandbox.stewardSite, choice.site, L"at the default site");
+    ExpectEqual(3, choice.aiSettlements, L"O103: with the three AI settlements by default (MVP-013)");
 
     // An empty field draws the seed; one beyond 64 bits starts nothing.
     Neuron::UiWindow& window = *h.ui.Focused();
     window.SetValue(window.Find("seed"), "");
     h.Click("site");
+    h.Click("neighbors");
     h.Click("start");
     choice = h.frontEnd.TakeChoice().value_or(Species::FrontEndChoice{});
     Assert::IsTrue(choice.kind == Species::FrontEndChoice::Kind::NewWorld && !choice.seed.has_value(), L"no seed: the server draws one");
     ExpectEqual((CommittedTuning().mvp.sandbox.stewardSite + 1) % 4, choice.site, L"at the site stepped to");
+    ExpectEqual(0, choice.aiSettlements, L"O103: and alone, for M2's growth run");
     window.SetValue(window.Find("seed"), "18446744073709551616");
     h.Click("start");
     Assert::IsFalse(h.frontEnd.TakeChoice().has_value(), L"a seed beyond 64 bits starts nothing");
