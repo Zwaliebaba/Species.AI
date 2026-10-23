@@ -16,8 +16,10 @@ namespace
 constexpr Color METAL_DARK{60, 64, 72};
 constexpr Color METAL_MID{110, 116, 126};
 constexpr Color SLATE{72, 78, 90};
+constexpr Color STONE_DARK{98, 96, 92};
 constexpr Color BRASS{226, 190, 96};
 constexpr Color BRASS_DARK{180, 140, 60};
+constexpr Color LANTERN{255, 214, 150};
 constexpr Color TEAM_WHITE{238, 238, 238};
 
 // The reference turret (MVP-034, R-BLDG-405): a mount that carries the four manning ports and their status lights, a
@@ -44,21 +46,31 @@ MeshModel TurretMount()
   return model;
 }
 
-// The head: a pedestal with a band in the team's colour, and above it the turning body with its shield and sight. Its
-// barrel mount is at the shield's face; the turret's front is +z (R-BLDG-407).
+// The head: a stepped stone pedestal with a band in the team's colour, and above it the turning body: a skirt under a
+// chamfered housing whose roof is ringed in the team's colour so the owner reads from above, a hatch collar and a sight
+// with a glowing lens, and a shield with cheeks and a brass lip. Its barrel mount is at the shield's face; the turret's
+// front is +z (R-BLDG-407).
 MeshModel TurretHead()
 {
   MeshModel model{"TurretHead.cmo", {}, {}, false};
   ModelNode& pedestal = model.Node("turret_pedestal");
   AddFrustum(
     pedestal,
-    {.sides = 8, .halfStep = true, .baseRadius = 7.0, .topRadius = 5.0, .length = 5.0, .color = METAL_DARK, .capColor = METAL_DARK});
-  AddFrustum(pedestal, {.base = {0.0, 5.0, 0.0},
+    {.sides = 8, .halfStep = true, .baseRadius = 8.6, .topRadius = 8.2, .length = 1.0, .color = STONE_DARK, .capColor = STONE_DARK});
+  AddFrustum(pedestal, {.base = {0.0, 1.0, 0.0},
                         .sides = 8,
                         .halfStep = true,
-                        .baseRadius = 5.2,
-                        .topRadius = 5.2,
-                        .length = 1.0,
+                        .baseRadius = 7.0,
+                        .topRadius = 5.4,
+                        .length = 3.6,
+                        .color = STONE_DARK,
+                        .capColor = STONE_DARK});
+  AddFrustum(pedestal, {.base = {0.0, 4.6, 0.0},
+                        .sides = 8,
+                        .halfStep = true,
+                        .baseRadius = 5.6,
+                        .topRadius = 5.6,
+                        .length = 1.4,
                         .color = TEAM_WHITE,
                         .capColor = TEAM_WHITE,
                         .surface = Surface::Team});
@@ -66,32 +78,63 @@ MeshModel TurretHead()
   AddFrustum(head, {.base = {0.0, 6.0, 0.0},
                     .sides = 8,
                     .halfStep = true,
-                    .baseRadius = 8.0,
-                    .topRadius = 6.0,
-                    .length = 7.0,
+                    .baseRadius = 8.4,
+                    .topRadius = 8.4,
+                    .length = 1.0,
                     .baseCap = true,
+                    .topCap = false,
+                    .color = METAL_DARK,
+                    .capColor = METAL_DARK});
+  AddFrustum(head, {.base = {0.0, 7.0, 0.0},
+                    .sides = 8,
+                    .halfStep = true,
+                    .baseRadius = 8.4,
+                    .topRadius = 6.4,
+                    .length = 5.0,
                     .color = METAL_MID,
                     .capColor = SLATE});
-  AddBox(head, {-6.0, 7.0, 6.0}, {6.0, 12.0, 7.5}, METAL_DARK, Surface::Facet, true);
-  AddBox(head, {-1.0, 13.0, -2.0}, {1.0, 15.0, 1.0}, TEAM_WHITE, Surface::Team, true);
-  model.AddSocket("barrel_mount", "turret_head", {0.0, 10.0, 7.5});
-  model.AddSocket("kill_counter", "turret_head", {0.0, 15.5, -3.0});
+  AddFrustum(head, {.base = {0.0, 12.0, 0.0},
+                    .sides = 8,
+                    .halfStep = true,
+                    .baseRadius = 5.6,
+                    .topRadius = 5.6,
+                    .length = 0.3,
+                    .color = TEAM_WHITE,
+                    .capColor = TEAM_WHITE,
+                    .surface = Surface::Team});
+  AddFrustum(head, {.base = {0.0, 12.3, 0.0},
+                    .sides = 8,
+                    .halfStep = true,
+                    .baseRadius = 3.0,
+                    .topRadius = 2.6,
+                    .length = 0.8,
+                    .color = METAL_DARK,
+                    .capColor = METAL_DARK});
+  AddBox(head, {-1.2, 13.1, -3.0}, {1.2, 14.9, 0.4}, METAL_DARK, Surface::Facet);
+  AddBox(head, {-0.8, 13.5, 0.4}, {0.8, 14.5, 0.8}, LANTERN, Surface::Unlit, true);
+  AddBox(head, {-6.5, 6.6, 6.0}, {6.5, 12.6, 7.6}, METAL_DARK, Surface::Facet, true);
+  AddBox(head, {-7.5, 7.0, 4.0}, {-6.5, 12.0, 7.6}, METAL_DARK, Surface::Facet, true);
+  AddBox(head, {6.5, 7.0, 4.0}, {7.5, 12.0, 7.6}, METAL_DARK, Surface::Facet, true);
+  AddBox(head, {-6.5, 12.6, 5.0}, {6.5, 13.2, 7.6}, BRASS, Surface::Facet, true);
+  model.AddSocket("barrel_mount", "turret_head", {0.0, 10.0, 7.6});
+  model.AddSocket("kill_counter", "turret_head", {0.0, 15.3, -3.5});
   return model;
 }
 
 MeshModel TurretHeadCollision()
 {
   MeshModel model{"TurretHeadCollision.cmo", {}, {}, true};
-  AddFrustum(model.Node("turret_pedestal"), {.sides = 8, .halfStep = true, .baseRadius = 7.0, .topRadius = 5.2, .length = 6.0});
+  AddFrustum(model.Node("turret_pedestal"), {.sides = 8, .halfStep = true, .baseRadius = 8.6, .topRadius = 5.6, .length = 6.0});
   ModelNode& head = model.Node("turret_head");
   AddFrustum(head,
-             {.base = {0.0, 6.0, 0.0}, .sides = 8, .halfStep = true, .baseRadius = 8.0, .topRadius = 8.0, .length = 9.0, .baseCap = true});
+             {.base = {0.0, 6.0, 0.0}, .sides = 8, .halfStep = true, .baseRadius = 8.4, .topRadius = 8.4, .length = 9.0, .baseCap = true});
   return model;
 }
 
 // The gun barrel set, from the barrel mount forward along +z: four barrels in a square, each of five nodes (breech,
 // tube, jacket, muzzle brake and casing ejector), with its muzzle at the brake's end and its casing ejector on its outer
-// side (AST-042, R-BLDG-418).
+// side (AST-042, R-BLDG-418). Eight-sided tubes; two brass cooling rings on each jacket and a brass brake pick the
+// barrels out against the head.
 struct BarrelPlace
 {
   double x;
@@ -99,10 +142,16 @@ struct BarrelPlace
 };
 constexpr std::array<BarrelPlace, 4> BARRELS{BarrelPlace{-2.0, 1.4}, BarrelPlace{2.0, 1.4}, BarrelPlace{-2.0, -1.4},
                                              BarrelPlace{2.0, -1.4}};
+constexpr std::uint32_t BARREL_SIDES = 8;
 constexpr double TUBE_RADIUS_WU = 0.6;
 constexpr double TUBE_START_WU = 3.0;
 constexpr double TUBE_LENGTH_WU = 11.0;
-constexpr double BRAKE_LENGTH_WU = 1.5;
+constexpr double JACKET_RADIUS_WU = 0.9;
+constexpr double JACKET_LENGTH_WU = 3.6;
+constexpr double RING_RADIUS_WU = 0.8;
+constexpr std::array<double, 2> RINGS_WU{8.0, 10.5};
+constexpr double BRAKE_RADIUS_WU = 1.0;
+constexpr double BRAKE_LENGTH_WU = 1.6;
 
 MeshModel TurretBarrelGun()
 {
@@ -116,31 +165,44 @@ MeshModel TurretBarrelGun()
            Surface::Facet, true);
     AddFrustum(model.Node(prefix + "_tube"), {.base = {place.x, place.y, TUBE_START_WU},
                                               .axis = Axis::Forward,
-                                              .sides = 6,
+                                              .sides = BARREL_SIDES,
                                               .baseRadius = TUBE_RADIUS_WU,
                                               .topRadius = TUBE_RADIUS_WU,
                                               .length = TUBE_LENGTH_WU,
                                               .baseCap = true,
                                               .color = METAL_MID,
                                               .capColor = METAL_DARK});
-    AddFrustum(model.Node(prefix + "_jacket"), {.base = {place.x, place.y, TUBE_START_WU},
-                                                .axis = Axis::Forward,
-                                                .sides = 6,
-                                                .baseRadius = 0.85,
-                                                .topRadius = 0.85,
-                                                .length = 4.0,
-                                                .baseCap = true,
-                                                .color = METAL_DARK,
-                                                .capColor = METAL_DARK});
+    ModelNode& jacket = model.Node(prefix + "_jacket");
+    AddFrustum(jacket, {.base = {place.x, place.y, TUBE_START_WU},
+                        .axis = Axis::Forward,
+                        .sides = BARREL_SIDES,
+                        .baseRadius = JACKET_RADIUS_WU,
+                        .topRadius = JACKET_RADIUS_WU,
+                        .length = JACKET_LENGTH_WU,
+                        .baseCap = true,
+                        .color = METAL_DARK,
+                        .capColor = METAL_DARK});
+    for (const double z : RINGS_WU)
+    {
+      AddFrustum(jacket, {.base = {place.x, place.y, z},
+                          .axis = Axis::Forward,
+                          .sides = BARREL_SIDES,
+                          .baseRadius = RING_RADIUS_WU,
+                          .topRadius = RING_RADIUS_WU,
+                          .length = 0.5,
+                          .baseCap = true,
+                          .color = BRASS,
+                          .capColor = BRASS});
+    }
     AddFrustum(model.Node(prefix + "_brake"), {.base = {place.x, place.y, TUBE_START_WU + TUBE_LENGTH_WU},
                                                .axis = Axis::Forward,
-                                               .sides = 6,
-                                               .baseRadius = 0.9,
-                                               .topRadius = 0.9,
+                                               .sides = BARREL_SIDES,
+                                               .baseRadius = BRAKE_RADIUS_WU,
+                                               .topRadius = BRAKE_RADIUS_WU,
                                                .length = BRAKE_LENGTH_WU,
                                                .baseCap = true,
-                                               .color = METAL_DARK,
-                                               .capColor = METAL_DARK});
+                                               .color = BRASS_DARK,
+                                               .capColor = BRASS_DARK});
     const double side = place.x + outward * 1.0;
     AddBox(model.Node(prefix + "_ejector"), {outward < 0.0 ? side - 0.4 : side, place.y - 0.4, 1.0},
            {outward < 0.0 ? side : side + 0.4, place.y + 0.4, 2.2}, BRASS_DARK, Surface::Facet, true);
@@ -160,50 +222,100 @@ MeshModel TurretBarrelGunCollision()
     const std::string prefix = std::format("barrel_{:02}", b + 1);
     AddBox(model.Node(prefix + "_breech"), {place.x - 1.0, place.y - 0.9, 0.0}, {place.x + 1.0, place.y + 0.9, TUBE_START_WU}, {},
            Surface::Facet, true);
-    AddBox(model.Node(prefix + "_tube"), {place.x - 0.9, place.y - 0.9, TUBE_START_WU},
-           {place.x + 0.9, place.y + 0.9, TUBE_START_WU + TUBE_LENGTH_WU + BRAKE_LENGTH_WU}, {}, Surface::Facet, true);
+    AddBox(model.Node(prefix + "_tube"), {place.x - BRAKE_RADIUS_WU, place.y - BRAKE_RADIUS_WU, TUBE_START_WU},
+           {place.x + BRAKE_RADIUS_WU, place.y + BRAKE_RADIUS_WU, TUBE_START_WU + TUBE_LENGTH_WU + BRAKE_LENGTH_WU}, {}, Surface::Facet,
+           true);
   }
   return model;
 }
 
-// The turret round (R-BLDG-420) and the casing it ejects (R-BLDG-418), both along +z.
+// The turret round (R-BLDG-420): a brass body with a driving band, a dark two-stage ogive and a glowing tracer at its
+// base so a shot reads in flight; and the casing it ejects (R-BLDG-418), with a dark rim and a necked mouth. Both along
+// +z.
 MeshModel TurretRound()
 {
   MeshModel model{"TurretRound.cmo", {}, {}, false};
   ModelNode& round = model.Node("turret_round");
   AddFrustum(round, {.base = {0.0, 0.0, -1.0},
                      .axis = Axis::Forward,
-                     .sides = 6,
+                     .sides = 8,
                      .baseRadius = 0.35,
                      .topRadius = 0.35,
-                     .length = 2.0,
+                     .length = 1.6,
                      .baseCap = true,
                      .topCap = false,
                      .color = BRASS,
                      .capColor = BRASS});
-  AddFrustum(round, {.base = {0.0, 0.0, 1.0},
+  AddFrustum(round, {.base = {0.0, 0.0, 0.15},
                      .axis = Axis::Forward,
-                     .sides = 6,
+                     .sides = 8,
+                     .baseRadius = 0.39,
+                     .topRadius = 0.39,
+                     .length = 0.25,
+                     .baseCap = true,
+                     .color = BRASS_DARK,
+                     .capColor = BRASS_DARK});
+  AddFrustum(round, {.base = {0.0, 0.0, 0.6},
+                     .axis = Axis::Forward,
+                     .sides = 8,
                      .baseRadius = 0.35,
+                     .topRadius = 0.24,
+                     .length = 0.6,
+                     .topCap = false,
+                     .color = METAL_DARK,
+                     .capColor = METAL_DARK});
+  AddFrustum(round, {.base = {0.0, 0.0, 1.2},
+                     .axis = Axis::Forward,
+                     .sides = 8,
+                     .baseRadius = 0.24,
                      .topRadius = 0.0,
-                     .length = 0.8,
-                     .color = BRASS,
-                     .capColor = BRASS});
+                     .length = 0.6,
+                     .color = METAL_DARK,
+                     .capColor = METAL_DARK});
+  AddFrustum(round, {.base = {0.0, 0.0, -1.15},
+                     .axis = Axis::Forward,
+                     .sides = 8,
+                     .baseRadius = 0.28,
+                     .topRadius = 0.28,
+                     .length = 0.15,
+                     .baseCap = true,
+                     .topCap = false,
+                     .color = LANTERN,
+                     .capColor = LANTERN,
+                     .surface = Surface::Unlit});
   return model;
 }
 
 MeshModel ShellCasing()
 {
   MeshModel model{"ShellCasing.cmo", {}, {}, false};
-  AddFrustum(model.Node("shell_casing"), {.base = {0.0, 0.0, -0.6},
-                                          .axis = Axis::Forward,
-                                          .sides = 8,
-                                          .baseRadius = 0.3,
-                                          .topRadius = 0.3,
-                                          .length = 1.2,
-                                          .baseCap = true,
-                                          .color = BRASS_DARK,
-                                          .capColor = BRASS_DARK});
+  ModelNode& casing = model.Node("shell_casing");
+  AddFrustum(casing, {.base = {0.0, 0.0, -0.6},
+                      .axis = Axis::Forward,
+                      .sides = 8,
+                      .baseRadius = 0.36,
+                      .topRadius = 0.36,
+                      .length = 0.1,
+                      .baseCap = true,
+                      .color = METAL_DARK,
+                      .capColor = METAL_DARK});
+  AddFrustum(casing, {.base = {0.0, 0.0, -0.5},
+                      .axis = Axis::Forward,
+                      .sides = 8,
+                      .baseRadius = 0.3,
+                      .topRadius = 0.3,
+                      .length = 0.9,
+                      .topCap = false,
+                      .color = BRASS,
+                      .capColor = BRASS});
+  AddFrustum(casing, {.base = {0.0, 0.0, 0.4},
+                      .axis = Axis::Forward,
+                      .sides = 8,
+                      .baseRadius = 0.3,
+                      .topRadius = 0.22,
+                      .length = 0.2,
+                      .color = BRASS_DARK,
+                      .capColor = BRASS_DARK});
   return model;
 }
 
