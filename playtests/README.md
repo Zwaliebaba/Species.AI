@@ -13,6 +13,7 @@ The evidence that the MVP's playtests produce (`Design/implementation/mvp_scope.
 | `M2.md`, the owner's growth run | the growth of the steward's own world, read from the server's statistics in its newest snapshot and judged as the growth scene is (ADR-156) | by `Build/RunPerformance.py --saved-world`, after each session of the growth run |
 | `M3.md`, the valley run | the valley run of phase A: every settlement of a valley driven by a policy for a run, on a corpus of seeds, judged against Playtest 1's measurable lines (ADR-164) | by `Build/RunPerformance.py --valley`, after a change that may move the lines |
 | `M4.md`, the link run | the link scene over `QuicTransport` through the link simulator for 30 minutes with a rejoin, judged against the transport's confirmations (ADR-189) | by `Build/RunPerformance.py --link`, on the reference test machine |
+| `M4.md`, the away run | each always-on valley of a corpus of seeds played for its run at PIL-102's typical and check-in patterns, judged against Playtest 2's measurable lines (ADR-190) | by `Build/RunPerformance.py --away`, before Playtest 2 and after a change that may move the lines |
 
 ## The session log
 

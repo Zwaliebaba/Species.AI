@@ -12,6 +12,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AwayScene.h">
+      <Filter>Scenes</Filter>
+    </ClInclude>
     <ClInclude Include="GenerationScene.h">
       <Filter>Scenes</Filter>
     </ClInclude>
@@ -40,6 +43,9 @@
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>
+    </ClCompile>
+    <ClCompile Include="AwayScene.cpp">
+      <Filter>Scenes</Filter>
     </ClCompile>
     <ClCompile Include="GenerationScene.cpp">
       <Filter>Scenes</Filter>

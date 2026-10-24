@@ -6,6 +6,7 @@ reference test machine.
   python Build/RunPerformance.py --saved-world <world folder> [--skip-build] [--tool <SpeciesPerformance.exe>] [--record <file>]
   python Build/RunPerformance.py --valley [--skip-build] [--tool <SpeciesPerformance.exe>] [--record <file>] [--quick]
   python Build/RunPerformance.py --link [--skip-build] [--tool <SpeciesPerformance.exe>] [--record <file>] [--quick]
+  python Build/RunPerformance.py --away [--skip-build] [--tool <SpeciesPerformance.exe>] [--record <file>] [--quick]
   python Build/RunPerformance.py --self-test --tool <SpeciesPerformance.exe> [--bench <SpeciesFrameBench.exe> --warp]
 
 --tuning-source <GameData> makes the tool read the authored tuning record instead of the cooked one beside it, for a
@@ -46,6 +47,9 @@ run alone (M4 task T11, ADR-189): the link scene's 30 minutes over QuicTransport
 (Tools/LinkSimulator, ADR-088 item 7) at 10 % loss each way, a 150 ms round trip and 5 % reordering, with a rejoin at
 minute 20, judged against the transport's confirmations (ADR-086, ADR-088, ADR-089) and recorded in playtests/M4.md
 unless --record names another file; it fails (exit code 1) when a line is missed, and neither reads nor pins the machine.
+--away runs the away run alone (M4 task T12, ADR-190): each always-on valley of the corpus played for its run at PIL-102's
+typical and check-in patterns, judged against Playtest 2's measurable lines and recorded in playtests/M4.md unless
+--record names another file; it fails (exit code 1) when a line is missed, and neither reads nor pins the machine.
 --self-test is CI's: it runs the given tool with --quick, and the bench too when one is given (--warp draws it on the
 WARP adapter), the link simulator's own test and a quick link run through it, then proves the record's rules on
 fixtures in a temporary folder, and writes nothing into the checkout.
@@ -78,6 +82,15 @@ LINK_FREEZE_TICKS = 2
 LINK_OVERHEAD_BYTES = 73.25
 LINK_OVERHEAD_TOLERANCE_BYTES = 5.0
 LINK_REJOIN_SECONDS = 10.0
+AWAY_SECTION = '## The away run'
+# Playtest 2's measurable lines (the MVP scope's table 6), as ADR-190 reads them: PIL-022's absence of
+# pil.session.away_short_hours or more with an attack, its strength back within pil.guard.regain_days; and PIL-023's
+# guard, the typical pattern's growth against the check-in pattern's, reported against pil.guard.presence_gain_share and
+# pil.guard.check_in_floor_share.
+AWAY_SHORT_HOURS = 8.0
+AWAY_REGAIN_DAYS = 2.0
+AWAY_PRESENCE_GAIN = 1.25
+AWAY_CHECK_IN_FLOOR = 0.70
 CONFIGURATION = 'Release'
 PLATFORM = 'x64'  # O100: the reference test machine is an x64 PC, in place of O69's ARM64 development build
 
@@ -801,6 +814,98 @@ def record_link(path, result, build_id, when):
   return 0 if all(status != 'missed' for _, _, _, status in rows) else 1
 
 
+def away_growth(run):
+  """The steward's strength gained per world day over the run, and the AI settlements' mean, in resource units."""
+  days = max(run['hours'] / 24.0, 1e-9)
+  return ((run['steward_strength'][-1] - run['steward_strength'][0]) / days, (run['ai_strength'][-1] - run['ai_strength'][0]) / days)
+
+
+def away_rows(result):
+  """ADR-190: the away run against Playtest 2's measurable lines (the MVP scope's table 6), as (figure, measured, target,
+  result). An absence is [from hour, to hour, battles defended, deputy actions, strength before, strength after, hour
+  regained or None]."""
+  runs = result.get('away') or []
+  rows = []
+  for run in runs:
+    attacked = [a for a in run['absences'] if a[2] > 0]
+    steward, ai = away_growth(run)
+    rows.append((f'seed {run["seed"]}, the {run["pattern"].replace("_", "-")} pattern',
+                 f'{run["hours"] / 24.0:.1f} world days; strength {run["steward_strength"][0]:.0f} to {run["steward_strength"][-1]:.0f} '
+                 f'({steward:+.1f} a day, the AI settlements {ai:+.1f}); Workers {run["steward_workers"][-1]}; '
+                 f'{run["steward_battles"]} of the steward\'s battles; {len(run["absences"])} absences, {len(attacked)} with an attack, '
+                 f'{sum(a[3] for a in run["absences"])} deputy actions', '—', 'reported'))
+  if not runs:
+    return rows
+
+  def met(ok):
+    return 'met' if ok else 'missed'
+
+  # PIL-022 at the typical pattern: every absence of 8 hours or more with an attack, its strength back within 2 days of
+  # the return; one not back with fewer than 2 days of the run left is open and not judged.
+  judged, regains, still_open = [], [], 0
+  for run in runs:
+    if run['pattern'] != 'typical':
+      continue
+    for start, end, battles, _, _, _, regained in run['absences']:
+      if battles == 0 or end - start < AWAY_SHORT_HOURS:
+        continue
+      if regained is None and run['hours'] - end < AWAY_REGAIN_DAYS * 24.0:
+        still_open += 1
+        continue
+      judged.append(regained)
+      if regained is not None:
+        regains.append((regained - end) / 24.0)
+  never = sum(1 for r in judged if r is None)
+  longest = max(regains, default=0.0)
+  rows.append(('after an absence of 8 hours or more with an attack, world days back to the strength before it (the typical pattern)',
+               'no such absence' if not judged else
+               f'the longest {longest:.2f} days over {len(judged)} absences, {never} never back' +
+               (f'; {still_open} still open at the run\'s end' if still_open else ''),
+               f'at most {AWAY_REGAIN_DAYS:g} world days', met(bool(judged) and never == 0 and longest <= AWAY_REGAIN_DAYS)))
+  # PIL-023, as Playtest 2 reads it: the typical pattern's growth against the check-in pattern's, seed by seed.
+  pairs = []
+  for run in runs:
+    if run['pattern'] != 'typical':
+      continue
+    other = next((r for r in runs if r['seed'] == run['seed'] and r['pattern'] == 'check_in'), None)
+    if other is not None:
+      pairs.append((away_growth(run)[0], away_growth(other)[0]))
+  more = sum(1 for typical, check_in in pairs if typical > check_in)
+  ratios = [typical / check_in for typical, check_in in pairs if check_in > 0]
+  mean_ratio = sum(ratios) / len(ratios) if ratios else None
+  rows.append(('the steward\'s growth per world day, the typical pattern against the check-in pattern',
+               f'more on {more} of {len(pairs)} seeds' + (f', {mean_ratio:.2f} times on average' if mean_ratio is not None else ''),
+               'more on every seed', met(bool(pairs) and more == len(pairs))))
+  rows.append(('PIL-023\'s guard: the typical pattern at least 25 % more, and the check-in pattern at least 70 % of it',
+               'no pair' if mean_ratio is None else f'{mean_ratio:.2f} times; the check-in pattern {1.0 / mean_ratio * 100:.0f} %',
+               f'{AWAY_PRESENCE_GAIN:g} times; {AWAY_CHECK_IN_FLOOR * 100:.0f} %', 'reported'))
+  return rows
+
+
+def record_away(path, result, build_id, when):
+  """Writes the away run into the record's section of its own; returns 0 when every line is met, 1 otherwise."""
+  text = open(path, encoding='utf-8').read() if os.path.exists(path) else f'# {os.path.splitext(os.path.basename(path))[0]}\n'
+  if AWAY_SECTION not in text:
+    text = text.rstrip('\n') + (f'\n\n{AWAY_SECTION}\n\nWritten by `Build/RunPerformance.py --away` (ADR-190): each always-on valley of the '
+                                'corpus played for its run at PIL-102\'s typical and check-in patterns, read against Playtest 2\'s '
+                                'measurable lines (the MVP scope\'s table 6).\n')
+  rows = away_rows(result)
+  table = '\n'.join(f'| {figure} | {measured} | {target} | {status} |' for figure, measured, target, status in rows)
+  seeds = sorted({run['seed'] for run in result['away']})
+  section = (f'### Seeds {seeds[0]} to {seeds[-1]}, run {when}, build {build_id}, {result["configuration"]}|{result["platform"]}\n\n'
+             f'| Figure | Measured | Target | Result |\n|---|---|---|---|\n{table}\n')
+  head, marker, rest = text.partition(AWAY_SECTION)
+  following = rest.find('\n## ')
+  if following < 0:
+    text = text.rstrip('\n') + '\n\n' + section
+  else:
+    text = head + marker + rest[:following].rstrip('\n') + '\n\n' + section + rest[following:]
+  with open(path, 'w', encoding='utf-8', newline='\n') as f:
+    f.write(text)
+  print(f'RunPerformance: the away run recorded in {shown(path)}')
+  return 0 if all(status != 'missed' for _, _, _, status in rows) else 1
+
+
 def run_bench(bench, quick, out, warp=False):
   args = [bench, '--out', out] + (['--quick'] if quick else []) + (['--warp'] if warp else [])
   completed = subprocess.run(args, capture_output=True, text=True)
@@ -964,6 +1069,33 @@ def self_test(tool, tuning_source, bench=None, warp=False):
               record_link(link_path, heavy, 'fixture', 'third') == 1 and record_link(link_path, slow_rejoin, 'fixture', 'fourth') == 1 and
               record_link(link_path, unequal, 'fixture', 'fifth') == 1)
 
+    # ADR-190: the quick away run plays both patterns, and the away run's lines and record.
+    away_quick = run_tool(tool, True, os.path.join(folder, 'away.json'), tuning_source, 'away')
+    away_path = os.path.join(folder, 'M4-away.md')
+
+    def away_judged():
+      def run(pattern, strengths, absences):
+        return {'seed': 1, 'pattern': pattern, 'ticks': 1920, 'hours': 192.0, 'steward_site': 0, 'steward_battles': 2, 'run_ended': True,
+                'mean_step_us': 1.0, 'steward_strength': strengths, 'ai_strength': [400.0, 900.0], 'steward_workers': [20, 60],
+                'absences': absences}
+      night = [12.0, 23.0, 1, 3, 800.0, 600.0, 40.0]
+      good = dict(away_quick, away=[run('typical', [400.0, 1200.0], [night]), run('check_in', [400.0, 900.0], [])])
+      slow = dict(good, away=[run('typical', [400.0, 1200.0], [[12.0, 23.0, 1, 3, 800.0, 600.0, 90.0]]), good['away'][1]])
+      never = dict(good, away=[run('typical', [400.0, 1200.0], [[12.0, 23.0, 1, 3, 800.0, 600.0, None]]), good['away'][1]])
+      flat = dict(good, away=[good['away'][0], run('check_in', [400.0, 1300.0], [])])
+      unattacked = dict(good, away=[run('typical', [400.0, 1200.0], [[12.0, 23.0, 0, 0, 800.0, 790.0, 24.0]]), good['away'][1]])
+      late = dict(good, away=[run('typical', [400.0, 1200.0], [[150.0, 161.0, 1, 2, 900.0, 700.0, None]] + [night]), good['away'][1]])
+      rows = {figure: status for figure, _, _, status in away_rows(late)}
+      return (record_away(away_path, good, 'fixture', 'first') == 0 and record_away(away_path, slow, 'fixture', 'second') == 1 and
+              record_away(away_path, never, 'fixture', 'third') == 1 and record_away(away_path, flat, 'fixture', 'fourth') == 1 and
+              record_away(away_path, unattacked, 'fixture', 'fifth') == 1 and
+              rows['after an absence of 8 hours or more with an attack, world days back to the strength before it (the typical pattern)'] == 'met')
+
+    def away_recorded():
+      text = open(away_path, encoding='utf-8').read()
+      return (text.count(AWAY_SECTION) == 1 and text.index('run first') < text.index('run second') < text.index('run fifth') and
+              'the longest 0.71 days over 1 absences' in text and 'more on 1 of 1 seeds' in text)
+
     def link_recorded():
       text = open(link_path, encoding='utf-8').read()
       return (text.count(LINK_SECTION) == 1 and text.index('Run first') < text.index('Run second') < text.index('Run fifth') and
@@ -1064,6 +1196,10 @@ def self_test(tool, tuning_source, bench=None, warp=False):
       ('the quick link run joins, rejoins, answers and replays to the same hashes (ADR-189)', link_ran),
       ('the link run is judged against the transport\'s confirmations (ADR-189)', link_judged),
       ('the link run keeps its runs in its own section (ADR-189)', link_recorded),
+      ('the quick away run plays both patterns of its seed (ADR-190)',
+       lambda: sorted(run['pattern'] for run in away_quick['away']) == ['check_in', 'typical']),
+      ('the away run is judged against Playtest 2\'s lines (ADR-190)', away_judged),
+      ('the away run keeps its runs in its own section (ADR-190)', away_recorded),
       ('a rendered run at another size is not judged',
        lambda: record(path, reference, within, frames_like(frames, 25.0, (1280, 720)), 'fixture', 'small') == 0),
     ]
@@ -1084,10 +1220,11 @@ def main():
   parser.add_argument('--headless-only', action='store_true', help='run the headless scenes alone')
   parser.add_argument('--warp', action='store_true', help='with --self-test: draw the bench on the WARP adapter (a Debug build)')
   parser.add_argument('--record', help='the record to write (default: playtests/M1.md, playtests/M2.md with --saved-world, '
-                      'playtests/M3.md with --valley or playtests/M4.md with --link)')
+                      'playtests/M3.md with --valley or playtests/M4.md with --link or --away)')
   parser.add_argument('--saved-world', help='a saved world\'s folder: read its growth rather than run the scenes (ADR-156)')
   parser.add_argument('--valley', action='store_true', help='run the valley run alone and judge Playtest 1\'s lines (ADR-164)')
   parser.add_argument('--link', action='store_true', help='run the link run alone and judge the transport\'s confirmations (ADR-189)')
+  parser.add_argument('--away', action='store_true', help='run the away run alone and judge Playtest 2\'s lines (ADR-190)')
   parser.add_argument('--quick', action='store_true')
   parser.add_argument('--self-test', action='store_true')
   parser.add_argument('--tuning-source')
@@ -1113,6 +1250,15 @@ def main():
     if args.quick:
       return 0
     return record_saved_world(args.record or SAVED_WORLD_RECORD, saved, identity(), datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))
+  if args.away:
+    with tempfile.TemporaryDirectory() as folder:
+      result = run_tool(tool, args.quick, os.path.join(folder, 'away.json'), args.tuning_source, 'away')
+    for figure, measured, target, status in away_rows(result):
+      print(f'RunPerformance: the away run: {figure}: {measured} against {target}: {status}')
+    if args.quick:
+      print('RunPerformance: a quick run measures nothing and records nothing')
+      return 0
+    return record_away(args.record or LINK_RECORD, result, identity(), datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))
   if args.link:
     with tempfile.TemporaryDirectory() as folder:
       result = run_link(tool, args.quick, folder, args.tuning_source)

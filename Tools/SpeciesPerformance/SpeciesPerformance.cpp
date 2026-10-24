@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "AssetError.h"
+#include "AwayScene.h"
 #include "CommandJournal.h"
 #include "Development.h"
 #include "Files.h"
@@ -53,7 +54,9 @@
 // and, only when named, runs the valley run of the corpus, each settlement driven by a policy for a run, reporting
 // Playtest 1's measurable lines (ADR-164). From M4 task T11, the link scene, only when named, serves a valley over
 // QuicTransport to a client of its own, through the link simulator when --link-port names its port, and compares the
-// client's replica with the server's view after every tick (ADR-189).
+// client's replica with the server's view after every tick (ADR-189). From M4 task T12, the away run, only when named,
+// plays an always-on valley of the corpus at each of PIL-102's patterns for its run, the steward's settlement under its
+// scripted steward while present and its deputy while away, for Playtest 2's measurable lines (ADR-190).
 //
 //   SpeciesPerformance.exe [--quick] [--scenes <name,...>] [--out <file.json>] [--content <folder> | --tuning-source <GameData>]
 //   SpeciesPerformance.exe --saved-world <world folder> [--out <file.json>] [--content <folder> | --tuning-source <GameData>]
@@ -117,6 +120,12 @@ constexpr double SECONDS_PER_HOUR = 3600.0;
 constexpr std::uint64_t VALLEY_SEED_FIRST = 1;
 constexpr std::uint64_t VALLEY_SEED_COUNT = 8;
 constexpr std::uint64_t VALLEY_TICKS_QUICK = 600;
+
+// The away run's corpus (the M4 plan T12, ADR-190): the valleys of these seeds, each always-on world run at both
+// patterns for its run (MVP-060, 8 world days); the quick run takes the first seed's first 8,000 ticks.
+constexpr std::uint64_t AWAY_SEED_FIRST = 1;
+constexpr std::uint64_t AWAY_SEED_COUNT = 8;
+constexpr std::uint64_t AWAY_TICKS_QUICK = 8000;
 
 // The link scene (ADR-086, ADR-088, ADR-189): 30 minutes of the server's ticks with a rejoin at minute 20; the quick
 // run takes 30 seconds with a rejoin halfway.
@@ -664,6 +673,25 @@ int Run(const Options& _options)
       }
     }
   }
+  // M4 task T12 (ADR-190): the away run of the corpus at both patterns, only when named.
+  std::vector<Performance::AwayRun> away;
+  if (Named(_options, "away"))
+  {
+    const auto records = LoadRecords(_options);
+    if (!records)
+    {
+      Print(stderr, std::format("the structure records cannot be read: {}", records.error()));
+      return 1;
+    }
+    away = Performance::RunAways(AWAY_SEED_FIRST, _options.quick ? 1 : AWAY_SEED_COUNT, *tuning, *records,
+                                 _options.quick ? AWAY_TICKS_QUICK : 0);
+    for (const Performance::AwayRun& run : away)
+    {
+      Print(stdout, std::format("the away run of seed {} at the {} pattern: {} absences, {} of the steward's battles", run.seed,
+                                run.pattern == Performance::AwayPattern::Typical ? "typical" : "check-in", run.absences.size(),
+                                run.stewardBattles));
+    }
+  }
   // M4 task T11 (ADR-189): the session over QuicTransport, only when named.
   std::optional<Performance::LinkRun> link;
   if (Named(_options, "link"))
@@ -733,12 +761,13 @@ int Run(const Options& _options)
   const std::string json = std::format(
     "{{\n  \"tool\": \"{}\",\n  \"configuration\": \"{}\",\n  \"platform\": \"{}\",\n  \"quick\": {},\n"
     "  \"seed\": {},\n  \"tick_period_s\": {},\n  \"valley_path_factor\": {},\n  \"draw_ns\": {},\n  \"scenes\": [{}\n  ],\n"
-    "  \"travel\": {},\n  \"generation\": {},\n  \"growth\": {},\n  \"valley\": {},\n  \"link\": {},\n  \"snapshot\": {},\n"
+    "  \"travel\": {},\n  \"generation\": {},\n  \"growth\": {},\n  \"valley\": {},\n  \"link\": {},\n  \"away\": {},\n"
+    "  \"snapshot\": {},\n"
     "  \"log\": {}\n}}\n",
     PRODUCT_NAME, CONFIGURATION, PLATFORM, _options.quick ? "true" : "false", SCENE_SEED, tuning->ref.sim.tickPeriod,
     tuning->wld.travel.valleyPathFactor, drawNanoseconds ? std::format("{:.4f}", *drawNanoseconds) : std::string("null"), scenes,
     TravelJson(travel), GenerationJson(generation), GrowthJson(growth, tuning->ref.sim.tickPeriod), ValleyJson(valleys, *tuning),
-    link ? Performance::LinkJson(*link) : std::string("null"),
+    link ? Performance::LinkJson(*link) : std::string("null"), Performance::AwayJson(away, tuning->ref.sim.tickPeriod),
     snapshot ? std::format("{{\"bytes\": {}, \"encode_ms\": {:.3f}, \"save_ms\": {:.3f}}}", snapshot->bytes,
                            static_cast<double>(snapshot->encodeNanoseconds) / 1e6, static_cast<double>(snapshot->saveNanoseconds) / 1e6)
              : std::string("null"),
