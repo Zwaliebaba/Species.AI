@@ -99,6 +99,9 @@
     <ClInclude Include="TuningPresentation.h">
       <Filter>Records</Filter>
     </ClInclude>
+    <ClInclude Include="WorldPace.h">
+      <Filter>World</Filter>
+    </ClInclude>
     <ClInclude Include="WorldTerrain.h">
       <Filter>Messages</Filter>
     </ClInclude>
@@ -148,6 +151,9 @@
     </ClCompile>
     <ClCompile Include="Tuning.cpp">
       <Filter>Records</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldPace.cpp">
+      <Filter>World</Filter>
     </ClCompile>
     <ClCompile Include="WorldTerrain.cpp">
       <Filter>Messages</Filter>

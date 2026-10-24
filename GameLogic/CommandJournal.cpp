@@ -19,9 +19,11 @@ namespace
 
 // The journal's file version, raised with every change of its layout.
 // 2: the watched sandbox (O77); 3: the synthetic battle's figures (ADR-126); 4: the steward's site (ADR-130); 5: a
-// journal that starts from the snapshot of its first tick (ADR-137); 6: the AI settlements (ADR-157). A journal of
-// format 5 is read as one with no AI settlement (MVP-095).
-constexpr std::uint64_t JOURNAL_FORMAT = 6;
+// journal that starts from the snapshot of its first tick (ADR-137); 6: the AI settlements (ADR-157); 7: the world's
+// pace (ADR-180). A journal of format 5 is read as one with no AI settlement, and one of format 5 or 6 as a world at the
+// session pace (MVP-095).
+constexpr std::uint64_t JOURNAL_FORMAT = 7;
+constexpr std::uint64_t JOURNAL_FORMAT_WITHOUT_PACE = 6;
 constexpr std::uint64_t JOURNAL_FORMAT_WITHOUT_AI = 5;
 // A region's local sites are 0 to 3 (WLD-040).
 constexpr std::uint64_t LOCAL_SITE_MAX = 3;
@@ -69,6 +71,7 @@ std::unique_ptr<WorldSimulation> StartWorld(const WorldStart& _start, std::share
   desc.tuning = &_tuning;
   desc.worldSeed = _start.seed;
   desc.structures = _structures;
+  desc.pace = _start.pace;
   auto world = std::make_unique<WorldSimulation>(desc);
   if (_terrain)
   {
@@ -154,6 +157,7 @@ std::vector<std::byte> WriteJournal(const CommandJournal& _journal)
     writer.WriteBounded(_journal.start.stewardSite.value_or(0), LOCAL_SITE_MAX);
   }
   writer.WriteBounded(_journal.start.aiSettlements, LOCAL_SITE_MAX);
+  writer.WriteBounded(static_cast<std::uint64_t>(_journal.start.pace), WORLD_PACE_MAX);
   writer.WriteBool(_journal.restored);
   writer.WriteBounded(_journal.entries.size(), JOURNAL_ENTRIES_MAX);
   for (const JournalEntry& entry : _journal.entries)
@@ -172,7 +176,7 @@ std::optional<CommandJournal> ReadJournal(std::span<const std::byte> _bytes)
 {
   Neuron::BitReader reader(_bytes);
   const std::uint64_t format = reader.ReadBits(JOURNAL_FORMAT_BITS);
-  if (format != JOURNAL_FORMAT && format != JOURNAL_FORMAT_WITHOUT_AI)
+  if (format != JOURNAL_FORMAT && format != JOURNAL_FORMAT_WITHOUT_PACE && format != JOURNAL_FORMAT_WITHOUT_AI)
   {
     return std::nullopt;
   }
@@ -189,9 +193,13 @@ std::optional<CommandJournal> ReadJournal(std::span<const std::byte> _bytes)
   {
     journal.start.stewardSite = static_cast<std::uint8_t>(reader.ReadBounded(LOCAL_SITE_MAX));
   }
-  if (format == JOURNAL_FORMAT)
+  if (format >= JOURNAL_FORMAT_WITHOUT_PACE)
   {
     journal.start.aiSettlements = static_cast<std::uint8_t>(reader.ReadBounded(LOCAL_SITE_MAX));
+  }
+  if (format >= JOURNAL_FORMAT)
+  {
+    journal.start.pace = static_cast<WorldPace>(reader.ReadBounded(WORLD_PACE_MAX));
   }
   journal.restored = reader.ReadBool();
   const std::uint64_t entries = reader.ReadBounded(JOURNAL_ENTRIES_MAX);

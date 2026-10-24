@@ -44,6 +44,9 @@
     <ClCompile Include="TuningTests.cpp">
       <Filter>Records</Filter>
     </ClCompile>
+    <ClCompile Include="WorldPaceTests.cpp">
+      <Filter>Records</Filter>
+    </ClCompile>
     <ClCompile Include="WorldTerrainTests.cpp">
       <Filter>Messages</Filter>
     </ClCompile>

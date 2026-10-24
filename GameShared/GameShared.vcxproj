@@ -169,6 +169,7 @@
     <ClInclude Include="Tuning.h" />
     <ClInclude Include="TuningMvp.h" />
     <ClInclude Include="TuningPresentation.h" />
+    <ClInclude Include="WorldPace.h" />
     <ClInclude Include="WorldTerrain.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
@@ -187,6 +188,7 @@
     <ClCompile Include="StructureCost.cpp" />
     <ClCompile Include="StructureRecords.cpp" />
     <ClCompile Include="Tuning.cpp" />
+    <ClCompile Include="WorldPace.cpp" />
     <ClCompile Include="WorldTerrain.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
