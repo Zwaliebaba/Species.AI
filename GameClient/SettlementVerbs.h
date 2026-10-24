@@ -98,7 +98,7 @@ struct SettlementVerbResult
   std::vector<SettlementCommand> commands;
   bool tookPrimary = false;
   bool tookSecondary = false;
-  bool openAwayReport = false; // O110 (ADR-191): the press on the away report's button
+  bool openAwayReport = false; // O110 (ADR-192): the press on the away report's button
 };
 
 /// The client's settlement verbs (M2 task T17, ADR-153; MVP-032, MVP-036, MVP-101):
@@ -115,7 +115,7 @@ struct SettlementVerbResult
 ///   shows the attack with its cost and whether it is unprovoked, a second on the same button declares it, and the
 ///   secondary press, or any other press over the HUD, drops it. Their refusals are kept as a placement's is.
 /// - **Results** (M3 task T13, ADR-168). A press on the result card closes the result it shows.
-/// - **The away report** (O110, ADR-191). A press on the always-on row's button asks for the latest away report's page.
+/// - **The away report** (O110, ADR-192). A press on the always-on row's button asks for the latest away report's page.
 /// Nothing is sent while the client commands no settlement. Frame thread only.
 class SettlementVerbs
 {

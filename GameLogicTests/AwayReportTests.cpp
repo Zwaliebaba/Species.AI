@@ -112,7 +112,7 @@ public:
     return 0;
   }
 
-  // A sender of a test closes nothing: its server is given no identity, so it refuses no join (ADR-189).
+  // A sender of a test closes nothing: its server is given no identity, so it refuses no join (ADR-190).
   void Close(Neuron::ConnectionId /*_connection*/) override {}
 
   // The away reports sent to _connection since the last call.
@@ -156,7 +156,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp074TheReportSummarizesTheAbsenceFromTheRegionsRecords)
   {
-    // ADR-186: an absence in which site 3 raids the steward's settlement, its battle ends, the deputy orders the
+    // ADR-187: an absence in which site 3 raids the steward's settlement, its battle ends, the deputy orders the
     // settlement's Leader and the world freezes once. The report agrees with the battle's result, the absence's Workers,
     // stores and grievances, the world record and the deputy's actions.
     const std::unique_ptr<Species::WorldSimulation> world = ValleyWorld(SETTLED_TEST_KEY, FastTuning());
@@ -233,7 +233,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp074TheServerSendsTheReportOnAReturnWithNewsAndWhenAsked)
   {
-    // O110 (ADR-186): a return whose absence holds nothing sends no report; one whose absence holds a freeze sends it after
+    // O110 (ADR-187): a return whose absence holds nothing sends no report; one whose absence holds a freeze sends it after
     // its tick, marked as a return's; a request is answered after the next tick, unmarked, with the latest absence.
     Species::WorldServer::Desc desc;
     desc.tuning = CommittedTuning();

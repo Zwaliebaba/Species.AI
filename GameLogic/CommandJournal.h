@@ -23,7 +23,7 @@ namespace Species
 /// count, whether it is the sandbox of M1 (MVP-005), and whether that sandbox is watched (O77): an AI on each side, and
 /// a steward who commands none; or, for a world that is no sandbox, the site the steward's settlement is founded on
 /// (MVP-012, ADR-130), and how many AI settlements are founded at the other sites (MVP-013, ADR-157); and its pace,
-/// fixed for its life (PIL-104, ADR-183).
+/// fixed for its life (PIL-104, ADR-184).
 struct WorldStart
 {
   Neuron::SipHashKey key;
@@ -35,7 +35,7 @@ struct WorldStart
   std::uint32_t syntheticFigures = 0;      // ADR-126: a sandbox whose sides are a synthetic battle of this many figures; 0: none
   std::optional<std::uint8_t> stewardSite; // MVP-012: the local site of the steward's settlement; none: a world with none
   std::uint8_t aiSettlements = 0;          // MVP-013 (ADR-157): AI settlements at the other sites in site order, at most three
-  WorldPace pace = WorldPace::Session;     // PIL-104 (ADR-183)
+  WorldPace pace = WorldPace::Session;     // PIL-104 (ADR-184)
 };
 
 // A new world: made, its terrain attached to region 0 (ADR-102), and populated as the sandbox when it is one (M1 plan
@@ -52,7 +52,7 @@ struct WorldStart
 inline constexpr std::uint16_t JOURNAL_WORLD_OWNER = 0;
 
 /// One entry of the command journal (MVP-076): a steward's connection, which takes the next id of the world owner and,
-/// in the sandbox, commands the steward's side; a change of the steward's presence, away or back (MVP-072, ADR-184);
+/// in the sandbox, commands the steward's side; a change of the steward's presence, away or back (MVP-072, ADR-185);
 /// or a command that its owner's queue accepted, with the tick it executes in, its sender, its sequence number and its
 /// bytes.
 struct JournalEntry

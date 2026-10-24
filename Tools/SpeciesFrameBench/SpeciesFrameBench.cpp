@@ -520,7 +520,7 @@ SceneEnd RunScene(const Scene& _scene, const Options& _options, const Bench& _be
 {
   _result.name = std::string(_scene.name);
   const Species::TuningMvp& tuning = *_bench.tuning;
-  // ADR-189: the session joins its integrated server as Species.exe's does.
+  // ADR-190: the session joins its integrated server as Species.exe's does.
   const Species::JoinIdentity identity = Species::OwnJoinIdentity(_bench.content->Identity());
   Species::IntegratedServer::Desc serverDesc;
   serverDesc.clock = _bench.clock;

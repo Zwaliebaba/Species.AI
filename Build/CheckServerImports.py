@@ -9,7 +9,7 @@ one in the toolset that VCToolsInstallDir names. --listing checks a saved dumpbi
 Before the executable it runs its fixture: a listing that names d3d12.dll must be reported, and one that names only
 system libraries must not.
 
-From M4 task T11 (ADR-071, ADR-089, ADR-188, ADR-192) it also fails when the server imports msquic.dll, which the
+From M4 task T11 (ADR-071, ADR-089, ADR-189, ADR-193) it also fails when the server imports msquic.dll, which the
 transport loads itself at its first use and no project links, and, for a built executable, when the msquic.dll beside
 it, which every program of the folder loads, is not the pinned package's copy for its platform, byte for byte.
 """
@@ -78,7 +78,7 @@ def libraries(listing):
 def findings(listing):
   found = [f'imports {name}; the headless server links no presentation library (PLT-005, ADR-090)'
            for name in libraries(listing) if PRESENTATION_LIBRARY.match(name)]
-  found += [f'imports {name}; the transport loads it at its first use, and no project links it (ADR-188)'
+  found += [f'imports {name}; the transport loads it at its first use, and no project links it (ADR-189)'
             for name in libraries(listing) if name.lower() == 'msquic.dll']
   return found
 

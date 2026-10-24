@@ -108,7 +108,7 @@ AwayRun RunAway(std::uint64_t _seed, AwayPattern _pattern, const Species::Tuning
   start.seed = terrain->seed;
   start.stewardSite = run.stewardSite;
   start.aiSettlements = 3;
-  start.pace = Species::WorldPace::AlwaysOn; // PIL-104 (ADR-183): the world's values are the always-on pace's
+  start.pace = Species::WorldPace::AlwaysOn; // PIL-104 (ADR-184): the world's values are the always-on pace's
   std::unique_ptr<Species::WorldSimulation> world = Species::StartWorld(start, terrain, _tuning, &_records);
   Species::RegionSimulation& region = world->Region(0);
   const double tickSeconds = world->Tuning().ref.sim.tickPeriod;
@@ -135,7 +135,7 @@ AwayRun RunAway(std::uint64_t _seed, AwayPattern _pattern, const Species::Tuning
       const Species::Settlement* own = SettlementAt(region, run.stewardSite);
       run.stewardWorkers.push_back(own != nullptr ? Species::Population(region, *own) : 0);
     }
-    // MVP-072 (ADR-184): presence changes between ticks, as the world server applies them.
+    // MVP-072 (ADR-185): presence changes between ticks, as the world server applies them.
     if (const bool now = Present(_pattern, tick, tickSeconds); now != present)
     {
       present = now;

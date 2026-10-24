@@ -12,10 +12,10 @@ namespace Species
 
 class RegionSimulation;
 
-// A region of state version 20 and later holds its deputies (M4 task T4, ADR-185).
+// A region of state version 20 and later holds its deputies (M4 task T4, ADR-186).
 inline constexpr std::uint32_t STATE_VERSION_WITH_DEPUTIES = 20;
 
-/// MVP-073 (ADR-185): the deputy of the stewarded settlement of team `team`, made the first time its steward goes away
+/// MVP-073 (ADR-186): the deputy of the stewarded settlement of team `team`, made the first time its steward goes away
 /// and kept: its sender id, a stable id of the region, and its commands' sequence numbers. It commands only while its
 /// settlement's steward is away (PIL-071), and only AI commands for its Leaders.
 struct Deputy
@@ -30,11 +30,11 @@ struct Deputy
 // The deputy of the settlement of _team, or null before its steward was first away.
 [[nodiscard]] const Deputy* DeputyOf(const RegionSimulation& _region, std::uint8_t _team) noexcept;
 
-// MVP-073 (ADR-185): _sender is the deputy of a settlement whose steward is away, and _team is that settlement's or its
+// MVP-073 (ADR-186): _sender is the deputy of a settlement whose steward is away, and _team is that settlement's or its
 // expedition's team (PIL-043).
 [[nodiscard]] bool DeputyMayCommand(const RegionSimulation& _region, Neuron::SenderId _sender, std::uint8_t _team) noexcept;
 
-// At the end of the region's tick, after its AIs and scripted stewards (ADR-185): while its settlement's steward is
+// At the end of the region's tick, after its AIs and scripted stewards (ADR-186): while its settlement's steward is
 // away, each tick, each live Leader of each side its settlement has in a battle in progress, the
 // settlement's own as a defender and its expedition's as an attacker (O110), that is not yet in formation on its way to
 // the battle's objective is sent there in formation, each such order a deputy action of its absence with the standing

@@ -12,7 +12,7 @@ An always-on world runs while its steward's client is closed (MVP-071, PIL-104).
 - it runs in a console window of its own, and closing the window stops it;
 - one always-on world runs at a time.
 
-The client starts the server when the world is not running, connects to it over `QuicTransport` (ADR-188), and leaves it running when it leaves.
+The client starts the server when the world is not running, connects to it over `QuicTransport` (ADR-189), and leaves it running when it leaves.
 
 Until now the headless server ran the battle sandbox or a Debug `--world`, with no listener and no saves, and the world's description (`world.txt`) belonged to the client.
 
@@ -22,9 +22,9 @@ How does the server find its world, how does the client find the server, how is 
 
 * The steward never types a port or a path: the client starts and finds the server (O110).
 * One always-on world at a time, kept by the system rather than by a file that a crash leaves behind.
-* Closing the console freezes the world cleanly (ADR-100, ADR-187).
+* Closing the console freezes the world cleanly (ADR-100, ADR-188).
 * The platform layer is the only code that reaches the system (PLT-003, ADR-083 item 1).
-* A server of another build is not used (ADR-189).
+* A server of another build is not used (ADR-190).
 
 ## Considered Options
 
@@ -51,8 +51,8 @@ What is built:
 * **The server** (`SpeciesServer.exe --always-on-world <folder>`):
   1. takes `ALWAYS_ON_LOCK` or refuses to start, since another always-on world runs;
   2. reads the folder's description, which must be at the always-on pace, and makes its stop signal;
-  3. opens its certificate (`Species server`, ADR-188) and listens on the loopback interface on a port the system chooses;
-  4. runs the world at the always-on pace with its identity (ADR-189). A folder with snapshots is continued or not run (`restoreOnly`, ADR-155); one without is a new world from the description's seed, site and AI settlements;
+  3. opens its certificate (`Species server`, ADR-189) and listens on the loopback interface on a port the system chooses;
+  4. runs the world at the always-on pace with its identity (ADR-190). A folder with snapshots is continued or not run (`restoreOnly`, ADR-155); one without is a new world from the description's seed, site and AI settlements;
   5. writes the listing `server.txt`: the port, the certificate's fingerprint, the build's stamp and its process id.
   
   It then runs until its console closes or a client raises the stop signal, which a thread of its own turns into a console stop. It removes the listing and freezes the world. Every refusal is printed in its console and logged.
@@ -100,5 +100,5 @@ What is built:
 ## More Information
 
 * Owner decisions O54, O109, O110; MVP-071, MVP-075, MVP-103, PLT-003; the [M4 plan](../implementation/m4_plan.md), task T9.
-* Amends [ADR-100](ADR-100-headless-server-program.md) (the always-on mode), [ADR-155](ADR-155-the-front-end-and-saved-worlds-at-m2.md) (the description's pace, `WorldSaves` in GameShared, Continue of a running world) and [ADR-188](ADR-188-the-quic-transport-and-the-servers-certificate.md) (the server's certificate name).
+* Amends [ADR-100](ADR-100-headless-server-program.md) (the always-on mode), [ADR-155](ADR-155-the-front-end-and-saved-worlds-at-m2.md) (the description's pace, `WorldSaves` in GameShared, Continue of a running world) and [ADR-189](ADR-189-the-quic-transport-and-the-servers-certificate.md) (the server's certificate name).
 * The code: `NeuronCore/InstanceLock`, `NeuronCore/ProgramStart`, `NeuronCore/ConsoleStop`, `NeuronCore/StartupOptions`, `GameShared/AlwaysOnServer`, `GameShared/WorldSaves`, `GameClient/AlwaysOnClient`, `SpeciesServer/SpeciesServer.cpp`, `Species/Species.cpp`.

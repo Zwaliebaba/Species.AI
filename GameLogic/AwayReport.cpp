@@ -85,7 +85,7 @@ AwayReport AwayReportOf(const WorldSimulation& _world, std::uint8_t _team, std::
     }
   }
   std::ranges::stable_sort(report.claims, {}, &AwayClaimLine::tick);
-  // MVP-051: the grievances recorded for or against it (ADR-186).
+  // MVP-051: the grievances recorded for or against it (ADR-187).
   for (const AbsenceGrievance& grievance : absence->grievances)
   {
     if (report.grievances.size() < AWAY_GRIEVANCES_MAX)

@@ -56,11 +56,11 @@ enum class GameMessageType : Neuron::MessageTypeId
   Epilogue,
   // The steward's growth hold (O106, ADR-178).
   HoldGrowth,
-  // Away play (M4): the client's report of its steward's input (ADR-184), and the away report and its request (ADR-186).
+  // Away play (M4): the client's report of its steward's input (ADR-185), and the away report and its request (ADR-187).
   PresenceReport,
   ReadAwayReport,
   AwayReport,
-  // The handshake (M4 task T8, ADR-189): a client's join and the server's answer.
+  // The handshake (M4 task T8, ADR-190): a client's join and the server's answer.
   Join,
   JoinAnswer
 };

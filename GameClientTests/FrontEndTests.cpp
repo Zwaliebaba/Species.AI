@@ -206,7 +206,7 @@ public:
     Assert::IsTrue(choice.seed == std::optional<std::uint64_t>(42), L"from the seed typed");
     ExpectEqual(CommittedTuning().mvp.sandbox.stewardSite, choice.site, L"at the default site");
     ExpectEqual(3, choice.aiSettlements, L"O103: with the three AI settlements by default (MVP-013)");
-    Assert::IsTrue(choice.pace == Species::WorldPace::Session, L"ADR-190: at the session pace by default");
+    Assert::IsTrue(choice.pace == Species::WorldPace::Session, L"ADR-191: at the session pace by default");
 
     // An empty field draws the seed; one beyond 64 bits starts nothing.
     Neuron::UiWindow& window = *h.ui.Focused();
@@ -219,7 +219,7 @@ public:
     Assert::IsTrue(choice.kind == Species::FrontEndChoice::Kind::NewWorld && !choice.seed.has_value(), L"no seed: the server draws one");
     ExpectEqual((CommittedTuning().mvp.sandbox.stewardSite + 1) % 4, choice.site, L"at the site stepped to");
     ExpectEqual(0, choice.aiSettlements, L"O103: and alone, for M2's growth run");
-    Assert::IsTrue(choice.pace == Species::WorldPace::AlwaysOn, L"ADR-190: always on, as stepped to");
+    Assert::IsTrue(choice.pace == Species::WorldPace::AlwaysOn, L"ADR-191: always on, as stepped to");
     window.SetValue(window.Find("seed"), "18446744073709551616");
     h.Click("start");
     Assert::IsFalse(h.frontEnd.TakeChoice().has_value(), L"a seed beyond 64 bits starts nothing");

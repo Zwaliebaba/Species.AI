@@ -38,7 +38,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp071AJoinAndItsAnswerRoundTripAtTheirBounds)
   {
-    // ADR-189: the join carries the protocol, the build and the content; the answer the refusal and the server's own.
+    // ADR-190: the join carries the protocol, the build and the content; the answer the refusal and the server's own.
     const Species::JoinIdentity client = IdentityOf(0x11, 0x22);
     const std::vector<std::byte> join = Neuron::EncodeMessage(Species::JoinCommand{client});
     ExpectEqual(static_cast<std::int64_t>(Species::JoinCommand::MAX_BYTES), static_cast<std::int64_t>(join.size()),
@@ -82,7 +82,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp071AJoinIsRefusedForItsFirstDifference)
   {
-    // ADR-189: the protocol is compared first, then the build, then the content.
+    // ADR-190: the protocol is compared first, then the build, then the content.
     const Species::JoinIdentity server = IdentityOf(1, 2);
     Assert::IsTrue(Species::JoinRefusalOf(server, server) == Species::JoinRefusal::None, L"the same identity joins");
     Species::JoinIdentity other = IdentityOf(3, 4);

@@ -43,11 +43,11 @@ machine is neither read nor pinned for it. --valley runs the valley run alone (M
 each valley's four settlements driven by a policy for a run, judged against Playtest 1's measurable lines and recorded
 in playtests/M3.md unless --record names another file; it fails (exit code 1) when a line is missed, and neither reads
 nor pins the machine, since a valley run's figures are the simulation's, not the machine's speed. --link runs the link
-run alone (M4 task T11, ADR-192): the link scene's 30 minutes over QuicTransport through the link simulator
+run alone (M4 task T11, ADR-193): the link scene's 30 minutes over QuicTransport through the link simulator
 (Tools/LinkSimulator, ADR-088 item 7) at 10 % loss each way, a 150 ms round trip and 5 % reordering, with a rejoin at
 minute 20, judged against the transport's confirmations (ADR-086, ADR-088, ADR-089) and recorded in playtests/M4.md
 unless --record names another file; it fails (exit code 1) when a line is missed, and neither reads nor pins the machine.
---away runs the away run alone (M4 task T12, ADR-193): each always-on valley of the corpus played for its run at PIL-102's
+--away runs the away run alone (M4 task T12, ADR-194): each always-on valley of the corpus played for its run at PIL-102's
 typical and check-in patterns, judged against Playtest 2's measurable lines and recorded in playtests/M4.md unless
 --record names another file; it fails (exit code 1) when a line is missed, and neither reads nor pins the machine.
 --self-test is CI's: it runs the given tool with --quick, and the bench too when one is given (--warp draws it on the
@@ -72,10 +72,10 @@ SAVED_WORLD_RECORD = os.path.join(ROOT, 'playtests', 'M2.md')  # ADR-156: the ow
 SAVED_WORLD_SECTION = "## The owner's growth run"
 VALLEY_RECORD = os.path.join(ROOT, 'playtests', 'M3.md')  # ADR-164: the valley run predicts Playtest 1's measured lines
 VALLEY_SECTION = '## The valley run'
-LINK_RECORD = os.path.join(ROOT, 'playtests', 'M4.md')  # ADR-192: the transport's confirmations are M4's evidence
+LINK_RECORD = os.path.join(ROOT, 'playtests', 'M4.md')  # ADR-193: the transport's confirmations are M4's evidence
 LINK_SECTION = '## The link run'
 LINK_SIMULATOR = os.path.join(ROOT, 'Tools', 'LinkSimulator', 'LinkSimulator.py')
-# ADR-086 and ADR-088's confirmations at M4, as ADR-192 measures them: a figure frozen at most 2 ticks over one lost
+# ADR-086 and ADR-088's confirmations at M4, as ADR-193 measures them: a figure frozen at most 2 ticks over one lost
 # datagram; the overhead per state datagram within 5 bytes of ADR-088 item 3's 69 bytes on IPv4 with ADR-111's header
 # (the 3-byte message header and the 10-bit record count on top of the 8 bytes item 3 counts); a rejoin within 10 s.
 LINK_FREEZE_TICKS = 2
@@ -83,7 +83,7 @@ LINK_OVERHEAD_BYTES = 73.25
 LINK_OVERHEAD_TOLERANCE_BYTES = 5.0
 LINK_REJOIN_SECONDS = 10.0
 AWAY_SECTION = '## The away run'
-# Playtest 2's measurable lines (the MVP scope's table 6), as ADR-193 reads them: PIL-022's absence of
+# Playtest 2's measurable lines (the MVP scope's table 6), as ADR-194 reads them: PIL-022's absence of
 # pil.session.away_short_hours or more with an attack, its strength back within pil.guard.regain_days; and PIL-023's
 # guard, the typical pattern's growth against the check-in pattern's, reported against pil.guard.presence_gain_share and
 # pil.guard.check_in_floor_share.
@@ -718,7 +718,7 @@ def free_udp_port(taken=()):
 
 
 def run_link(tool, quick, folder, tuning_source=None):
-  """ADR-192: the link scene through the link simulator at its default link, on two free loopback ports; the result
+  """ADR-193: the link scene through the link simulator at its default link, on two free loopback ports; the result
   carries the simulator's figures as link_simulator."""
   server_port = free_udp_port()
   link_port = free_udp_port((server_port,))
@@ -738,7 +738,7 @@ def run_link(tool, quick, folder, tuning_source=None):
 
 
 def link_rows(result):
-  """ADR-192: the link run against the transport's confirmations (ADR-086, ADR-088, ADR-089), as (figure, measured,
+  """ADR-193: the link run against the transport's confirmations (ADR-086, ADR-088, ADR-089), as (figure, measured,
   target, result)."""
   link = result['link']
   window = link['window']
@@ -795,7 +795,7 @@ def record_link(path, result, build_id, when):
   """Writes the link run into the record's section of its own; returns 0 when every line is met, 1 otherwise."""
   text = open(path, encoding='utf-8').read() if os.path.exists(path) else f'# {os.path.splitext(os.path.basename(path))[0]}\n'
   if LINK_SECTION not in text:
-    text = text.rstrip('\n') + (f'\n\n{LINK_SECTION}\n\nWritten by `Build/RunPerformance.py --link` (ADR-192): the link scene over '
+    text = text.rstrip('\n') + (f'\n\n{LINK_SECTION}\n\nWritten by `Build/RunPerformance.py --link` (ADR-193): the link scene over '
                                 'QuicTransport through the link simulator, read against the transport\'s confirmations of '
                                 'ADR-086, ADR-088 and ADR-089.\n')
   rows = link_rows(result)
@@ -821,7 +821,7 @@ def away_growth(run):
 
 
 def away_rows(result):
-  """ADR-193: the away run against Playtest 2's measurable lines (the MVP scope's table 6), as (figure, measured, target,
+  """ADR-194: the away run against Playtest 2's measurable lines (the MVP scope's table 6), as (figure, measured, target,
   result). An absence is [from hour, to hour, battles defended, deputy actions, strength before, strength after, hour
   regained or None]."""
   runs = result.get('away') or []
@@ -886,7 +886,7 @@ def record_away(path, result, build_id, when):
   """Writes the away run into the record's section of its own; returns 0 when every line is met, 1 otherwise."""
   text = open(path, encoding='utf-8').read() if os.path.exists(path) else f'# {os.path.splitext(os.path.basename(path))[0]}\n'
   if AWAY_SECTION not in text:
-    text = text.rstrip('\n') + (f'\n\n{AWAY_SECTION}\n\nWritten by `Build/RunPerformance.py --away` (ADR-193): each always-on valley of the '
+    text = text.rstrip('\n') + (f'\n\n{AWAY_SECTION}\n\nWritten by `Build/RunPerformance.py --away` (ADR-194): each always-on valley of the '
                                 'corpus played for its run at PIL-102\'s typical and check-in patterns, read against Playtest 2\'s '
                                 'measurable lines (the MVP scope\'s table 6).\n')
   rows = away_rows(result)
@@ -1042,7 +1042,7 @@ def self_test(tool, tuning_source, bench=None, warp=False):
       return (text.count(VALLEY_SECTION) == 1 and text.index('Seeds 1 to 1, run first') < text.index('Seeds 1 to 2, run second') and
               '2 of 2 claims' in text and '3 to 5' in text)
 
-    # ADR-192: the link simulator's own test, then a quick link run through it, and the link run's lines and record.
+    # ADR-193: the link simulator's own test, then a quick link run through it, and the link run's lines and record.
     simulated = subprocess.run([sys.executable, LINK_SIMULATOR, '--self-test'], capture_output=True, text=True)
     print(simulated.stdout.strip() or simulated.stderr.strip())
     link_quick = run_link(tool, True, folder, tuning_source)
@@ -1069,7 +1069,7 @@ def self_test(tool, tuning_source, bench=None, warp=False):
               record_link(link_path, heavy, 'fixture', 'third') == 1 and record_link(link_path, slow_rejoin, 'fixture', 'fourth') == 1 and
               record_link(link_path, unequal, 'fixture', 'fifth') == 1)
 
-    # ADR-193: the quick away run plays both patterns, and the away run's lines and record.
+    # ADR-194: the quick away run plays both patterns, and the away run's lines and record.
     away_quick = run_tool(tool, True, os.path.join(folder, 'away.json'), tuning_source, 'away')
     away_path = os.path.join(folder, 'M4-away.md')
 
@@ -1192,14 +1192,14 @@ def self_test(tool, tuning_source, bench=None, warp=False):
       ('the valley run is judged over its corpus and recorded (ADR-164)', valley_judged),
       ('the valley run keeps its runs in its own section (ADR-164)', valley_recorded),
       ('a rendered run reports the valley at war drawn (ADR-164)', lambda: recorded('the valley at war drawn (ADR-164)')),
-      ('the link simulator passes its own test (ADR-192)', lambda: simulated.returncode == 0),
-      ('the quick link run joins, rejoins, answers and replays to the same hashes (ADR-192)', link_ran),
-      ('the link run is judged against the transport\'s confirmations (ADR-192)', link_judged),
-      ('the link run keeps its runs in its own section (ADR-192)', link_recorded),
-      ('the quick away run plays both patterns of its seed (ADR-193)',
+      ('the link simulator passes its own test (ADR-193)', lambda: simulated.returncode == 0),
+      ('the quick link run joins, rejoins, answers and replays to the same hashes (ADR-193)', link_ran),
+      ('the link run is judged against the transport\'s confirmations (ADR-193)', link_judged),
+      ('the link run keeps its runs in its own section (ADR-193)', link_recorded),
+      ('the quick away run plays both patterns of its seed (ADR-194)',
        lambda: sorted(run['pattern'] for run in away_quick['away']) == ['check_in', 'typical']),
-      ('the away run is judged against Playtest 2\'s lines (ADR-193)', away_judged),
-      ('the away run keeps its runs in its own section (ADR-193)', away_recorded),
+      ('the away run is judged against Playtest 2\'s lines (ADR-194)', away_judged),
+      ('the away run keeps its runs in its own section (ADR-194)', away_recorded),
       ('a rendered run at another size is not judged',
        lambda: record(path, reference, within, frames_like(frames, 25.0, (1280, 720)), 'fixture', 'small') == 0),
     ]
@@ -1223,8 +1223,8 @@ def main():
                       'playtests/M3.md with --valley or playtests/M4.md with --link or --away)')
   parser.add_argument('--saved-world', help='a saved world\'s folder: read its growth rather than run the scenes (ADR-156)')
   parser.add_argument('--valley', action='store_true', help='run the valley run alone and judge Playtest 1\'s lines (ADR-164)')
-  parser.add_argument('--link', action='store_true', help='run the link run alone and judge the transport\'s confirmations (ADR-192)')
-  parser.add_argument('--away', action='store_true', help='run the away run alone and judge Playtest 2\'s lines (ADR-193)')
+  parser.add_argument('--link', action='store_true', help='run the link run alone and judge the transport\'s confirmations (ADR-193)')
+  parser.add_argument('--away', action='store_true', help='run the away run alone and judge Playtest 2\'s lines (ADR-194)')
   parser.add_argument('--quick', action='store_true')
   parser.add_argument('--self-test', action='store_true')
   parser.add_argument('--tuning-source')

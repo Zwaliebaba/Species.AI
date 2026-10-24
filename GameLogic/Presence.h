@@ -17,8 +17,8 @@ namespace Species
 class RegionSimulation;
 class WorldSimulation;
 
-// A region of state version 19 and later holds its absences (M4 task T3, ADR-184), and of version 21 and later each
-// absence's grievances (M4 task T5, ADR-186).
+// A region of state version 19 and later holds its absences (M4 task T3, ADR-185), and of version 21 and later each
+// absence's grievances (M4 task T5, ADR-187).
 inline constexpr std::uint32_t STATE_VERSION_WITH_ABSENCES = 19;
 inline constexpr std::uint32_t STATE_VERSION_WITH_ABSENCE_GRIEVANCES = 21;
 
@@ -38,7 +38,7 @@ struct DeputyAction
 // The most deputy actions an absence keeps; the ones beyond are counted, not kept (MVP-074's report lists what it keeps).
 inline constexpr std::uint64_t DEPUTY_ACTIONS_MAX = 4'096;
 
-/// MVP-074 (ADR-186): a grievance recorded while the absence lasted, held by the Cladan at site `holder` against the
+/// MVP-074 (ADR-187): a grievance recorded while the absence lasted, held by the Cladan at site `holder` against the
 /// settlement at site `against`, one of them the absent steward's: its tick and its cause.
 struct AbsenceGrievance
 {
@@ -53,10 +53,10 @@ struct AbsenceGrievance
 // The most grievances an absence keeps; the ones beyond are counted, not kept.
 inline constexpr std::uint64_t ABSENCE_GRIEVANCES_MAX = 256;
 
-/// MVP-072 to MVP-074 (ADR-184): one absence of the steward of the settlement of team `team`, from the tick its steward
+/// MVP-072 to MVP-074 (ADR-185): one absence of the steward of the settlement of team `team`, from the tick its steward
 /// went away to the tick they came back, none while it lasts; the settlement's Workers and stores at either end, the
 /// deputy's actions in it in the order they were taken, and the grievances recorded for or against the settlement in it
-/// (ADR-186). A region keeps each stewarded settlement's open absence and its
+/// (ADR-187). A region keeps each stewarded settlement's open absence and its
 /// latest closed one, so that its away report can be asked for again (O110).
 struct Absence
 {
@@ -88,7 +88,7 @@ void WriteAbsence(Neuron::BitWriter& _writer, const Absence& _absence);
 // O110: the latest closed absence of the settlement of _team; null before its steward has come back once.
 [[nodiscard]] const Absence* LatestAbsence(const RegionSimulation& _region, std::uint8_t _team) noexcept;
 
-// MVP-072 (ADR-184): the steward is away from now on, or present again, for every settlement a steward runs in the
+// MVP-072 (ADR-185): the steward is away from now on, or present again, for every settlement a steward runs in the
 // world. Going away opens each settlement's absence at the world's next tick with its Workers and stores; coming back
 // closes it there with them, and it replaces the settlement's previous closed absence. Called between ticks, as a
 // connection is (ADR-095), by the world server and by the journal's replay. False when nothing changed.
@@ -96,9 +96,9 @@ bool SetStewardPresence(WorldSimulation& _world, bool _away);
 // Whether the steward is away from a settlement of the world: any stewarded settlement has an open absence.
 [[nodiscard]] bool StewardAway(const WorldSimulation& _world) noexcept;
 
-// MVP-073 (ADR-185): records a deputy action in the open absence of _team's settlement; nothing while it has none.
+// MVP-073 (ADR-186): records a deputy action in the open absence of _team's settlement; nothing while it has none.
 void RecordDeputyAction(RegionSimulation& _region, std::uint8_t _team, const DeputyAction& _action);
-// MVP-074 (ADR-186): records a new grievance in the open absence of each of its two settlements that has one.
+// MVP-074 (ADR-187): records a new grievance in the open absence of each of its two settlements that has one.
 void RecordAbsenceGrievance(RegionSimulation& _region, const AbsenceGrievance& _grievance);
 
 } // namespace Species

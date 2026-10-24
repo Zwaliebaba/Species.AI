@@ -77,7 +77,7 @@ std::filesystem::path InterimLogsFolder()
   return error ? std::filesystem::path{} : folder;
 }
 
-// MVP-071 (ADR-190): the always-on world of _folder, listening on the loopback interface for its client, until its
+// MVP-071 (ADR-191): the always-on world of _folder, listening on the loopback interface for its client, until its
 // console closes or a client raises the stop signal; stopping freezes the world (O4). One runs at a time (O110).
 int RunAlwaysOn(const std::filesystem::path& _folder, const TuningMvp& _tuning, StructureRecords _structures,
                 const Neuron::LooseContent& _content, const Neuron::PlatformClock& _clock)
@@ -126,9 +126,9 @@ int RunAlwaysOn(const std::filesystem::path& _folder, const TuningMvp& _tuning, 
   worldDesc.aiSettlements = described->aiSettlements;
   worldDesc.pace = WorldPace::AlwaysOn;
   worldDesc.calendar = [&_clock] { return _clock.CalendarUtc(); }; // ADR-137
-  const Neuron::SuspendWatch suspends;                             // ADR-187
+  const Neuron::SuspendWatch suspends;                             // ADR-188
   worldDesc.suspensions = [&suspends] { return suspends.Suspensions(); };
-  worldDesc.identity = identity; // ADR-189
+  worldDesc.identity = identity; // ADR-190
   WorldServer world(worldDesc);
   Neuron::ServerHost::Desc hostDesc;
   hostDesc.clock = &_clock;
@@ -250,9 +250,9 @@ int Run(std::span<const std::wstring> _arguments)
       // steward (ADR-140).
       worldDesc.watched = options.watch;
       worldDesc.calendar = [&clock] { return clock.CalendarUtc(); }; // ADR-137: the world record's wall times
-      const Neuron::SuspendWatch suspends;                           // ADR-187: the computer's sleeps
+      const Neuron::SuspendWatch suspends;                           // ADR-188: the computer's sleeps
       worldDesc.suspensions = [&suspends] { return suspends.Suspensions(); };
-      worldDesc.identity = OwnJoinIdentity(content->Identity()); // ADR-189: a client of another build is refused
+      worldDesc.identity = OwnJoinIdentity(content->Identity()); // ADR-190: a client of another build is refused
       WorldServer world(worldDesc);
       Neuron::ServerHost::Desc hostDesc;
       hostDesc.clock = &clock;

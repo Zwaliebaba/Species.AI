@@ -138,7 +138,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp071AConnectionIsAStewardOnlyOnceItsJoinIsAccepted)
   {
-    // ADR-189: before its join a connection is sent nothing and counts for nothing: its commands are dropped, it is no
+    // ADR-190: before its join a connection is sent nothing and counts for nothing: its commands are dropped, it is no
     // steward's presence and the journal holds no connection. A join of the server's identity is answered first, then the
     // connection is a steward, whose commands are numbered from 0.
     Species::WorldServer server(JoinDesc());
@@ -176,7 +176,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp071AClientOfAnotherBuildIsRefusedWithItsReason)
   {
-    // ADR-189: a join of another protocol, build or content, or one that does not read, is answered with its refusal and
+    // ADR-190: a join of another protocol, build or content, or one that does not read, is answered with its refusal and
     // the server's identity, and its connection is closed; it never becomes a steward.
     Species::JoinIdentity protocol = ServerIdentity();
     protocol.protocol = Species::GAME_PROTOCOL_VERSION + 1;

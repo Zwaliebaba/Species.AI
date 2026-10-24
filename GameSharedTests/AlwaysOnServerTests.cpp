@@ -22,7 +22,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp071AServerListingRoundTripsAndIsRemoved)
   {
-    // ADR-190: the listing names the port, the certificate's fingerprint, the build's stamp and the process, and reads
+    // ADR-191: the listing names the port, the certificate's fingerprint, the build's stamp and the process, and reads
     // back whole; a folder without one, or with one that does not read, has none.
     const TemporaryFolder folder;
     Assert::IsFalse(Species::ReadServerListing(folder.Path()).has_value(), L"no listing yet");

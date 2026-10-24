@@ -35,7 +35,7 @@ constexpr std::string_view STRING_CLAIMS = "ui.epilogue.claims";
 constexpr std::string_view STRING_STRUCTURES = "ui.epilogue.structures";
 constexpr std::string_view STRING_WORKERS = "ui.epilogue.workers";
 constexpr std::string_view STRING_STRENGTH = "ui.epilogue.strength";
-// MVP-074's away report (ADR-190).
+// MVP-074's away report (ADR-191).
 constexpr std::string_view STRING_AWAY_REPORT = "ui.world.away_report";
 constexpr std::string_view STRING_AWAY_WAITS = "ui.world.away_waits";
 constexpr std::string_view STRING_AWAY_SUMMARY = "ui.away.summary";
@@ -76,7 +76,7 @@ public:
   {
     Begin(_window, m_menu.Text(STRING_MENU));
     m_resume = Row(_window, Neuron::UiWidgetKind::PageButton, "resume", m_menu.Text(STRING_RESUME));
-    // MVP-074 (ADR-190): the away report, once an absence has one.
+    // MVP-074 (ADR-191): the away report, once an absence has one.
     Neuron::UiWidgetDesc away;
     away.kind = Neuron::UiWidgetKind::PageButton;
     away.id = "away";
@@ -146,7 +146,7 @@ private:
 
 /// MVP-063's epilogue (ADR-170): a row for each of its sections in the left box, which shows that section in the right
 /// box, the standing at first, then Leave to the front end and Back; the section's title and its lines in the right box.
-/// MVP-074's away report (ADR-190) takes the same page: its summary first, then the deputy's actions, without Leave.
+/// MVP-074's away report (ADR-191) takes the same page: its summary first, then the deputy's actions, without Leave.
 class EpiloguePage final : public PageSkeleton
 {
 public:
@@ -443,7 +443,7 @@ void WorldMenu::Update(ClientSession& _session)
     m_ended = true;
     m_arrived = true;
   }
-  // MVP-074 (ADR-190): in an always-on world, the latest away report is asked for once, for the menu's entry; a return
+  // MVP-074 (ADR-191): in an always-on world, the latest away report is asked for once, for the menu's entry; a return
   // with news sends its own, which opens first (O110).
   if (_session.Pace() == WorldPace::AlwaysOn && !m_awayAsked)
   {

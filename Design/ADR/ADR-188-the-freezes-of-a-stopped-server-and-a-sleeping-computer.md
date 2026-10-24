@@ -8,7 +8,7 @@ decision-makers: Species technology lead (M4 task T6; owner decisions O4, O54, O
 
 ## Context and Problem Statement
 
-An always-on world freezes whenever its server process is not running or the computer sleeps, and each freeze is recorded with its cause and its world time (MVP-071, PIL-131). Each appears in the away report (ADR-186).
+An always-on world freezes whenever its server process is not running or the computer sleeps, and each freeze is recorded with its cause and its world time (MVP-071, PIL-131). Each appears in the away report (ADR-187).
 
 M2 recorded two causes in the world record (ADR-137):
 - a stall of 10 s or more, which the tick loop gives up (ADR-095);

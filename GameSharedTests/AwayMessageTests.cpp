@@ -22,7 +22,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp072APresenceReportIsItsHeader)
   {
-    // ADR-184: the report carries nothing but its type and version, and decodes from its header alone.
+    // ADR-185: the report carries nothing but its type and version, and decodes from its header alone.
     const std::vector<std::byte> report = Neuron::EncodeMessage(Species::PresenceReportCommand{});
     ExpectEqual(static_cast<std::int64_t>(Species::PresenceReportCommand::MAX_BYTES), static_cast<std::int64_t>(report.size()),
                 L"the report at its bound");
@@ -38,7 +38,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp074AnAwayReportAtEveryBoundRoundTrips)
   {
-    // ADR-186: a report with every list at its bound fits a reliable message and reads back whole; one without an absence
+    // ADR-187: a report with every list at its bound fits a reliable message and reads back whole; one without an absence
     // is its header, tick, team and two flags; a deputy action of an order that does not exist is malformed.
     Species::AwayReport full;
     full.tick = 1'000'000;

@@ -17,7 +17,7 @@ What does a client send, what does a server compare, and what happens to a conne
 ## Decision Drivers
 
 * A client of another build or with other simulation-relevant content is refused with its reason (the [M4 plan](../implementation/m4_plan.md) T8).
-* A refused client changes nothing in the world: no steward, no journal entry, no presence (ADR-184).
+* A refused client changes nothing in the world: no steward, no journal entry, no presence (ADR-185).
 * The same code runs over both transports (ADR-088 item 1).
 * No new build step, which ADR-057's generated identity needs and M4 does not.
 

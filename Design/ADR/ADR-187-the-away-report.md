@@ -23,7 +23,7 @@ The region already keeps most of this with ticks:
 - its statistics' completed structures and claim ends (ADR-136, ADR-163);
 - its moved areas (ADR-160);
 - the world record's freezes (ADR-137);
-- each absence's Workers, stores and deputy actions (ADR-184, ADR-185).
+- each absence's Workers, stores and deputy actions (ADR-185, ADR-186).
 
 A grievance carries no tick, and its statistics entry names its holder but not whom it is against.
 
@@ -63,7 +63,7 @@ What is built:
   - at most 1,024 deputy actions, with their total.
 
   At every bound it encodes to about 23 KB, inside a reliable message's 64 KiB. `HasNews` is O110's news: a battle, a deputy action, a freeze, a grievance, a claim moved or a structure completed.
-* **The builder.** `AwayReportOf(world, team, tick, onReturn)` (`GameLogic/AwayReport`) reads the settlement's latest closed absence (ADR-184) and keeps what falls in it, from the tick the steward went away up to the tick they came back:
+* **The builder.** `AwayReportOf(world, team, tick, onReturn)` (`GameLogic/AwayReport`) reads the settlement's latest closed absence (ADR-185) and keeps what falls in it, from the tick the steward went away up to the tick they came back:
   - the battle results that ended in it with the settlement as a side;
   - the statistics' structures completed by the settlement, and the central site won by its wait;
   - the territory events of halves moved to or from it;
@@ -110,6 +110,6 @@ What is built:
 ## More Information
 
 * Owner decisions O6, O109, O110; MVP-074, MVP-098, PIL-026, PIL-073, PIL-075, PIL-131; the [M4 plan](../implementation/m4_plan.md), task T5.
-* Amends [ADR-137](ADR-137-saving-the-journal-cut-and-the-world-record-at-m2.md) (where the freeze cause lives), [ADR-184](ADR-184-presence-and-absences.md) (the absence) and [ADR-099](ADR-099-world-snapshots.md) (the state version).
+* Amends [ADR-137](ADR-137-saving-the-journal-cut-and-the-world-record-at-m2.md) (where the freeze cause lives), [ADR-185](ADR-185-presence-and-absences.md) (the absence) and [ADR-099](ADR-099-world-snapshots.md) (the state version).
 * The code: `GameShared/AwayMessages`, `GameShared/GameMessages`, `GameLogic/AwayReport`, `GameLogic/Presence`, `GameLogic/Relations`, `GameLogic/WorldRecord`, `GameLogic/WorldServer`, `GameLogic/WorldSnapshot`.
-* **Amendment 2026-10-24 (M4 task T10, [ADR-191](ADR-191-the-away-report-and-the-pace-in-the-client.md)).** The client asks once for the latest report in an always-on world, and a return's report with news opens its page.
+* **Amendment 2026-10-24 (M4 task T10, [ADR-192](ADR-192-the-away-report-and-the-pace-in-the-client.md)).** The client asks once for the latest report in an always-on world, and a return's report with news opens its page.

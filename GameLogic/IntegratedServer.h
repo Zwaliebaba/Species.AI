@@ -43,7 +43,7 @@ public:
     std::uint8_t aiSettlements = 0;                // MVP-013 (ADR-157, O103): a new world's AI settlements, the steward's choice
     std::filesystem::path snapshotFolder;          // MVP-075 (ADR-137): where the world is saved and continued; none: never
     bool restoreOnly = false;                      // ADR-155: the world in snapshotFolder is continued, or the server does not start
-    std::optional<JoinIdentity> identity;          // ADR-189: the server's; its client joins with the same
+    std::optional<JoinIdentity> identity;          // ADR-190: the server's; its client joins with the same
   };
 
   explicit IntegratedServer(const Desc& _desc);

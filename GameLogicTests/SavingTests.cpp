@@ -205,7 +205,7 @@ public:
     // A stall that froze the world is recorded with its tick and the seconds the loop gave up, and saved with the world.
     // A server that stops without its final snapshot leaves no marker, so the next records a freeze of cause "unclean
     // stop" from the snapshot it opens, as long as the calendar time since that snapshot. From M4 a clean stop is a
-    // freeze too, of cause "server stopped", as long as the server was not running (MVP-071, ADR-187).
+    // freeze too, of cause "server stopped", as long as the server was not running (MVP-071, ADR-188).
     const TemporaryFolder folder;
     std::int64_t now = 1'800'000'000;
     Neuron::WorkerPool pool(0);
@@ -242,7 +242,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp071AStallAcrossASuspendIsTheComputersSleep)
   {
-    // ADR-187: a freezing stall after the computer suspended is a freeze of cause "sleep"; one after none is a stall; a
+    // ADR-188: a freezing stall after the computer suspended is a freeze of cause "sleep"; one after none is a stall; a
     // short stall across a suspend freezes nothing, and the suspend it crossed is spent.
     std::uint64_t suspends = 4;
     Species::WorldServer::Desc desc = SettledDesc({});
@@ -269,7 +269,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp095AWorldRecordOfVersion21ReadsItsOneBitCauses)
   {
-    // ADR-187: version 22 writes a freeze's cause in two bits; a record of version 21 or older, written in one, reads as
+    // ADR-188: version 22 writes a freeze's cause in two bits; a record of version 21 or older, written in one, reads as
     // it was.
     Neuron::BitWriter older;
     older.WriteSigned(1'800'000'000, 64);

@@ -152,4 +152,4 @@ Chosen options: 1, 4, 6 and 8.
   - `Species/Species.cpp` (the menu's update and choices, leaving, the epilogue's world);
   - `GameData/Strings/en_us.json`;
   - `GameClientTests/WorldMenuTests`, `ClientSessionTests`, `GameUiTests`, `FrontEndTests`, `WorldSavesTests`.
-* **Amendment 2026-10-24 (M4 task T10, [ADR-191](ADR-191-the-away-report-and-the-pace-in-the-client.md)).** The menu has an "Away report" row, and the away report takes the epilogue's page, with its summary and the deputy's actions as its sections and no Leave.
+* **Amendment 2026-10-24 (M4 task T10, [ADR-192](ADR-192-the-away-report-and-the-pace-in-the-client.md)).** The menu has an "Away report" row, and the away report takes the epilogue's page, with its summary and the deputy's actions as its sections and no Leave.

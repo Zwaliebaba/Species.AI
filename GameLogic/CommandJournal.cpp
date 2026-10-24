@@ -21,7 +21,7 @@ namespace
 // The journal's file version, raised with every change of its layout.
 // 2: the watched sandbox (O77); 3: the synthetic battle's figures (ADR-126); 4: the steward's site (ADR-130); 5: a
 // journal that starts from the snapshot of its first tick (ADR-137); 6: the AI settlements (ADR-157); 7: the world's
-// pace (ADR-183); 8: the steward's presence changes (ADR-184). A journal of format 5 is read as one with no AI
+// pace (ADR-184); 8: the steward's presence changes (ADR-185). A journal of format 5 is read as one with no AI
 // settlement, one of format 5 or 6 as a world at the session pace, and one of format 7 or older as one whose steward was
 // always present (MVP-095).
 constexpr std::uint64_t JOURNAL_FORMAT = 8;

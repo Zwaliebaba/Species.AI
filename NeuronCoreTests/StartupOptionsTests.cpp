@@ -75,7 +75,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp071TheAlwaysOnWorldIsAnOptionOfEveryBuild)
   {
-    // ADR-190: the client starts the headless server of an always-on world with its folder, in Debug and Release alike.
+    // ADR-191: the client starts the headless server of an always-on world with its folder, in Debug and Release alike.
     const Neuron::StartupOptions options = Parse({L"--always-on-world", L"C:\\saves\\world-0003", L"extra"});
     Assert::IsTrue(options.alwaysOnWorld == std::filesystem::path(L"C:\\saves\\world-0003"), L"the option takes the next argument");
     Assert::IsTrue(IgnoredAre(options, {"extra"}), L"in Debug and Release alike");
@@ -148,7 +148,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Plt022TheLinkPortTakesAPort)
   {
-    // ADR-192: `--link-port` takes a port from 1 to 65535; a Release build knows no such option.
+    // ADR-193: `--link-port` takes a port from 1 to 65535; a Release build knows no such option.
     const Neuron::StartupOptions options = Parse({L"--link-port", L"50123"});
 #if ENGINE_DEVELOPMENT
     Assert::IsTrue(options.linkPort == std::uint16_t{50123} && options.ignoredArguments.empty(), L"the port");

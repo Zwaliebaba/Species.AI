@@ -356,7 +356,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Pil071TheDeputyCommandsOnlyWhileTheStewardIsAway)
   {
-    // ADR-185: the deputy is made at the first absence and kept; it may command its settlement's team and its
+    // ADR-186: the deputy is made at the first absence and kept; it may command its settlement's team and its
     // expedition's only while the steward is away, and no other team; it saves and restores, and a region of version 19
     // reads with none.
     const std::unique_ptr<Species::WorldSimulation> world = ValleyWorld(SETTLED_TEST_KEY, FastTuning());

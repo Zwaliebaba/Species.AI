@@ -166,7 +166,7 @@ public:
   {
     return m_viewSize;
   }
-  // O110 (ADR-191): the away report's button was pressed since the last call, so that its page opens.
+  // O110 (ADR-192): the away report's button was pressed since the last call, so that its page opens.
   [[nodiscard]] bool TakeAwayReportRequest() noexcept
   {
     return std::exchange(m_awayReportRequested, false);

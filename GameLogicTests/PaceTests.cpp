@@ -99,7 +99,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Pil104AnAlwaysOnWorldKeepsItsPaceThroughItsSnapshotAndItsJournal)
   {
-    // ADR-183: the world reads the record at its pace from its start; its run is 24 times as many ticks, and its Wellspring
+    // ADR-184: the world reads the record at its pace from its start; its run is 24 times as many ticks, and its Wellspring
     // grows a Worker every 288 s. A snapshot and a journal name the pace, so the world continues and replays at it.
     const std::unique_ptr<Species::WorldSimulation> session = ValleyAt(Species::WorldPace::Session);
     const std::unique_ptr<Species::WorldSimulation> alwaysOn = ValleyAt(Species::WorldPace::AlwaysOn);
@@ -171,10 +171,10 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Pil101AnAlwaysOnSettlementGrowsAtTheSessionFactorsRate)
   {
-    // ADR-183: at the always-on pace a lone settlement's economy runs at 1 / mvp.pace.session_factor of the session's rate,
+    // ADR-184: at the always-on pace a lone settlement's economy runs at 1 / mvp.pace.session_factor of the session's rate,
     // while walking and gathering at a port take the same ticks. Its population therefore reaches 24 Workers at nearly the
     // factor times the session's ticks, below it by the fixed walk of the first loads (3.72 on this valley). A factor of 4
-    // keeps the test short; on the committed 24 the ratio at 30 Workers on this valley is 22.5 (ADR-183).
+    // keeps the test short; on the committed 24 the ratio at 30 Workers on this valley is 22.5 (ADR-184).
     Species::TuningMvp tuning = CommittedTuning();
     tuning.mvp.pace.sessionFactor = 4.0;
     const std::unique_ptr<Species::WorldSimulation> session = LoneAt(Species::WorldPace::Session, tuning);

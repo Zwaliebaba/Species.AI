@@ -194,7 +194,7 @@ using WorldStarter = std::function<std::expected<ClientWorld, ContinueFault>(con
 void EndWorld(ClientWorld& _world)
 {
   _world.session->Close();
-  // ADR-190: an always-on world's headless server runs on when the client leaves.
+  // ADR-191: an always-on world's headless server runs on when the client leaves.
   if (_world.server)
   {
     _world.server->Stop();
@@ -391,7 +391,7 @@ std::uint64_t RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _wi
       view.Update(session, router, std::chrono::duration<double>(frameTime).count(), _window.ClientSize(), _window.HasFocus(),
                   &_world.Hud());
       endStep(ClientStep::Input);
-      session.NoteInput(!router.IsIdle()); // MVP-072 (ADR-184): the steward's presence
+      session.NoteInput(!router.IsIdle()); // MVP-072 (ADR-185): the steward's presence
       session.Update();
       endStep(ClientStep::Session);
       // MVP-005: the saved world's seed, as its terrain gave it, which a drawn seed or MVP-011's re-roll decides.
@@ -415,7 +415,7 @@ std::uint64_t RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _wi
         _world.OpenWorldMenu(GamePage::WorldEpilogue);
       }
       // MVP-074 (O110): a return whose absence has news opens on its away report, as the HUD's button does once a report
-      // has come (ADR-191).
+      // has come (ADR-192).
       else if (const bool pressed = view.TakeAwayReportRequest(); _worldMenu.TakeAwayReportArrived() || (pressed && _worldMenu.Away()))
       {
         _world.OpenWorldMenu(GamePage::WorldAwayReport);
@@ -621,7 +621,7 @@ int Run()
     // ADR-155: a world as the integrated server runs it, a child of this root (ADR-083 item 2) on its own tick thread
     // until the world ends, when stopping it freezes the world (O4). It loads the tuning record when it starts (MVP-099),
     // and a record that cannot be loaded ends the run; a world to continue that cannot be is the front end's to show.
-    // ADR-189: the client's and its integrated server's identity, which a headless server of another build refuses.
+    // ADR-190: the client's and its integrated server's identity, which a headless server of another build refuses.
     const JoinIdentity identity = OwnJoinIdentity(content->Identity());
     const auto makeWorld = [&](IntegratedServer::Desc _desc, std::optional<SavedWorld> _saved) -> std::expected<ClientWorld, ContinueFault>
     {
@@ -637,7 +637,7 @@ int Run()
       ClientSession::Desc sessionDesc;
       if (_saved.has_value() && _saved->pace == WorldPace::AlwaysOn)
       {
-        // MVP-071 (ADR-190): an always-on world runs in its own headless server, which the client starts when it is not
+        // MVP-071 (ADR-191): an always-on world runs in its own headless server, which the client starts when it is not
         // running and leaves running.
         std::expected<AlwaysOnReach, std::string> reached = ReachAlwaysOnWorld(*_saved, identity.build, options.linkPort.value_or(0));
         if (!reached.has_value())

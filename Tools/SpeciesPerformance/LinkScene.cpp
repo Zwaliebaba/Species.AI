@@ -45,7 +45,7 @@ namespace Performance
 namespace
 {
 
-constexpr std::wstring_view LINK_CERTIFICATE_NAME = L"Species transport test"; // ADR-188: the tests' own, reused
+constexpr std::wstring_view LINK_CERTIFICATE_NAME = L"Species transport test"; // ADR-189: the tests' own, reused
 constexpr std::size_t SERVER_WORKERS = 2;
 constexpr std::uint64_t WORLD_SEED = 1;
 constexpr std::uint8_t AI_SETTLEMENTS = 3;
@@ -466,7 +466,7 @@ public:
     }
     m_transport = std::move(*transport);
     m_connectedAt = m_clock.Now();
-    // ADR-189: the join is the client's first message; it waits in the end's backlog for the stream.
+    // ADR-190: the join is the client's first message; it waits in the end's backlog for the stream.
     if (!m_transport->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(Species::JoinCommand{_identity})).has_value())
     {
       return std::unexpected(std::string("the join cannot be sent"));
@@ -716,7 +716,7 @@ std::expected<LinkRun, std::string> RunLink(const LinkSceneDesc& _desc)
     return std::unexpected(std::format("the listener cannot start: {}", listener.error()));
   }
   // A valley of four settlements, the steward's run by its scripted steward and watched, so that its figures move for
-  // the whole session (ADR-140, ADR-157); the server's identity makes the client join (ADR-189).
+  // the whole session (ADR-140, ADR-157); the server's identity makes the client join (ADR-190).
   const auto stewardSite = static_cast<std::uint8_t>(std::clamp<std::int64_t>(_desc.tuning->mvp.sandbox.stewardSite, 0, 3));
   const Species::JoinIdentity identity{};
   Species::WorldServer::Desc worldDesc;

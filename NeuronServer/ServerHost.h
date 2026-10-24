@@ -40,7 +40,7 @@ public:
   // or 0 on the reliable channel; none when it cannot take it (closed, too large or backlogged).
   [[nodiscard]] virtual std::optional<std::uint64_t> Send(ConnectionId _connection, Channel _channel,
                                                           std::span<const std::byte> _message) = 0;
-  // Closes one connection after the reliable messages already sent to it (a refused join, ADR-189); the host lets the
+  // Closes one connection after the reliable messages already sent to it (a refused join, ADR-190); the host lets the
   // world know at the tick that finds it closed.
   virtual void Close(ConnectionId _connection) = 0;
 };

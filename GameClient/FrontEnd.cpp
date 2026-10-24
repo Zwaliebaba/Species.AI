@@ -40,8 +40,8 @@ constexpr std::string_view STRING_SITE = "ui.front.site";
 constexpr std::string_view STRING_SITE_OPTION = "ui.front.site_option";
 constexpr std::string_view STRING_NEIGHBORS = "ui.front.neighbors";               // O103
 constexpr std::string_view STRING_NEIGHBORS_OPTION = "ui.front.neighbors_option"; // O103
-constexpr std::string_view STRING_PACE = "ui.front.pace";                         // ADR-190
-constexpr std::string_view STRING_PACE_OPTION = "ui.front.pace_option";           // ADR-190
+constexpr std::string_view STRING_PACE = "ui.front.pace";                         // ADR-191
+constexpr std::string_view STRING_PACE_OPTION = "ui.front.pace_option";           // ADR-191
 constexpr std::string_view STRING_WINDOW = "ui.front.window";
 constexpr std::string_view STRING_ANTI_ALIASING = "ui.front.anti_aliasing";
 constexpr std::string_view STRING_ANTI_ALIASING_OPTION = "ui.front.anti_aliasing_option";
@@ -62,7 +62,7 @@ constexpr std::uint8_t SITE_COUNT = 4; // WLD-040: the region's settlement sites
 // O103: the neighbors cycler's options, the AI settlements at the other sites (MVP-013) first, then none.
 constexpr std::array<std::string_view, 2> NEIGHBOR_SELECTORS{"three", "none"};
 constexpr std::array<std::uint8_t, 2> NEIGHBOR_COUNTS{AI_SETTLEMENTS_FULL, 0};
-// MVP-071 (ADR-190): the pace cycler's options, the session pace first; each option's selector is its pace's name.
+// MVP-071 (ADR-191): the pace cycler's options, the session pace first; each option's selector is its pace's name.
 constexpr std::array<WorldPace, 2> PACES{WorldPace::Session, WorldPace::AlwaysOn};
 constexpr std::int64_t PERCENT_FULL = 100; // the volume's 100 %
 /// The front end's page skeleton (ADR-155): the shared skeleton, with the front end for its strings and its Back.

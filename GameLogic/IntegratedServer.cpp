@@ -50,7 +50,7 @@ ContinueFault ContinueFaultOf(const WorldServer::OpenOutcome& _opened) noexcept
 // In the order they are made and the reverse of the order they end: the listener and the world outlive the host.
 struct IntegratedServer::Parts
 {
-  Neuron::SuspendWatch suspends; // ADR-187: the computer's sleeps, for the world record
+  Neuron::SuspendWatch suspends; // ADR-188: the computer's sleeps, for the world record
   Neuron::InProcessListener listener{Neuron::InProcessTransport::Desc{}};
   std::unique_ptr<WorldServer> world;
   std::unique_ptr<Neuron::ServerHost> host;
@@ -99,7 +99,7 @@ std::expected<void, StartFault> IntegratedServer::Start()
   world.restoreOnly = m_desc.restoreOnly;
   world.identity = m_desc.identity;
   world.calendar = [clock = m_desc.clock] { return clock->CalendarUtc(); };              // ADR-137: the world record's wall times
-  world.suspensions = [parts = m_parts.get()] { return parts->suspends.Suspensions(); }; // ADR-187
+  world.suspensions = [parts = m_parts.get()] { return parts->suspends.Suspensions(); }; // ADR-188
   m_parts->world = std::make_unique<WorldServer>(world);
   Neuron::ServerHost::Desc host;
   host.clock = m_desc.clock;

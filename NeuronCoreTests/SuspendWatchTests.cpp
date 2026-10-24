@@ -22,7 +22,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp071EachSuspendCountsOnceAndAResumeNot)
   {
-    // ADR-187: the watch registers for the system's suspend and resume notifications, its count starts at 0, a suspend
+    // ADR-188: the watch registers for the system's suspend and resume notifications, its count starts at 0, a suspend
     // counts once and a resume not at all; it unregisters when it ends.
     {
       Neuron::SuspendWatch watch;

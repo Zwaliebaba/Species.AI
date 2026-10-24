@@ -98,7 +98,7 @@ public:
     return ++datagrams;
   }
 
-  // A sender of a test closes nothing: its server is given no identity, so it refuses no join (ADR-189).
+  // A sender of a test closes nothing: its server is given no identity, so it refuses no join (ADR-190).
   void Close(Neuron::ConnectionId /*_connection*/) override {}
 
   std::vector<std::vector<std::byte>> reliable;

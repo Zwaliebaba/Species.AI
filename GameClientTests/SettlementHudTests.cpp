@@ -429,7 +429,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp074TheAlwaysOnRowHoldsTheAwayReportsButton)
   {
-    // O110 (ADR-191): in an always-on world the world panel holds the always-on row, one row taller, with the away
+    // O110 (ADR-192): in an always-on world the world panel holds the always-on row, one row taller, with the away
     // report's button at its end, found before the panel; a world at the session pace has neither.
     Species::HudModel model = SettlementModel();
     Species::SettlementHud hud(CommittedPresentation(), CommittedTuning());

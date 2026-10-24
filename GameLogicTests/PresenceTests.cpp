@@ -92,7 +92,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp072PresenceFollowsTheConnectionAndTheStewardsInput)
   {
-    // ADR-184: away with no client connected; present from the connection; away once its input is IDLE_TICKS old; present
+    // ADR-185: away with no client connected; present from the connection; away once its input is IDLE_TICKS old; present
     // again on a presence report or a command a queue takes; and not on a request, which is read, not input.
     Species::WorldServer server(PresenceDesc(Species::WorldPace::AlwaysOn));
     static_cast<void>(server.Open());
@@ -168,7 +168,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp076PresenceChangesReplayFromTheJournal)
   {
-    // ADR-184: the journal holds each presence change at its tick, and its replay gives the server's world tick by tick;
+    // ADR-185: the journal holds each presence change at its tick, and its replay gives the server's world tick by tick;
     // the world's absences save and restore with it, and a journal file keeps them.
     Species::WorldServer server(PresenceDesc(Species::WorldPace::AlwaysOn));
     static_cast<void>(server.Open());

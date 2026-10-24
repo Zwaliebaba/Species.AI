@@ -13,7 +13,7 @@ Neuron::SnapshotContents SnapshotOf(const WorldSimulation& _world)
   state.WriteBits(_world.SimulationKey().low, 64);
   state.WriteBits(_world.SimulationKey().high, 64);
   state.WriteBits(_world.RegionCount(), 16);
-  state.WriteBounded(static_cast<std::uint64_t>(_world.Pace()), WORLD_PACE_MAX); // ADR-183
+  state.WriteBounded(static_cast<std::uint64_t>(_world.Pace()), WORLD_PACE_MAX); // ADR-184
   _world.WriteState(state);
   for (std::size_t index = 0; index < _world.RegionCount(); ++index)
   {
@@ -36,7 +36,7 @@ RestoreWorld(const Neuron::SnapshotContents& _snapshot, const TuningMvp& _tuning
   desc.simulationKey.low = reader.ReadBits(64);
   desc.simulationKey.high = reader.ReadBits(64);
   desc.regionCount = static_cast<std::uint16_t>(reader.ReadBits(16));
-  // Version 18 added the world's pace (ADR-183); every older world ran at the session pace, the only one there was.
+  // Version 18 added the world's pace (ADR-184); every older world ran at the session pace, the only one there was.
   if (_snapshot.stateVersion >= WorldSimulation::STATE_VERSION_WITH_PACE)
   {
     desc.pace = static_cast<WorldPace>(reader.ReadBounded(WORLD_PACE_MAX));

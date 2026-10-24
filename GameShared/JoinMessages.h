@@ -11,15 +11,15 @@
 namespace Species
 {
 
-// ADR-088 item 6, ADR-189: the version of the messages a client and a server exchange, raised by every change to one
+// ADR-088 item 6, ADR-190: the version of the messages a client and a server exchange, raised by every change to one
 // of them. JoinCommand and JoinAnswer never change their layout, so that any two builds read each other's join.
 inline constexpr std::uint16_t GAME_PROTOCOL_VERSION = 1;
 
-// ADR-189: the programs of one build, whose files' stamp is the build identity both of them send and check until
+// ADR-190: the programs of one build, whose files' stamp is the build identity both of them send and check until
 // ADR-057's generated identity exists.
 inline constexpr std::array<std::wstring_view, 2> BUILD_PROGRAMS{L"Species.exe", L"SpeciesServer.exe"};
 
-/// ADR-088 item 6 (ADR-189): what a client and a server compare when the client joins: the messages' version, the build
+/// ADR-088 item 6 (ADR-190): what a client and a server compare when the client joins: the messages' version, the build
 /// and the simulation-relevant content (ADR-060, AST-100).
 struct JoinIdentity
 {
@@ -44,7 +44,7 @@ inline constexpr std::uint64_t JOIN_REFUSAL_MAX = 7;
 // The refusal as a log and the client's message name it: "joined", "another protocol", "another build", "other content".
 [[nodiscard]] std::string_view JoinRefusalName(JoinRefusal _refusal) noexcept;
 
-// ADR-189: this program's own identity: its build's stamp, the files of BUILD_PROGRAMS beside it, and _content, the
+// ADR-190: this program's own identity: its build's stamp, the files of BUILD_PROGRAMS beside it, and _content, the
 // simulation content identity of the content it mounted.
 [[nodiscard]] JoinIdentity OwnJoinIdentity(const Neuron::Sha256Digest& _content);
 
@@ -52,7 +52,7 @@ inline constexpr std::uint64_t JOIN_REFUSAL_MAX = 7;
 // content; None when they agree.
 [[nodiscard]] JoinRefusal JoinRefusalOf(const JoinIdentity& _server, const JoinIdentity& _client) noexcept;
 
-/// ADR-189: a client's first message on its connection, before which the server takes nothing else from it.
+/// ADR-190: a client's first message on its connection, before which the server takes nothing else from it.
 struct JoinCommand
 {
   static constexpr Neuron::MessageTypeId TYPE = TypeIdOf(GameMessageType::Join);
@@ -65,7 +65,7 @@ struct JoinCommand
   void Decode(Neuron::BitReader& _reader);
 };
 
-/// ADR-189: the server's answer to a join, its first message on the connection: the refusal, None when the client
+/// ADR-190: the server's answer to a join, its first message on the connection: the refusal, None when the client
 /// joined, and the server's own identity, which a refused client shows. The server closes a refused connection.
 struct JoinAnswer
 {

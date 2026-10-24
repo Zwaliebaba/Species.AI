@@ -56,7 +56,7 @@ std::expected<AlwaysOnReach, std::string> ReachAlwaysOnWorld(const SavedWorld& _
     listing = RunningListing(_world.folder);
     if (!listing.has_value() || listing->build != _build)
     {
-      // O110: another world's server, or this world's of another build (ADR-189), stops as closing its console stops it.
+      // O110: another world's server, or this world's of another build (ADR-190), stops as closing its console stops it.
       Neuron::Log(Neuron::LogCategory::Network, Neuron::LogLevel::Info, "the running always-on server is {}; it is asked to stop",
                   listing.has_value() ? "of another build" : "another world's");
       if (!Neuron::StopSignal::Raise(ALWAYS_ON_STOP) ||

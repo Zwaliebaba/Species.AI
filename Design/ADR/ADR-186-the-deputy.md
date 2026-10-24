@@ -8,7 +8,7 @@ decision-makers: Species technology lead (M4 task T4; owner decisions O2, O109, 
 
 ## Context and Problem Statement
 
-While the steward is away (ADR-184) the deputy runs the settlement on the default orders of PIL-079 and the priorities the steward last set: defend the settlement, keep gathering, finish the queued construction, never attack (MVP-073). O110 reads "a battle at its settlement" as every battle the settlement is a side of (PIL-043):
+While the steward is away (ADR-185) the deputy runs the settlement on the default orders of PIL-079 and the priorities the steward last set: defend the settlement, keep gathering, finish the queued construction, never attack (MVP-073). O110 reads "a battle at its settlement" as every battle the settlement is a side of (PIL-043):
 - the defence of its territory;
 - the defence of a border half it holds;
 - the steward's own expedition when one is out.
@@ -25,7 +25,7 @@ What the deputy does is command Leaders in battle. Who is the deputy in the comm
 
 * The deputy's commands go through the one command path, as an AI's do (ADR-087, ADR-106), and are made again by a replay, as an AI's are (ADR-109).
 * The steward stays the settlement's commander, so that the steward's first input after an absence is obeyed at once.
-* Each deputy action is recorded with its standing order, in the absence it belongs to (ADR-184).
+* Each deputy action is recorded with its standing order, in the absence it belongs to (ADR-185).
 * Its rule is small enough for the steward to predict in Playtest 2's five scripted situations (the scope's §6.2, the M4 plan's table 4).
 
 ## Considered Options
@@ -42,7 +42,7 @@ Chosen option: 1.
 
 What is built:
 
-* **The deputy.** `Deputy` (`GameLogic/Deputy`): its team, its sender id and its commands' sequence numbers. `RegionSimulation::EnsureDeputy` makes it, with a new stable id of the region, the first time its steward goes away (`SetStewardPresence`, ADR-184), and keeps it.
+* **The deputy.** `Deputy` (`GameLogic/Deputy`): its team, its sender id and its commands' sequence numbers. `RegionSimulation::EnsureDeputy` makes it, with a new stable id of the region, the first time its steward goes away (`SetStewardPresence`, ADR-185), and keeps it.
 * **The permission.** `RegionSimulation::MayCommand` permits a deputy's command, AI commands included, for its settlement's team and its expedition's (`ExpeditionTeamOf`) while that settlement has an open absence (`DeputyMayCommand`). It permits nothing for another team, and nothing while the steward is present. The steward stays the commander throughout.
 * **The rule.** `StepDeputy`, at the end of each region tick after the AIs and scripted stewards, while its settlement has an open absence. For each side its settlement has in a battle in progress, it takes each live, undemoted Leader in slot order:
   - the settlement's team where it is the defender, its territory's battle or a claim battle at a half it holds, under `DefendTheSettlement`;

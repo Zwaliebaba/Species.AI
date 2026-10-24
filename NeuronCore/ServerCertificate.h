@@ -9,7 +9,7 @@
 namespace Neuron
 {
 
-/// A server's TLS certificate (ADR-088 item 4, ADR-188): a self-signed ECDSA P-256 certificate whose subject is CN=_name,
+/// A server's TLS certificate (ADR-088 item 4, ADR-189): a self-signed ECDSA P-256 certificate whose subject is CN=_name,
 /// for the server's own use only, its private key a persisted key of the user's software key storage provider named
 /// _name, and the certificate kept in the user's "My" store, so that a later start uses it again. A client pins it by its
 /// fingerprint, the SHA-256 of its DER encoding, which the server publishes beside the world it runs. Moved, never

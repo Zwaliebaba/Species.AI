@@ -46,11 +46,11 @@ inline constexpr std::uint32_t WORLD_STATE_FIRST_SAVED_VERSION = 9;
 // statistics of more kinds (M3 task T8, ADR-163); an older world's run begins where it continues, and its renown at none.
 // Version 16 added the tick each area's last claim ended (O102, DEC-1008, ADR-160); an older region has none, so no area
 // cools down. Version 17 added whether each settlement's growth is held (O106, ADR-178); an older region holds none.
-// Version 18 added the world's pace beside its region count (M4 task T2, ADR-183); an older world runs at the session
-// pace. Version 19 added each region's absences (M4 task T3, ADR-184); an older region has none, its steward present.
-// Version 20 added each region's deputies (M4 task T4, ADR-185); an older region makes each at its steward's next absence.
-// Version 21 added each absence's grievances (M4 task T5, ADR-186); an older absence has none.
-// Version 22 added the freeze causes of MVP-071 to the world record, a cause in two bits (M4 task T6, ADR-187).
+// Version 18 added the world's pace beside its region count (M4 task T2, ADR-184); an older world runs at the session
+// pace. Version 19 added each region's absences (M4 task T3, ADR-185); an older region has none, its steward present.
+// Version 20 added each region's deputies (M4 task T4, ADR-186); an older region makes each at its steward's next absence.
+// Version 21 added each absence's grievances (M4 task T5, ADR-187); an older absence has none.
+// Version 22 added the freeze causes of MVP-071 to the world record, a cause in two bits (M4 task T6, ADR-188).
 // _tuning and _structures outlive the world.
 [[nodiscard]] std::expected<std::unique_ptr<WorldSimulation>, Neuron::SnapshotError>
 RestoreWorld(const Neuron::SnapshotContents& _snapshot, const TuningMvp& _tuning, const StructureRecords* _structures = nullptr);

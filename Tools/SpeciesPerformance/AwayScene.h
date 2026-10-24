@@ -11,7 +11,7 @@
 namespace Performance
 {
 
-/// PIL-102's session patterns, which the away run plays (the M4 plan T12, ADR-193).
+/// PIL-102's session patterns, which the away run plays (the M4 plan T12, ADR-194).
 enum class AwayPattern : std::uint8_t
 {
   Typical, // an hour of active play and two check-ins a world day
@@ -32,10 +32,10 @@ struct AwayAbsence
   std::optional<std::uint64_t> regainTick;
 };
 
-/// The away run of one seed and pattern (the M4 plan T12, ADR-193): an always-on valley of four settlements for its run
+/// The away run of one seed and pattern (the M4 plan T12, ADR-194): an always-on valley of four settlements for its run
 /// (MVP-060, 8 world days at the always-on pace). While its steward is present, by the pattern's visits, the steward's
 /// settlement is run by its scripted steward with a Territorial settlement's decisions, as the valley run's is (ADR-164);
-/// while they are away, by the deputy alone (ADR-185). It keeps each absence, and the strength of the steward's
+/// while they are away, by the deputy alone (ADR-186). It keeps each absence, and the strength of the steward's
 /// settlement and the AI settlements' mean at each world day's start and at the run's end.
 struct AwayRun
 {
