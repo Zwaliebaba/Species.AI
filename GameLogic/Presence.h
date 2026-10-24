@@ -1,7 +1,9 @@
 #pragma once
 
+#include "AwayMessages.h"
 #include "BitReader.h"
 #include "BitWriter.h"
+#include "RelationMessages.h"
 #include "StableId.h"
 
 #include <cstddef>
@@ -15,31 +17,10 @@ namespace Species
 class RegionSimulation;
 class WorldSimulation;
 
-// A region of state version 19 and later holds its absences (M4 task T3, ADR-181).
+// A region of state version 19 and later holds its absences (M4 task T3, ADR-181), and of version 21 and later each
+// absence's grievances (M4 task T5, ADR-183).
 inline constexpr std::uint32_t STATE_VERSION_WITH_ABSENCES = 19;
-
-/// PIL-079 (MVP-073): the default orders a steward who sets none leaves the deputy, by which each deputy action is
-/// permitted (PIL-026), and the steward's own declared attack, whose battle the deputy fights while the steward is away
-/// but never declares again (O109). A state value that is never renumbered.
-enum class StandingOrder : std::uint8_t
-{
-  DefendTheSettlement = 0,
-  KeepGathering = 1,
-  FinishTheQueuedConstruction = 2,
-  NeverAttack = 3,
-  TheStewardsAttack = 4
-};
-
-// The bound a standing order is written with, which leaves room for the orders a later stage adds (PIL-083).
-inline constexpr std::uint64_t STANDING_ORDER_MAX = 15;
-
-/// MVP-073 (ADR-182): what a deputy action did. A state value that is never renumbered.
-enum class DeputyActionKind : std::uint8_t
-{
-  LeaderToObjective = 0 // sent a Leader's formation to its battle's objective; the detail is the other side's site
-};
-
-inline constexpr std::uint64_t DEPUTY_ACTION_KIND_MAX = 15;
+inline constexpr std::uint32_t STATE_VERSION_WITH_ABSENCE_GRIEVANCES = 21;
 
 /// One action of the deputy (MVP-073, PIL-026): its tick, what it did, the standing order that permitted it, the Leader
 /// it ordered by stable id, and a detail its kind names.
@@ -57,9 +38,25 @@ struct DeputyAction
 // The most deputy actions an absence keeps; the ones beyond are counted, not kept (MVP-074's report lists what it keeps).
 inline constexpr std::uint64_t DEPUTY_ACTIONS_MAX = 4'096;
 
+/// MVP-074 (ADR-183): a grievance recorded while the absence lasted, held by the Cladan at site `holder` against the
+/// settlement at site `against`, one of them the absent steward's: its tick and its cause.
+struct AbsenceGrievance
+{
+  std::uint64_t tick = 0;
+  std::uint8_t holder = 0;
+  std::uint8_t against = 0;
+  GrievanceCause cause = GrievanceCause::Pressure;
+
+  friend constexpr bool operator==(const AbsenceGrievance& _a, const AbsenceGrievance& _b) noexcept = default;
+};
+
+// The most grievances an absence keeps; the ones beyond are counted, not kept.
+inline constexpr std::uint64_t ABSENCE_GRIEVANCES_MAX = 256;
+
 /// MVP-072 to MVP-074 (ADR-181): one absence of the steward of the settlement of team `team`, from the tick its steward
-/// went away to the tick they came back, none while it lasts; the settlement's Workers and stores at either end, and the
-/// deputy's actions in it in the order they were taken. A region keeps each stewarded settlement's open absence and its
+/// went away to the tick they came back, none while it lasts; the settlement's Workers and stores at either end, the
+/// deputy's actions in it in the order they were taken, and the grievances recorded for or against the settlement in it
+/// (ADR-183). A region keeps each stewarded settlement's open absence and its
 /// latest closed one, so that its away report can be asked for again (O109).
 struct Absence
 {
@@ -72,6 +69,8 @@ struct Absence
   std::int64_t storesToMilliRu = 0;
   std::vector<DeputyAction> actions;
   std::uint32_t actionsDropped = 0; // beyond DEPUTY_ACTIONS_MAX
+  std::vector<AbsenceGrievance> grievances;
+  std::uint32_t grievancesDropped = 0; // beyond ABSENCE_GRIEVANCES_MAX
 
   friend bool operator==(const Absence& _a, const Absence& _b) = default;
 };
@@ -79,9 +78,9 @@ struct Absence
 // The most absences a region keeps: an open and a closed one for each of its settlements.
 inline constexpr std::uint64_t ABSENCES_MAX = 8;
 
-// The absence canonically (ADR-081 item 7); false when it does not read whole.
+// The absence canonically (ADR-081 item 7), and as a region of _stateVersion wrote it; false when it does not read whole.
 void WriteAbsence(Neuron::BitWriter& _writer, const Absence& _absence);
-[[nodiscard]] bool ReadAbsence(Neuron::BitReader& _reader, Absence& _absence);
+[[nodiscard]] bool ReadAbsence(Neuron::BitReader& _reader, Absence& _absence, std::uint32_t _stateVersion);
 
 // MVP-072: the open absence of the settlement of _team, while its steward is away; null while they are present.
 [[nodiscard]] const Absence* OpenAbsence(const RegionSimulation& _region, std::uint8_t _team) noexcept;
@@ -99,5 +98,7 @@ bool SetStewardPresence(WorldSimulation& _world, bool _away);
 
 // MVP-073 (ADR-182): records a deputy action in the open absence of _team's settlement; nothing while it has none.
 void RecordDeputyAction(RegionSimulation& _region, std::uint8_t _team, const DeputyAction& _action);
+// MVP-074 (ADR-183): records a new grievance in the open absence of each of its two settlements that has one.
+void RecordAbsenceGrievance(RegionSimulation& _region, const AbsenceGrievance& _grievance);
 
 } // namespace Species

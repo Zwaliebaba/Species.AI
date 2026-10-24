@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "AwayMessages.h"
+#include "AwayReport.h"
 #include "Check.h"
 #include "Development.h"
 #include "Files.h"
@@ -465,7 +466,7 @@ void WorldServer::Connect(Neuron::ConnectionId _connection)
   // ADR-109: the next id of the world owner and, in the sandbox, the steward's side.
   const StableId steward = ConnectSteward(*m_world, m_desc.sandbox, m_desc.watched);
   // MVP-072 (ADR-181): connecting is the steward's input.
-  m_stewards.emplace(_connection, Steward{steward, 0, false, {}, {}, {}, {}, {}, {}, m_world->NextTick()});
+  m_stewards.emplace(_connection, Steward{.id = steward, .inputTick = m_world->NextTick()});
   if (m_journal)
   {
     m_journal->entries.push_back({m_world->NextTick(), true, JOURNAL_WORLD_OWNER, steward, 0, {}});
@@ -521,16 +522,24 @@ void WorldServer::Receive(Neuron::ConnectionId _connection, const Neuron::Receiv
   // MVP-098 (ADR-136, ADR-165): a request for a settlement's status or its valley's is read, not queued, by a steward who
   // commands the settlement's team; the status goes after the next tick, which the outcome names.
   // From M3 task T14 (ADR-169) the epilogue is asked for the same way.
+  // From M4 task T5 (ADR-183) the away report is asked for the same way.
   if (!reader.Failed() && (header.type == ReadSettlementStatusCommand::TYPE || header.type == ReadValleyStatusCommand::TYPE ||
-                           header.type == ReadEpilogueCommand::TYPE))
+                           header.type == ReadEpilogueCommand::TYPE || header.type == ReadAwayReportCommand::TYPE))
   {
     const bool valley = header.type == ReadValleyStatusCommand::TYPE;
     const bool epilogue = header.type == ReadEpilogueCommand::TYPE;
+    const bool away = header.type == ReadAwayReportCommand::TYPE;
     std::uint8_t team = 0;
     CommandResult result = CommandResult::Applied;
     if (valley)
     {
       ReadValleyStatusCommand request;
+      result = CheckAnswered(header, reader, _message.bytes.size(), request);
+      team = request.team;
+    }
+    else if (away)
+    {
+      ReadAwayReportCommand request;
       result = CheckAnswered(header, reader, _message.bytes.size(), request);
       team = request.team;
     }
@@ -558,7 +567,7 @@ void WorldServer::Receive(Neuron::ConnectionId _connection, const Neuron::Receiv
     }
     if (result == CommandResult::Applied)
     {
-      (epilogue ? steward.epilogueTeams : valley ? steward.valleyTeams : steward.statusTeams).push_back(team);
+      (away ? steward.awayTeams : epilogue ? steward.epilogueTeams : valley ? steward.valleyTeams : steward.statusTeams).push_back(team);
     }
     steward.reports.push_back({sequence, m_world->NextTick(), result, 0});
     return;
@@ -603,6 +612,22 @@ void WorldServer::UpdatePresence(std::uint64_t _tick)
   if (m_journal)
   {
     m_journal->entries.push_back({_tick, false, JOURNAL_WORLD_OWNER, 0, 0, {}, true, !present});
+  }
+  // O109 (ADR-183): a return sends each connected steward the away report of each settlement it commands, after the
+  // tick, when the absence has news.
+  if (present)
+  {
+    const RegionSimulation& region = m_world->Region(0);
+    for (auto& [connection, steward] : m_stewards)
+    {
+      for (const Settlement& settlement : region.Settlements())
+      {
+        if (settlement.stewarded && region.CommanderOf(settlement.team).sender == steward.id)
+        {
+          steward.returnTeams.push_back(settlement.team);
+        }
+      }
+    }
   }
   Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Info, "the steward is {} from tick {}", present ? "present" : "away",
               _tick);
@@ -774,6 +799,23 @@ void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender
       ++epilogues;
     }
     steward.epilogueTeams.erase(steward.epilogueTeams.begin(), steward.epilogueTeams.begin() + static_cast<std::ptrdiff_t>(epilogues));
+    // ADR-183: each away report requested, then each that a return sends, the latter only when its absence has news.
+    for (const bool onReturn : {false, true})
+    {
+      std::vector<std::uint8_t>& teams = onReturn ? steward.returnTeams : steward.awayTeams;
+      std::size_t sent = 0;
+      while (sent < teams.size())
+      {
+        const AwayReport report = AwayReportOf(*m_world, teams[sent], _tick, onReturn);
+        if ((!onReturn || report.HasNews()) &&
+            !_sender.Send(connection, Neuron::Channel::Reliable, Neuron::EncodeMessage(report)).has_value())
+        {
+          break;
+        }
+        ++sent;
+      }
+      teams.erase(teams.begin(), teams.begin() + static_cast<std::ptrdiff_t>(sent));
+    }
     if (!steward.terrainSent && m_terrain)
     {
       // MVP-011: the seed and digest go once on the reliable channel, with the team the steward commands (ADR-119); a

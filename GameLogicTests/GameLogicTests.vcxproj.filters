@@ -26,6 +26,9 @@
     <ClCompile Include="ActorGridTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="AwayReportTests.cpp">
+      <Filter>Persistence</Filter>
+    </ClCompile>
     <ClCompile Include="BattleTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>

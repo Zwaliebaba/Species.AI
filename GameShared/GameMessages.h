@@ -56,8 +56,10 @@ enum class GameMessageType : Neuron::MessageTypeId
   Epilogue,
   // The steward's growth hold (O106, ADR-178).
   HoldGrowth,
-  // Away play (M4): the client's report of its steward's input (ADR-181).
-  PresenceReport
+  // Away play (M4): the client's report of its steward's input (ADR-181), and the away report and its request (ADR-183).
+  PresenceReport,
+  ReadAwayReport,
+  AwayReport
 };
 
 [[nodiscard]] constexpr Neuron::MessageTypeId TypeIdOf(GameMessageType _type) noexcept

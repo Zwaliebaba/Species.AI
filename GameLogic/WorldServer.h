@@ -160,6 +160,8 @@ private:
     std::vector<std::uint8_t> statusTeams;   // MVP-098: the settlements whose status it asked for, by team, not yet sent
     std::vector<std::uint8_t> valleyTeams;   // ADR-165: the settlements whose valley status it asked for, not yet sent
     std::vector<std::uint8_t> epilogueTeams; // ADR-169: the settlements whose epilogue it asked for, not yet sent
+    std::vector<std::uint8_t> awayTeams;     // ADR-183: the settlements whose away report it asked for, not yet sent
+    std::vector<std::uint8_t> returnTeams;   // ADR-183: the settlements whose away report its return sends, not yet sent
     // ADR-139, ADR-165: the guaranteed events of its teams and the battle results not yet sent, encoded, in order.
     std::vector<std::vector<std::byte>> notices;
     // MVP-072 (ADR-181): the tick of its latest input as the server knows it: its connection, each command a queue took

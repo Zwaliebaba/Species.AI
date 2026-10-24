@@ -41,9 +41,18 @@ void WriteAbsence(Neuron::BitWriter& _writer, const Absence& _absence)
     _writer.WriteBits(action.detail, 32);
   }
   _writer.WriteBits(_absence.actionsDropped, 32);
+  _writer.WriteBounded(_absence.grievances.size(), ABSENCE_GRIEVANCES_MAX);
+  for (const AbsenceGrievance& grievance : _absence.grievances)
+  {
+    _writer.WriteBits(grievance.tick, 64);
+    _writer.WriteBits(grievance.holder, 8);
+    _writer.WriteBits(grievance.against, 8);
+    _writer.WriteBounded(static_cast<std::uint64_t>(grievance.cause), GRIEVANCE_CAUSE_MAX);
+  }
+  _writer.WriteBits(_absence.grievancesDropped, 32);
 }
 
-bool ReadAbsence(Neuron::BitReader& _reader, Absence& _absence)
+bool ReadAbsence(Neuron::BitReader& _reader, Absence& _absence, std::uint32_t _stateVersion)
 {
   Absence absence;
   absence.team = static_cast<std::uint8_t>(_reader.ReadBits(8));
@@ -77,6 +86,26 @@ bool ReadAbsence(Neuron::BitReader& _reader, Absence& _absence)
     previous = action.tick;
   }
   absence.actionsDropped = static_cast<std::uint32_t>(_reader.ReadBits(32));
+  // ADR-183: from version 21 its grievances, in the order they were recorded, inside the absence.
+  if (_stateVersion >= STATE_VERSION_WITH_ABSENCE_GRIEVANCES)
+  {
+    absence.grievances.resize(_reader.ReadBounded(ABSENCE_GRIEVANCES_MAX));
+    previous = absence.fromTick;
+    for (AbsenceGrievance& grievance : absence.grievances)
+    {
+      grievance.tick = _reader.ReadBits(64);
+      grievance.holder = static_cast<std::uint8_t>(_reader.ReadBits(8));
+      grievance.against = static_cast<std::uint8_t>(_reader.ReadBits(8));
+      grievance.cause = static_cast<GrievanceCause>(_reader.ReadBounded(GRIEVANCE_CAUSE_MAX));
+      if (grievance.tick < previous || (absence.toTick && grievance.tick > *absence.toTick) ||
+          (grievance.holder != absence.team && grievance.against != absence.team))
+      {
+        return false;
+      }
+      previous = grievance.tick;
+    }
+    absence.grievancesDropped = static_cast<std::uint32_t>(_reader.ReadBits(32));
+  }
   if (_reader.Failed() || absence.storesFromMilliRu < 0 || absence.storesToMilliRu < 0 ||
       (!absence.toTick && (absence.workersTo != 0 || absence.storesToMilliRu != 0)))
   {
@@ -160,6 +189,26 @@ bool StewardAway(const WorldSimulation& _world) noexcept
     }
   }
   return false;
+}
+
+void RecordAbsenceGrievance(RegionSimulation& _region, const AbsenceGrievance& _grievance)
+{
+  for (const std::uint8_t team : {_grievance.holder, _grievance.against})
+  {
+    Absence* absence = OpenAbsence(_region, team);
+    if (absence == nullptr || (team == _grievance.against && _grievance.holder == _grievance.against))
+    {
+      continue;
+    }
+    if (absence->grievances.size() < ABSENCE_GRIEVANCES_MAX)
+    {
+      absence->grievances.push_back(_grievance);
+    }
+    else
+    {
+      ++absence->grievancesDropped;
+    }
+  }
 }
 
 void RecordDeputyAction(RegionSimulation& _region, std::uint8_t _team, const DeputyAction& _action)

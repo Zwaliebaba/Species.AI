@@ -1510,7 +1510,7 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
     for (std::size_t place = 0; place < m_absences.size(); ++place)
     {
       const Absence& absence = m_absences[place];
-      if (!ReadAbsence(_reader, m_absences[place]) || absence.fromTick > m_nextTick ||
+      if (!ReadAbsence(_reader, m_absences[place], _stateVersion) || absence.fromTick > m_nextTick ||
           (absence.toTick && (*absence.toTick < absence.fromTick || *absence.toTick > m_nextTick)) ||
           std::ranges::find(m_settlements, absence.team, &Settlement::team) == m_settlements.end() ||
           std::ranges::count_if(m_absences.begin(), m_absences.begin() + static_cast<std::ptrdiff_t>(place),

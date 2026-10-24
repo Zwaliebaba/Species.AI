@@ -104,3 +104,4 @@ A world at the always-on pace that opens with nobody connected is away from its 
 * Owner decisions O54, O108, O109; MVP-072, MVP-076, PIL-070; the [M4 plan](../implementation/m4_plan.md), task T3.
 * Amends [ADR-137](ADR-137-saving-the-journal-cut-and-the-world-record-at-m2.md) (the journal's format) and [ADR-099](ADR-099-world-snapshots.md) (the state version).
 * The code: `GameShared/AwayMessages`, `GameShared/GameMessages`, `GameLogic/Presence`, `GameLogic/RegionSimulation`, `GameLogic/CommandJournal`, `GameLogic/WorldServer`, `GameLogic/WorldSnapshot`.
+* **Amendment 2026-10-24 (M4 task T5, [ADR-183](ADR-183-the-away-report.md)).** Each absence also records the grievances added for or against its settlement while it lasts (`AbsenceGrievance`), for the away report; `StandingOrder` and `DeputyActionKind` live in GameShared's `AwayMessages.h`. `WORLD_STATE_VERSION` is 21.
