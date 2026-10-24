@@ -8,6 +8,7 @@
 
 #include <chrono>
 #include <memory>
+#include <numbers>
 #include <span>
 #include <string>
 #include <string_view>
@@ -22,6 +23,9 @@ namespace
 // The first and last of the world's actions that a focused window withholds (UI-006): the camera's and the verbs'.
 constexpr auto WORLD_ACTION_FIRST = static_cast<std::uint16_t>(GameAction::CameraPanLeft);
 constexpr auto WORLD_ACTION_LAST = static_cast<std::uint16_t>(GameAction::OrderDemote);
+
+constexpr double MILLISECONDS_PER_SECOND = 1'000.0;
+constexpr double RADIANS_PER_DEGREE = std::numbers::pi / 180.0;
 
 Neuron::Nanoseconds SecondsOf(double _seconds) noexcept
 {
@@ -338,6 +342,11 @@ void GameUi::Update(Neuron::InputRouter& _router, Neuron::SizePx _client, float 
 {
   // INP-133: the menu directions repeat on the record's timing.
   _router.SetRepeatTiming({SecondsOf(m_presentation.inp.repeat.initialDelay), SecondsOf(m_presentation.inp.repeat.period)});
+  // ADR-181: the touch recognizer's thresholds, the record's effective pixels × the DPI scale (ADR-033).
+  const TuningPresentation::Inp::Touch& touch = m_presentation.inp.touch;
+  _router.SetTouchThresholds({touch.slop * _dpiScale, touch.doubleTapSlop * _dpiScale, SecondsOf(touch.tapMs / MILLISECONDS_PER_SECOND),
+                              SecondsOf(touch.holdMs / MILLISECONDS_PER_SECOND), SecondsOf(touch.doubleTapMs / MILLISECONDS_PER_SECOND),
+                              touch.turnThreshold * RADIANS_PER_DEGREE});
   const auto fired = [&_router](GameAction _action) { return _router.Query(ActionOf(_action)); };
   Neuron::UiInput input;
   input.up = fired(GameAction::MenuUp);
@@ -365,13 +374,14 @@ void GameUi::Update(Neuron::InputRouter& _router, Neuron::SizePx _client, float 
   }
   m_metrics = UiMetricsOf(m_presentation, _client, _dpiScale, m_uiScale, m_textScale);
   m_core.Update(input, m_metrics);
-  // UI-006: what a focused window takes reaches no world action.
+  // UI-006: what a focused window takes reaches no world action, and no touch gesture moves the camera behind it (ADR-181).
   if (m_core.Focused() != nullptr)
   {
     for (std::uint16_t action = WORLD_ACTION_FIRST; action <= WORLD_ACTION_LAST; ++action)
     {
       _router.Suppress({action});
     }
+    _router.SuppressTouch();
   }
 }
 

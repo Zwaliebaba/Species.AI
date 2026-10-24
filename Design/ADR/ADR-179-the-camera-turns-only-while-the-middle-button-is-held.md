@@ -80,3 +80,4 @@ What is built:
 * Owner decisions O90, O107; R-CTRL-460, R-CTRL-464, R-CTRL-470, R-CTRL-471, R-CTRL-472; INP-070.
 * Amends [ADR-119](ADR-119-input-camera-picking-and-cursor-at-m1.md) (the camera and its bindings) and [ADR-142](ADR-142-the-camera-flies-along-the-view-within-the-stewards-areas.md) (the forward key's descent onto the pointer's point).
 * The code: `GameClient/InputBindings`, `GameClient/SettlementCamera`, `GameClient/SettlementView`, `GameClientTests/SettlementCameraTests`.
+* **Amendment 2026-10-24 (owner decision O108, [ADR-180](ADR-180-the-camera-over-a-point-on-the-ground.md)).** The look is retired with the free movement: `action.camera.look` (table 3.6-A row 66) is never reused, and the middle button held grabs the ground (`action.camera.drag`, row 67), or with Alt held turns the camera (`action.camera.turn_drag`, row 70). The pointer stays free for the HUD, as this record decided, and only looking around moves it.

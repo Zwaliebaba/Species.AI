@@ -50,6 +50,8 @@ Table 4.13-B Layout layers (primary bindings).
 | `action.camera.lower` | `key:e:held` | `key:e:held` |
 | `action.camera.zoom` | `key:y:held` | `key:w:held` |
 
+> **Amendment 2026-10-24 (owner decision O108, [ADR-180](../../../ADR/ADR-180-the-camera-over-a-point-on-the-ground.md)).** In Species `action.camera.raise` and `action.camera.lower` are bound to Page Up and Page Down, which no layout moves, so they leave the layout layers. `action.camera.turn_left` takes `key:q:held` in `de-DE` and `key:a:held` in `fr-FR`, and `action.camera.turn_right` takes `key:e:held` in both.
+
 **INP-166** (MUST) When the operating system reports a keyboard-layout change at run time, the router determines the active layout again; when it changed, the router runs `Rebuild` and calls its layout listeners (`AddLayoutListener`, DEC-554). The help system shows the camera-help variant of the active layout ([Tutorial and help](../../../reference/11_tutorial_and_help.md)).
 
 **INP-167** (MUST) Restoring the default bindings rebuilds them from the default set, the development layer in Debug builds and the active layout layer, without the user layer (DEC-554). Whether the user layer's entries are then removed from the settings store is decided by the rebinding hook's apply step (DEC-050).

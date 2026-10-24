@@ -91,7 +91,8 @@ public:
   void Update(ClientSession& _session, Neuron::InputRouter& _router, double _dtSeconds, Neuron::SizePx _view, bool _focused,
               const SettlementHud* _hud);
   // CAM-060's entry pose about the ground point _ground in place of the steward's site, in the world entered: the frame
-  // bench aims its fixed camera at a scene's fight this way (O79, ADR-126). Nothing while no world is entered.
+  // bench aims its fixed camera at a scene's fight this way (O79, ADR-126), O76's pose held across O108 (ADR-180).
+  // Nothing while no world is entered.
   void EnterAt(const Neuron::Vec3& _ground);
 
   [[nodiscard]] bool InWorld() const noexcept

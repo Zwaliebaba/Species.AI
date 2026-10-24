@@ -681,6 +681,17 @@ This component cites these keys of other documents and defines none of them: `re
 | `cam.developer.rotate_rate` | 0.005 | rad per pixel | yaw and pitch, both negative | CAM-082 | — |
 | `cam.developer.editor_fov` | 60 | degrees | target field of view in the map editor | CAM-083 | — |
 | `cam.pick.row_offset` | 1 | px | the pick ray passes the lower-left corner of the pointer's pixel | CAM-090 | — |
+| `cam.orbit.height_min` | 40 | wu | the lowest height of the camera above its ground point (O108, ADR-180) | R-CTRL-471, R-CTRL-461 | DEC-1011 |
+| `cam.orbit.pitch_low` | 30 | degrees below the horizon | the tilt at `cam.orbit.height_min` | R-CTRL-471 | DEC-1011 |
+| `cam.orbit.pitch_high` | 65 | degrees below the horizon | the tilt at `ref.ctrl.camera.max_height`; between the two the tilt follows the height's logarithm | R-CTRL-471 | DEC-1011 |
+| `cam.orbit.pan_rate` | 0.5 | × the camera's distance from its ground point, per second | the pan keys' speed | R-CTRL-471 | DEC-1011 |
+| `cam.orbit.fast_pan_factor` | 3 | × | while `action.camera.fast_pan` is held | R-CTRL-471 | DEC-1011 |
+| `cam.orbit.wheel_pan_share` | 0.1 | × the distance, per notch | the horizontal wheel's pan | R-CTRL-471 | DEC-1011 |
+| `cam.orbit.zoom_step` | 0.85 | × the height, per notch | a notch forward multiplies the height by it, a notch back divides it | R-CTRL-461 | DEC-1011 |
+| `cam.orbit.zoom_key_notches` | 4 | notches per second | `action.camera.raise` and `action.camera.lower` | R-CTRL-461 | DEC-1011 |
+| `cam.orbit.turn_rate` | 90 | degrees per second | `action.camera.turn_left` and `action.camera.turn_right` | R-CTRL-471 | DEC-1011 |
+| `cam.orbit.drag_turn` | 0.3 | degrees per px | `action.camera.turn_drag`, the pointer's horizontal movement | R-CTRL-471 | DEC-1011 |
+| `cam.orbit.smoothing` | 12 | per second | the ground point, height, heading and look-around's return close on their goals at min(1, 12 × dt) of the difference a frame | R-CTRL-471, R-CTRL-472 | DEC-1011 |
 | `cam.timeline.trigger_poll_s` | 1 | s of the camera clock | camera triggers; one-shot | CAM-114 | DEC-051 |
 | `cam.budget.advance_ms` | 0.05 | ms per frame | CPU time of one camera advance | CAM-120 | — |
 | `cam.budget.timeline_ms` | 0.05 | ms per frame | CPU time of one timeline advance | CAM-120 | DEC-051 |

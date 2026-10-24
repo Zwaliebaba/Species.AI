@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <initializer_list>
 #include <mutex>
 #include <utility>
 
@@ -330,6 +331,25 @@ LRESULT WindowState::Handle(UINT _message, WPARAM _wParam, LPARAM _lParam)
     break;
   case WM_ERASEBKGND:
     return 1; // the renderer fills the client area
+  case WM_POINTERDOWN:
+  case WM_POINTERUPDATE:
+  case WM_POINTERUP:
+  {
+    // ADR-181: a touch or pen pointer's messages are the input back-end's, and DefWindowProc never reads them, so Windows
+    // neither recognizes its own gestures in them nor promotes them to mouse messages. Windows documents a window that
+    // takes some pointer messages and passes the rest on as undefined, so every one of them is taken.
+    POINTER_INPUT_TYPE type = static_cast<POINTER_INPUT_TYPE>(PT_POINTER);
+    if (GetPointerType(GET_POINTERID_WPARAM(_wParam), &type) != FALSE &&
+        (type == static_cast<POINTER_INPUT_TYPE>(PT_TOUCH) || type == static_cast<POINTER_INPUT_TYPE>(PT_PEN)))
+    {
+      Forward(_message, _wParam, _lParam);
+      return 0;
+    }
+    break;
+  }
+  case WM_POINTERCAPTURECHANGED:
+    Forward(_message, _wParam, _lParam);
+    return 0;
   default:
     if (IsForwardedInput(_message))
     {
@@ -538,6 +558,15 @@ std::expected<AppWindow, PlatformError> AppWindow::Create(const Desc& _desc)
     return std::unexpected(error == ERROR_ACCESS_DENIED ? PlatformError::AccessDenied : PlatformError::Other);
   }
   state->window = window;
+  // ADR-181: Windows draws no touch or pen feedback of its own over the client's.
+  for (const FEEDBACK_TYPE feedback :
+       {FEEDBACK_TOUCH_CONTACTVISUALIZATION, FEEDBACK_TOUCH_TAP, FEEDBACK_TOUCH_DOUBLETAP, FEEDBACK_TOUCH_PRESSANDHOLD,
+        FEEDBACK_TOUCH_RIGHTTAP, FEEDBACK_GESTURE_PRESSANDTAP, FEEDBACK_PEN_BARRELVISUALIZATION, FEEDBACK_PEN_TAP, FEEDBACK_PEN_DOUBLETAP,
+        FEEDBACK_PEN_PRESSANDHOLD, FEEDBACK_PEN_RIGHTTAP})
+  {
+    const BOOL enabled = FALSE;
+    static_cast<void>(SetWindowFeedbackSetting(window, feedback, 0, static_cast<UINT32>(sizeof(enabled)), &enabled));
+  }
   RECT client{};
   GetClientRect(window, &client);
   state->sizes = ResizeCoalescer(ToRect(client).Size());
@@ -604,6 +633,13 @@ float AppWindow::DpiScale() const noexcept
 bool AppWindow::HasFocus() const noexcept
 {
   return m_state->hasFocus;
+}
+
+PointPx AppWindow::ClientFromScreen(PointPx _screen) const noexcept
+{
+  POINT point{_screen.x, _screen.y};
+  static_cast<void>(ScreenToClient(m_state->window, &point));
+  return {static_cast<std::int32_t>(point.x), static_cast<std::int32_t>(point.y)};
 }
 
 bool AppWindow::IsMinimized() const noexcept

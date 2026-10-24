@@ -86,6 +86,11 @@ public:
   {
     m_ui->CloseFrontEnd();
   }
+  // ADR-181: while touch is the input mode no game cursor is drawn, since no pointer hovers over the client.
+  void SetTouchMode(bool _touch) noexcept
+  {
+    m_touchMode = _touch;
+  }
   // ADR-170: the world's menu while a world runs, none as it ends; its screen opened over the world on _page, and closed.
   void AttachWorldMenu(WorldMenu* _menu)
   {
@@ -181,6 +186,7 @@ private:
   std::unique_ptr<SettlementHud> m_hud;       // ADR-152: the settlement's HUD
   std::uint64_t m_frames = 0;
   bool m_overlayShown = false;
+  bool m_touchMode = false; // ADR-181
 };
 
 // The world's surfaces from a region's terrain, the records and the textures of the content: none when a texture is

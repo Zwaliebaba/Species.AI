@@ -19,6 +19,7 @@ This file records the decisions of the Species design and of the MVP built from 
 | [DEC-1008](#dec-1008-the-valley-runs-misses-of-playtest-1s-lines) | The valley run's misses of Playtest 1's lines | Resolved | MVP, PIL |
 | [DEC-1009](#dec-1009-the-first-sound-sets-mix-and-the-turrets-sighting) | The first sound set's mix and the turret's sighting | Open | MVP, AEN |
 | [DEC-1010](#dec-1010-the-openings-choice-between-growing-and-building) | The opening's choice between growing and building | Resolved | MVP, PIL |
+| [DEC-1011](#dec-1011-the-provisional-values-of-the-camera-and-of-touch) | The provisional values of the camera and of touch | Open | MVP, CAM, INP |
 
 ## 1 World and sites
 
@@ -129,6 +130,22 @@ This file records the decisions of the Species design and of the MVP built from 
   - C — levels and a distance that the owner sets before the run.
 - Recommendation: A. Every level and the distance are keys of the client's presentation record, so a retune changes no code. The turret's sighting is one of many reference sounds the MVP leaves out, and MVP-087 lists the set the owner chose (O98).
 - Decide by: the owner's run of M3 task T15.
+
+### DEC-1011 The provisional values of the camera and of touch
+- Status: Open
+- Affects: architecture/components/camera_and_sequences.md (§4.13's `cam.orbit.*`); reference/06_controls_camera_and_commands/camera.md (R-CTRL-471 as amended by O108); implementation/mvp_scope.md (MVP-101); ADR-180, ADR-181, ADR-182
+- Specified behavior: O108 decides the camera's shape and the gestures of touch, not their values. Until the owner tunes them on the runs of M3 tasks T18 to T20, the client builds the following.
+  - **Tilt.** The camera looks down at `cam.orbit.pitch_low` (30°) at its lowest height, `cam.orbit.height_min` (40 wu) above its ground point, and at `cam.orbit.pitch_high` (65°) at its highest, `ref.ctrl.camera.max_height` (5,000 wu). Between them the tilt follows the height's logarithm, so each wheel notch tilts it by the same step.
+  - **Pan.** The keys move the ground point by `cam.orbit.pan_rate` (0.5) of the camera's distance from it each second, × `cam.orbit.fast_pan_factor` (3) while the fast pan is held. A notch of the horizontal wheel moves it by `cam.orbit.wheel_pan_share` (0.1) of that distance.
+  - **Zoom.** A wheel notch forward multiplies the height by `cam.orbit.zoom_step` (0.85), and a notch back divides it. The zoom keys, Page Up and Page Down, run at `cam.orbit.zoom_key_notches` (4) notches a second.
+  - **Turn.** Q and E turn the camera at `cam.orbit.turn_rate` (90° a second), and the middle button dragged with Alt held at `cam.orbit.drag_turn` (0.3° a pixel).
+  - **Easing.** The ground point, the height and the heading close on their goals at `cam.orbit.smoothing` (12 a second). A drag moves the ground point at once, so the ground stays under the pointer.
+  - **Touch** (ADR-181, from M3 task T19's first step). A contact moved more than `inp.touch.slop` (10 effective px) from where it went down is a drag; one down and up within `inp.touch.tap_ms` (250 ms) and never past the slop is a tap; one still for `inp.touch.hold_ms` (350 ms) is a hold. A second tap within `inp.touch.double_tap_ms` (300 ms) and `inp.touch.double_tap_slop` (24 effective px) of the first completes a double tap. Two fingers' turn is reported once its sum passes `inp.touch.turn_threshold` (10°). ADR-182's values join with T20.
+- Options:
+  - A — as stated, each value a key of the client's presentation record that the owner retunes after each run;
+  - B — values the owner sets before the run of T18.
+- Recommendation: A, as O89 and O90 had it for the settlement's and the territories' looks: a retune changes no code.
+- Decide by: the owner's runs of M3 tasks T18 to T20, before Playtest 1.
 
 ## 3 Platform
 

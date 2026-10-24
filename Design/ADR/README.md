@@ -180,6 +180,9 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-177](ADR-177-distinct-stand-ins-for-the-huds-icons.md) | Distinct stand-ins for the HUD's icons | Proposed | 2026-10-23 |
 | [ADR-178](ADR-178-the-stewards-growth-hold.md) | The steward's growth hold | Proposed | 2026-10-23 |
 | [ADR-179](ADR-179-the-camera-turns-only-while-the-middle-button-is-held.md) | The camera turns only while the middle button is held | Proposed | 2026-10-23 |
+| [ADR-180](ADR-180-the-camera-over-a-point-on-the-ground.md) | The camera over a point on the ground | Proposed | 2026-10-24 |
+| [ADR-181](ADR-181-touch-input.md) | Touch input | Proposed | 2026-10-24 |
+| [ADR-182](ADR-182-the-verbs-under-touch.md) | The verbs under touch | Proposed | 2026-10-24 |
 | [ADR-183](ADR-183-the-always-on-pace.md) | The always-on pace | Proposed | 2026-10-24 |
 | [ADR-184](ADR-184-presence-and-absences.md) | Presence and absences | Proposed | 2026-10-24 |
 | [ADR-185](ADR-185-the-deputy.md) | The deputy | Proposed | 2026-10-24 |
