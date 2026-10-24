@@ -123,7 +123,7 @@ struct QuicEndpoint
   std::mutex mutex;
   std::deque<std::unique_ptr<QuicTransport>> arrived;
 
-  QuicEndpoint() noexcept = default;
+  QuicEndpoint() = default;
   QuicEndpoint(const QuicEndpoint&) = delete;
   QuicEndpoint& operator=(const QuicEndpoint&) = delete;
   ~QuicEndpoint();
