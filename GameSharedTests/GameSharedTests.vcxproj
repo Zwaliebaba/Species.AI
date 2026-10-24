@@ -171,6 +171,7 @@
     <ClCompile Include="AlwaysOnServerTests.cpp" />
     <ClCompile Include="AwayMessageTests.cpp" />
     <ClCompile Include="JoinMessageTests.cpp" />
+    <ClCompile Include="MessageFuzzTests.cpp" />
     <ClCompile Include="NavigationTests.cpp" />
     <ClCompile Include="RegionTerrainTests.cpp" />
     <ClCompile Include="RelationMessageTests.cpp" />

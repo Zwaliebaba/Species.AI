@@ -32,6 +32,9 @@
     <ClCompile Include="JoinMessageTests.cpp">
       <Filter>Messages</Filter>
     </ClCompile>
+    <ClCompile Include="MessageFuzzTests.cpp">
+      <Filter>Messages</Filter>
+    </ClCompile>
     <ClCompile Include="NavigationTests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
