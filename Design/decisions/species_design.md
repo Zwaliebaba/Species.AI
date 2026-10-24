@@ -20,6 +20,7 @@ This file records the decisions of the Species design and of the MVP built from 
 | [DEC-1009](#dec-1009-the-first-sound-sets-mix-and-the-turrets-sighting) | The first sound set's mix and the turret's sighting | Open | MVP, AEN |
 | [DEC-1010](#dec-1010-the-openings-choice-between-growing-and-building) | The opening's choice between growing and building | Resolved | MVP, PIL |
 | [DEC-1011](#dec-1011-the-provisional-values-of-the-camera-and-of-touch) | The provisional values of the camera and of touch | Open | MVP, CAM, INP |
+| [DEC-1012](#dec-1012-the-settlements-pace-after-the-gatherers-home-ports) | The settlement's pace after the gatherers' home ports | Open | MVP |
 
 ## 1 World and sites
 
@@ -231,3 +232,18 @@ This file records the decisions of the Species design and of the MVP built from 
 - Recommendation: A. It gives the steward a decision with a visible cost (Workers not grown) without changing the economy that M2's growth scene tuned, which a steward who never holds still meets as measured.
 - Decide by: before the owner's next session of the M3 build.
 - Resolution (2026-10-23, owner decision O106): option A. The steward's settlement panel has a hold button at the growth row's end; while held, the Wellspring grows no orb and its timer waits where it stands, and the status names the hold as the growth's state before any other cause (MVP-024, MVP-098 and MVP-101 amendments, [ADR-178](../ADR/ADR-178-the-stewards-growth-hold.md)). A scripted or AI steward never holds, and lets go a hold it takes over.
+
+### DEC-1012 The settlement's pace after the gatherers' home ports
+- Status: Open
+- Affects: implementation/mvp_scope.md (MVP-031, §7's M2 exit with O84's amendment, and table 3's `mvp.gather.port_ticks`); ADR-184
+- Specified behaviour: `mvp.gather.port_ticks` is 215, the smallest value measured that holds all three of O84's growth criteria with the gatherers' home ports of O110: on the growth scene's seeds 1 to 8 the plateau comes at 4.28 h, the largest gap between growth steps is 18.5 minutes and the first halfway line falls at 2.93 h ([ADR-184](../ADR/ADR-184-gatherers-home-ports-and-their-turns.md)).
+  - The home ports keep each port manned, so at the former 100 port ticks the settlement grows much faster: 73 Workers after the first hour against the relay's 60, and the plateau at 2.56 h. The first halfway line then falls at 1.78 h, before hour 2, which O84 holds.
+  - At 215 the first hour is slower than the relay's: 54 Workers against 60.
+  - O84 lets the plateau window yield first, but only where all three criteria cannot hold. At 150 port ticks the step and the contact hold (16.2 minutes, 2.20 h), the plateau comes at 3.16 h, and the first hour has 69 Workers.
+  - The other levers measured break the 20-minute step before they bring the plateau into its window: the dwelling escalation at 1.40 (27.8 minutes) and the orb cost at 45 ru (23.3 minutes).
+- Options:
+  - A — as specified: 215 port ticks, every criterion of M2 held, and a slower first hour than the relay's;
+  - B — 150 port ticks: the opening faster than the relay's, the step and the first contact held, and the plateau at about 3.2 h, before its window, which O84 is amended to accept;
+  - C — a search for a combination of the time at the port with the dwelling escalation that keeps the relay's first hour and holds all three criteria; no such combination is known yet.
+- Recommendation: A until the owner has played it. It holds every criterion the owner set, and the first hour's difference (54 Workers against 60) is small beside the growth hold of O106, which decides the opening's building. If the opening feels slow on the owner's run, B or C.
+- Decide by: the owner's run of the build with the home ports, before Playtest 1.

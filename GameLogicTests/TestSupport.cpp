@@ -8,6 +8,7 @@
 #include "Growth.h"
 #include "PlatformThread.h"
 #include "RegionSimulation.h"
+#include "SettlementTasks.h"
 #include "SimulationRecord.h"
 #include "TerrainField.h"
 #include "TestSupport.h"
@@ -281,8 +282,25 @@ std::vector<std::byte> RegionStateOf(const Species::RegionSimulation& _region, s
   {
     bits -= version > _version ? Neuron::BitsFor(bound) : 0;
   }
-  // Version 17's growth holds, the last section, a bit for each settlement, and version 16's claim ends, version 15's
-  // renown and version 14's AI settlements' decisions before it, go whole.
+  // Version 18's home ports, the last section, for each figure, version 17's growth holds before it, a bit for each
+  // settlement, and version 16's claim ends, version 15's renown and version 14's AI settlements' decisions before them,
+  // go whole.
+  if (_version < Species::STATE_VERSION_WITH_HOME_PORTS)
+  {
+    Neuron::BitWriter homes;
+    for (std::size_t team = 0; team < _region.TeamCount(); ++team)
+    {
+      const auto& figures = _region.TeamAt(team).figures;
+      for (std::uint32_t slot = 0; slot < figures.Capacity(); ++slot)
+      {
+        if (figures.Used(slot))
+        {
+          Species::WriteHomePort(homes, figures.At(slot));
+        }
+      }
+    }
+    bits -= homes.BitCount();
+  }
   if (_version < Species::STATE_VERSION_WITH_GROWTH_HOLD)
   {
     bits -= _region.Settlements().size();

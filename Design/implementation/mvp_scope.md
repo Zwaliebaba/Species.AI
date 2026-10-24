@@ -93,13 +93,20 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-030** (MUST) The MVP has one resource kind, Crystal (O57), held in the settlement's stores in resource units (ru) as integer thousandths, so that every amount is exact (R16). Each resource unit of WLD-085 is one resource site's yield; a home or border resource site of one unit has `mvp.resource.ports_per_unit` (4) gathering ports, and the central resource site of three units has three times as many.
 
-**MVP-031** (MUST) Gathering is a Worker task of its own task search (R-UNIT-087 to R-UNIT-097, extended): a Worker whose settlement priority is gathering looks for a free gathering port at a resource site inside its territory, or at the central resource site while its settlement holds it, within `ref.unit.worker.port_search_range`; it walks there, mans the port for `mvp.gather.port_ticks` (100 ticks), picks up a load of `mvp.gather.load_ru` (1 ru), carries it visibly to the nearest drop-off point (its Wellspring or a storehouse) and returns. A full store refuses the load and the Worker waits at the drop-off point.
+**MVP-031** (MUST) Gathering is a Worker task of its own task search (R-UNIT-087 to R-UNIT-097, extended): a Worker whose settlement priority is gathering looks for a free gathering port at a resource site inside its territory, or at the central resource site while its settlement holds it, within `ref.unit.worker.port_search_range`; it walks there, mans the port for `mvp.gather.port_ticks` (100 ticks), picks up a load of `mvp.gather.load_ru` (1 ru), carries it visibly to the nearest drop-off point (its Wellspring or a storehouse) and returns. A full store refuses the load and the Worker waits at the drop-off point. Since O110 it returns to its home port, which it shares with as many gatherers as fit one round, and the time at the port is provisional (DEC-1012).
 
 > **Amendment 2026-10-21 (O84).** The gathering search is not bounded by `ref.unit.worker.port_search_range`: a gathering Worker takes the nearest free gathering port anywhere in its territory, or at the central resource site while its settlement holds it, because the nearest resource sites lie 350 wu from the Wellspring (WLD-082). The 100 wu stays the range of the idle Worker's port search (R-UNIT-090).
 
 > **Amendment 2026-10-22 (M2 task T7; [ADR-135](../ADR/ADR-135-settlement-tasks-gathering-and-upkeep-at-m2.md)).** A gatherer walks to its port and to its drop-off point along routes of the land route graph. It puts its load down at the Wellspring's door or a built, active storehouse's entrance, whichever is nearest. The central resource site is gathered only while its settlement holds it by a claim, so not at M2.
 
 > **Amendment 2026-10-23 ([ADR-183](../ADR/ADR-183-a-drop-off-point-pushed-clear-of-its-structure.md)).** The door or entrance is pushed clear of its structure, as a port is, so that a carrier reaches it whatever the mesh puts there.
+
+> **Amendment 2026-10-24 (O110; [ADR-184](../ADR/ADR-184-gatherers-home-ports-and-their-turns.md); [DEC-1012](../decisions/species_design.md#dec-1012-the-settlements-pace-after-the-gatherers-home-ports)).** A gatherer returns to its home port: the port it gathered at, to which it goes back after each load.
+> - A port takes as many gatherers as fit one round, its time at the port and its walk to the nearest drop-off point and back.
+> - A gatherer whose port is manned waits its turn beside it.
+> - A Worker without a home port takes the port with the fewest gatherers, the nearest on a tie.
+> - Gathering has no work, in MVP-036's sense, while every port has its gatherers.
+> - `mvp.gather.port_ticks` is 215, so that the growth scene holds O84's criteria with the home ports.
 
 **MVP-032** (MUST) The steward places a structure in its territory, outside the core's centre ring that keeps the Wellspring's ports clear, on ground whose slope the walkability rules allow (R-SIM-335 to R-SIM-338), not overlapping another structure, a resource site or a port. Placing pays its cost from the stores at once and queues a construction site; the queue holds at most `mvp.construction.queue_max` (8) sites, which are built in order.
 
@@ -382,7 +389,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.territory.radius_per_worker` | 4 | wu per Worker | — | provisional | MVP-026 | Contact between neighbours at about 150 Workers, in hour 2 to 3 of a run |
 | `mvp.territory.cell_size` | 16 | wu | — | provisional | MVP-026 | The territory's raster: a height-field cell's side (O83), fine enough that a structure's footprint test reads its edge |
 | `mvp.resource.ports_per_unit` | 4 | ports | — | provisional | MVP-030 | 44 gatherers at full territory; sets the plateau with the upkeep |
-| `mvp.gather.port_ticks` | 100 | ticks | tick | provisional | MVP-031 | — |
+| `mvp.gather.port_ticks` | 215 | ticks | tick | provisional | MVP-031 | O110 (ADR-184): 215 from 100. With the gatherers' home ports, the growth scene's seeds 1 to 8 reach the plateau at 4.28 h with a largest gap of 18.5 min and the first halfway line at 2.93 h; at 100 the plateau came at 2.56 h and the halfway line at 1.78 h. DEC-1012 asks whether to trade the plateau for a faster opening |
 | `mvp.gather.load_ru` | 1 | ru per load | scaled | provisional | MVP-031 | About 60 ru per gatherer per hour of play |
 | `mvp.store.wellspring_capacity_ru` | 1500 | ru | — | provisional | MVP-021 | — |
 | `mvp.store.storehouse_capacity_ru` | 1500 | ru | — | provisional | MVP-034 | — |

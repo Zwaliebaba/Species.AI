@@ -11,6 +11,7 @@
 #include "ScriptedSteward.h"
 #include "SeenLayer.h"
 #include "SettlementCommands.h"
+#include "SettlementTasks.h"
 #include "StateValues.h"
 #include "StructureAdvance.h"
 #include "Weapons.h"
@@ -1107,6 +1108,17 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
   {
     _writer.WriteBool(settlement.growthHeld);
   }
+  // O110 (ADR-184): each figure's home port, the teams in index order and each team's figures in slot order.
+  for (const Team& team : m_teams)
+  {
+    for (std::uint32_t slot = 0; slot < team.figures.Capacity(); ++slot)
+    {
+      if (team.figures.Used(slot))
+      {
+        WriteHomePort(_writer, team.figures.At(slot));
+      }
+    }
+  }
 }
 
 bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stateVersion)
@@ -1477,6 +1489,21 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
   for (Settlement& settlement : m_settlements)
   {
     settlement.growthHeld = _stateVersion >= STATE_VERSION_WITH_GROWTH_HOLD && _reader.ReadBool();
+  }
+  // O110 (ADR-184): the figures' home ports; a region before version 18 has none, and its gatherers take their home
+  // ports as they next gather.
+  if (_stateVersion >= STATE_VERSION_WITH_HOME_PORTS)
+  {
+    for (Team& team : m_teams)
+    {
+      for (std::uint32_t slot = 0; slot < team.figures.Capacity(); ++slot)
+      {
+        if (team.figures.Used(slot) && !ReadHomePort(_reader, team.figures.At(slot)))
+        {
+          return false;
+        }
+      }
+    }
   }
   // An order marker follows a route the region holds, from its first point to its last (R-UNIT-185).
   for (std::uint32_t slot = 0; slot < m_effects.Capacity(); ++slot)
