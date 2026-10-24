@@ -272,19 +272,26 @@ public:
     Assert::AreEqual(std::numbers::pi * 0.5, ghost.yawRadians, 1e-9, L"facing away from the Wellspring, +x");
     Assert::IsFalse(verbs.Foreseen().has_value(), L"no refusal foreseen");
 
-    // The primary press places and stays in the mode; it never orders.
+    // The primary press places and leaves the mode (O109); it never orders.
     frame.primaryDown = true;
     result = verbs.Update(frame, TEAM, view, areas);
     Assert::IsTrue(result.tookPrimary && result.commands.size() == 1, L"one placement");
     const auto* placed = std::get_if<Species::PlaceStructureCommand>(&result.commands.front());
     Assert::IsTrue(placed != nullptr && placed->team == TEAM && placed->kind == Species::StructureKind::Storehouse, L"the storehouse");
     Assert::AreEqual(BuildablePlace().x, placed->position.x, 1e-9, L"at the pointer ground point");
-    Assert::IsTrue(verbs.Placing().has_value(), L"still placing");
+    Assert::IsFalse(verbs.Placing().has_value() || verbs.Ghost().has_value(), L"the placement leaves the mode");
+    result = verbs.Update(frame, TEAM, view, areas);
+    Assert::IsFalse(result.tookPrimary || !result.commands.empty(), L"the next press places nothing");
 
-    // A refusal foreseen is still sent, so that the reason shown is the server's (ADR-153).
+    // A refusal foreseen is still sent, so that the reason shown is the server's (ADR-153), and stays in the mode for
+    // another place (O109).
+    frame.hudZone = Zone(Species::HudZone::Build, 1);
+    static_cast<void>(verbs.Update(frame, TEAM, view, areas));
+    frame.hudZone.reset();
     frame.ground = CellCenter(WELL_CELL + 1, WELL_CELL);
     result = verbs.Update(frame, TEAM, view, areas);
     Assert::IsTrue(verbs.Foreseen() == Species::PlacementRefusal::InCenterRing && result.commands.size() == 1, L"sent though foreseen");
+    Assert::IsTrue(verbs.Placing() == Species::StructureKind::Storehouse, L"still placing");
 
     // The secondary press leaves the mode, as it releases a selection (O82), and reaches no battle verb.
     frame.primaryDown = false;

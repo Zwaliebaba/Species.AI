@@ -322,7 +322,9 @@ SettlementVerbResult SettlementVerbs::Update(const SettlementFrame& _frame, std:
     ghost.yawRadians = std::atan2(ground.x - _view.wellspring->x, ground.z - _view.wellspring->z);
   }
   m_ghost = ghost;
-  // ADR-153: the press sends what the client foresees refused too, so that the reason shown is the server's.
+  // ADR-153: the press sends what the client foresees refused too, so that the reason shown is the server's. O109: a
+  // placement it foresees taken leaves the mode, so that another is placed only from the bar; one it foresees refused
+  // stays in it, for another place.
   if (_frame.primaryDown)
   {
     PlaceStructureCommand command;
@@ -330,6 +332,11 @@ SettlementVerbResult SettlementVerbs::Update(const SettlementFrame& _frame, std:
     command.kind = *m_placing;
     command.position = {ground.x, ground.z};
     result.commands.emplace_back(command);
+    if (!m_foreseen.has_value())
+    {
+      m_placing.reset();
+      m_ghost.reset();
+    }
   }
   return result;
 }
