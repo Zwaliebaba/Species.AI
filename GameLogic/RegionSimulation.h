@@ -204,6 +204,9 @@ public:
   {
     return m_obstacles;
   }
+  // MVP-031: the drop point of the structure at _slot (DropPointOf), derived with the obstacle grid; the structure's
+  // position on the terrain in a region without records.
+  [[nodiscard]] const Neuron::Vec3& DropPointAt(std::uint32_t _slot) const;
   // R-SIM-345 and R-SIM-352: a route over the region's land route graph, stored under the next handle (ADR-104). It
   // needs the region's terrain, and it is freed at the end of the next step that ends with no figure holding it.
   RouteHandle BuildRoute(const Neuron::Vec3& _from, const Neuron::Vec3& _to, bool _directRoute, bool _permitClimbing = true,
@@ -584,6 +587,7 @@ private:
   ActorGrid m_grid;
   ActorGridCache m_cache;
   ObstacleGrid m_obstacles;
+  std::vector<Neuron::Vec3> m_dropPoints; // by structure slot, derived with m_obstacles
   RouteStore m_routes;
   SlicedPool<LaserBolt> m_bolts;
   SlicedPool<Effect> m_effects;

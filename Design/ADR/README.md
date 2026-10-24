@@ -183,6 +183,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-180](ADR-180-the-camera-over-a-point-on-the-ground.md) | The camera over a point on the ground | Proposed | 2026-10-24 |
 | [ADR-181](ADR-181-touch-input.md) | Touch input | Proposed | 2026-10-24 |
 | [ADR-182](ADR-182-the-verbs-under-touch.md) | The verbs under touch | Proposed | 2026-10-24 |
+| [ADR-183](ADR-183-a-drop-off-point-pushed-clear-of-its-structure.md) | A drop-off point pushed clear of its structure | Proposed | 2026-10-23 |
 | [ADR-184](ADR-184-the-always-on-pace.md) | The always-on pace | Proposed | 2026-10-24 |
 | [ADR-185](ADR-185-presence-and-absences.md) | Presence and absences | Proposed | 2026-10-24 |
 | [ADR-186](ADR-186-the-deputy.md) | The deputy | Proposed | 2026-10-24 |

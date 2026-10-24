@@ -714,6 +714,7 @@ const Structure* RegionSimulation::ResolveStructure(std::uint32_t _slot, StableI
 void RegionSimulation::RebuildObstacles()
 {
   m_obstacles = ObstacleGrid(ObstacleGridDescOf(*m_tuning));
+  m_dropPoints.assign(m_structures.Capacity(), Neuron::Vec3{});
   const auto height = [this](double _x, double _z) { return m_terrain ? m_terrain->field.Height(_x, _z) : 0.0; };
   for (std::uint32_t slot = 0; slot < m_structures.Capacity(); ++slot)
   {
@@ -724,8 +725,22 @@ void RegionSimulation::RebuildObstacles()
     const Structure& structure = m_structures.At(slot);
     ObstacleShape shape = StructureShape(structure, m_records, *m_tuning);
     shape.structure = slot;
+    if (m_records != nullptr && m_terrain)
+    {
+      m_dropPoints[slot] = DropPointOf(structure, RecordOf(*m_records, structure.kind), shape, m_terrain->field, *m_tuning);
+    }
+    else
+    {
+      m_dropPoints[slot] = {structure.position.x, height(structure.position.x, structure.position.z), structure.position.z};
+    }
     static_cast<void>(m_obstacles.Add(shape, height));
   }
+}
+
+const Neuron::Vec3& RegionSimulation::DropPointAt(std::uint32_t _slot) const
+{
+  ENGINE_CHECK(_slot < m_dropPoints.size() && m_structures.Used(_slot), "region {} has no structure at slot {}", m_index, _slot);
+  return m_dropPoints[_slot];
 }
 
 std::uint32_t RegionSimulation::AddStructure(StructureKind _kind, std::optional<std::uint8_t> _owner,
