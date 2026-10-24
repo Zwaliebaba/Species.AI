@@ -3,6 +3,7 @@
 #include "Files.h"
 #include "TestSupport.h"
 
+#include <array>
 #include <cstring>
 #include <filesystem>
 #include <span>
@@ -90,6 +91,28 @@ public:
     Assert::IsTrue(Neuron::ReplaceFileAtomically(folder.Path() / L"empty.json", {}).has_value(), L"an empty file is written");
     const auto empty = Neuron::ReadWholeFile(folder.Path() / L"empty.json");
     Assert::IsTrue(empty.has_value() && empty->empty(), L"an empty file reads as no bytes");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp071AFilesStampChangesWhenOneIsWritten)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-071")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp071AFilesStampChangesWhenOneIsWritten)
+  {
+    // ADR-190: the stamp of a build's programs is the same while neither changes, and another once one is written; a
+    // missing file still counts by its name.
+    const TemporaryFolder folder;
+    const std::array<std::wstring_view, 2> names{L"First.exe", L"Second.exe"};
+    const Neuron::Sha256Digest none = Neuron::FilesStamp(folder.Path(), names);
+    Assert::IsTrue(Neuron::ReplaceFileAtomically(folder.Path() / L"First.exe", BytesOf("one")).has_value(), L"the first is written");
+    Assert::IsTrue(Neuron::ReplaceFileAtomically(folder.Path() / L"Second.exe", BytesOf("two")).has_value(), L"the second is written");
+    const Neuron::Sha256Digest built = Neuron::FilesStamp(folder.Path(), names);
+    Assert::IsTrue(built != none, L"files written change it");
+    Assert::IsTrue(Neuron::FilesStamp(folder.Path(), names) == built, L"unchanged files keep it");
+    Assert::IsTrue(Neuron::ReplaceFileAtomically(folder.Path() / L"Second.exe", BytesOf("two, rebuilt")).has_value(),
+                   L"the second is written again");
+    Assert::IsTrue(Neuron::FilesStamp(folder.Path(), names) != built, L"a file written again changes it");
+    const std::array<std::wstring_view, 2> other{L"First.exe", L"Third.exe"};
+    Assert::IsTrue(Neuron::FilesStamp(folder.Path(), other) != Neuron::FilesStamp(folder.Path(), names), L"the names count");
   }
 };
 

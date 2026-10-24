@@ -144,6 +144,8 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AlwaysOnServer.h" />
+    <ClInclude Include="AwayMessages.h" />
     <ClInclude Include="CommandMessages.h" />
     <ClInclude Include="ContinueFault.h" />
     <ClInclude Include="EffectEvent.h" />
@@ -151,6 +153,7 @@
     <ClInclude Include="FigureKind.h" />
     <ClInclude Include="GameFonts.h" />
     <ClInclude Include="GameMessages.h" />
+    <ClInclude Include="JoinMessages.h" />
     <ClInclude Include="Navigation.h" />
     <ClInclude Include="OrbState.h" />
     <ClInclude Include="PresentationEvents.h" />
@@ -169,11 +172,16 @@
     <ClInclude Include="Tuning.h" />
     <ClInclude Include="TuningMvp.h" />
     <ClInclude Include="TuningPresentation.h" />
+    <ClInclude Include="WorldPace.h" />
+    <ClInclude Include="WorldSaves.h" />
     <ClInclude Include="WorldTerrain.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AlwaysOnServer.cpp" />
+    <ClCompile Include="AwayMessages.cpp" />
     <ClCompile Include="CommandMessages.cpp" />
+    <ClCompile Include="JoinMessages.cpp" />
     <ClCompile Include="Navigation.cpp" />
     <ClCompile Include="PresentationEvents.cpp" />
     <ClCompile Include="RegionTerrain.cpp" />
@@ -187,6 +195,8 @@
     <ClCompile Include="StructureCost.cpp" />
     <ClCompile Include="StructureRecords.cpp" />
     <ClCompile Include="Tuning.cpp" />
+    <ClCompile Include="WorldPace.cpp" />
+    <ClCompile Include="WorldSaves.cpp" />
     <ClCompile Include="WorldTerrain.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>

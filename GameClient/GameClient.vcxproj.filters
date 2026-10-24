@@ -24,6 +24,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AlwaysOnClient.h">
+      <Filter>Session</Filter>
+    </ClInclude>
     <ClInclude Include="BattleVerbs.h">
       <Filter>Input</Filter>
     </ClInclude>
@@ -96,9 +99,6 @@
     <ClInclude Include="WorldPresentation.h">
       <Filter>Session</Filter>
     </ClInclude>
-    <ClInclude Include="WorldSaves.h">
-      <Filter>Session</Filter>
-    </ClInclude>
     <ClInclude Include="WorldSounds.h">
       <Filter>Presentation</Filter>
     </ClInclude>
@@ -107,6 +107,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AlwaysOnClient.cpp">
+      <Filter>Session</Filter>
+    </ClCompile>
     <ClCompile Include="BattleVerbs.cpp">
       <Filter>Input</Filter>
     </ClCompile>
@@ -177,9 +180,6 @@
       <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="WorldPresentation.cpp">
-      <Filter>Session</Filter>
-    </ClCompile>
-    <ClCompile Include="WorldSaves.cpp">
       <Filter>Session</Filter>
     </ClCompile>
     <ClCompile Include="WorldSounds.cpp">

@@ -1,6 +1,8 @@
 #include "pch.h"
 
+#include "AlwaysOnServer.h"
 #include "Files.h"
+#include "ProgramStart.h"
 #include "TestSupport.h"
 #include "WorldSaves.h"
 
@@ -15,7 +17,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace GameClientTests
+namespace GameSharedTests
 {
 
 namespace
@@ -122,6 +124,41 @@ public:
     Assert::IsTrue(ended.size() == 1 && ended[0].number == 1, L"only the ended world that saved");
     Assert::IsTrue(Species::LatestWorld(saves.Path()).value_or(Species::SavedWorld{}).number == 3, L"Continue still opens the latest");
   }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp071AWorldsPaceIsInItsDescription)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-071")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-095")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp071AWorldsPaceIsInItsDescription)
+  {
+    // ADR-191: a world keeps its pace, which the headless server reads from its folder alone; a world described before M4
+    // is at the session pace, and a pace this build does not know makes the description one that does not read.
+    const TemporaryFolder saves;
+    std::optional<Species::SavedWorld> always = Species::CreateWorld(saves.Path(), 7, 1, 3, Species::WorldPace::AlwaysOn);
+    if (!always.has_value())
+    {
+      Assert::Fail(L"made");
+      return;
+    }
+    Assert::IsTrue(Species::RecordWorldSeed(*always, 8), L"a later record");
+    const std::optional<Species::SavedWorld> read = Species::DescribedWorld(always->folder);
+    Assert::IsTrue(read.has_value() && read->pace == Species::WorldPace::AlwaysOn && read->seed == std::optional<std::uint64_t>(8) &&
+                     read->number == 1,
+                   L"the pace is kept with the seed, and the folder's number read");
+    const std::filesystem::path older = saves.Path() / L"world-0002";
+    std::filesystem::create_directories(older);
+    Write(older / Species::WORLD_DESCRIPTION_FILE, "world.site = 2\nworld.seed = 5\n");
+    const std::optional<Species::SavedWorld> before = Species::DescribedWorld(older);
+    Assert::IsTrue(before.has_value() && before->pace == Species::WorldPace::Session, L"a world before M4 is at the session pace");
+    Write(older / Species::WORLD_DESCRIPTION_FILE, "world.site = 2\nworld.pace = weekly\n");
+    Assert::IsFalse(Species::DescribedWorld(older).has_value(), L"an unknown pace does not read");
+    // A running server's world can be continued before its first snapshot; a listing whose process ended cannot.
+    Assert::IsFalse(Species::LatestWorld(saves.Path()).has_value(), L"no snapshot and no server");
+    Assert::IsTrue(Species::WriteServerListing(always->folder, {50'000, {}, {}, Neuron::CurrentProcessId()}), L"listed");
+    Assert::IsTrue(Species::LatestWorld(saves.Path()).value_or(Species::SavedWorld{}).number == 1, L"its server runs");
+    Assert::IsTrue(Species::WriteServerListing(always->folder, {50'000, {}, {}, 0}), L"listed by no process");
+    Assert::IsFalse(Species::LatestWorld(saves.Path()).has_value(), L"a server that ended counts for nothing");
+  }
 };
 
-} // namespace GameClientTests
+} // namespace GameSharedTests

@@ -20,6 +20,8 @@ The MVP exists to answer three questions, in this order:
 
 A no to the first question stops the MVP at M3 for a redesign; M4 is built only on a yes.
 
+> **Amendment 2026-10-24 (O109).** M4 is built before Playtest 1, at the owner's request, while M1 to M3 have still to meet their exit criteria ([M4 plan](m4_plan.md)). A no to the first question still stops the MVP for a redesign, which keeps or reworks what M4 built.
+
 ### 1.3 How to read this document
 
 - **MVP requirements** (`MVP-nnn`) are what is built. Each cites the requirements it implements as written (`PIL`, `WLD`, `R-`, engine component ids and ADRs), the ones it narrows (and how), or the unwritten area it stands in for.
@@ -38,6 +40,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 > **Amendment 2026-10-21 (O86).** M2's phase A, the headless settlement (tasks T2 to T10 of the [M2 plan](m2_plan.md)), starts before M1 meets its exit criteria, on a pull request of its own stacked on M1's last. Its phase B, which makes the settlement visible and playable, still waits for M1's exit, and the M2 plan stays a Draft until then.
 
 > **Amendment 2026-10-22 (O88).** M2's phase B, which makes the settlement visible and playable (tasks T11 to T19 of the [M2 plan](m2_plan.md)), also starts before M1 meets its exit criteria. M1's criterion of a client at 60 frames per second, which the owner's first rendered run missed at the 99th percentile, stays open and is taken up at M2's T19; the M2 plan stays a Draft until M1 meets its exit criteria.
+
+> **Amendment 2026-10-24 (O109).** M4, away play, is built in full before M1, M2 and M3 meet their exit criteria and before Playtest 1 is run, on a pull request of its own, in the order of the [M4 plan](m4_plan.md). Its exit, Playtest 2, follows Playtest 1.
 
 **MVP-003** (MUST) Every number of an MVP rule is a tuning value with a stable key in data (MVP-099); the values of §4 are first guesses that the milestones and playtests retune, and a retuned value changes the data and the table, never code.
 
@@ -219,11 +223,17 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-071** (MUST) From M4 a new world may be created at the always-on pace (PIL-104: a world's pace is fixed for its life, so an M3 world stays session-paced). An always-on world runs in a headless server process (`SpeciesServer.exe`) that the client starts if it is not running and that keeps running after the client closes (O54, amending O35); the client connects to it over MsQuic on the loopback interface (O44; ADR-088's `QuicTransport`, ADR-089). The world freezes whenever that process is not running or the computer sleeps (O4), and each freeze is recorded with its cause and its world time (PIL-131).
 
+> **Amendment 2026-10-24 (O110; [M4 plan](m4_plan.md)).** The headless server runs in a console window of its own, which the client opens when it starts the server; closing that window stops the server and freezes the world cleanly, with its final snapshot, and the freeze is recorded. One always-on world runs at a time: starting or continuing another first stops the one that runs.
+
 **MVP-072** (MUST) Presence follows PIL-070: the steward is present while a client is connected and has given input within `mvp.presence.idle_minutes` (5 minutes), and away otherwise. A world at the session pace has no away state.
 
 **MVP-073** (MUST) While the steward is away, the deputy runs the settlement on the default orders of PIL-079 and the priorities the steward last set: defend the settlement, keep gathering, finish the queued construction, never attack. In a battle at its settlement the deputy keeps the turrets manned and sends each Leader's formation to the objective; Workers without a Leader fight by the threat search. The deputy never declares an attack, makes or withdraws a claim, pays tribute, demolishes, queues construction or changes the priorities (PIL-083). While the steward is present the deputy does nothing (PIL-071).
 
+> **Amendment 2026-10-24 (O110; [M4 plan](m4_plan.md)).** "A battle at its settlement" is every battle the settlement is a side of (PIL-043): the defence of its territory, the defence of a border half it holds, and the steward's own expedition when one is out. In each the deputy sends each Leader's formation to the objective; it never withdraws an expedition, promotes or demotes a Leader.
+
 **MVP-074** (MUST) A steward who returns sees the away report first (PIL-073): its summary (battles and their results, Workers and stores lost and gained, construction finished, grievances recorded, claims moved, freezes) on one page, readable in `pil.session.report_read_minutes` (2 minutes), and the list of every deputy action with the standing order that permitted it (PIL-026). The away report and the settlement status are server messages, not client logic (PIL-075, O6).
+
+> **Amendment 2026-10-24 (O110; [M4 plan](m4_plan.md)).** The report opens by itself on a return whose absence has news: a battle, a deputy action, a freeze, a grievance recorded, a claim moved or a structure finished. An absence with none opens nothing, and the latest report is one press away on the HUD.
 
 **MVP-075** (MUST) The server saves the world as a versioned snapshot every `mvp.persist.snapshot_seconds` (60 seconds of world time) and when it stops cleanly: it writes a temporary file, flushes it and replaces the previous snapshot by an atomic rename through the platform layer, keeping the last `mvp.persist.snapshots_kept` (3). At start it loads the newest snapshot that validates and records the time since that snapshot as a freeze of cause "unclean stop" when the previous stop was not clean (PIL-131). Saving starts at M2, because a session-paced world is continued across sessions. The journaled record store of O42 is deferred (§5.2).
 

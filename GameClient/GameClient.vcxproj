@@ -144,6 +144,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AlwaysOnClient.h" />
     <ClInclude Include="BattleVerbs.h" />
     <ClInclude Include="ClientSession.h" />
     <ClInclude Include="CrowdLook.h" />
@@ -168,11 +169,11 @@
     <ClInclude Include="WorldMarkers.h" />
     <ClInclude Include="WorldMenu.h" />
     <ClInclude Include="WorldPresentation.h" />
-    <ClInclude Include="WorldSaves.h" />
     <ClInclude Include="WorldSounds.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AlwaysOnClient.cpp" />
     <ClCompile Include="BattleVerbs.cpp" />
     <ClCompile Include="ClientSession.cpp" />
     <ClCompile Include="CrowdLook.cpp" />
@@ -197,7 +198,6 @@
     <ClCompile Include="WorldMarkers.cpp" />
     <ClCompile Include="WorldMenu.cpp" />
     <ClCompile Include="WorldPresentation.cpp" />
-    <ClCompile Include="WorldSaves.cpp" />
     <ClCompile Include="WorldSounds.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>

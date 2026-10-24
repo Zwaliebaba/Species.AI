@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AwayMessages.h"
 #include "BitReader.h"
 #include "BitWriter.h"
 
@@ -8,15 +9,6 @@
 
 namespace Species
 {
-
-// PIL-131: why a world froze; a saved value that is never renumbered.
-enum class FreezeCause : std::uint8_t
-{
-  ServerStall = 0, // the tick loop gave up 10 s or more (ADR-095)
-  UncleanStop = 1  // the server stopped without its final snapshot; the time since the snapshot it opened (MVP-075)
-};
-
-inline constexpr std::uint64_t FREEZE_CAUSE_MAX = 1;
 
 /// One freeze of the world (PIL-131): the world tick at which it froze, its cause, and the whole seconds of wall time it
 /// lasted as far as the server knows them, 0 when it does not.
@@ -41,7 +33,13 @@ struct WorldRecord
   friend bool operator==(const WorldRecord& _a, const WorldRecord& _b) = default;
 };
 
+// A world record of state version 22 and later holds M4's freeze causes, written in two bits (ADR-188); one before it
+// knew two causes, written in one.
+inline constexpr std::uint32_t STATE_VERSION_WITH_FREEZE_CAUSES = 22;
+inline constexpr std::uint64_t FREEZE_CAUSE_MAX_BEFORE_M4 = 1;
+
 void WriteWorldRecord(Neuron::BitWriter& _writer, const WorldRecord& _record);
-[[nodiscard]] bool ReadWorldRecord(Neuron::BitReader& _reader, WorldRecord& _record);
+// The record as a snapshot of _stateVersion holds it; false when it does not read whole.
+[[nodiscard]] bool ReadWorldRecord(Neuron::BitReader& _reader, WorldRecord& _record, std::uint32_t _stateVersion);
 
 } // namespace Species

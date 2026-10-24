@@ -59,6 +59,9 @@
     <ClCompile Include="FrameProfileTests.cpp">
       <Filter>Profiling</Filter>
     </ClCompile>
+    <ClCompile Include="InstanceLockTests.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
     <ClCompile Include="JobQueueTests.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
@@ -82,6 +85,9 @@
     </ClCompile>
     <ClCompile Include="MessagePatternTests.cpp">
       <Filter>Content</Filter>
+    </ClCompile>
+    <ClCompile Include="QuicTransportTests.cpp">
+      <Filter>Network</Filter>
     </ClCompile>
     <ClCompile Include="SettingsStoreTests.cpp">
       <Filter>Platform</Filter>
@@ -124,6 +130,9 @@
     </ClCompile>
     <ClCompile Include="StringTableAssetTests.cpp">
       <Filter>Content</Filter>
+    </ClCompile>
+    <ClCompile Include="SuspendWatchTests.cpp">
+      <Filter>Platform</Filter>
     </ClCompile>
     <ClCompile Include="TerrainFieldTests.cpp">
       <Filter>Tests</Filter>

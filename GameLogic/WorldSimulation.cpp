@@ -11,22 +11,35 @@
 namespace Species
 {
 
+namespace
+{
+
+const TuningMvp& RequiredTuning(const TuningMvp* _tuning)
+{
+  ENGINE_CHECK(_tuning != nullptr);
+  return *_tuning;
+}
+
+} // namespace
+
 WorldSimulation::WorldSimulation(const Desc& _desc)
   : m_key(_desc.simulationKey),
+    m_pace(_desc.pace),
+    m_tuning(PacedTuning(RequiredTuning(_desc.tuning), _desc.pace)),
     m_nextTick(_desc.nextTick),
     m_worldSeed(_desc.worldSeed),
     m_ids(WORLD_OWNER_ID),
     m_commands(_desc.simulationKey, _desc.nextTick)
 {
-  ENGINE_CHECK(_desc.regionCount > 0 && _desc.tuning != nullptr);
+  ENGINE_CHECK(_desc.regionCount > 0);
   m_regions.reserve(_desc.regionCount);
   for (std::uint16_t index = 0; index < _desc.regionCount; ++index)
   {
     m_regions.push_back(
-      std::make_unique<RegionSimulation>(index, _desc.simulationKey, _desc.nextTick, *_desc.tuning, nullptr, _desc.structures));
+      std::make_unique<RegionSimulation>(index, _desc.simulationKey, _desc.nextTick, m_tuning, nullptr, _desc.structures));
   }
-  // MVP-060 (ADR-163): a run begins with its world.
-  SetRunEnd(_desc.nextTick + RunTicks(*_desc.tuning));
+  // MVP-060 (ADR-163): a run begins with its world, mvp.run.length_hours at its pace (ADR-184).
+  SetRunEnd(_desc.nextTick + RunTicks(m_tuning));
 }
 
 std::uint64_t RunTicks(const TuningMvp& _tuning) noexcept

@@ -270,7 +270,7 @@ GameUi::GameUi(const TuningPresentation& _presentation)
         }
         // ADR-170: the world's menu and epilogue, while a world runs.
         const auto menu = static_cast<Neuron::UiPageId>(GamePage::WorldMenu);
-        if (m_worldMenu != nullptr && _page >= menu && _page <= static_cast<Neuron::UiPageId>(GamePage::WorldEpilogue))
+        if (m_worldMenu != nullptr && _page >= menu && _page <= static_cast<Neuron::UiPageId>(GamePage::WorldAwayReport))
         {
           return m_worldMenu->MakePage(static_cast<WorldMenuPage>(_page - menu));
         }

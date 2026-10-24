@@ -1,7 +1,9 @@
 #include "pch.h"
 
+#include "AlwaysOnServer.h"
 #include "Files.h"
 #include "Log.h"
+#include "ProgramStart.h"
 #include "SettingsFile.h"
 #include "TextEncoding.h"
 #include "WorldSaves.h"
@@ -25,6 +27,7 @@ constexpr std::string_view SEED_KEY = "world.seed";
 constexpr std::string_view SITE_KEY = "world.site";
 constexpr std::string_view AI_SETTLEMENTS_KEY = "world.ai_settlements"; // O103: the AI settlements it was founded with
 constexpr std::string_view RUN_ENDED_KEY = "world.run_ended";           // ADR-170: "true" once the client saw the run end
+constexpr std::string_view PACE_KEY = "world.pace";                     // ADR-191: its pace's name, from M4
 constexpr std::string_view TRUE_TEXT = "true";
 constexpr std::uint64_t SITE_COUNT = 4;          // WLD-040: the region's settlement sites
 constexpr std::uint32_t WORLD_NUMBER_MAX = 9999; // the most that WORLD_NUMBER_DIGITS digits hold
@@ -69,6 +72,7 @@ bool WriteDescription(const SavedWorld& _world)
   {
     entries.push_back({std::string(RUN_ENDED_KEY), std::string(TRUE_TEXT)});
   }
+  entries.push_back({std::string(PACE_KEY), std::string(PaceName(_world.pace))});
   const std::string text = Neuron::WriteSettingsText({}, entries);
   if (!Neuron::ReplaceFileAtomically(_world.folder / WORLD_DESCRIPTION_FILE, std::as_bytes(std::span(text))))
   {
@@ -129,11 +133,25 @@ std::optional<SavedWorld> ReadWorld(const std::filesystem::path& _folder, std::u
     {
       world.ended = line.value == TRUE_TEXT;
     }
+    else if (line.key == PACE_KEY)
+    {
+      const std::optional<WorldPace> pace = PaceNamed(line.value);
+      if (!pace)
+      {
+        return std::nullopt;
+      }
+      world.pace = *pace;
+    }
   }
   return site ? std::optional<SavedWorld>(std::move(world)) : std::nullopt;
 }
 
 } // namespace
+
+std::optional<SavedWorld> DescribedWorld(const std::filesystem::path& _folder)
+{
+  return ReadWorld(_folder, NumberOf(_folder).value_or(0));
+}
 
 std::vector<SavedWorld> ListWorlds(const std::filesystem::path& _saves)
 {
@@ -164,7 +182,10 @@ std::optional<SavedWorld> LatestWorld(const std::filesystem::path& _saves)
 {
   for (SavedWorld& world : ListWorlds(_saves))
   {
-    if (!Neuron::ListFiles(world.folder, WORLD_SNAPSHOT_SUFFIX).empty())
+    // ADR-191: an always-on world whose server runs can be continued before its first snapshot.
+    const std::optional<ServerListing> listing = world.pace == WorldPace::AlwaysOn ? ReadServerListing(world.folder) : std::nullopt;
+    if (!Neuron::ListFiles(world.folder, WORLD_SNAPSHOT_SUFFIX).empty() ||
+        (listing.has_value() && Neuron::ProcessRunning(listing->processId)))
     {
       return std::move(world);
     }
@@ -173,7 +194,7 @@ std::optional<SavedWorld> LatestWorld(const std::filesystem::path& _saves)
 }
 
 std::optional<SavedWorld> CreateWorld(const std::filesystem::path& _saves, std::optional<std::uint64_t> _seed, std::uint8_t _site,
-                                      std::uint8_t _aiSettlements)
+                                      std::uint8_t _aiSettlements, WorldPace _pace)
 {
   // Numbered above every folder of the form, a world or not, so that no folder is ever reused.
   std::uint32_t highest = 0;
@@ -194,6 +215,7 @@ std::optional<SavedWorld> CreateWorld(const std::filesystem::path& _saves, std::
   world.seed = _seed;
   world.site = _site;
   world.aiSettlements = _aiSettlements;
+  world.pace = _pace;
   std::filesystem::create_directories(world.folder, error);
   if (error)
   {

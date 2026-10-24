@@ -24,6 +24,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AlwaysOnServer.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="AwayMessages.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
     <ClInclude Include="CommandMessages.h">
       <Filter>Messages</Filter>
     </ClInclude>
@@ -43,6 +49,9 @@
       <Filter>Records</Filter>
     </ClInclude>
     <ClInclude Include="GameMessages.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
+    <ClInclude Include="JoinMessages.h">
       <Filter>Messages</Filter>
     </ClInclude>
     <ClInclude Include="Navigation.h">
@@ -99,6 +108,12 @@
     <ClInclude Include="TuningPresentation.h">
       <Filter>Records</Filter>
     </ClInclude>
+    <ClInclude Include="WorldPace.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldSaves.h">
+      <Filter>World</Filter>
+    </ClInclude>
     <ClInclude Include="WorldTerrain.h">
       <Filter>Messages</Filter>
     </ClInclude>
@@ -107,7 +122,16 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AlwaysOnServer.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="AwayMessages.cpp">
+      <Filter>Messages</Filter>
+    </ClCompile>
     <ClCompile Include="CommandMessages.cpp">
+      <Filter>Messages</Filter>
+    </ClCompile>
+    <ClCompile Include="JoinMessages.cpp">
       <Filter>Messages</Filter>
     </ClCompile>
     <ClCompile Include="Navigation.cpp">
@@ -148,6 +172,12 @@
     </ClCompile>
     <ClCompile Include="Tuning.cpp">
       <Filter>Records</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldPace.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldSaves.cpp">
+      <Filter>World</Filter>
     </ClCompile>
     <ClCompile Include="WorldTerrain.cpp">
       <Filter>Messages</Filter>

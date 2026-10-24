@@ -397,6 +397,7 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
   const SettlementVerbResult settled = m_settlement.Update(settlementFrame, verbTeam, placement, m_areas);
   verbs.controls.primaryDown = verbs.controls.primaryDown && !settled.tookPrimary;
   verbs.controls.secondaryDown = verbs.controls.secondaryDown && !settled.tookSecondary;
+  m_awayReportRequested = m_awayReportRequested || settled.openAwayReport;
   for (const SettlementCommand& command : settled.commands)
   {
     const std::optional<std::uint64_t> sequence =

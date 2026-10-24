@@ -34,7 +34,8 @@ constexpr std::string_view STRING_BUILD = "ui.hud.build";
 constexpr std::string_view STRING_COST = "ui.hud.cost";
 constexpr std::string_view STRING_COMPLETED = "ui.hud.completed";
 constexpr std::string_view STRING_SEED = "ui.hud.seed";
-constexpr std::string_view STRING_PLACING = "ui.hud.placing"; // ADR-153
+constexpr std::string_view STRING_ALWAYS_ON = "ui.hud.always_on"; // ADR-191
+constexpr std::string_view STRING_PLACING = "ui.hud.placing";     // ADR-153
 constexpr std::string_view STRING_REFUSED = "ui.hud.refused";
 // M3 task T11 (ADR-166): the relations panel and the notices of M3's kinds.
 constexpr std::string_view STRING_CLADAN = "ui.hud.cladan";
@@ -104,6 +105,7 @@ constexpr std::array<UiImage, 3> PRIORITY_ICONS{UiImage::IconPriorityGather, UiI
 // priorities, which start at PRIORITY_ROW.
 constexpr std::size_t FIXED_ROWS = 7;
 constexpr std::size_t GROWTH_ROW = 2;
+constexpr std::size_t ALWAYS_ON_ROW = 1; // the world panel's row after the seed's (ADR-191)
 constexpr std::size_t PRIORITY_ROW = 4;
 // The share a priority reaches at most (MVP-036).
 constexpr std::uint8_t SHARE_MAX = 100;
@@ -493,6 +495,10 @@ HudModel HudModelOf(const ClientSession& _session, const TuningMvp& _tuning, con
   model.tickSeconds = _tuning.ref.sim.tickPeriod;
   model.settlement = _session.OwnSettlement();
   model.seed = _session.WorldSeed();
+  model.pace = _session.Pace();
+  model.idleMinutes = _tuning.mvp.presence.idleMinutes;
+  const std::optional<AwayReport>& away = _session.LatestAwayReport();
+  model.awayReport = model.settlement.has_value() && away.has_value() && away->team == model.settlement->team && away->absence;
   const std::optional<SettlementStatus>& status = _session.LatestStatus();
   if (model.settlement.has_value() && status.has_value() && status->team == model.settlement->team)
   {
@@ -533,11 +539,6 @@ std::vector<HudNotice> AgeNotices(std::vector<HudNotice> _notices, std::span<con
   return _notices;
 }
 
-namespace
-{
-
-// ADR-166: an area's name: the central site, or a half of a valley border area by the settlement whose half it is and the
-// neighbour it faces.
 std::string AreaName(std::uint8_t _area, const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale)
 {
   if (_area >= CLAIM_AREA_CENTRAL)
@@ -553,8 +554,6 @@ std::string AreaName(std::uint8_t _area, const Neuron::StringTable& _strings, co
                              Neuron::FormatArgument{"facing", std::string_view(facing)}};
   return _strings.Format(STRING_AREA, arguments, _locale);
 }
-
-} // namespace
 
 SettlementHud::SettlementHud(const TuningPresentation& _presentation, const TuningMvp& _tuning)
   : m_presentation(_presentation),
@@ -810,6 +809,15 @@ std::vector<HudRow> SettlementHud::WorldRows(const Neuron::StringTable& _strings
     const std::string seed = std::to_string(*m_model.seed);
     const std::array arguments{Neuron::FormatArgument{"seed", std::string_view(seed)}};
     seedRow.text = _strings.Format(STRING_SEED, arguments, _locale);
+  }
+  // MVP-071 and MVP-072 (ADR-191): an always-on world, and when its steward counts as away.
+  if (m_model.pace == WorldPace::AlwaysOn)
+  {
+    const std::array arguments{Neuron::FormatArgument{"minutes", static_cast<std::int64_t>(std::llround(m_model.idleMinutes))}};
+    HudRow& pace = rows.emplace_back();
+    pace.text = _strings.Format(STRING_ALWAYS_ON, arguments, _locale);
+    pace.color = text;
+    pace.trailing = Units(hud.iconSize) + Units(hud.padding); // O110 (ADR-192): the away report's button
   }
   if (!m_model.valley.has_value())
   {
@@ -1243,7 +1251,8 @@ void SettlementHud::Layout(const Neuron::UiMetrics& _metrics)
 
   // The world's panel, bottom left.
   // ADR-169: under the seed, once the valley's status has come, the time left, the standing's heading and its rows.
-  const std::size_t worldRows = 1 + (m_model.valley.has_value() ? 2 + m_model.valley->renown.size() : 0);
+  const std::size_t worldRows =
+    1 + (m_model.pace == WorldPace::AlwaysOn ? 1 : 0) + (m_model.valley.has_value() ? 2 + m_model.valley->renown.size() : 0);
   const std::array<float, 2> world = plateOf(m_plates.accent, least, measured ? Widest(WorldRows(*m_strings, *m_locale)) : 0.0f, worldRows);
   // ADR-175: a bottom panel that would reach under the construction bar stands above it instead.
   const auto bottomOf = [&](float _left, float _right)
@@ -1251,6 +1260,13 @@ void SettlementHud::Layout(const Neuron::UiMetrics& _metrics)
   m_world = Neuron::UiRect::FromSize(margin, bottomOf(margin, margin + world[0]) - world[1], world[0], world[1]);
   m_worldInner = Inside(m_plates.accent, m_world, false);
   m_zones.push_back({HudZone::World, 0, m_world});
+  // O110 (ADR-192): the always-on row's button at its right end, which opens the latest away report.
+  if (m_model.pace == WorldPace::AlwaysOn)
+  {
+    const float top = std::round(m_worldInner.top + padding + row * static_cast<float>(ALWAYS_ON_ROW) + (row - icon) * 0.5f);
+    m_awayButton = Neuron::UiRect::FromSize(m_worldInner.right - padding - icon, top, icon, icon);
+    m_zones.push_back({HudZone::AwayReport, 0, m_awayButton});
+  }
 
   // ADR-166: the relations panel, bottom right, once the valley's status has come.
   m_relationRows.clear();
@@ -1578,9 +1594,16 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
     const float left = m_worldInner.left + padding;
     const float right = m_worldInner.right - padding;
     float top = m_worldInner.top + padding;
+    std::size_t index = 0;
     for (const HudRow& worldRow : WorldRows(_strings, _locale))
     {
       drawRow(worldRow, left, right, top);
+      // O110 (ADR-192): the away report's button, on the accent plate once a report has come, and dim before.
+      if (index++ == ALWAYS_ON_ROW && m_model.pace == WorldPace::AlwaysOn)
+      {
+        plate(m_model.awayReport, m_awayButton, true);
+        image(UiImage::IconDeputy, m_awayButton, Rgba(palette.text, m_model.awayReport ? 1.0 : hud.disabledAlpha));
+      }
       top += row;
     }
   }

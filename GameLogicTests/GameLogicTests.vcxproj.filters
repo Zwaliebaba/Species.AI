@@ -26,6 +26,9 @@
     <ClCompile Include="ActorGridTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="AwayReportTests.cpp">
+      <Filter>Persistence</Filter>
+    </ClCompile>
     <ClCompile Include="BattleTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
@@ -44,6 +47,9 @@
     <ClCompile Include="CommandTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="DeputyTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="EssenceTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
@@ -53,7 +59,16 @@
     <ClCompile Include="GrowthSceneTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="JoinTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="MovementTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="PaceTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="PresenceTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="RegionSimulationTests.cpp">
