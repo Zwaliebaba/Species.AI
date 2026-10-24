@@ -5,6 +5,8 @@ reference test machine.
                                  [--headless-only] [--record <file>] [--quick]
   python Build/RunPerformance.py --saved-world <world folder> [--skip-build] [--tool <SpeciesPerformance.exe>] [--record <file>]
   python Build/RunPerformance.py --valley [--skip-build] [--tool <SpeciesPerformance.exe>] [--record <file>] [--quick]
+  python Build/RunPerformance.py --link [--skip-build] [--tool <SpeciesPerformance.exe>] [--record <file>] [--quick]
+  python Build/RunPerformance.py --away [--skip-build] [--tool <SpeciesPerformance.exe>] [--record <file>] [--quick]
   python Build/RunPerformance.py --self-test --tool <SpeciesPerformance.exe> [--bench <SpeciesFrameBench.exe> --warp]
 
 --tuning-source <GameData> makes the tool read the authored tuning record instead of the cooked one beside it, for a
@@ -40,9 +42,17 @@ ADR-156), judges it as the growth scene is, and records it in playtests/M2.md un
 machine is neither read nor pinned for it. --valley runs the valley run alone (M3 task T9, ADR-164): the corpus of seeds,
 each valley's four settlements driven by a policy for a run, judged against Playtest 1's measurable lines and recorded
 in playtests/M3.md unless --record names another file; it fails (exit code 1) when a line is missed, and neither reads
-nor pins the machine, since a valley run's figures are the simulation's, not the machine's speed. --self-test is CI's: it runs the given tool with --quick, and the bench too when one is
-given (--warp draws it on the WARP adapter), then proves the record's rules on fixtures in a temporary folder, and
-writes nothing into the checkout.
+nor pins the machine, since a valley run's figures are the simulation's, not the machine's speed. --link runs the link
+run alone (M4 task T11, ADR-193): the link scene's 30 minutes over QuicTransport through the link simulator
+(Tools/LinkSimulator, ADR-088 item 7) at 10 % loss each way, a 150 ms round trip and 5 % reordering, with a rejoin at
+minute 20, judged against the transport's confirmations (ADR-086, ADR-088, ADR-089) and recorded in playtests/M4.md
+unless --record names another file; it fails (exit code 1) when a line is missed, and neither reads nor pins the machine.
+--away runs the away run alone (M4 task T12, ADR-194): each always-on valley of the corpus played for its run at PIL-102's
+typical and check-in patterns, judged against Playtest 2's measurable lines and recorded in playtests/M4.md unless
+--record names another file; it fails (exit code 1) when a line is missed, and neither reads nor pins the machine.
+--self-test is CI's: it runs the given tool with --quick, and the bench too when one is given (--warp draws it on the
+WARP adapter), the link simulator's own test and a quick link run through it, then proves the record's rules on
+fixtures in a temporary folder, and writes nothing into the checkout.
 """
 import argparse
 import datetime
@@ -50,6 +60,7 @@ import json
 import os
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -61,6 +72,25 @@ SAVED_WORLD_RECORD = os.path.join(ROOT, 'playtests', 'M2.md')  # ADR-156: the ow
 SAVED_WORLD_SECTION = "## The owner's growth run"
 VALLEY_RECORD = os.path.join(ROOT, 'playtests', 'M3.md')  # ADR-164: the valley run predicts Playtest 1's measured lines
 VALLEY_SECTION = '## The valley run'
+LINK_RECORD = os.path.join(ROOT, 'playtests', 'M4.md')  # ADR-193: the transport's confirmations are M4's evidence
+LINK_SECTION = '## The link run'
+LINK_SIMULATOR = os.path.join(ROOT, 'Tools', 'LinkSimulator', 'LinkSimulator.py')
+# ADR-086 and ADR-088's confirmations at M4, as ADR-193 measures them: a figure frozen at most 2 ticks over one lost
+# datagram; the overhead per state datagram within 5 bytes of ADR-088 item 3's 69 bytes on IPv4 with ADR-111's header
+# (the 3-byte message header and the 10-bit record count on top of the 8 bytes item 3 counts); a rejoin within 10 s.
+LINK_FREEZE_TICKS = 2
+LINK_OVERHEAD_BYTES = 73.25
+LINK_OVERHEAD_TOLERANCE_BYTES = 5.0
+LINK_REJOIN_SECONDS = 10.0
+AWAY_SECTION = '## The away run'
+# Playtest 2's measurable lines (the MVP scope's table 6), as ADR-194 reads them: PIL-022's absence of
+# pil.session.away_short_hours or more with an attack, its strength back within pil.guard.regain_days; and PIL-023's
+# guard, the typical pattern's growth against the check-in pattern's, reported against pil.guard.presence_gain_share and
+# pil.guard.check_in_floor_share.
+AWAY_SHORT_HOURS = 8.0
+AWAY_REGAIN_DAYS = 2.0
+AWAY_PRESENCE_GAIN = 1.25
+AWAY_CHECK_IN_FLOOR = 0.70
 CONFIGURATION = 'Release'
 PLATFORM = 'x64'  # O100: the reference test machine is an x64 PC, in place of O69's ARM64 development build
 
@@ -223,9 +253,9 @@ def travel_factor(result):
   return max(medians) if medians else None
 
 
-def run_tool(tool, quick, out, tuning_source=None, scenes=None):
+def run_tool(tool, quick, out, tuning_source=None, scenes=None, extra=()):
   args = ([tool, '--out', out] + (['--quick'] if quick else []) + (['--tuning-source', tuning_source] if tuning_source else []) +
-          (['--scenes', scenes] if scenes else []))
+          (['--scenes', scenes] if scenes else []) + list(extra))
   completed = subprocess.run(args, capture_output=True, text=True)
   if completed.returncode != 0:
     raise SystemExit(f'RunPerformance: {os.path.basename(tool)} failed:\n{completed.stdout}{completed.stderr}')
@@ -678,6 +708,204 @@ def record_valley(path, result, build_id, when):
   return 0 if all(status != 'missed' for _, _, _, status in rows) else 1
 
 
+def free_udp_port(taken=()):
+  while True:
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
+      probe.bind(('127.0.0.1', 0))
+      port = probe.getsockname()[1]
+    if port not in taken:
+      return port
+
+
+def run_link(tool, quick, folder, tuning_source=None):
+  """ADR-193: the link scene through the link simulator at its default link, on two free loopback ports; the result
+  carries the simulator's figures as link_simulator."""
+  server_port = free_udp_port()
+  link_port = free_udp_port((server_port,))
+  stats = os.path.join(folder, 'link-simulator.json')
+  simulator = subprocess.Popen([sys.executable, LINK_SIMULATOR, '--listen', str(link_port), '--server', str(server_port), '--stats', stats],
+                               stdout=subprocess.DEVNULL)
+  try:
+    result = run_tool(tool, quick, os.path.join(folder, 'link.json'), tuning_source, 'link',
+                      ('--server-port', str(server_port), '--link-port', str(link_port)))
+  finally:
+    simulator.terminate()
+    simulator.wait(timeout=30)
+  if os.path.exists(stats):
+    with open(stats, encoding='utf-8') as f:
+      result['link_simulator'] = json.load(f)
+  return result
+
+
+def link_rows(result):
+  """ADR-193: the link run against the transport's confirmations (ADR-086, ADR-088, ADR-089), as (figure, measured,
+  target, result)."""
+  link = result['link']
+  window = link['window']
+  server, client = link['server_path'], link['client_path']
+  single, multiple, none = link['figures_single_loss'], link['figures_multiple_loss'], link['figures_no_loss']
+  minutes = link['ticks'] * result['tick_period_s'] / 60.0
+
+  def met(ok):
+    return 'met' if ok else 'missed'
+
+  rows = [
+    ('a figure\'s longest freeze over one lost datagram that carried it',
+     f'{single["longest_ticks"]} ticks, over {single["count"]} such freezes', f'at most {LINK_FREEZE_TICKS} ticks',
+     met(single['count'] > 0 and single['longest_ticks'] <= LINK_FREEZE_TICKS)),
+    ('the overhead per state datagram on IPv4, every packet the server sent charged to its datagrams',
+     f'{window["overhead_bytes_per_datagram"]:.1f} bytes over {window["state_datagrams"]} datagrams, '
+     f'{window["packets_per_datagram"]:.2f} packets a datagram', f'{LINK_OVERHEAD_BYTES:g} ± {LINK_OVERHEAD_TOLERANCE_BYTES:g} bytes',
+     met(window['state_datagrams'] > 0 and abs(window['overhead_bytes_per_datagram'] - LINK_OVERHEAD_BYTES) <= LINK_OVERHEAD_TOLERANCE_BYTES)),
+    ('a rejoin, from its connection\'s start to its first state', f'{link["rejoin_s"]:.2f} s' if link['rejoined'] else 'none',
+     f'within {LINK_REJOIN_SECONDS:g} s', met(link['rejoined'] and 0.0 <= link['rejoin_s'] <= LINK_REJOIN_SECONDS)),
+    ('the hash of every tick against the session\'s journal replayed without a transport',
+     f'{link["hashes_compared"]} ticks, {"equal" if link["hashes_match"] else "different"}', 'equal on every tick',
+     met(link['hashes_match'] and link['hashes_compared'] >= link['ticks'])),
+    ('the peer\'s datagram support (ADR-089), at the server and the client',
+     ', '.join('enabled' if path['datagrams_enabled'] else 'disabled' for path in (server, client)), 'enabled at both',
+     met(server['datagrams_enabled'] and client['datagrams_enabled'])),
+    ('the session', f'{minutes:.1f} min, {link["evaluated_ticks"]} ticks compared, {link["unevaluated_ticks"]} without a view', '—',
+     'reported'),
+    ('state datagrams', f'{link["state_datagrams"]}, {link["datagrams_lost"]} reported lost, {link["datagrams_unresolved"]} unresolved',
+     '—', 'reported'),
+    ('a figure\'s freezes over two or more lost datagrams, and over none',
+     f'{multiple["count"]}, the longest {multiple["longest_ticks"]} ticks; {none["count"]}, the longest {none["longest_ticks"]} ticks',
+     '—', 'reported'),
+    ('the client\'s missing baselines, late updates and undecoded messages',
+     f'{link["missing_baselines"]}, {link["late_updates"]}, {link["messages_dropped"]}', '—', 'reported'),
+    ('the statuses asked for and the answers', f'{link["requests_sent"]} and {link["answers"]}', '—', 'reported'),
+    ('the first join', f'{link["join_s"]:.2f} s', '—', 'reported'),
+    ('the server end\'s round trip, congestion window and congestion events (MsQuic)',
+     f'{server["rtt_us"] / 1000:.1f} ms, {server["congestion_window_bytes"]} bytes, {server["congestion_events"]}', '—', 'reported'),
+    ('the largest datagram MsQuic sends, and the path MTU', f'{server["datagram_max_send_bytes"]} and {server["path_mtu_bytes"]} bytes',
+     '—', 'reported'),
+  ]
+  simulator = result.get('link_simulator')
+  if simulator:
+    settings = simulator['settings']
+    ways = '; '.join(f'{name.replace("_", " ")} {way["lost"]} of {way["taken"]} lost, {way["reordered"]} reordered'
+                     for name, way in ((n, simulator[n]) for n in ('client_to_server', 'server_to_client')))
+    rows.append(('the link simulator', f'{settings["rtt_ms"]:g} ms, {settings["loss_percent"]:g} % lost and {settings["reorder_percent"]:g} % '
+                 f'reordered each way; {ways}', '—', 'reported'))
+  return rows
+
+
+def record_link(path, result, build_id, when):
+  """Writes the link run into the record's section of its own; returns 0 when every line is met, 1 otherwise."""
+  text = open(path, encoding='utf-8').read() if os.path.exists(path) else f'# {os.path.splitext(os.path.basename(path))[0]}\n'
+  if LINK_SECTION not in text:
+    text = text.rstrip('\n') + (f'\n\n{LINK_SECTION}\n\nWritten by `Build/RunPerformance.py --link` (ADR-193): the link scene over '
+                                'QuicTransport through the link simulator, read against the transport\'s confirmations of '
+                                'ADR-086, ADR-088 and ADR-089.\n')
+  rows = link_rows(result)
+  table = '\n'.join(f'| {figure} | {measured} | {target} | {status} |' for figure, measured, target, status in rows)
+  section = (f'### Run {when}, build {build_id}, {result["configuration"]}|{result["platform"]}\n\n'
+             f'| Figure | Measured | Target | Result |\n|---|---|---|---|\n{table}\n')
+  head, marker, rest = text.partition(LINK_SECTION)
+  following = rest.find('\n## ')
+  if following < 0:
+    text = text.rstrip('\n') + '\n\n' + section
+  else:
+    text = head + marker + rest[:following].rstrip('\n') + '\n\n' + section + rest[following:]
+  with open(path, 'w', encoding='utf-8', newline='\n') as f:
+    f.write(text)
+  print(f'RunPerformance: the link run recorded in {shown(path)}')
+  return 0 if all(status != 'missed' for _, _, _, status in rows) else 1
+
+
+def away_growth(run):
+  """The steward's strength gained per world day over the run, and the AI settlements' mean, in resource units."""
+  days = max(run['hours'] / 24.0, 1e-9)
+  return ((run['steward_strength'][-1] - run['steward_strength'][0]) / days, (run['ai_strength'][-1] - run['ai_strength'][0]) / days)
+
+
+def away_rows(result):
+  """ADR-194: the away run against Playtest 2's measurable lines (the MVP scope's table 6), as (figure, measured, target,
+  result). An absence is [from hour, to hour, battles defended, deputy actions, strength before, strength after, hour
+  regained or None]."""
+  runs = result.get('away') or []
+  rows = []
+  for run in runs:
+    attacked = [a for a in run['absences'] if a[2] > 0]
+    steward, ai = away_growth(run)
+    rows.append((f'seed {run["seed"]}, the {run["pattern"].replace("_", "-")} pattern',
+                 f'{run["hours"] / 24.0:.1f} world days; strength {run["steward_strength"][0]:.0f} to {run["steward_strength"][-1]:.0f} '
+                 f'({steward:+.1f} a day, the AI settlements {ai:+.1f}); Workers {run["steward_workers"][-1]}; '
+                 f'{run["steward_battles"]} of the steward\'s battles; {len(run["absences"])} absences, {len(attacked)} with an attack, '
+                 f'{sum(a[3] for a in run["absences"])} deputy actions', '—', 'reported'))
+  if not runs:
+    return rows
+
+  def met(ok):
+    return 'met' if ok else 'missed'
+
+  # PIL-022 at the typical pattern: every absence of 8 hours or more with an attack, its strength back within 2 days of
+  # the return; one not back with fewer than 2 days of the run left is open and not judged.
+  judged, regains, still_open = [], [], 0
+  for run in runs:
+    if run['pattern'] != 'typical':
+      continue
+    for start, end, battles, _, _, _, regained in run['absences']:
+      if battles == 0 or end - start < AWAY_SHORT_HOURS:
+        continue
+      if regained is None and run['hours'] - end < AWAY_REGAIN_DAYS * 24.0:
+        still_open += 1
+        continue
+      judged.append(regained)
+      if regained is not None:
+        regains.append((regained - end) / 24.0)
+  never = sum(1 for r in judged if r is None)
+  longest = max(regains, default=0.0)
+  rows.append(('after an absence of 8 hours or more with an attack, world days back to the strength before it (the typical pattern)',
+               'no such absence' if not judged else
+               f'the longest {longest:.2f} days over {len(judged)} absences, {never} never back' +
+               (f'; {still_open} still open at the run\'s end' if still_open else ''),
+               f'at most {AWAY_REGAIN_DAYS:g} world days', met(bool(judged) and never == 0 and longest <= AWAY_REGAIN_DAYS)))
+  # PIL-023, as Playtest 2 reads it: the typical pattern's growth against the check-in pattern's, seed by seed.
+  pairs = []
+  for run in runs:
+    if run['pattern'] != 'typical':
+      continue
+    other = next((r for r in runs if r['seed'] == run['seed'] and r['pattern'] == 'check_in'), None)
+    if other is not None:
+      pairs.append((away_growth(run)[0], away_growth(other)[0]))
+  more = sum(1 for typical, check_in in pairs if typical > check_in)
+  ratios = [typical / check_in for typical, check_in in pairs if check_in > 0]
+  mean_ratio = sum(ratios) / len(ratios) if ratios else None
+  rows.append(('the steward\'s growth per world day, the typical pattern against the check-in pattern',
+               f'more on {more} of {len(pairs)} seeds' + (f', {mean_ratio:.2f} times on average' if mean_ratio is not None else ''),
+               'more on every seed', met(bool(pairs) and more == len(pairs))))
+  rows.append(('PIL-023\'s guard: the typical pattern at least 25 % more, and the check-in pattern at least 70 % of it',
+               'no pair' if mean_ratio is None else f'{mean_ratio:.2f} times; the check-in pattern {1.0 / mean_ratio * 100:.0f} %',
+               f'{AWAY_PRESENCE_GAIN:g} times; {AWAY_CHECK_IN_FLOOR * 100:.0f} %', 'reported'))
+  return rows
+
+
+def record_away(path, result, build_id, when):
+  """Writes the away run into the record's section of its own; returns 0 when every line is met, 1 otherwise."""
+  text = open(path, encoding='utf-8').read() if os.path.exists(path) else f'# {os.path.splitext(os.path.basename(path))[0]}\n'
+  if AWAY_SECTION not in text:
+    text = text.rstrip('\n') + (f'\n\n{AWAY_SECTION}\n\nWritten by `Build/RunPerformance.py --away` (ADR-194): each always-on valley of the '
+                                'corpus played for its run at PIL-102\'s typical and check-in patterns, read against Playtest 2\'s '
+                                'measurable lines (the MVP scope\'s table 6).\n')
+  rows = away_rows(result)
+  table = '\n'.join(f'| {figure} | {measured} | {target} | {status} |' for figure, measured, target, status in rows)
+  seeds = sorted({run['seed'] for run in result['away']})
+  section = (f'### Seeds {seeds[0]} to {seeds[-1]}, run {when}, build {build_id}, {result["configuration"]}|{result["platform"]}\n\n'
+             f'| Figure | Measured | Target | Result |\n|---|---|---|---|\n{table}\n')
+  head, marker, rest = text.partition(AWAY_SECTION)
+  following = rest.find('\n## ')
+  if following < 0:
+    text = text.rstrip('\n') + '\n\n' + section
+  else:
+    text = head + marker + rest[:following].rstrip('\n') + '\n\n' + section + rest[following:]
+  with open(path, 'w', encoding='utf-8', newline='\n') as f:
+    f.write(text)
+  print(f'RunPerformance: the away run recorded in {shown(path)}')
+  return 0 if all(status != 'missed' for _, _, _, status in rows) else 1
+
+
 def run_bench(bench, quick, out, warp=False):
   args = [bench, '--out', out] + (['--quick'] if quick else []) + (['--warp'] if warp else [])
   completed = subprocess.run(args, capture_output=True, text=True)
@@ -814,6 +1042,65 @@ def self_test(tool, tuning_source, bench=None, warp=False):
       return (text.count(VALLEY_SECTION) == 1 and text.index('Seeds 1 to 1, run first') < text.index('Seeds 1 to 2, run second') and
               '2 of 2 claims' in text and '3 to 5' in text)
 
+    # ADR-193: the link simulator's own test, then a quick link run through it, and the link run's lines and record.
+    simulated = subprocess.run([sys.executable, LINK_SIMULATOR, '--self-test'], capture_output=True, text=True)
+    print(simulated.stdout.strip() or simulated.stderr.strip())
+    link_quick = run_link(tool, True, folder, tuning_source)
+    link_path = os.path.join(folder, 'M4.md')
+    for figure, measured, target, status in link_rows(link_quick):
+      print(f'RunPerformance: the quick link run: {figure}: {measured} against {target}: {status}')
+
+    def link_ran():
+      link = link_quick['link']
+      return (link['ticks'] >= 300 and link['rejoined'] and link['hashes_match'] and link['messages_dropped'] == 0 and
+              link['answers'] > 0 and link['server_path']['datagrams_enabled'] and link['client_path']['datagrams_enabled'] and
+              all(link_quick.get('link_simulator', {}).get(way, {}).get('sent', 0) > 0 for way in ('client_to_server', 'server_to_client')))
+
+    def link_judged():
+      link = link_quick['link']
+      good = dict(link_quick, link=dict(link, figures_single_loss=dict(link['figures_single_loss'], count=10, longest_ticks=1),
+                                        window=dict(link['window'], state_datagrams=100, overhead_bytes_per_datagram=74.0),
+                                        rejoined=True, rejoin_s=1.5, hashes_match=True, hashes_compared=link['ticks']))
+      frozen = dict(good, link=dict(good['link'], figures_single_loss=dict(good['link']['figures_single_loss'], longest_ticks=3)))
+      heavy = dict(good, link=dict(good['link'], window=dict(good['link']['window'], overhead_bytes_per_datagram=80.0)))
+      slow_rejoin = dict(good, link=dict(good['link'], rejoin_s=12.0))
+      unequal = dict(good, link=dict(good['link'], hashes_match=False))
+      return (record_link(link_path, good, 'fixture', 'first') == 0 and record_link(link_path, frozen, 'fixture', 'second') == 1 and
+              record_link(link_path, heavy, 'fixture', 'third') == 1 and record_link(link_path, slow_rejoin, 'fixture', 'fourth') == 1 and
+              record_link(link_path, unequal, 'fixture', 'fifth') == 1)
+
+    # ADR-194: the quick away run plays both patterns, and the away run's lines and record.
+    away_quick = run_tool(tool, True, os.path.join(folder, 'away.json'), tuning_source, 'away')
+    away_path = os.path.join(folder, 'M4-away.md')
+
+    def away_judged():
+      def run(pattern, strengths, absences):
+        return {'seed': 1, 'pattern': pattern, 'ticks': 1920, 'hours': 192.0, 'steward_site': 0, 'steward_battles': 2, 'run_ended': True,
+                'mean_step_us': 1.0, 'steward_strength': strengths, 'ai_strength': [400.0, 900.0], 'steward_workers': [20, 60],
+                'absences': absences}
+      night = [12.0, 23.0, 1, 3, 800.0, 600.0, 40.0]
+      good = dict(away_quick, away=[run('typical', [400.0, 1200.0], [night]), run('check_in', [400.0, 900.0], [])])
+      slow = dict(good, away=[run('typical', [400.0, 1200.0], [[12.0, 23.0, 1, 3, 800.0, 600.0, 90.0]]), good['away'][1]])
+      never = dict(good, away=[run('typical', [400.0, 1200.0], [[12.0, 23.0, 1, 3, 800.0, 600.0, None]]), good['away'][1]])
+      flat = dict(good, away=[good['away'][0], run('check_in', [400.0, 1300.0], [])])
+      unattacked = dict(good, away=[run('typical', [400.0, 1200.0], [[12.0, 23.0, 0, 0, 800.0, 790.0, 24.0]]), good['away'][1]])
+      late = dict(good, away=[run('typical', [400.0, 1200.0], [[150.0, 161.0, 1, 2, 900.0, 700.0, None]] + [night]), good['away'][1]])
+      rows = {figure: status for figure, _, _, status in away_rows(late)}
+      return (record_away(away_path, good, 'fixture', 'first') == 0 and record_away(away_path, slow, 'fixture', 'second') == 1 and
+              record_away(away_path, never, 'fixture', 'third') == 1 and record_away(away_path, flat, 'fixture', 'fourth') == 1 and
+              record_away(away_path, unattacked, 'fixture', 'fifth') == 1 and
+              rows['after an absence of 8 hours or more with an attack, world days back to the strength before it (the typical pattern)'] == 'met')
+
+    def away_recorded():
+      text = open(away_path, encoding='utf-8').read()
+      return (text.count(AWAY_SECTION) == 1 and text.index('run first') < text.index('run second') < text.index('run fifth') and
+              'the longest 0.71 days over 1 absences' in text and 'more on 1 of 1 seeds' in text)
+
+    def link_recorded():
+      text = open(link_path, encoding='utf-8').read()
+      return (text.count(LINK_SECTION) == 1 and text.index('Run first') < text.index('Run second') < text.index('Run fifth') and
+              '74.0 bytes' in text and '1.50 s' in text)
+
     # O85: a record of its own, whose first rendered run draws a 1,920 x 1,080 window on a larger 60 Hz panel.
     panel = os.path.join(folder, 'M1-panel.md')
     # ADR-156: the owner's growth run is a section of its own at the record's end, and a later run stays in it when
@@ -905,6 +1192,14 @@ def self_test(tool, tuning_source, bench=None, warp=False):
       ('the valley run is judged over its corpus and recorded (ADR-164)', valley_judged),
       ('the valley run keeps its runs in its own section (ADR-164)', valley_recorded),
       ('a rendered run reports the valley at war drawn (ADR-164)', lambda: recorded('the valley at war drawn (ADR-164)')),
+      ('the link simulator passes its own test (ADR-193)', lambda: simulated.returncode == 0),
+      ('the quick link run joins, rejoins, answers and replays to the same hashes (ADR-193)', link_ran),
+      ('the link run is judged against the transport\'s confirmations (ADR-193)', link_judged),
+      ('the link run keeps its runs in its own section (ADR-193)', link_recorded),
+      ('the quick away run plays both patterns of its seed (ADR-194)',
+       lambda: sorted(run['pattern'] for run in away_quick['away']) == ['check_in', 'typical']),
+      ('the away run is judged against Playtest 2\'s lines (ADR-194)', away_judged),
+      ('the away run keeps its runs in its own section (ADR-194)', away_recorded),
       ('a rendered run at another size is not judged',
        lambda: record(path, reference, within, frames_like(frames, 25.0, (1280, 720)), 'fixture', 'small') == 0),
     ]
@@ -924,10 +1219,12 @@ def main():
   parser.add_argument('--bench', help='the SpeciesFrameBench.exe to run (default: the Release|x64 build)')
   parser.add_argument('--headless-only', action='store_true', help='run the headless scenes alone')
   parser.add_argument('--warp', action='store_true', help='with --self-test: draw the bench on the WARP adapter (a Debug build)')
-  parser.add_argument('--record', help='the record to write (default: playtests/M1.md, playtests/M2.md with --saved-world or '
-                      'playtests/M3.md with --valley)')
+  parser.add_argument('--record', help='the record to write (default: playtests/M1.md, playtests/M2.md with --saved-world, '
+                      'playtests/M3.md with --valley or playtests/M4.md with --link or --away)')
   parser.add_argument('--saved-world', help='a saved world\'s folder: read its growth rather than run the scenes (ADR-156)')
   parser.add_argument('--valley', action='store_true', help='run the valley run alone and judge Playtest 1\'s lines (ADR-164)')
+  parser.add_argument('--link', action='store_true', help='run the link run alone and judge the transport\'s confirmations (ADR-193)')
+  parser.add_argument('--away', action='store_true', help='run the away run alone and judge Playtest 2\'s lines (ADR-194)')
   parser.add_argument('--quick', action='store_true')
   parser.add_argument('--self-test', action='store_true')
   parser.add_argument('--tuning-source')
@@ -953,6 +1250,24 @@ def main():
     if args.quick:
       return 0
     return record_saved_world(args.record or SAVED_WORLD_RECORD, saved, identity(), datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))
+  if args.away:
+    with tempfile.TemporaryDirectory() as folder:
+      result = run_tool(tool, args.quick, os.path.join(folder, 'away.json'), args.tuning_source, 'away')
+    for figure, measured, target, status in away_rows(result):
+      print(f'RunPerformance: the away run: {figure}: {measured} against {target}: {status}')
+    if args.quick:
+      print('RunPerformance: a quick run measures nothing and records nothing')
+      return 0
+    return record_away(args.record or LINK_RECORD, result, identity(), datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))
+  if args.link:
+    with tempfile.TemporaryDirectory() as folder:
+      result = run_link(tool, args.quick, folder, args.tuning_source)
+    for figure, measured, target, status in link_rows(result):
+      print(f'RunPerformance: the link run: {figure}: {measured} against {target}: {status}')
+    if args.quick:
+      print('RunPerformance: a quick run measures nothing and records nothing')
+      return 0
+    return record_link(args.record or LINK_RECORD, result, identity(), datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))
   if args.valley:
     with tempfile.TemporaryDirectory() as folder:
       result = run_tool(tool, args.quick, os.path.join(folder, 'valley.json'), args.tuning_source, 'valley')

@@ -281,8 +281,49 @@ std::vector<std::byte> RegionStateOf(const Species::RegionSimulation& _region, s
   {
     bits -= version > _version ? Neuron::BitsFor(bound) : 0;
   }
-  // Version 17's growth holds, the last section, a bit for each settlement, and version 16's claim ends, version 15's
-  // renown and version 14's AI settlements' decisions before it, go whole.
+  // M4's sections, version 19's absences and version 20's deputies, the last two, are written again below in the
+  // layout of _version: an absence before version 21 has no grievances.
+  Neuron::BitWriter absences;
+  absences.WriteBounded(_region.Absences().size(), Species::ABSENCES_MAX);
+  Neuron::BitWriter olderAbsences;
+  olderAbsences.WriteBounded(_region.Absences().size(), Species::ABSENCES_MAX);
+  for (const Species::Absence& absence : _region.Absences())
+  {
+    Species::WriteAbsence(absences, absence);
+    Neuron::BitWriter whole;
+    Species::WriteAbsence(whole, absence);
+    std::size_t kept = whole.BitCount();
+    if (_version < Species::STATE_VERSION_WITH_ABSENCE_GRIEVANCES)
+    {
+      Neuron::BitWriter grievances;
+      grievances.WriteBounded(absence.grievances.size(), Species::ABSENCE_GRIEVANCES_MAX);
+      for (const Species::AbsenceGrievance& grievance : absence.grievances)
+      {
+        grievances.WriteBits(grievance.tick, 64);
+        grievances.WriteBits(grievance.holder, 8);
+        grievances.WriteBits(grievance.against, 8);
+        grievances.WriteBounded(static_cast<std::uint64_t>(grievance.cause), Species::GRIEVANCE_CAUSE_MAX);
+      }
+      grievances.WriteBits(absence.grievancesDropped, 32);
+      kept -= grievances.BitCount();
+    }
+    Neuron::BitReader wholeBits(whole.Bytes());
+    for (std::size_t done = 0; done < kept;)
+    {
+      const auto chunk = static_cast<std::uint32_t>(std::min<std::size_t>(64, kept - done));
+      olderAbsences.WriteBits(wholeBits.ReadBits(chunk), chunk);
+      done += chunk;
+    }
+  }
+  Neuron::BitWriter deputies;
+  deputies.WriteBounded(_region.Deputies().size(), 4);
+  for (const Species::Deputy& deputy : _region.Deputies())
+  {
+    Species::WriteDeputy(deputies, deputy);
+  }
+  bits -= absences.BitCount() + deputies.BitCount();
+  // Version 17's growth holds before them, a bit for each settlement, and version 16's claim ends, version 15's renown
+  // and version 14's AI settlements' decisions before those, go whole.
   if (_version < Species::STATE_VERSION_WITH_GROWTH_HOLD)
   {
     bits -= _region.Settlements().size();
@@ -324,6 +365,24 @@ std::vector<std::byte> RegionStateOf(const Species::RegionSimulation& _region, s
     const auto chunk = static_cast<std::uint32_t>(std::min<std::size_t>(64, bits - done));
     older.WriteBits(whole.ReadBits(chunk), chunk);
     done += chunk;
+  }
+  const auto append = [&older](const Neuron::BitWriter& _section)
+  {
+    Neuron::BitReader section(_section.Bytes());
+    for (std::size_t done = 0; done < _section.BitCount();)
+    {
+      const auto chunk = static_cast<std::uint32_t>(std::min<std::size_t>(64, _section.BitCount() - done));
+      older.WriteBits(section.ReadBits(chunk), chunk);
+      done += chunk;
+    }
+  };
+  if (_version >= Species::STATE_VERSION_WITH_ABSENCES)
+  {
+    append(_version >= Species::STATE_VERSION_WITH_ABSENCE_GRIEVANCES ? absences : olderAbsences);
+  }
+  if (_version >= Species::STATE_VERSION_WITH_DEPUTIES)
+  {
+    append(deputies);
   }
   return older.Take();
 }

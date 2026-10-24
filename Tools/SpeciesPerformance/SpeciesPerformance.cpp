@@ -1,11 +1,13 @@
 #include "pch.h"
 
 #include "AssetError.h"
+#include "AwayScene.h"
 #include "CommandJournal.h"
 #include "Development.h"
 #include "Files.h"
 #include "GenerationScene.h"
 #include "GrowthScene.h"
+#include "LinkScene.h"
 #include "LogFloodScene.h"
 #include "LooseContent.h"
 #include "MarkerTimings.h"
@@ -23,6 +25,8 @@
 #include "WorldSimulation.h"
 
 #include <algorithm>
+#include <charconv>
+#include <cmath>
 #include <cstdio>
 #include <exception>
 #include <expected>
@@ -35,6 +39,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <vector>
 
 // The performance tool (M1 plan T10, ADR-110): a development tool that never ships. It runs the headless measurement
@@ -47,10 +52,15 @@
 // reads the growth of the steward's own world from the server's statistics in its newest snapshot, for the owner's
 // growth run (ADR-156). From M3 task T9 it measures the valley at war, four settlements with two battles in progress,
 // and, only when named, runs the valley run of the corpus, each settlement driven by a policy for a run, reporting
-// Playtest 1's measurable lines (ADR-164).
+// Playtest 1's measurable lines (ADR-164). From M4 task T11, the link scene, only when named, serves a valley over
+// QuicTransport to a client of its own, through the link simulator when --link-port names its port, and compares the
+// client's replica with the server's view after every tick (ADR-193). From M4 task T12, the away run, only when named,
+// plays an always-on valley of the corpus at each of PIL-102's patterns for its run, the steward's settlement under its
+// scripted steward while present and its deputy while away, for Playtest 2's measurable lines (ADR-194).
 //
 //   SpeciesPerformance.exe [--quick] [--scenes <name,...>] [--out <file.json>] [--content <folder> | --tuning-source <GameData>]
 //   SpeciesPerformance.exe --saved-world <world folder> [--out <file.json>] [--content <folder> | --tuning-source <GameData>]
+//   SpeciesPerformance.exe --scenes link [--quick] [--server-port <port>] [--link-port <port>] [--out <file.json>]
 //
 // --quick runs every scene for a few ticks, to show that it runs; its figures measure nothing. The tuning record is
 // the cooked one of the loose-content folder beside the executable, as the programs read it, unless an option names
@@ -111,6 +121,20 @@ constexpr std::uint64_t VALLEY_SEED_FIRST = 1;
 constexpr std::uint64_t VALLEY_SEED_COUNT = 8;
 constexpr std::uint64_t VALLEY_TICKS_QUICK = 600;
 
+// The away run's corpus (the M4 plan T12, ADR-194): the valleys of these seeds, each always-on world run at both
+// patterns for its run (MVP-060, 8 world days); the quick run takes the first seed's first 8,000 ticks.
+constexpr std::uint64_t AWAY_SEED_FIRST = 1;
+constexpr std::uint64_t AWAY_SEED_COUNT = 8;
+constexpr std::uint64_t AWAY_TICKS_QUICK = 8000;
+
+// The link scene (ADR-086, ADR-088, ADR-193): 30 minutes of the server's ticks with a rejoin at minute 20; the quick
+// run takes 30 seconds with a rejoin halfway.
+constexpr double LINK_MINUTES = 30.0;
+constexpr double LINK_REJOIN_MINUTES = 20.0;
+constexpr std::uint64_t LINK_TICKS_QUICK = 300;
+constexpr std::uint64_t LINK_REJOIN_TICKS_QUICK = 150;
+constexpr double SECONDS_PER_MINUTE = 60.0;
+
 // DBG T2: 10⁶ debug records between the flood's threads.
 constexpr std::uint64_t LOG_FLOOD_RECORDS = 1'000'000;
 constexpr std::uint64_t LOG_FLOOD_RECORDS_QUICK = 8'000;
@@ -130,6 +154,8 @@ struct Options
   std::filesystem::path content;
   std::filesystem::path tuningSource;
   std::filesystem::path savedWorld; // ADR-156: a saved world's folder to read rather than the scenes
+  std::uint16_t serverPort = 0;     // ADR-193: the link scene's listener; 0: one the system chooses
+  std::uint16_t linkPort = 0;       // ADR-193: the link simulator's port, which the client connects to; 0: none
 };
 
 bool Wanted(const Options& _options, std::string_view _scene)
@@ -647,6 +673,57 @@ int Run(const Options& _options)
       }
     }
   }
+  // M4 task T12 (ADR-194): the away run of the corpus at both patterns, only when named.
+  std::vector<Performance::AwayRun> away;
+  if (Named(_options, "away"))
+  {
+    const auto records = LoadRecords(_options);
+    if (!records)
+    {
+      Print(stderr, std::format("the structure records cannot be read: {}", records.error()));
+      return 1;
+    }
+    away = Performance::RunAways(AWAY_SEED_FIRST, _options.quick ? 1 : AWAY_SEED_COUNT, *tuning, *records,
+                                 _options.quick ? AWAY_TICKS_QUICK : 0);
+    for (const Performance::AwayRun& run : away)
+    {
+      Print(stdout, std::format("the away run of seed {} at the {} pattern: {} absences, {} of the steward's battles", run.seed,
+                                run.pattern == Performance::AwayPattern::Typical ? "typical" : "check-in", run.absences.size(),
+                                run.stewardBattles));
+    }
+  }
+  // M4 task T11 (ADR-193): the session over QuicTransport, only when named.
+  std::optional<Performance::LinkRun> link;
+  if (Named(_options, "link"))
+  {
+    const auto records = LoadRecords(_options);
+    if (!records)
+    {
+      Print(stderr, std::format("the structure records cannot be read: {}", records.error()));
+      return 1;
+    }
+    const auto minuteTicks = [&tuning](double _minutes)
+    { return static_cast<std::uint64_t>(std::llround(_minutes * SECONDS_PER_MINUTE / tuning->ref.sim.tickPeriod)); };
+    Performance::LinkSceneDesc desc;
+    desc.tuning = &*tuning;
+    desc.structures = &*records;
+    desc.serverPort = _options.serverPort;
+    desc.linkPort = _options.linkPort;
+    desc.ticks = ticks(minuteTicks(LINK_MINUTES), LINK_TICKS_QUICK);
+    desc.rejoinTick = ticks(minuteTicks(LINK_REJOIN_MINUTES), LINK_REJOIN_TICKS_QUICK);
+    Print(stdout, std::format("link: {} ticks over QuicTransport {}", desc.ticks,
+                              desc.linkPort != 0 ? std::format("through the link simulator on port {}", desc.linkPort) : "direct"));
+    std::expected<Performance::LinkRun, std::string> ran = Performance::RunLink(desc);
+    if (!ran)
+    {
+      Print(stderr, std::format("the link scene failed: {}", ran.error()));
+      return 1;
+    }
+    link = *ran;
+    Print(stdout, std::format("link: {} state datagrams, {} lost; a figure's longest freeze over one lost datagram {} ticks; hashes {}",
+                              link->stateDatagrams, link->datagramsLost, link->figuresSingleLoss.longestTicks,
+                              link->hashesMatch ? "equal" : "different"));
+  }
   std::optional<double> drawNanoseconds;
   if (Wanted(_options, "draws"))
   {
@@ -684,10 +761,13 @@ int Run(const Options& _options)
   const std::string json = std::format(
     "{{\n  \"tool\": \"{}\",\n  \"configuration\": \"{}\",\n  \"platform\": \"{}\",\n  \"quick\": {},\n"
     "  \"seed\": {},\n  \"tick_period_s\": {},\n  \"valley_path_factor\": {},\n  \"draw_ns\": {},\n  \"scenes\": [{}\n  ],\n"
-    "  \"travel\": {},\n  \"generation\": {},\n  \"growth\": {},\n  \"valley\": {},\n  \"snapshot\": {},\n  \"log\": {}\n}}\n",
+    "  \"travel\": {},\n  \"generation\": {},\n  \"growth\": {},\n  \"valley\": {},\n  \"link\": {},\n  \"away\": {},\n"
+    "  \"snapshot\": {},\n"
+    "  \"log\": {}\n}}\n",
     PRODUCT_NAME, CONFIGURATION, PLATFORM, _options.quick ? "true" : "false", SCENE_SEED, tuning->ref.sim.tickPeriod,
     tuning->wld.travel.valleyPathFactor, drawNanoseconds ? std::format("{:.4f}", *drawNanoseconds) : std::string("null"), scenes,
     TravelJson(travel), GenerationJson(generation), GrowthJson(growth, tuning->ref.sim.tickPeriod), ValleyJson(valleys, *tuning),
+    link ? Performance::LinkJson(*link) : std::string("null"), Performance::AwayJson(away, tuning->ref.sim.tickPeriod),
     snapshot ? std::format("{{\"bytes\": {}, \"encode_ms\": {:.3f}, \"save_ms\": {:.3f}}}", snapshot->bytes,
                            static_cast<double>(snapshot->encodeNanoseconds) / 1e6, static_cast<double>(snapshot->saveNanoseconds) / 1e6)
              : std::string("null"),
@@ -738,6 +818,18 @@ std::optional<Options> ParseOptions(std::span<const std::string_view> _arguments
     {
       options.savedWorld = std::filesystem::path(_arguments[++i]);
     }
+    else if ((argument == "--server-port" || argument == "--link-port") && hasValue)
+    {
+      const std::string_view value = _arguments[++i];
+      std::uint16_t port = 0;
+      if (const auto [end, error] = std::from_chars(value.data(), value.data() + value.size(), port);
+          error != std::errc{} || end != value.data() + value.size() || port == 0)
+      {
+        Print(stderr, std::format("{} needs a port, not {}", argument, value));
+        return std::nullopt;
+      }
+      (argument == "--server-port" ? options.serverPort : options.linkPort) = port;
+    }
     else
     {
       Print(stderr, std::format("unknown option {}", argument));
@@ -763,7 +855,7 @@ int main(int _argc, char** _argv)
     if (!options)
     {
       Print(stderr, "usage: SpeciesPerformance.exe [--quick] [--scenes <name,...>] [--saved-world <world folder>] [--out <file>] "
-                    "[--content <folder> | --tuning-source <GameData>]");
+                    "[--content <folder> | --tuning-source <GameData>] [--server-port <port>] [--link-port <port>]");
       return 2;
     }
     return Run(*options);

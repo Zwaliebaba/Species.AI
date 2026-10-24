@@ -88,6 +88,9 @@ public:
     return _channel == Neuron::Channel::State ? ++datagrams : 0;
   }
 
+  // A sender of a test closes nothing: its server is given no identity, so it refuses no join (ADR-190).
+  void Close(Neuron::ConnectionId /*_connection*/) override {}
+
   std::vector<Species::CommandReport> reports;
   std::vector<Species::WorldTerrain> terrains;
   std::uint64_t datagrams = 0;

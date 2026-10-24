@@ -1,7 +1,9 @@
 #pragma once
 
+#include "AwayMessages.h"
 #include "CommandMessages.h"
 #include "EffectEvent.h"
+#include "JoinMessages.h"
 #include "MessageCodec.h"
 #include "PlatformClock.h"
 #include "RegionTerrain.h"
@@ -12,6 +14,7 @@
 #include "StateReplica.h"
 #include "Transport.h"
 #include "TuningMvp.h"
+#include "WorldPace.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -51,6 +54,8 @@ public:
     std::string productName;                         // the title's first part (PLT-057)
     const TuningMvp* tuning = nullptr;               // the client's own record, outliving the session; the terrain is built from it
     const Neuron::PlatformClock* clock = nullptr;    // when each tick arrives, outliving the session
+    std::optional<JoinIdentity> identity;            // ADR-190: sent as the connection's first message; none: no join (a test's)
+    WorldPace pace = WorldPace::Session;             // MVP-071 (ADR-191): the world's pace, from its description
   };
 
   explicit ClientSession(Desc _desc);
@@ -104,12 +109,16 @@ public:
   // the server numbers every reliable message of the connection in order; none when it was not sent.
   template <class T> std::optional<std::uint64_t> SendCommand(const T& _command)
   {
-    if (!m_transport || m_refused || !m_transport->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(_command)).has_value())
+    if (!m_transport || m_refused || m_joinRefused ||
+        !m_transport->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(_command)).has_value())
     {
       return std::nullopt;
     }
     return m_commandsSent++;
   }
+  // MVP-072 (ADR-185): once per frame, whether the steward gave input in it. A frame with input sends a presence report
+  // when none has gone for PRESENCE_REPORT_SECONDS, so that the server knows its steward is present.
+  void NoteInput(bool _input);
   // ADR-095: the commands' outcomes received and not yet taken, in the order they arrived.
   [[nodiscard]] std::vector<CommandReport> TakeReports();
   // ADR-139: the guaranteed events received and not yet taken, in the order they arrived, for the HUD's notifications
@@ -131,6 +140,18 @@ public:
   {
     return m_valleyStatus;
   }
+  // MVP-074 (ADR-187): the latest away report the server sent, asked for or sent at a return; none before the first.
+  [[nodiscard]] const std::optional<AwayReport>& LatestAwayReport() const noexcept
+  {
+    return m_awayReport;
+  }
+  // O110: an away report of a return with news arrived since the last call, so that its page opens first.
+  [[nodiscard]] bool TakeAwayReportArrived() noexcept;
+  // MVP-071 (ADR-191): the world's pace.
+  [[nodiscard]] WorldPace Pace() const noexcept
+  {
+    return m_pace;
+  }
   // MVP-063 (ADR-169): the latest epilogue the server answered a ReadEpilogueCommand with; none before the first.
   [[nodiscard]] const std::optional<Epilogue>& LatestEpilogue() const noexcept
   {
@@ -142,6 +163,11 @@ public:
   [[nodiscard]] bool Refused() const noexcept
   {
     return m_refused;
+  }
+  // ADR-190: the server refused the client's join, with its reason and the server's identity, and closed.
+  [[nodiscard]] const std::optional<JoinAnswer>& JoinRefused() const noexcept
+  {
+    return m_joinRefused;
   }
   [[nodiscard]] bool Connected() const;
   [[nodiscard]] const Neuron::MessageDropCounts& Drops() const noexcept
@@ -174,8 +200,13 @@ private:
   std::optional<ValleyStatus> m_valleyStatus;
   std::optional<Epilogue> m_epilogue;
   std::vector<BattleResultNotice> m_results;
-  std::uint64_t m_commandsSent = 0; // the reliable messages sent, which the server numbers from 0
+  std::uint64_t m_commandsSent = 0; // the reliable messages sent after the join, which the server numbers from 0
   bool m_refused = false;
+  std::optional<JoinAnswer> m_joinRefused;
+  std::optional<Neuron::Nanoseconds> m_lastPresenceReport; // MVP-072: when the latest presence report went
+  std::optional<AwayReport> m_awayReport;
+  bool m_awayReportArrived = false;
+  WorldPace m_pace = WorldPace::Session;
   std::string m_shownTitle;
 };
 
@@ -188,5 +219,7 @@ private:
                                        bool _waiting = false, const std::optional<ReplicatedSettlement>& _settlement = std::nullopt);
 // The title of a refused world (MVP-011), until the UI shows the message.
 [[nodiscard]] std::string RefusedTitle(std::string_view _productName);
+// ADR-190: the title of a refused join, with its reason, until the UI shows the message.
+[[nodiscard]] std::string JoinRefusedTitle(std::string_view _productName, JoinRefusal _refusal);
 
 } // namespace Species

@@ -200,6 +200,18 @@ StableId RegionSimulation::AddScriptedSteward(std::uint8_t _team)
   return id;
 }
 
+Deputy& RegionSimulation::EnsureDeputy(std::uint8_t _team)
+{
+  ENGINE_CHECK(std::ranges::any_of(m_settlements, [_team](const Settlement& _settlement) { return _settlement.team == _team; }),
+               "a deputy of team {}, which is no settlement's", _team);
+  if (const auto found = std::ranges::find(m_deputies, _team, &Deputy::team); found != m_deputies.end())
+  {
+    return *found;
+  }
+  m_deputies.push_back({_team, m_ids.Issue(), 0});
+  return m_deputies.back();
+}
+
 void RegionSimulation::RemoveScriptedStewards(std::uint8_t _team)
 {
   std::erase_if(m_scripted, [_team](const ScriptedSteward& _steward) { return _steward.team == _team; });
@@ -416,6 +428,12 @@ std::optional<std::uint8_t> RegionSimulation::TeamCommandedBy(Neuron::SenderId _
 
 bool RegionSimulation::MayCommand(Neuron::SenderId _sender, std::uint8_t _team, bool _aiOnly) const noexcept
 {
+  // MVP-073 (ADR-186): a deputy commands its settlement's sides, as an AI, while its steward is away, whether or not the
+  // side's team has a commander.
+  if (_sender != 0 && DeputyMayCommand(*this, _sender, _team))
+  {
+    return true;
+  }
   if (_sender == 0 || _team >= m_commanders.size())
   {
     return false;
@@ -877,6 +895,14 @@ void RegionSimulation::Step(std::uint64_t _tick)
     }
   }
   {
+    // ADR-186: each deputy looks after them, while its steward is away, and its commands execute at the next tick.
+    ENGINE_PROFILE_SCOPE("sim.deputies.step");
+    for (Deputy& deputy : m_deputies)
+    {
+      StepDeputy(*this, deputy);
+    }
+  }
+  {
     ENGINE_PROFILE_SCOPE("sim.routes.free_unheld");
     FreeUnheldRoutes();
   }
@@ -1106,6 +1132,18 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
   for (const Settlement& settlement : m_settlements)
   {
     _writer.WriteBool(settlement.growthHeld);
+  }
+  // MVP-072 (ADR-185): the absences, in the order they opened.
+  _writer.WriteBounded(m_absences.size(), ABSENCES_MAX);
+  for (const Absence& absence : m_absences)
+  {
+    WriteAbsence(_writer, absence);
+  }
+  // MVP-073 (ADR-186): the deputies, in the order they were made.
+  _writer.WriteBounded(m_deputies.size(), SETTLEMENTS_MAX);
+  for (const Deputy& deputy : m_deputies)
+  {
+    WriteDeputy(_writer, deputy);
   }
 }
 
@@ -1477,6 +1515,43 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
   for (Settlement& settlement : m_settlements)
   {
     settlement.growthHeld = _stateVersion >= STATE_VERSION_WITH_GROWTH_HOLD && _reader.ReadBool();
+  }
+  // MVP-072 (ADR-185): the absences of stewarded settlements, each of a tick the region has reached, at most one open
+  // and one closed for each team; a region before version 19 has none, its steward present.
+  m_absences.clear();
+  if (_stateVersion >= STATE_VERSION_WITH_ABSENCES)
+  {
+    m_absences.resize(_reader.ReadBounded(ABSENCES_MAX));
+    for (std::size_t place = 0; place < m_absences.size(); ++place)
+    {
+      const Absence& absence = m_absences[place];
+      if (!ReadAbsence(_reader, m_absences[place], _stateVersion) || absence.fromTick > m_nextTick ||
+          (absence.toTick && (*absence.toTick < absence.fromTick || *absence.toTick > m_nextTick)) ||
+          std::ranges::find(m_settlements, absence.team, &Settlement::team) == m_settlements.end() ||
+          std::ranges::count_if(m_absences.begin(), m_absences.begin() + static_cast<std::ptrdiff_t>(place),
+                                [&absence](const Absence& _other)
+                                { return _other.team == absence.team && _other.toTick.has_value() == absence.toTick.has_value(); }) > 0)
+      {
+        return false;
+      }
+    }
+  }
+  // MVP-073 (ADR-186): one deputy for each settlement that has one, each of a team the region's settlements hold; a
+  // region before version 20 has none, and makes each at its steward's next absence.
+  m_deputies.clear();
+  if (_stateVersion >= STATE_VERSION_WITH_DEPUTIES)
+  {
+    m_deputies.resize(_reader.ReadBounded(SETTLEMENTS_MAX));
+    for (std::size_t place = 0; place < m_deputies.size(); ++place)
+    {
+      const Deputy& deputy = m_deputies[place];
+      if (!ReadDeputy(_reader, m_deputies[place]) ||
+          std::ranges::find(m_settlements, deputy.team, &Settlement::team) == m_settlements.end() ||
+          std::ranges::count(m_deputies.begin(), m_deputies.begin() + static_cast<std::ptrdiff_t>(place), deputy.team, &Deputy::team) > 0)
+      {
+        return false;
+      }
+    }
   }
   // An order marker follows a route the region holds, from its first point to its last (R-UNIT-185).
   for (std::uint32_t slot = 0; slot < m_effects.Capacity(); ++slot)

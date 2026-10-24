@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "AwayMessages.h"
 #include "Check.h"
 #include "ClientSession.h"
 #include "CommandMessages.h"
@@ -38,6 +39,7 @@ ClientSession::ClientSession(Desc _desc)
     m_tuning(_desc.tuning),
     m_clock(_desc.clock),
     m_timing(TickPeriodOf(_desc.tuning)),
+    m_pace(_desc.pace),
     m_shownTitle(m_productName)
 {
   ENGINE_CHECK(m_tuning != nullptr, "the session builds the terrain from the client's own tuning record");
@@ -63,6 +65,24 @@ ClientSession::ClientSession(Desc _desc)
   m_dispatcher.Register<ValleyStatus>([this](const ValleyStatus& _status) { m_valleyStatus = _status; });
   m_dispatcher.Register<Epilogue>([this](const Epilogue& _epilogue) { m_epilogue = _epilogue; });
   m_dispatcher.Register<BattleResultNotice>([this](const BattleResultNotice& _result) { m_results.push_back(_result); });
+  m_dispatcher.Register<AwayReport>(
+    [this](const AwayReport& _report)
+    {
+      m_awayReportArrived = m_awayReportArrived || (_report.onReturn && _report.HasNews());
+      m_awayReport = _report;
+    });
+  m_dispatcher.Register<JoinAnswer>(
+    [this](const JoinAnswer& _answer)
+    {
+      if (_answer.refusal == JoinRefusal::None)
+      {
+        return;
+      }
+      Neuron::Log(Neuron::LogCategory::Network, Neuron::LogLevel::Error, "the server refused this client: {}; its build {}, content {}",
+                  JoinRefusalName(_answer.refusal), Neuron::ShortHex(_answer.server.build), Neuron::ShortHex(_answer.server.content));
+      m_joinRefused = _answer;
+      m_transport->Close();
+    });
   m_dispatcher.Register<CommandReport>(
     [this](const CommandReport& _report)
     {
@@ -75,6 +95,37 @@ ClientSession::ClientSession(Desc _desc)
       }
       m_reports.push_back(_report);
     });
+  // ADR-190: the join goes first, before every command, and the server does not number it.
+  if (m_transport && _desc.identity)
+  {
+    const bool sent = m_transport->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(JoinCommand{*_desc.identity})).has_value();
+    Neuron::Log(Neuron::LogCategory::Network, sent ? Neuron::LogLevel::Info : Neuron::LogLevel::Error,
+                "join {}: protocol {}, build {}, content {}", sent ? "sent" : "not sent", _desc.identity->protocol,
+                Neuron::ShortHex(_desc.identity->build), Neuron::ShortHex(_desc.identity->content));
+  }
+}
+
+bool ClientSession::TakeAwayReportArrived() noexcept
+{
+  return std::exchange(m_awayReportArrived, false);
+}
+
+void ClientSession::NoteInput(bool _input)
+{
+  constexpr auto REPORT_PERIOD = std::chrono::duration_cast<Neuron::Nanoseconds>(std::chrono::duration<double>(PRESENCE_REPORT_SECONDS));
+  if (!_input)
+  {
+    return;
+  }
+  const Neuron::Nanoseconds now = m_clock->Now();
+  if (m_lastPresenceReport.has_value() && now - *m_lastPresenceReport < REPORT_PERIOD)
+  {
+    return;
+  }
+  if (SendCommand(PresenceReportCommand{}).has_value())
+  {
+    m_lastPresenceReport = now;
+  }
 }
 
 std::vector<CommandReport> ClientSession::TakeReports()
@@ -131,7 +182,7 @@ void ClientSession::Update()
   {
     return;
   }
-  while (!m_refused)
+  while (!m_refused && !m_joinRefused)
   {
     std::optional<Neuron::ReceivedMessage> message = m_transport->Receive();
     if (!message)
@@ -149,7 +200,8 @@ void ClientSession::Update()
   // ADR-139: a client with a settlement of its own counts its Workers there, and the sandbox's sides otherwise.
   const std::optional<ReplicatedSettlement> own = OwnSettlement();
   std::string title =
-    m_refused
+    m_joinRefused ? JoinRefusedTitle(m_productName, m_joinRefused->refusal)
+    : m_refused
       ? RefusedTitle(m_productName)
       : SessionTitle(m_productName, m_terrain ? std::optional<std::uint64_t>{m_terrain->seed} : std::nullopt, ServerTick(),
                      own ? std::span<const std::uint32_t>{} : std::span<const std::uint32_t>{m_sideFigures}, WaitingForServer(), own);
@@ -295,6 +347,11 @@ std::string SessionTitle(std::string_view _productName, std::optional<std::uint6
 std::string RefusedTitle(std::string_view _productName)
 {
   return std::format("{} — the world is refused: its terrain differs from this game's", _productName);
+}
+
+std::string JoinRefusedTitle(std::string_view _productName, JoinRefusal _refusal)
+{
+  return std::format("{} — the server refused this game: {}", _productName, JoinRefusalName(_refusal));
 }
 
 } // namespace Species

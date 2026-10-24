@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "AwayMessages.h"
 #include "GameUi.h"
 #include "MessageLocale.h"
 #include "TestSupport.h"
@@ -12,6 +13,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -29,7 +31,7 @@ struct WorldMenuHarness
   Neuron::UiCore ui{[this](Neuron::UiPageId _page) -> std::unique_ptr<Neuron::UiPage>
                     {
                       const auto first = static_cast<Neuron::UiPageId>(Species::GamePage::WorldMenu);
-                      if (_page >= first && _page <= static_cast<Neuron::UiPageId>(Species::GamePage::WorldEpilogue))
+                      if (_page >= first && _page <= static_cast<Neuron::UiPageId>(Species::GamePage::WorldAwayReport))
                       {
                         return menu.MakePage(static_cast<Species::WorldMenuPage>(_page - first));
                       }
@@ -146,6 +148,71 @@ public:
                    L"or that it never did");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp074TheAwayReportsSummaryAndItsDeputysActionsWithTheirOrders)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-074")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PIL-026")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PIL-073")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp074TheAwayReportsSummaryAndItsDeputysActionsWithTheirOrders)
+  {
+    // ADR-191: the summary on one page, then every deputy action with the standing order that permitted it, at most
+    // AWAY_PAGE_LINES_MAX lines a section, the last counting those left out.
+    Species::AwayReport report;
+    report.team = 2;
+    report.absence = true;
+    report.onReturn = true;
+    report.fromTick = 1'000;
+    report.toTick = 76'000; // 2:05 away at 0.1 s a tick
+    report.workersFrom = 120;
+    report.workersTo = 90;
+    report.storesFromMilliRu = 5'000'000;
+    report.storesToMilliRu = 1'250'000;
+    report.structuresCompleted = {3, 1, 2};
+    report.battles = {{3, true, false, Species::BattleEnd::LossCap, 40'000, 30, -12'000, false}};
+    report.claims = {{50'000, Species::CLAIM_AREA_CENTRAL, std::nullopt, 3}};
+    report.grievances = {{2'000, 3, 2, Species::GrievanceCause::Attack}, {3'000, 3, 2, Species::GrievanceCause::Pressure}};
+    report.grievancesTotal = 2;
+    report.freezes = {{60'000, Species::FreezeCause::Sleep, 28'800}};
+    report.actions.assign(10, {37'000, Species::DeputyActionKind::LeaderToObjective, Species::StandingOrder::DefendTheSettlement, 77, 3});
+    report.actions.front().order = Species::StandingOrder::TheStewardsAttack;
+    report.actionsTotal = 12;
+    const Neuron::MessageLocale locale("en-US");
+    const Species::EpilogueText text = Species::AwayReportTextOf(report, 0.1, CommittedStrings(), locale);
+    Assert::AreEqual(std::size_t{2}, text.sections.size(), L"the summary, then the deputy's actions");
+    const Species::EpilogueSection& summary = text.sections[0];
+    Assert::IsTrue(summary.title == "While you were away" && summary.lines.size() == 8, L"PIL-073: the summary on one page");
+    Assert::IsTrue(summary.lines[0] == "Away for 2:05" && summary.lines[1] == "Workers: 120 then, 90 now" &&
+                     summary.lines[2] == "Stores: 5,000 then, 1,250 now",
+                   L"its length, and the Workers and stores at either end");
+    Assert::IsTrue(summary.lines[3] == "Built 3 dwellings, 1 storehouse, 2 turrets", L"the structures completed");
+    Assert::IsTrue(summary.lines[4] == "Lost defending against Blue, 30 Workers lost", L"each battle with its result");
+    Assert::IsTrue(summary.lines[5] == "Blue took the central site" && summary.lines[6] == "2 grievances recorded",
+                   L"the areas moved and the grievances");
+    Assert::IsTrue(summary.lines[7] == "The computer slept 480 minutes", L"and each freeze with its cause");
+    const Species::EpilogueSection& deputy = text.sections[1];
+    Assert::IsTrue(deputy.title == "Your deputy" && deputy.lines.size() == Species::AWAY_PAGE_LINES_MAX, L"PIL-026: the actions");
+    Assert::IsTrue(deputy.lines[0] == "1:00 Leader sent against Blue (your attack)" &&
+                     deputy.lines[1] == "1:00 Leader sent against Blue (defense)",
+                   L"each with its time into the absence and its standing order");
+    Assert::IsTrue(deputy.lines.back() == "and 5 more", L"and those left out counted");
+    for (const Species::EpilogueSection& section : text.sections)
+    {
+      for (const std::string& line : section.lines)
+      {
+        Assert::IsTrue(line.size() <= 48, L"a short line");
+      }
+    }
+    // An absence with no news says so, and that the deputy did nothing.
+    Species::AwayReport quiet;
+    quiet.team = 2;
+    quiet.absence = true;
+    quiet.toTick = 600;
+    const Species::EpilogueText calm = Species::AwayReportTextOf(quiet, 0.1, CommittedStrings(), locale);
+    Assert::IsTrue(calm.sections[0].lines.back() == "Nothing happened while you were away." &&
+                     calm.sections[1].lines == std::vector<std::string>{"Your deputy took no action."},
+                   L"a quiet absence");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Adr170TheMenuReturnsLeavesOrQuitsAndWaitsForTheEpilogue)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-063")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-372")
@@ -161,6 +228,9 @@ public:
     h.Click("epilogue");
     h.ui.Update({}, h.metrics);
     Assert::AreEqual(std::size_t{1}, h.ui.Stack().size(), L"the epilogue waits for the run's end");
+    h.Click("away");
+    h.ui.Update({}, h.metrics);
+    Assert::AreEqual(std::size_t{1}, h.ui.Stack().size(), L"ADR-191: the away report waits for an absence");
     Assert::IsFalse(h.menu.TakeChoice().has_value(), L"and is no choice");
     h.Click("resume");
     Assert::IsTrue(h.Taken() == Species::WorldMenuChoice::Kind::Resume, L"Return to the world");

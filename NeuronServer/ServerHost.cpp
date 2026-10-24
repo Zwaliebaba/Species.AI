@@ -118,6 +118,14 @@ std::optional<std::uint64_t> ServerHost::Send(ConnectionId _connection, Channel 
   return sent ? std::optional<std::uint64_t>{*sent} : std::nullopt;
 }
 
+void ServerHost::Close(ConnectionId _connection)
+{
+  if (const auto found = m_connections.find(_connection); found != m_connections.end())
+  {
+    found->second->Close();
+  }
+}
+
 void ServerHost::AcceptConnections()
 {
   if (m_desc.listener == nullptr)

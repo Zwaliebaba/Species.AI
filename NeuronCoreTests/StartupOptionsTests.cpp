@@ -70,6 +70,18 @@ public:
     Assert::IsFalse(Parse({L"--user-data"}).userDataDirectory.has_value(), L"without a value it names nothing");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp071TheAlwaysOnWorldIsAnOptionOfEveryBuild)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-071")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp071TheAlwaysOnWorldIsAnOptionOfEveryBuild)
+  {
+    // ADR-191: the client starts the headless server of an always-on world with its folder, in Debug and Release alike.
+    const Neuron::StartupOptions options = Parse({L"--always-on-world", L"C:\\saves\\world-0003", L"extra"});
+    Assert::IsTrue(options.alwaysOnWorld == std::filesystem::path(L"C:\\saves\\world-0003"), L"the option takes the next argument");
+    Assert::IsTrue(IgnoredAre(options, {"extra"}), L"in Debug and Release alike");
+    Assert::IsFalse(Parse({L"--always-on-world"}).alwaysOnWorld.has_value(), L"without a value it names nothing");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Plt022TheSeedIsReadInAnyPosition)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-022")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-107")
@@ -127,6 +139,26 @@ public:
     }
 #else
     Assert::IsFalse(options.renderCheckFrames.has_value(), L"no render check in Release");
+#endif
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Plt022TheLinkPortTakesAPort)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-022")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-107")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Plt022TheLinkPortTakesAPort)
+  {
+    // ADR-193: `--link-port` takes a port from 1 to 65535; a Release build knows no such option.
+    const Neuron::StartupOptions options = Parse({L"--link-port", L"50123"});
+#if ENGINE_DEVELOPMENT
+    Assert::IsTrue(options.linkPort == std::uint16_t{50123} && options.ignoredArguments.empty(), L"the port");
+    for (const std::wstring_view value : {std::wstring_view{L"0"}, std::wstring_view{L"65536"}, std::wstring_view{L"x"}})
+    {
+      const Neuron::StartupOptions refused = Parse({L"--link-port", value});
+      Assert::IsTrue(!refused.linkPort.has_value() && refused.ignoredArguments.size() == 2, L"a port out of range is ignored");
+    }
+#else
+    Assert::IsTrue(!options.linkPort.has_value() && options.ignoredArguments.size() == 2, L"no link port in Release");
 #endif
   }
 

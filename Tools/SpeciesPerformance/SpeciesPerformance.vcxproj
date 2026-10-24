@@ -162,8 +162,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AwayScene.h" />
     <ClInclude Include="GenerationScene.h" />
     <ClInclude Include="GrowthScene.h" />
+    <ClInclude Include="LinkScene.h" />
     <ClInclude Include="LogFloodScene.h" />
     <ClInclude Include="SceneRun.h" />
     <ClInclude Include="TravelScene.h" />
@@ -174,8 +176,10 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="AwayScene.cpp" />
     <ClCompile Include="GenerationScene.cpp" />
     <ClCompile Include="GrowthScene.cpp" />
+    <ClCompile Include="LinkScene.cpp" />
     <ClCompile Include="LogFloodScene.cpp" />
     <ClCompile Include="SceneRun.cpp" />
     <ClCompile Include="SpeciesPerformance.cpp" />

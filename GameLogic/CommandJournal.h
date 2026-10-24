@@ -22,7 +22,8 @@ namespace Species
 /// What a new world is made from (ADR-109): its simulation key, the seed of its terrain, its first tick, its region
 /// count, whether it is the sandbox of M1 (MVP-005), and whether that sandbox is watched (O77): an AI on each side, and
 /// a steward who commands none; or, for a world that is no sandbox, the site the steward's settlement is founded on
-/// (MVP-012, ADR-130), and how many AI settlements are founded at the other sites (MVP-013, ADR-157).
+/// (MVP-012, ADR-130), and how many AI settlements are founded at the other sites (MVP-013, ADR-157); and its pace,
+/// fixed for its life (PIL-104, ADR-184).
 struct WorldStart
 {
   Neuron::SipHashKey key;
@@ -34,6 +35,7 @@ struct WorldStart
   std::uint32_t syntheticFigures = 0;      // ADR-126: a sandbox whose sides are a synthetic battle of this many figures; 0: none
   std::optional<std::uint8_t> stewardSite; // MVP-012: the local site of the steward's settlement; none: a world with none
   std::uint8_t aiSettlements = 0;          // MVP-013 (ADR-157): AI settlements at the other sites in site order, at most three
+  WorldPace pace = WorldPace::Session;     // PIL-104 (ADR-184)
 };
 
 // A new world: made, its terrain attached to region 0 (ADR-102), and populated as the sandbox when it is one (M1 plan
@@ -50,8 +52,9 @@ struct WorldStart
 inline constexpr std::uint16_t JOURNAL_WORLD_OWNER = 0;
 
 /// One entry of the command journal (MVP-076): a steward's connection, which takes the next id of the world owner and,
-/// in the sandbox, commands the steward's side; or a command that its owner's queue accepted, with the tick it executes
-/// in, its sender, its sequence number and its bytes.
+/// in the sandbox, commands the steward's side; a change of the steward's presence, away or back (MVP-072, ADR-185);
+/// or a command that its owner's queue accepted, with the tick it executes in, its sender, its sequence number and its
+/// bytes.
 struct JournalEntry
 {
   std::uint64_t tick = 0;
@@ -60,6 +63,8 @@ struct JournalEntry
   Neuron::SenderId sender = 0;
   std::uint64_t sequence = 0;
   std::vector<std::byte> message;
+  bool presence = false; // a presence change, applied before the tick's step as a connection is
+  bool away = false;     // for a presence change: the steward went away, or came back
 
   friend bool operator==(const JournalEntry& _a, const JournalEntry& _b) = default;
 };
@@ -82,8 +87,8 @@ struct CommandJournal
 // The journal a file holds, or none when it does not read whole.
 [[nodiscard]] std::optional<CommandJournal> ReadJournal(std::span<const std::byte> _bytes);
 
-// The world of _journal, replayed: started, then for each tick to _untilTick its connections, its commands submitted to
-// their owners' queues in their order, and its step on _workers. _afterTick, when given, sees the world after each tick.
+// The world of _journal, replayed: started, then for each tick to _untilTick its connections, presence changes and
+// commands submitted to their owners' queues in their order, and its step on _workers. _afterTick, when given, sees the world after each tick.
 [[nodiscard]] std::unique_ptr<WorldSimulation> ReplayJournal(const CommandJournal& _journal, std::shared_ptr<const RegionTerrain> _terrain,
                                                              const TuningMvp& _tuning, const StructureRecords* _structures,
                                                              std::uint64_t _untilTick, Neuron::WorkerPool& _workers,

@@ -378,6 +378,9 @@ void SettlementVerbs::PressHud(const HudZoneRect& _zone, std::uint8_t _team, con
   case HudZone::Result:
     ++m_resultsClosed; // ADR-168: the press closes the result the card shows
     break;
+  case HudZone::AwayReport:
+    _result.openAwayReport = true; // O110 (ADR-192): the latest away report is one press away
+    break;
   case HudZone::GrowthHold:
     // O106 (ADR-178): the button holds the growth, or lets it run, from the hold last sent or the status's.
     if (_view.status.has_value())
