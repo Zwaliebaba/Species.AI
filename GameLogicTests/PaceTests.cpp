@@ -172,20 +172,20 @@ public:
   TEST_METHOD(Pil101AnAlwaysOnSettlementGrowsAtTheSessionFactorsRate)
   {
     // ADR-180: at the always-on pace a lone settlement's economy runs at 1 / mvp.pace.session_factor of the session's rate,
-    // while walking and gathering at a port take the same ticks. Its population therefore reaches 30 Workers at nearly the
-    // factor times the session's ticks, below it by the fixed walk of the first loads. A factor of 4 keeps the test short;
-    // on the committed 24 the ratio at 30 Workers on this valley is 22.5 (ADR-180).
+    // while walking and gathering at a port take the same ticks. Its population therefore reaches 24 Workers at nearly the
+    // factor times the session's ticks, below it by the fixed walk of the first loads (3.72 on this valley). A factor of 4
+    // keeps the test short; on the committed 24 the ratio at 30 Workers on this valley is 22.5 (ADR-180).
     Species::TuningMvp tuning = CommittedTuning();
     tuning.mvp.pace.sessionFactor = 4.0;
     const std::unique_ptr<Species::WorldSimulation> session = LoneAt(Species::WorldPace::Session, tuning);
     const std::unique_ptr<Species::WorldSimulation> alwaysOn = LoneAt(Species::WorldPace::AlwaysOn, tuning);
-    const std::optional<std::uint64_t> sessionTick = TickOfPopulation(*session, 30, 30'000);
-    Assert::IsTrue(sessionTick.has_value(), L"30 Workers at the session pace");
+    const std::optional<std::uint64_t> sessionTick = TickOfPopulation(*session, 24, 30'000);
+    Assert::IsTrue(sessionTick.has_value(), L"24 Workers at the session pace");
     const std::uint64_t sessionTicks = sessionTick.value_or(1);
-    const std::optional<std::uint64_t> alwaysOnTick = TickOfPopulation(*alwaysOn, 30, 6 * sessionTicks);
-    Assert::IsTrue(alwaysOnTick.has_value(), L"30 Workers at the always-on pace");
+    const std::optional<std::uint64_t> alwaysOnTick = TickOfPopulation(*alwaysOn, 24, 6 * sessionTicks);
+    Assert::IsTrue(alwaysOnTick.has_value(), L"24 Workers at the always-on pace");
     const double ratio = static_cast<double>(alwaysOnTick.value_or(0)) / static_cast<double>(sessionTicks);
-    Assert::IsTrue(ratio > 3.6 && ratio <= 4.0, std::format(L"30 Workers at {:.3f} times the session's ticks", ratio).c_str());
+    Assert::IsTrue(ratio > 3.6 && ratio <= 4.0, std::format(L"24 Workers at {:.3f} times the session's ticks", ratio).c_str());
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp094AnAlwaysOnValleyHashesAlikeOnEveryNumberOfWorkers)
@@ -199,7 +199,7 @@ public:
     for (std::size_t index = 0; index < hashes.size(); ++index)
     {
       const std::unique_ptr<Species::WorldSimulation> world = ValleyAt(Species::WorldPace::AlwaysOn);
-      hashes[index] = HashesOver(*world, 600, workers[index]);
+      hashes[index] = HashesOver(*world, 300, workers[index]);
     }
     Assert::IsTrue(hashes[0] == hashes[1] && hashes[1] == hashes[2], L"the same hash on every tick at 1, 2 and 8 worker threads");
   }

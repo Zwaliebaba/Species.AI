@@ -31,14 +31,14 @@ namespace
 
 constexpr std::uint8_t SETTLED_SITE = 2; // the steward's settlement, whose team is its site
 constexpr Neuron::ConnectionId STEWARD_CONNECTION = 1;
-constexpr std::uint64_t IDLE_TICKS = 300; // mvp.presence.idle_minutes of 0.5 at 10 ticks a second
+constexpr std::uint64_t IDLE_TICKS = 150; // mvp.presence.idle_minutes of 0.25 at 10 ticks a second
 
 // A world server of the valley with the steward's settlement at _pace, whose steward is idle after IDLE_TICKS.
 Species::WorldServer::Desc PresenceDesc(Species::WorldPace _pace)
 {
   Species::WorldServer::Desc desc;
   desc.tuning = CommittedTuning();
-  desc.tuning.mvp.presence.idleMinutes = 0.5;
+  desc.tuning.mvp.presence.idleMinutes = 0.25;
   desc.structures = TestRecords();
   desc.worldSeed = ValleyTerrain()->seed;
   desc.stewardSite = SETTLED_SITE;
@@ -112,7 +112,7 @@ public:
     RunTo(server, 11 + IDLE_TICKS, pool);
     Assert::IsTrue(OpenOf(server) != nullptr && OpenOf(server)->fromTick == 10 + IDLE_TICKS, L"away once it is as old");
 
-    constexpr std::uint64_t REPORTED = 400;
+    constexpr std::uint64_t REPORTED = 250;
     RunTo(server, REPORTED + 1, pool,
           [&](std::uint64_t _tick)
           {
