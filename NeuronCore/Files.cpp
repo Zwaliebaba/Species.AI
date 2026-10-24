@@ -3,6 +3,7 @@
 #include "Files.h"
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <format>
 #include <string>
@@ -223,6 +224,24 @@ std::filesystem::path ExecutableFolder()
     }
     path.resize(path.size() * 2);
   }
+}
+
+Sha256Digest FilesStamp(const std::filesystem::path& _folder, std::span<const std::wstring_view> _names)
+{
+  Sha256 hasher;
+  for (const std::wstring_view name : _names)
+  {
+    hasher.Update(std::as_bytes(std::span(name)));
+    const std::filesystem::path path = _folder / name;
+    WIN32_FILE_ATTRIBUTE_DATA data{};
+    if (GetFileAttributesExW(path.c_str(), GetFileExInfoStandard, &data) != FALSE)
+    {
+      const std::array<DWORD, 4> fields{data.nFileSizeHigh, data.nFileSizeLow, data.ftLastWriteTime.dwHighDateTime,
+                                        data.ftLastWriteTime.dwLowDateTime};
+      hasher.Update(std::as_bytes(std::span(fields)));
+    }
+  }
+  return hasher.Finish();
 }
 
 } // namespace Neuron

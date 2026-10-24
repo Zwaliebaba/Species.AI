@@ -26,6 +26,9 @@
     <ClCompile Include="AwayMessageTests.cpp">
       <Filter>Messages</Filter>
     </ClCompile>
+    <ClCompile Include="JoinMessageTests.cpp">
+      <Filter>Messages</Filter>
+    </ClCompile>
     <ClCompile Include="NavigationTests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>

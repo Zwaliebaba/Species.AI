@@ -40,6 +40,9 @@ public:
   // or 0 on the reliable channel; none when it cannot take it (closed, too large or backlogged).
   [[nodiscard]] virtual std::optional<std::uint64_t> Send(ConnectionId _connection, Channel _channel,
                                                           std::span<const std::byte> _message) = 0;
+  // Closes one connection after the reliable messages already sent to it (a refused join, ADR-186); the host lets the
+  // world know at the tick that finds it closed.
+  virtual void Close(ConnectionId _connection) = 0;
 };
 
 /// The world a server host runs: the game's state owners behind one interface, so that the engine knows no game
@@ -106,6 +109,7 @@ public:
 private:
   void RunTick(std::uint64_t _tick) override;
   [[nodiscard]] std::optional<std::uint64_t> Send(ConnectionId _connection, Channel _channel, std::span<const std::byte> _message) override;
+  void Close(ConnectionId _connection) override;
 
   void AcceptConnections();
   void DeliverMessages();

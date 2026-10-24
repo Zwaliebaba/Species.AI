@@ -59,7 +59,10 @@ enum class GameMessageType : Neuron::MessageTypeId
   // Away play (M4): the client's report of its steward's input (ADR-181), and the away report and its request (ADR-183).
   PresenceReport,
   ReadAwayReport,
-  AwayReport
+  AwayReport,
+  // The handshake (M4 task T8, ADR-186): a client's join and the server's answer.
+  Join,
+  JoinAnswer
 };
 
 [[nodiscard]] constexpr Neuron::MessageTypeId TypeIdOf(GameMessageType _type) noexcept

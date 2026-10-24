@@ -464,6 +464,17 @@ std::size_t WorldServer::SnapshotsKept() const noexcept
 
 void WorldServer::Connect(Neuron::ConnectionId _connection)
 {
+  // ADR-186: a server given its identity takes nothing from a connection but its join until the join is accepted.
+  if (m_desc.identity)
+  {
+    m_joining.insert(_connection);
+    return;
+  }
+  AdmitSteward(_connection);
+}
+
+void WorldServer::AdmitSteward(Neuron::ConnectionId _connection)
+{
   // ADR-109: the next id of the world owner and, in the sandbox, the steward's side.
   const StableId steward = ConnectSteward(*m_world, m_desc.sandbox, m_desc.watched);
   // MVP-072 (ADR-181): connecting is the steward's input.
@@ -478,10 +489,43 @@ void WorldServer::Connect(Neuron::ConnectionId _connection)
 void WorldServer::Disconnect(Neuron::ConnectionId _connection)
 {
   m_stewards.erase(_connection);
+  m_joining.erase(_connection);
+  std::erase_if(m_answers, [_connection](const auto& _answer) { return _answer.first == _connection; });
+}
+
+void WorldServer::ReceiveJoin(Neuron::ConnectionId _connection, const Neuron::ReceivedMessage& _message)
+{
+  Neuron::BitReader reader(_message.bytes);
+  const Neuron::MessageHeader header = Neuron::ReadMessageHeader(reader);
+  if (!m_desc.identity || _message.channel != Neuron::Channel::Reliable || reader.Failed() || header.type != JoinCommand::TYPE)
+  {
+    return; // ADR-186: nothing counts before the join
+  }
+  const JoinIdentity server = *m_desc.identity;
+  // A join that does not read is of a protocol this server does not speak.
+  JoinCommand join;
+  const bool read = CheckAnswered(header, reader, _message.bytes.size(), join) == CommandResult::Applied;
+  const JoinRefusal refusal = read ? JoinRefusalOf(server, join.identity) : JoinRefusal::Protocol;
+  m_joining.erase(_connection);
+  m_answers.emplace_back(_connection, JoinAnswer{refusal, server});
+  if (refusal == JoinRefusal::None)
+  {
+    AdmitSteward(_connection);
+    return;
+  }
+  Neuron::Log(Neuron::LogCategory::Network, Neuron::LogLevel::Warning,
+              "connection {} is refused: {}; its protocol {}, build {}, content {}; this server's protocol {}, build {}, content {}",
+              _connection, JoinRefusalName(refusal), join.identity.protocol, Neuron::ShortHex(join.identity.build),
+              Neuron::ShortHex(join.identity.content), server.protocol, Neuron::ShortHex(server.build), Neuron::ShortHex(server.content));
 }
 
 void WorldServer::Receive(Neuron::ConnectionId _connection, const Neuron::ReceivedMessage& _message)
 {
+  if (m_joining.contains(_connection))
+  {
+    ReceiveJoin(_connection, _message);
+    return;
+  }
   const auto found = m_stewards.find(_connection);
   if (found == m_stewards.end() || _message.channel != Neuron::Channel::Reliable)
   {
@@ -689,6 +733,17 @@ void WorldServer::Step(std::uint64_t _tick, Neuron::WorkerPool& _workers)
 
 void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender)
 {
+  // ADR-186: each join's answer goes before anything else its connection is sent, and a refused connection is closed
+  // after it.
+  for (const auto& [joined, answer] : m_answers)
+  {
+    static_cast<void>(_sender.Send(joined, Neuron::Channel::Reliable, Neuron::EncodeMessage(answer)));
+    if (answer.refusal != JoinRefusal::None)
+    {
+      _sender.Close(joined);
+    }
+  }
+  m_answers.clear();
   CollectAllReports();
   // ADR-111: the MVP's one region, which ViewForSteward narrows to each steward's seen layers (MVP-097, ADR-158).
   const RegionSimulation& region = m_world->Region(0);

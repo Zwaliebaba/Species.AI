@@ -112,6 +112,9 @@ public:
     return 0;
   }
 
+  // A sender of a test closes nothing: its server is given no identity, so it refuses no join (ADR-186).
+  void Close(Neuron::ConnectionId /*_connection*/) override {}
+
   // The away reports sent to _connection since the last call.
   std::vector<Species::AwayReport> TakeReports(Neuron::ConnectionId _connection)
   {

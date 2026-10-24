@@ -180,6 +180,7 @@
     <ClCompile Include="EssenceTests.cpp" />
     <ClCompile Include="FormationTests.cpp" />
     <ClCompile Include="GrowthSceneTests.cpp" />
+    <ClCompile Include="JoinTests.cpp" />
     <ClCompile Include="MovementTests.cpp" />
     <ClCompile Include="PaceTests.cpp" />
     <ClCompile Include="PresenceTests.cpp" />

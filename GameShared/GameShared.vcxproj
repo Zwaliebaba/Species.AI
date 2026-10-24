@@ -152,6 +152,7 @@
     <ClInclude Include="FigureKind.h" />
     <ClInclude Include="GameFonts.h" />
     <ClInclude Include="GameMessages.h" />
+    <ClInclude Include="JoinMessages.h" />
     <ClInclude Include="Navigation.h" />
     <ClInclude Include="OrbState.h" />
     <ClInclude Include="PresentationEvents.h" />
@@ -177,6 +178,7 @@
   <ItemGroup>
     <ClCompile Include="AwayMessages.cpp" />
     <ClCompile Include="CommandMessages.cpp" />
+    <ClCompile Include="JoinMessages.cpp" />
     <ClCompile Include="Navigation.cpp" />
     <ClCompile Include="PresentationEvents.cpp" />
     <ClCompile Include="RegionTerrain.cpp" />

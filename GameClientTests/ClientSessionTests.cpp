@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "BitReader.h"
 #include "ClientSession.h"
 #include "GameUi.h"
 #include "InProcessTransport.h"
@@ -55,7 +56,7 @@ const Species::RegionTerrain& SeedOne()
 /// A session on a manual clock (PLT-048) with the server's end of its transport, and the titles it showed.
 struct Fixture
 {
-  Fixture()
+  explicit Fixture(std::optional<Species::JoinIdentity> _identity = std::nullopt)
     : clock(MakeSource())
   {
     auto [client, serverEnd] = Neuron::InProcessTransport::CreatePair({});
@@ -66,6 +67,7 @@ struct Fixture
     desc.productName = "Species";
     desc.tuning = &CommittedTuning();
     desc.clock = &clock;
+    desc.identity = _identity;
     session = std::make_unique<Species::ClientSession>(std::move(desc));
   }
 
@@ -320,6 +322,45 @@ public:
     Assert::IsFalse(f.session->Connected(), L"the client closed");
     Assert::IsTrue(f.server->State() == Neuron::ConnectionState::Closed, L"the server's end sees the close");
     Assert::IsTrue(!f.titles.empty() && f.titles.back() == Species::RefusedTitle("Species"), L"the refusal's message");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp071AJoinGoesFirstAndARefusalClosesTheSession)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-071")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp071AJoinGoesFirstAndARefusalClosesTheSession)
+  {
+    // ADR-186: the session's first message is its join, which the server does not number; a refusal closes the session,
+    // which then sends nothing and shows the reason.
+    Species::JoinIdentity identity;
+    identity.build.fill(std::byte{7});
+    Fixture f(identity);
+    Assert::IsTrue(f.session->SendCommand(Species::SelectCommand{0, 0}) == std::uint64_t{0}, L"the first command is numbered 0");
+    std::vector<Neuron::MessageTypeId> types;
+    std::optional<Species::JoinCommand> join;
+    Neuron::MessageDispatcher server;
+    server.Register<Species::JoinCommand>([&join](const Species::JoinCommand& _join) { join = _join; });
+    while (std::optional<Neuron::ReceivedMessage> message = f.server->Receive())
+    {
+      Neuron::BitReader reader(message->bytes);
+      types.push_back(Neuron::ReadMessageHeader(reader).type);
+      static_cast<void>(server.Dispatch(message->bytes));
+    }
+    Assert::IsTrue(types.size() == 2 && types[0] == Species::JoinCommand::TYPE && types[1] == Species::SelectCommand::TYPE,
+                   L"the join, then the command");
+    Assert::IsTrue(join.has_value() && join->identity == identity, L"with the client's identity");
+
+    Species::JoinIdentity other = identity;
+    other.build.fill(std::byte{8});
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(Species::JoinAnswer{Species::JoinRefusal::Build, other}))
+                     .has_value());
+    f.session->Update();
+    const std::optional<Species::JoinAnswer> refused = f.session->JoinRefused();
+    Assert::IsTrue(refused.has_value() && refused->refusal == Species::JoinRefusal::Build && refused->server == other,
+                   L"the refusal, with the server's identity");
+    Assert::IsFalse(f.session->Connected(), L"the session closed");
+    Assert::IsFalse(f.session->SendCommand(Species::SelectCommand{0, 0}).has_value(), L"and sends nothing more");
+    Assert::IsTrue(!f.titles.empty() && f.titles.back() == Species::JoinRefusedTitle("Species", Species::JoinRefusal::Build),
+                   L"the refusal's message");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Adr095CommandsAreNumberedAsTheServerCountsThemAndTheirReportsArrive)

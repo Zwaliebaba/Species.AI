@@ -147,6 +147,7 @@ int Run(std::span<const std::wstring> _arguments)
       worldDesc.calendar = [&clock] { return clock.CalendarUtc(); }; // ADR-137: the world record's wall times
       const Neuron::SuspendWatch suspends;                           // ADR-184: the computer's sleeps
       worldDesc.suspensions = [&suspends] { return suspends.Suspensions(); };
+      worldDesc.identity = OwnJoinIdentity(content->Identity()); // ADR-186: a client of another build is refused
       WorldServer world(worldDesc);
       Neuron::ServerHost::Desc hostDesc;
       hostDesc.clock = &clock;

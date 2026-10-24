@@ -169,6 +169,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AwayMessageTests.cpp" />
+    <ClCompile Include="JoinMessageTests.cpp" />
     <ClCompile Include="NavigationTests.cpp" />
     <ClCompile Include="RegionTerrainTests.cpp" />
     <ClCompile Include="RelationMessageTests.cpp" />

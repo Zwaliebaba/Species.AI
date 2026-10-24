@@ -2,6 +2,7 @@
 
 #include "CommandJournal.h"
 #include "CommandMessages.h"
+#include "JoinMessages.h"
 #include "RegionTerrain.h"
 #include "ServerHost.h"
 #include "SettlementMessages.h"
@@ -20,6 +21,8 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
+#include <utility>
 #include <vector>
 
 namespace Species
@@ -62,6 +65,9 @@ public:
     // MVP-071 (ADR-184): the computer's suspends so far (Neuron::SuspendWatch), for the world record alone; none: a sleep
     // is recorded as a stall.
     std::function<std::uint64_t()> suspensions;
+    // ADR-186: the server's own identity; with one, a connection is a steward only once its join is accepted, and a
+    // refused one is answered and closed. None takes every connection as it connects, as a test's server does.
+    std::optional<JoinIdentity> identity;
   };
 
   // ADR-155: a snapshot that opening the world refused, and why; none: the snapshot decoded, but its seed gives no terrain.
@@ -177,6 +183,11 @@ private:
   // the world between ticks, as a connection does, and the journal.
   void UpdatePresence(std::uint64_t _tick);
 
+  // ADR-109, ADR-181: the connection becomes a steward from the next tick: its id, its journal entry and its input.
+  void AdmitSteward(Neuron::ConnectionId _connection);
+  // ADR-186: a message of a connection that has not joined: its join, answered at the next publication, or nothing.
+  void ReceiveJoin(Neuron::ConnectionId _connection, const Neuron::ReceivedMessage& _message);
+
   // Each queue's outcomes of the tick, to the steward that sent each command; an AI's are its own (ADR-106).
   void CollectReports(Neuron::CommandQueue& _queue);
   // The outcomes of every queue of the world.
@@ -186,6 +197,9 @@ private:
   std::unique_ptr<WorldSimulation> m_world;
   std::shared_ptr<const RegionTerrain> m_terrain;
   std::map<Neuron::ConnectionId, Steward> m_stewards;
+  // ADR-186: the connections that have not joined yet, and the answers to joins not yet sent, in the order they came.
+  std::set<Neuron::ConnectionId> m_joining;
+  std::vector<std::pair<Neuron::ConnectionId, JoinAnswer>> m_answers;
   std::optional<WorldHashes> m_lastHashes;
   OpenOutcome m_opened;
   std::optional<CommandJournal> m_journal;

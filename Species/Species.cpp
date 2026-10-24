@@ -603,10 +603,13 @@ int Run()
     // ADR-155: a world as the integrated server runs it, a child of this root (ADR-083 item 2) on its own tick thread
     // until the world ends, when stopping it freezes the world (O4). It loads the tuning record when it starts (MVP-099),
     // and a record that cannot be loaded ends the run; a world to continue that cannot be is the front end's to show.
+    // ADR-186: the client's and its integrated server's identity, which a headless server of another build refuses.
+    const JoinIdentity identity = OwnJoinIdentity(content->Identity());
     const auto makeWorld = [&](IntegratedServer::Desc _desc, std::optional<SavedWorld> _saved) -> std::expected<ClientWorld, ContinueFault>
     {
       _desc.clock = &clock;
       _desc.content = &*content;
+      _desc.identity = identity;
 #if ENGINE_DEVELOPMENT
       // O77: a Debug build's --watch, both sides under the AI; in a world, the steward's settlement under the scripted
       // steward (ADR-140).
@@ -630,6 +633,7 @@ int Run()
       sessionDesc.productName = std::string(PRODUCT_NAME);
       sessionDesc.tuning = &*clientTuning;
       sessionDesc.clock = &clock;
+      sessionDesc.identity = identity;
       made.session = std::make_unique<ClientSession>(std::move(sessionDesc));
       SettlementView::Desc viewDesc;
       viewDesc.tuning = &*clientTuning;

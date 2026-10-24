@@ -1,10 +1,13 @@
 #pragma once
 
+#include "Sha256.h"
+
 #include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <filesystem>
 #include <span>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -36,5 +39,9 @@ enum class FileError : std::uint8_t
 
 // The folder of the running executable.
 [[nodiscard]] std::filesystem::path ExecutableFolder();
+
+// The stamp of the named files in a folder: the SHA-256 over each one's name, size and last write time, in the order
+// given, a missing file adding its name alone. Any build that writes one of them changes it (ADR-186).
+[[nodiscard]] Sha256Digest FilesStamp(const std::filesystem::path& _folder, std::span<const std::wstring_view> _names);
 
 } // namespace Neuron

@@ -520,9 +520,12 @@ SceneEnd RunScene(const Scene& _scene, const Options& _options, const Bench& _be
 {
   _result.name = std::string(_scene.name);
   const Species::TuningMvp& tuning = *_bench.tuning;
+  // ADR-186: the session joins its integrated server as Species.exe's does.
+  const Species::JoinIdentity identity = Species::OwnJoinIdentity(_bench.content->Identity());
   Species::IntegratedServer::Desc serverDesc;
   serverDesc.clock = _bench.clock;
   serverDesc.content = _bench.content;
+  serverDesc.identity = identity;
   serverDesc.worldSeed = SCENE_SEED;
   serverDesc.sandbox = true;
   serverDesc.watched = true; // O77, O79: both sides under the AI
@@ -580,6 +583,7 @@ SceneEnd RunScene(const Scene& _scene, const Options& _options, const Bench& _be
   sessionDesc.productName = std::string(PRODUCT_NAME);
   sessionDesc.tuning = &tuning;
   sessionDesc.clock = _bench.clock;
+  sessionDesc.identity = identity;
   Species::ClientSession session(std::move(sessionDesc));
   Species::WorldPresentation::Desc worldDesc;
   worldDesc.tuning = &tuning;

@@ -97,6 +97,7 @@ std::expected<void, StartFault> IntegratedServer::Start()
   world.aiSettlements = m_desc.aiSettlements;
   world.snapshotFolder = m_desc.snapshotFolder;
   world.restoreOnly = m_desc.restoreOnly;
+  world.identity = m_desc.identity;
   world.calendar = [clock = m_desc.clock] { return clock->CalendarUtc(); };              // ADR-137: the world record's wall times
   world.suspensions = [parts = m_parts.get()] { return parts->suspends.Suspensions(); }; // ADR-184
   m_parts->world = std::make_unique<WorldServer>(world);
