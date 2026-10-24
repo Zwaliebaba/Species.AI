@@ -44,6 +44,8 @@ Table 3.2-B Mouse controls (display text `ui.input.mouse.<name>`).
 | `raw_motion` | Axis2 | `move`, `read` | the unaccelerated device movement since the previous frame, in device counts (ADR-028) |
 | `wheel` | Axis1 | `move`, `read` | wheel notches since the previous frame, forward positive, fractional for fine-resolution wheels (`inp.mouse.wheel_units_per_notch`) |
 
+> **Amendment 2026-10-24 (owner decision O108, [ADR-180](../../../ADR/ADR-180-the-camera-over-a-point-on-the-ground.md)).** Species adds the name `wheel_horizontal`, Axis1, with the conditions `move` and `read`: the horizontal wheel's notches since the previous frame, tilted or slid to the right positive, fractional as `wheel`'s are. A touchpad's two-finger slide sideways arrives as it, and table 3.2-D gives it `wheel`'s row.
+
 Table 3.2-C Gamepad controls, named by position (display text `ui.input.pad.<name>`).
 
 | Name | Kind | Boolean view | Analogue conditions | Sensitivity option |
@@ -144,6 +146,20 @@ Table 3.6-A Default bindings of the match actions.
 | 65 | `action.device.pad_connected` | Boolean | — | `pad:connection:down` | — | M7 |
 
 > **Amendment 2026-10-23 (owner decision O107, [ADR-179](../../../ADR/ADR-179-the-camera-turns-only-while-the-middle-button-is-held.md)).** Species adds row 66, `action.camera.look`, Boolean, `mouse:middle:held`, with no gamepad binding and no glyph override: while it is held the camera turns towards the pointer ([camera](../../../reference/06_controls_camera_and_commands/camera.md) R-CTRL-471 step 8 amendment). Row 12, `action.camera.zoom`, keeps `key:z:held` alone. In table 3.8-A, `mouse:middle` therefore names `action.camera.look` (held) and no longer `action.camera.zoom`.
+
+> **Amendment 2026-10-24 (owner decision O108, [ADR-180](../../../ADR/ADR-180-the-camera-over-a-point-on-the-ground.md)).** Row 66, `action.camera.look`, is retired and never reused, since the camera held over a ground point has no mouse-look ([camera](../../../reference/06_controls_camera_and_commands/camera.md) R-CTRL-471 amendment). Rows 7 and 8 zoom out and in, bound to `key:page_up:held` and `key:page_down:held`. Species adds these rows, with no gamepad binding and no glyph override:
+>
+> | Row | Action | Kind | Keyboard and mouse |
+> |---|---|---|---|
+> | 67 | `action.camera.drag` | Boolean | `mouse:middle:held` |
+> | 68 | `action.camera.turn_left` | Boolean | `key:q:held` |
+> | 69 | `action.camera.turn_right` | Boolean | `key:e:held` |
+> | 70 | `action.camera.turn_drag` | Boolean | `all(key:alt:held, mouse:middle:held)` |
+> | 71 | `action.camera.pan_wheel` | Axis1 | `mouse:wheel_horizontal:move` |
+> | 72 | `action.camera.home` | Boolean | `key:home:down` |
+> | 73 | `action.camera.reset_heading` | Boolean | `key:backspace:down` |
+>
+> Rows 67 and 70 share the middle button, and the camera turns while row 70 holds and grabs the ground otherwise. In table 3.8-A, `mouse:middle` names `action.camera.drag` and `action.camera.turn_drag` (held), `key:q` and `key:e` name the turns, `key:page_up` and `key:page_down` the zoom, `key:home` the home flight and `key:backspace` the heading's reset. Touch reaches these actions through gestures, not bindings ([ADR-181](../../../ADR/ADR-181-touch-input.md)).
 
 **INP-076** (MUST) `action.app.quit` has no binding. The platform layer raises it when the window receives a close request, which Alt+F4 also produces (ADR-028, ADR-075, R-CTRL-047 row M8). The key events of Alt and F4 still reach the router as ordinary events.
 

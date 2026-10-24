@@ -138,7 +138,8 @@ enum class MouseControl : std::uint8_t
   Middle,
   Motion,
   RawMotion,
-  Wheel
+  Wheel,
+  WheelHorizontal // O108 (ADR-180): the horizontal wheel, and a touchpad's two-finger slide sideways
 };
 
 inline constexpr std::uint8_t MOUSE_BUTTON_COUNT = 3; // primary, secondary and middle

@@ -144,6 +144,18 @@ void KeyboardMouseBackEnd::OnWindowMessage(const WindowMessage& _message)
     m_pending.push_back(event);
     break;
   }
+  case WM_MOUSEHWHEEL:
+  {
+    // O108 (ADR-180): the horizontal wheel, and a touchpad's two-finger slide sideways, as notches; right is positive.
+    InputEvent event;
+    event.kind = InputEvent::Kind::Axis;
+    event.device = InputDevice::Mouse;
+    event.control = static_cast<std::uint16_t>(MouseControl::WheelHorizontal);
+    event.time = _message.time;
+    event.x = static_cast<float>(SignedHigh(static_cast<std::intptr_t>(_message.wParam))) / WHEEL_UNITS_PER_NOTCH;
+    m_pending.push_back(event);
+    break;
+  }
   case WM_CHAR:
     // UI-007, ADR-154: UTF-16 only at the Win32 boundary; each character with the modifiers held as it arrives.
     if (const std::optional<char32_t> codePoint = JoinUtf16(m_highSurrogate, static_cast<char16_t>(_message.wParam & 0xFFFF)))

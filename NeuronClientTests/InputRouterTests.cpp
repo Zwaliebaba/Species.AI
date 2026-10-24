@@ -60,6 +60,15 @@ public:
     event.x = _notches;
     Queue(event);
   }
+  void WheelHorizontal(float _notches)
+  {
+    Neuron::InputEvent event;
+    event.kind = Neuron::InputEvent::Kind::Axis;
+    event.device = Neuron::InputDevice::Mouse;
+    event.control = static_cast<std::uint16_t>(Neuron::MouseControl::WheelHorizontal);
+    event.x = _notches;
+    Queue(event);
+  }
 
   void Collect(std::vector<Neuron::InputEvent>& _queue) override
   {
@@ -134,6 +143,7 @@ constexpr Neuron::ActionId MODE{4};
 constexpr Neuron::ActionId AIM{5};
 constexpr Neuron::ActionId HEIGHT{6};
 constexpr Neuron::ActionId PICK{7};
+constexpr Neuron::ActionId PAN_WHEEL{8};
 
 std::vector<Neuron::ActionBindings> Actions()
 {
@@ -151,6 +161,7 @@ std::vector<Neuron::ActionBindings> Actions()
     {"action.camera.aim", Neuron::ValueKind::Axis2, {Neuron::MouseBinding(Neuron::MouseControl::Motion, Move)}},
     {"action.camera.height_wheel", Neuron::ValueKind::Axis1, {Neuron::MouseBinding(Neuron::MouseControl::Wheel, Move)}},
     {"action.select.pick", Neuron::ValueKind::Boolean, {Neuron::MouseBinding(Neuron::MouseControl::Primary, Down)}},
+    {"action.camera.pan_wheel", Neuron::ValueKind::Axis1, {Neuron::MouseBinding(Neuron::MouseControl::WheelHorizontal, Move)}},
   };
 }
 
@@ -350,6 +361,7 @@ public:
     mouse.Move(110, 45);
     mouse.Wheel(0.5f);
     mouse.Wheel(1.0f);
+    mouse.WheelHorizontal(-0.25f);
     router.AdvanceFrame({}, CLIENT);
     Neuron::ActionValue aim;
     Assert::IsTrue(router.Query(AIM, &aim) && aim.kind == Neuron::ValueKind::Axis2, L"the movement moves");
@@ -357,9 +369,14 @@ public:
     Assert::AreEqual(45.0f, aim.y);
     Neuron::ActionValue wheel;
     Assert::IsTrue(router.Query(HEIGHT, &wheel) && wheel.x == 1.5f, L"fractional notches summed");
+    // O108 (ADR-180): the horizontal wheel is summed apart from the vertical one.
+    Neuron::ActionValue across;
+    Assert::IsTrue(router.Query(PAN_WHEEL, &across) && across.kind == Neuron::ValueKind::Axis1 && across.x == -0.25f,
+                   L"the horizontal wheel, left negative");
     Assert::IsTrue(router.Pointer().positionPixels.x == 110 && router.Pointer().positionPixels.y == 45 && router.Pointer().moved);
     router.AdvanceFrame({}, CLIENT);
-    Assert::IsTrue(!router.Query(AIM) && !router.Query(HEIGHT) && !router.Pointer().moved, L"still: no movement");
+    Assert::IsTrue(!router.Query(AIM) && !router.Query(HEIGHT) && !router.Query(PAN_WHEEL) && !router.Pointer().moved,
+                   L"still: no movement");
     // INP-158: a warp sets the position without a delta, and the system pointer goes there.
     router.WarpPointer({900, 300});
     Assert::IsTrue(router.Pointer().positionPixels.x == 799 && pointer.warps.size() == 1 && pointer.warps[0].x == 799,

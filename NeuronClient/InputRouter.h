@@ -280,6 +280,7 @@ private:
   float m_motionX = 0.0f; // the frame's summed movement and wheel deltas (INP-118)
   float m_motionY = 0.0f;
   float m_wheelNotches = 0.0f;
+  float m_wheelHorizontalNotches = 0.0f; // O108 (ADR-180)
   PointerState m_pointer;
   SizePx m_clientSize;
   std::vector<bool> m_suppressed;

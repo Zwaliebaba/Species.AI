@@ -25,7 +25,14 @@ bool IsAnalogue(const InputLeaf& _leaf) noexcept
 {
   return _leaf.device == InputDevice::Mouse && (_leaf.control == static_cast<std::uint16_t>(MouseControl::Motion) ||
                                                 _leaf.control == static_cast<std::uint16_t>(MouseControl::RawMotion) ||
-                                                _leaf.control == static_cast<std::uint16_t>(MouseControl::Wheel));
+                                                _leaf.control == static_cast<std::uint16_t>(MouseControl::Wheel) ||
+                                                _leaf.control == static_cast<std::uint16_t>(MouseControl::WheelHorizontal));
+}
+
+bool IsWheel(const InputLeaf& _leaf) noexcept
+{
+  return _leaf.control == static_cast<std::uint16_t>(MouseControl::Wheel) ||
+         _leaf.control == static_cast<std::uint16_t>(MouseControl::WheelHorizontal);
 }
 
 bool IsBooleanCondition(Condition _condition) noexcept
@@ -40,8 +47,9 @@ std::string_view ControlName(const InputLeaf& _leaf) noexcept
   {
     return NameOfKey(static_cast<KeyCode>(_leaf.control));
   }
-  return _leaf.control <= static_cast<std::uint16_t>(MouseControl::Wheel) ? NameOfMouseControl(static_cast<MouseControl>(_leaf.control))
-                                                                          : std::string_view{};
+  return _leaf.control <= static_cast<std::uint16_t>(MouseControl::WheelHorizontal)
+           ? NameOfMouseControl(static_cast<MouseControl>(_leaf.control))
+           : std::string_view{};
 }
 
 // Table 3.2-D: a key or mouse button accepts down, up, held and repeat; pointer movement, raw movement and the wheel
@@ -61,9 +69,7 @@ std::optional<std::string> CheckLeaf(const InputLeaf& _leaf, ValueKind& _kind)
   {
     return std::format("{} does not accept the condition {} (table 3.2-D)", control, NameOfCondition(_leaf.condition));
   }
-  _kind = !movement                                                          ? ValueKind::Boolean
-          : _leaf.control == static_cast<std::uint16_t>(MouseControl::Wheel) ? ValueKind::Axis1
-                                                                             : ValueKind::Axis2;
+  _kind = !movement ? ValueKind::Boolean : IsWheel(_leaf) ? ValueKind::Axis1 : ValueKind::Axis2;
   return std::nullopt;
 }
 
@@ -475,6 +481,7 @@ void InputRouter::AdvanceFrame(const FrameGates& _gates, SizePx _clientSize, Nan
   m_motionX = 0.0f;
   m_motionY = 0.0f;
   m_wheelNotches = 0.0f;
+  m_wheelHorizontalNotches = 0.0f;
   m_clientSize = _clientSize;
   const PointPx before = m_pointer.positionPixels;
 
@@ -542,7 +549,7 @@ void InputRouter::AdvanceFrame(const FrameGates& _gates, SizePx _clientSize, Nan
   // moved.
   const auto activeControl = [](const ControlState& _state) { return _state.held || _state.presses > 0 || _state.releases > 0; };
   const bool active = std::ranges::any_of(m_keys, activeControl) || std::ranges::any_of(m_buttons, activeControl) || m_motionX != 0.0f ||
-                      m_motionY != 0.0f || m_wheelNotches != 0.0f;
+                      m_motionY != 0.0f || m_wheelNotches != 0.0f || m_wheelHorizontalNotches != 0.0f;
   UpdateEnvironment(_realTime, active);
 }
 
@@ -602,6 +609,10 @@ void InputRouter::Apply(const InputEvent& _event)
     {
       m_wheelNotches += _event.x;
     }
+    else if (_event.control == static_cast<std::uint16_t>(MouseControl::WheelHorizontal))
+    {
+      m_wheelHorizontalNotches += _event.x;
+    }
     return;
   }
   const auto stateIn = [&_event](auto& _states) -> ControlState*
@@ -636,8 +647,10 @@ bool InputRouter::Evaluate(const InputLeaf& _leaf, ActionValue& _value) const
 {
   if (IsAnalogue(_leaf))
   {
-    const bool wheel = _leaf.control == static_cast<std::uint16_t>(MouseControl::Wheel);
-    const float x = wheel ? m_wheelNotches : m_motionX;
+    const bool wheel = IsWheel(_leaf);
+    const float x = _leaf.control == static_cast<std::uint16_t>(MouseControl::WheelHorizontal) ? m_wheelHorizontalNotches
+                    : wheel                                                                    ? m_wheelNotches
+                                                                                               : m_motionX;
     const float y = wheel ? 0.0f : m_motionY;
     if (_leaf.control == static_cast<std::uint16_t>(MouseControl::RawMotion))
     {

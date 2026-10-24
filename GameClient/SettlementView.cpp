@@ -285,11 +285,22 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
       controls.lower = _router.Query(ActionOf(GameAction::CameraLower));
       controls.zoom = _router.Query(ActionOf(GameAction::CameraZoom));
       controls.lookAround = _router.Query(ActionOf(GameAction::CameraLookAround));
-      controls.look = _router.Query(ActionOf(GameAction::CameraLook));
+      // O108 (ADR-180): the camera held over a ground point.
+      controls.turnLeft = _router.Query(ActionOf(GameAction::CameraTurnLeft));
+      controls.turnRight = _router.Query(ActionOf(GameAction::CameraTurnRight));
+      controls.drag = _router.Query(ActionOf(GameAction::CameraDrag));
+      controls.turnDrag = _router.Query(ActionOf(GameAction::CameraTurnDrag));
+      controls.home = _router.Query(ActionOf(GameAction::CameraHome));
+      controls.resetHeading = _router.Query(ActionOf(GameAction::CameraResetHeading));
       Neuron::ActionValue wheel;
       if (_router.Query(ActionOf(GameAction::CameraHeightWheel), &wheel))
       {
         controls.wheelNotches = wheel.x;
+      }
+      Neuron::ActionValue across;
+      if (_router.Query(ActionOf(GameAction::CameraPanWheel), &across))
+      {
+        controls.panWheelNotches = across.x;
       }
       if (const std::optional<Neuron::PointPx> warp =
             m_camera.Advance(_dtSeconds, controls, m_pointer, _view, terrain->field, &m_areas).warpTo)
@@ -562,7 +573,9 @@ void SettlementView::EnterAt(const Neuron::Vec3& _ground)
 {
   if (m_terrain != nullptr && m_camera.InWorld())
   {
+    // ADR-180: the frame bench's scenes keep O76's pose onto the fight, so that their figures stay comparable across O108.
     m_camera.EnterWorld(m_terrain->field, _ground, m_region);
+    m_camera.HoldEntryPose(m_terrain->field, _ground);
   }
 }
 
