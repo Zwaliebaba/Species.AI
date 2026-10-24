@@ -227,10 +227,14 @@ public:
   TEST_METHOD(Mvp071EitherEndClosesAfterItsMessages)
   {
     // The reliable messages sent before a Close still reach the other end, which then sees the connection closed by its
-    // peer; the end that closed refuses to send more.
+    // peer; the end that closed refuses to send more. The client's first message opens the reliable channel, as its join
+    // does (ADR-186): a server end has none before it.
     for (const bool clientCloses : {true, false})
     {
       Loopback loopback = Connected();
+      Assert::IsTrue(loopback.client->Send(Neuron::Channel::Reliable, Message(1)).has_value(), L"the client's first message");
+      const std::optional<Neuron::ReceivedMessage> first = NextOf(*loopback.server);
+      Assert::IsTrue(first.has_value() && ValueOf(first->bytes) == 1, L"opens the reliable channel");
       Neuron::Transport& closer = clientCloses ? static_cast<Neuron::Transport&>(*loopback.client) : *loopback.server;
       Neuron::Transport& other = clientCloses ? *loopback.server : static_cast<Neuron::Transport&>(*loopback.client);
       Assert::IsTrue(closer.Send(Neuron::Channel::Reliable, Message(7)).has_value(), L"the last message is sent");

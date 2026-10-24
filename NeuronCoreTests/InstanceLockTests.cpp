@@ -43,8 +43,11 @@ public:
       std::optional<Neuron::InstanceLock> first = Neuron::InstanceLock::TryTake(LOCK_NAME);
       Assert::IsTrue(first.has_value() && Neuron::InstanceLock::Held(LOCK_NAME), L"taken and held");
       Assert::IsFalse(Neuron::InstanceLock::TryTake(LOCK_NAME).has_value(), L"a second taker is refused");
-      const Neuron::InstanceLock moved = std::move(first).value();
-      Assert::IsTrue(Neuron::InstanceLock::Held(LOCK_NAME), L"held while its holder is moved");
+      if (first)
+      {
+        const Neuron::InstanceLock moved = std::move(*first);
+        Assert::IsTrue(Neuron::InstanceLock::Held(LOCK_NAME), L"held while its holder is moved");
+      }
     }
     Assert::IsFalse(Neuron::InstanceLock::Held(LOCK_NAME), L"gone once its holder ends");
     Assert::IsTrue(Neuron::InstanceLock::TryTake(LOCK_NAME).has_value(), L"and taken again");

@@ -58,7 +58,9 @@ struct QuicEndpoint;
 /// socket. The reliable channel is one bidirectional stream that the client opens when the handshake completes, each
 /// message framed by its length (StreamFraming.h); the state channel is QUIC DATAGRAM frames, each reported acknowledged
 /// or lost once. TLS 1.3 secures it with the server's self-signed certificate, which the client pins by its fingerprint.
-/// Messages sent before the stream exists wait in the reliable backlog and leave at the next call on the end.
+/// Messages sent before the stream exists wait in the reliable backlog and leave at the next call on the end. A server end
+/// has no stream until its client's first message opens it, so one closed before then ends the connection at once and
+/// what waited goes with it; every client's first message is its join (ADR-186).
 class QuicTransport final : public Transport
 {
 public:
