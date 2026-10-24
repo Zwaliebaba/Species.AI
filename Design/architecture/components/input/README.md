@@ -467,6 +467,12 @@ Input timings are seconds of real time and never simulation durations (R-CTRL-00
 | `inp.pad.stick_button.threshold` | 3.4 | stick units | strict; the same for both sticks | INP-120 | DEC-004 |
 | `inp.binding.sensitivity` | 100 | % | default; whole numbers from 1 to 200 | INP-060, INP-130 | — |
 | `inp.mouse.wheel_units_per_notch` | 120 | fine wheel units | the platform's notch | INP-110 | — |
+| `inp.touch.slop` | 10 | effective px | a contact moved farther than this from where it went down is a drag (O108, ADR-181) | MVP-100 | DEC-1011 |
+| `inp.touch.double_tap_slop` | 24 | effective px | a second tap this close to the first completes a double tap | MVP-100 | DEC-1011 |
+| `inp.touch.tap_ms` | 250 | ms of real time | a contact down and up within this, never past the slop, is a tap | MVP-100 | DEC-1011 |
+| `inp.touch.hold_ms` | 350 | ms of real time | a contact still for this is a hold | MVP-100 | DEC-1011 |
+| `inp.touch.double_tap_ms` | 300 | ms of real time | a second tap ending within this of the first completes a double tap | MVP-100 | DEC-1011 |
+| `inp.touch.turn_threshold` | 10 | degrees | a manipulation's turn is reported once its sum passes this | MVP-100 | DEC-1011 |
 | `inp.budget.typical_events` | 64 | events per frame | the typical-load case | INP-200 | — |
 | `inp.budget.advance_typical_ms` | 0.2 | ms | `AdvanceFrame` at the typical load, reference test machine (DBG-209) | INP-200 | — |
 | `inp.budget.advance_full_ms` | 1.0 | ms | `AdvanceFrame` with a full queue, and one `Rebuild` | INP-200 | — |

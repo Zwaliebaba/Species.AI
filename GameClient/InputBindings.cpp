@@ -27,7 +27,7 @@ std::vector<Neuron::ActionBindings> DefaultBindings()
   const auto bind =
     [&actions](GameAction _action, std::string_view _id, Neuron::ValueKind _kind, std::vector<Neuron::InputBinding> _bindings)
   { actions[static_cast<std::size_t>(_action)] = {_id, _kind, std::move(_bindings)}; };
-  // Table 3.6-A rows 1 to 4, 6 to 10, 12 and 13 (reference/06 rows A1 to A6).
+  // Table 3.6-A rows 1 to 4, 6 to 10, 12 and 13 (reference/06 rows A1 to A6), and rows 67 to 73 (O108).
   bind(GameAction::CameraPanLeft, "action.camera.pan_left", Neuron::ValueKind::Boolean,
        {KeyBinding(KeyCode::A, Held), KeyBinding(KeyCode::Left, Held)});
   bind(GameAction::CameraPanRight, "action.camera.pan_right", Neuron::ValueKind::Boolean,
@@ -37,14 +37,25 @@ std::vector<Neuron::ActionBindings> DefaultBindings()
   bind(GameAction::CameraPanBack, "action.camera.pan_back", Neuron::ValueKind::Boolean,
        {KeyBinding(KeyCode::S, Held), KeyBinding(KeyCode::Down, Held)});
   bind(GameAction::CameraFastPan, "action.camera.fast_pan", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Shift, Held)});
-  bind(GameAction::CameraRaise, "action.camera.raise", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Q, Held)});
-  bind(GameAction::CameraLower, "action.camera.lower", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::E, Held)});
+  // O108 (ADR-180): rows 7 and 8 zoom out and in on Page Up and Page Down, since Q and E turn the camera.
+  bind(GameAction::CameraRaise, "action.camera.raise", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::PageUp, Held)});
+  bind(GameAction::CameraLower, "action.camera.lower", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::PageDown, Held)});
   bind(GameAction::CameraHeightWheel, "action.camera.height_wheel", Neuron::ValueKind::Axis1, {MouseBinding(MouseControl::Wheel, Move)});
   bind(GameAction::CameraAim, "action.camera.aim", Neuron::ValueKind::Axis2, {MouseBinding(MouseControl::Motion, Move)});
-  // O107 (ADR-179): the middle button is the look's, so the zoom keeps its key alone.
+  // O107 (ADR-179): the middle button is the camera's, so the zoom keeps its key alone.
   bind(GameAction::CameraZoom, "action.camera.zoom", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Z, Held)});
   bind(GameAction::CameraLookAround, "action.camera.look_around", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::F2, Held)});
-  bind(GameAction::CameraLook, "action.camera.look", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Middle, Held)});
+  // O108 (ADR-180): rows 67 to 73. The middle button grabs the ground, or with Alt held turns the camera; both actions
+  // fire with Alt held (INP-085), and the camera takes the turn.
+  bind(GameAction::CameraDrag, "action.camera.drag", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Middle, Held)});
+  bind(GameAction::CameraTurnLeft, "action.camera.turn_left", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Q, Held)});
+  bind(GameAction::CameraTurnRight, "action.camera.turn_right", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::E, Held)});
+  bind(GameAction::CameraTurnDrag, "action.camera.turn_drag", Neuron::ValueKind::Boolean,
+       {Neuron::AllOf({KeyBinding(KeyCode::Alt, Held), MouseBinding(MouseControl::Middle, Held)})});
+  bind(GameAction::CameraPanWheel, "action.camera.pan_wheel", Neuron::ValueKind::Axis1,
+       {MouseBinding(MouseControl::WheelHorizontal, Move)});
+  bind(GameAction::CameraHome, "action.camera.home", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Home, Down)});
+  bind(GameAction::CameraResetHeading, "action.camera.reset_heading", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Backspace, Down)});
   // Rows 19 to 24 (reference/06 rows S1, S3 to S6): the primary button picks, and on the ground begins the circle.
   bind(GameAction::SelectPick, "action.select.pick", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Primary, Down)});
   bind(GameAction::SelectPickIdle, "action.select.pick_idle", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Primary, Down)});
@@ -96,14 +107,14 @@ struct LayoutEntry
   Neuron::KeyCode french;
 };
 
-// Table 4.13-B.
+// Table 4.13-B, as O108 amends it (ADR-180).
 constexpr std::array LAYOUT_ENTRIES{
   LayoutEntry{"action.camera.pan_left", Neuron::KeyCode::A, Neuron::KeyCode::Q},
   LayoutEntry{"action.camera.pan_right", Neuron::KeyCode::D, Neuron::KeyCode::D},
   LayoutEntry{"action.camera.pan_forward", Neuron::KeyCode::W, Neuron::KeyCode::Z},
   LayoutEntry{"action.camera.pan_back", Neuron::KeyCode::S, Neuron::KeyCode::S},
-  LayoutEntry{"action.camera.raise", Neuron::KeyCode::Q, Neuron::KeyCode::A},
-  LayoutEntry{"action.camera.lower", Neuron::KeyCode::E, Neuron::KeyCode::E},
+  LayoutEntry{"action.camera.turn_left", Neuron::KeyCode::Q, Neuron::KeyCode::A}, // O108 (ADR-180): Q and E turn the camera
+  LayoutEntry{"action.camera.turn_right", Neuron::KeyCode::E, Neuron::KeyCode::E},
   LayoutEntry{"action.camera.zoom", Neuron::KeyCode::Y, Neuron::KeyCode::W},
 };
 

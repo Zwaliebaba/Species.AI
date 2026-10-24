@@ -20,8 +20,9 @@ namespace Neuron
 /// wheel messages as the router's events, in arrival order, with their pump timestamps. Each modifier covers both its
 /// keys, so it is released only when neither is held. It is also the router's pointer host, through the window, and it
 /// takes the window's close request for the quit (PLT-009, INP-076), and, from M2 task T18, its text source: each
-/// character message as a Unicode scalar value, a surrogate pair joined (UI-007, ADR-154). Main thread only; the window
-/// outlives it.
+/// character message as a Unicode scalar value, a surrogate pair joined (UI-007, ADR-154). From M3 task T19 it also
+/// reads the touch and pen pointers that the window forwards (ADR-181): each holds a contact slot from its down to its up
+/// or cancel. Main thread only; the window outlives it.
 class KeyboardMouseBackEnd final : public WindowInputSink, public DeviceBackEnd, public PointerHost, public TextSource
 {
 public:
@@ -48,7 +49,9 @@ public:
 private:
   void Key(const WindowMessage& _message, bool _press);
   void Button(const WindowMessage& _message, MouseControl _button, bool _press);
+  void Contact(const WindowMessage& _message);
   void Push(InputEvent::Kind _kind, InputDevice _device, std::uint16_t _control, Nanoseconds _time, bool _repeat = false);
+  void PushContact(InputEvent::Kind _kind, std::size_t _slot, PointPx _point, Nanoseconds _time);
 
   AppWindow& m_window;
   std::vector<InputEvent> m_pending;
@@ -56,6 +59,7 @@ private:
   char16_t m_highSurrogate = 0; // the first half of a surrogate pair, until its second arrives (JoinUtf16)
   std::array<bool, KEY_CODE_COUNT> m_keysHeld{};
   std::array<bool, MOUSE_BUTTON_COUNT> m_buttonsHeld{};
+  std::array<std::optional<std::uint32_t>, TOUCH_CONTACT_COUNT> m_contacts{}; // ADR-181: each slot's pointer id while down
   // The left and right keys of shift, control and alt, by modifier: bit 0 the left key, bit 1 the right one.
   std::array<std::uint8_t, 3> m_modifierSides{};
   PointPx m_pointer;

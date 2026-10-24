@@ -165,6 +165,12 @@
     <ClInclude Include="TextSystem.h">
       <Filter>Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="TouchGestures.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="TouchKeyboard.h">
+      <Filter>Input</Filter>
+    </ClInclude>
     <ClInclude Include="UiCore.h">
       <Filter>Ui</Filter>
     </ClInclude>
@@ -316,6 +322,12 @@
     </ClCompile>
     <ClCompile Include="TextSystem.cpp">
       <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="TouchGestures.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="TouchKeyboard.cpp">
+      <Filter>Input</Filter>
     </ClCompile>
     <ClCompile Include="UiCore.cpp">
       <Filter>Ui</Filter>

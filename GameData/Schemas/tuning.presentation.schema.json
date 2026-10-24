@@ -6186,10 +6186,135 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "orbit": {
+          "type": "object",
+          "description": "the cam.orbit.* keys (O108, ADR-180)",
+          "properties": {
+            "height_min": {
+              "type": "number",
+              "description": "cam.orbit.height_min (R-CTRL-471)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "pitch_low": {
+              "type": "number",
+              "description": "cam.orbit.pitch_low (R-CTRL-471)",
+              "minimum": 1,
+              "maximum": 89,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "degrees",
+              "x-species-presence": "required"
+            },
+            "pitch_high": {
+              "type": "number",
+              "description": "cam.orbit.pitch_high (R-CTRL-471)",
+              "minimum": 1,
+              "maximum": 89,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "degrees",
+              "x-species-presence": "required"
+            },
+            "pan_rate": {
+              "type": "number",
+              "description": "cam.orbit.pan_rate (R-CTRL-471)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times the distance, per s",
+              "x-species-presence": "required"
+            },
+            "fast_pan_factor": {
+              "type": "number",
+              "description": "cam.orbit.fast_pan_factor (R-CTRL-471)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times",
+              "x-species-presence": "required"
+            },
+            "wheel_pan_share": {
+              "type": "number",
+              "description": "cam.orbit.wheel_pan_share (R-CTRL-471)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times the distance, per notch",
+              "x-species-presence": "required"
+            },
+            "zoom_step": {
+              "type": "number",
+              "description": "cam.orbit.zoom_step (R-CTRL-461)",
+              "exclusiveMinimum": 0,
+              "maximum": 1,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times the height, per notch",
+              "x-species-presence": "required"
+            },
+            "zoom_key_notches": {
+              "type": "number",
+              "description": "cam.orbit.zoom_key_notches (R-CTRL-461)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "notches per s",
+              "x-species-presence": "required"
+            },
+            "turn_rate": {
+              "type": "number",
+              "description": "cam.orbit.turn_rate (R-CTRL-471)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "degrees per s",
+              "x-species-presence": "required"
+            },
+            "drag_turn": {
+              "type": "number",
+              "description": "cam.orbit.drag_turn (R-CTRL-471)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "degrees per px",
+              "x-species-presence": "required"
+            },
+            "smoothing": {
+              "type": "number",
+              "description": "cam.orbit.smoothing (R-CTRL-471)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "per s",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "height_min",
+            "pitch_low",
+            "pitch_high",
+            "pan_rate",
+            "fast_pan_factor",
+            "wheel_pan_share",
+            "zoom_step",
+            "zoom_key_notches",
+            "turn_rate",
+            "drag_turn",
+            "smoothing"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
-        "pick"
+        "pick",
+        "orbit"
       ],
       "additionalProperties": false,
       "x-species-type": "object",
@@ -9968,10 +10093,83 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "touch": {
+          "type": "object",
+          "description": "the inp.touch.* keys (O108, ADR-181)",
+          "properties": {
+            "slop": {
+              "type": "number",
+              "description": "inp.touch.slop (MVP-100)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "effective px",
+              "x-species-presence": "required"
+            },
+            "double_tap_slop": {
+              "type": "number",
+              "description": "inp.touch.double_tap_slop (MVP-100)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "effective px",
+              "x-species-presence": "required"
+            },
+            "tap_ms": {
+              "type": "number",
+              "description": "inp.touch.tap_ms (MVP-100)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ms of real time",
+              "x-species-presence": "required"
+            },
+            "hold_ms": {
+              "type": "number",
+              "description": "inp.touch.hold_ms (MVP-100)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ms of real time",
+              "x-species-presence": "required"
+            },
+            "double_tap_ms": {
+              "type": "number",
+              "description": "inp.touch.double_tap_ms (MVP-100)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ms of real time",
+              "x-species-presence": "required"
+            },
+            "turn_threshold": {
+              "type": "number",
+              "description": "inp.touch.turn_threshold (MVP-100)",
+              "minimum": 0,
+              "maximum": 180,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "degrees",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "slop",
+            "double_tap_slop",
+            "tap_ms",
+            "hold_ms",
+            "double_tap_ms",
+            "turn_threshold"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
-        "repeat"
+        "repeat",
+        "touch"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

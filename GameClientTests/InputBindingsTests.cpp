@@ -49,6 +49,13 @@ public:
     Assert::IsTrue(Species::LayoutLayer("en-US").empty() && Species::LayoutLayer("en-GB").empty(), L"no layer for the English layouts");
     Assert::IsTrue(Species::LayoutLayer("de-DE")[6].binding == Neuron::KeyBinding(Neuron::KeyCode::Y, Neuron::Condition::Held),
                    L"the German zoom on Y");
+    // O108 (ADR-180): the turns take the reference positions of Q and E; the zoom keys, Page Up and Page Down, stay.
+    Assert::IsTrue(french[4].action == "action.camera.turn_left" &&
+                     french[4].binding == Neuron::KeyBinding(Neuron::KeyCode::A, Neuron::Condition::Held),
+                   L"the French turn to the left on A");
+    const auto raise = router.BindingsOf(Species::ActionOf(Species::GameAction::CameraRaise));
+    Assert::IsTrue(raise.size() == 1 && raise[0] == Neuron::KeyBinding(Neuron::KeyCode::PageUp, Neuron::Condition::Held),
+                   L"the zoom out on Page Up with a French layout");
 
     Neuron::SettingsStore settings(Species::ClientSettingSpecs(), std::nullopt);
     Assert::IsTrue(Species::ActiveLayoutTag(settings, "de-DE") == "de-DE", L"the system's layout while none is set");

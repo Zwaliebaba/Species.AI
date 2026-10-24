@@ -25,6 +25,7 @@ namespace
 
 constexpr Neuron::SizePx VIEW{1'920, 1'080};
 constexpr Neuron::PointPx CENTER{960, 540};
+constexpr double DEGREES = std::numbers::pi / 180.0;
 
 const Species::RegionTerrain& SeedOne()
 {
@@ -54,9 +55,6 @@ std::unique_ptr<Species::SettlementCamera> EnteredCamera(Neuron::PointPx& _point
   return camera;
 }
 
-// High on the screen: on the entry pose, a ground point far beyond the steward's site.
-constexpr Neuron::PointPx FAR_POINTER{960, 380};
-
 // Advances _frames frames of _dt with the pointer kept where the cursor lock puts it.
 void Run(Species::SettlementCamera& _camera, const Species::CameraControls& _controls, Neuron::PointPx& _pointer, double _dt, int _frames,
          const Species::StewardAreas* _areas = nullptr)
@@ -70,20 +68,49 @@ void Run(Species::SettlementCamera& _camera, const Species::CameraControls& _con
   }
 }
 
-// Advances _frames frames of _dt with the pointer held where it is, the cursor lock's warps not followed, so that over
-// a short run the front hardly turns.
-void RunHeld(Species::SettlementCamera& _camera, const Species::CameraControls& _controls, Neuron::PointPx _pointer, double _dt,
-             int _frames)
+// Two seconds with no control, at 100 frames a second: the camera closes on its goals.
+void Settle(Species::SettlementCamera& _camera, Neuron::PointPx& _pointer)
 {
-  for (int n = 0; n < _frames; ++n)
-  {
-    static_cast<void>(_camera.Advance(_dt, _controls, _pointer, VIEW, SeedOne().field));
-  }
+  Run(_camera, {}, _pointer, 0.01, 200);
 }
 
 double Land(const Neuron::Vec3& _at)
 {
   return std::max(SeedOne().field.Height(_at.x, _at.z), CommittedPresentation().ref.ctrl.camera.minHeight);
+}
+
+// The camera's distance from its ground point, from its height and the tilt it gives (ADR-180).
+double DistanceOf(const Species::SettlementCamera& _camera)
+{
+  return _camera.Height() / std::sin(_camera.PitchRadiansAt(_camera.Height()));
+}
+
+// The level front of the camera's heading, and its left.
+Neuron::Vec3 ForwardOf(const Species::SettlementCamera& _camera)
+{
+  return {-std::sin(_camera.HeadingRadians()), 0.0, -std::cos(_camera.HeadingRadians())};
+}
+
+Neuron::Vec3 LeftOf(const Species::SettlementCamera& _camera)
+{
+  const Neuron::Vec3 forward = ForwardOf(_camera);
+  return {forward.z, 0.0, -forward.x};
+}
+
+// The ground point under _pointer as the camera stands.
+Neuron::Vec3 GroundUnder(Species::SettlementCamera& _camera, Neuron::PointPx _pointer)
+{
+  _camera.UpdatePointerGround(_pointer, VIEW, SeedOne().field);
+  const auto& ground = _camera.PointerGround();
+  Assert::IsTrue(ground.has_value() && ground->onTerrain, L"the pointer's ground point is on the terrain");
+  return ground.value_or(Species::SettlementCamera::GroundPoint{}).position;
+}
+
+// One pixel's footprint at a point: its distance × the field's height ÷ the view's rows.
+double FootprintAt(const Species::SettlementCamera& _camera, const Neuron::Vec3& _at)
+{
+  return Neuron::Length(_at - _camera.Position()) * 2.0 * std::tan(_camera.FieldOfViewDegrees() * DEGREES / 2.0) /
+         static_cast<double>(VIEW.height);
 }
 
 // A replica in which the settlement of site 0, team 0, holds the territory cells whose centres lie within _radius of
@@ -121,116 +148,329 @@ Species::StateReplica::View TerritoryDisc(double _radius)
 TEST_CLASS(SettlementCameraTests)
 {
 public:
-  BEGIN_TEST_METHOD_ATTRIBUTE(Cam060TheCameraEntersTheWorldLookingAtTheStewardsSite)
+  BEGIN_TEST_METHOD_ATTRIBUTE(Cam060TheCameraEntersTheWorldOverTheStewardsSite)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"CAM-060")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-470")
   END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(Cam060TheCameraEntersTheWorldLookingAtTheStewardsSite)
+  TEST_METHOD(Cam060TheCameraEntersTheWorldOverTheStewardsSite)
   {
-    // O76: at the fallback height along the fallback direction, the screen's centre on the site's centre.
+    // O76 as O108 amends it (ADR-180): held over the site's center at the fallback height, with the fallback direction's
+    // heading and the tilt that height gives; the screen's center on the site.
     Neuron::PointPx pointer;
     const auto camera = EnteredCamera(pointer);
     Assert::IsTrue(pointer.x == CENTER.x && pointer.y == CENTER.y, L"the pointer at the screen centre");
-    Assert::AreEqual(1'000.0, camera->Position().y, 1e-9, L"ref.sim.match_entry.fallback_camera_height");
-    Assert::AreEqual(60.0, camera->FieldOfViewDegrees(), 1e-12, L"ref.ctrl.camera.fov_base");
-    const Neuron::Vec3 direction = Neuron::Normalized({-1.0, -0.7, -1.0});
-    Assert::AreEqual(1.0, Neuron::Dot(camera->Front(), direction), 1e-12, L"along the fallback direction");
-    const auto& entered = camera->PointerGround();
-    Assert::IsTrue(entered.has_value() && entered->onTerrain, L"the pointer's ground point is on the terrain");
-    const Species::SettlementCamera::GroundPoint ground = entered.value_or(Species::SettlementCamera::GroundPoint{});
     const Neuron::Vec3& site = SeedOne().layout.sites[0];
-    Assert::IsTrue(Neuron::HorizontalDistance(ground.position, site) < 10.0, L"within a few pixels of the site's centre");
+    Assert::AreEqual(site.x, camera->Focus().x, 1e-9, L"over the site");
+    Assert::AreEqual(site.z, camera->Focus().z, 1e-9);
+    Assert::AreEqual(1'000.0, camera->Height(), 1e-9, L"ref.sim.match_entry.fallback_camera_height above the ground");
+    Assert::AreEqual(45.0 * DEGREES, camera->HeadingRadians(), 1e-12, L"the heading of (−1, −0.7, −1)");
+    Assert::AreEqual(camera->PitchRadiansAt(1'000.0), std::asin(-camera->Front().y), 1e-9, L"the tilt of the height");
+    Assert::AreEqual(60.0, camera->FieldOfViewDegrees(), 1e-12, L"ref.ctrl.camera.fov_base");
+    const Neuron::Vec3 ground = GroundUnder(*camera, CENTER);
+    Assert::IsTrue(Neuron::HorizontalDistance(ground, site) < 5.0 * FootprintAt(*camera, ground), L"the screen's center on the site");
     // The bounds are the region's square ± ref.sim.match_entry.camera_border.
     Assert::AreEqual(SeedOne().layout.originX - 200.0, camera->Bounds().minX, 1e-9);
     Assert::AreEqual(SeedOne().layout.originZ + SeedOne().layout.side + 200.0, camera->Bounds().maxZ, 1e-9);
   }
 
-  BEGIN_TEST_METHOD_ATTRIBUTE(AcCtrlCa01TheKeysPanAtTheirSpeed)
+  BEGIN_TEST_METHOD_ATTRIBUTE(O108TheTiltFollowsTheHeight)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-471")
   END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(AcCtrlCa01TheKeysPanAtTheirSpeed)
+  TEST_METHOD(O108TheTiltFollowsTheHeight)
   {
-    // One second of the forward key moves the target 250 wu, and with the fast pan 1,000 wu, along the view (O90), and
-    // one second of the side key as far along the ground. The camera is raised first, so that no cliff shortens the step,
-    // and the pointer is held at the screen's centre, so that the front does not turn.
+    // cam.orbit.pitch_low (30°) at cam.orbit.height_min (40 wu) to cam.orbit.pitch_high (65°) at 5,000 wu, by the share of
+    // the height's logarithm: halfway at the heights' geometric mean, and held beyond the ends.
+    const Species::SettlementCamera camera(CommittedPresentation(), Neuron::ProjectionPlanes{});
+    Assert::AreEqual(30.0, camera.PitchRadiansAt(40.0) / DEGREES, 1e-9, L"the lowest height");
+    Assert::AreEqual(65.0, camera.PitchRadiansAt(5'000.0) / DEGREES, 1e-9, L"the highest height");
+    Assert::AreEqual(47.5, camera.PitchRadiansAt(std::sqrt(40.0 * 5'000.0)) / DEGREES, 1e-9, L"halfway");
+    Assert::AreEqual(30.0, camera.PitchRadiansAt(10.0) / DEGREES, 1e-9, L"held below");
+    Assert::AreEqual(65.0, camera.PitchRadiansAt(9'000.0) / DEGREES, 1e-9, L"held above");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(O108TheKeysPanByAShareOfTheDistance)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-471")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(O108TheKeysPanByAShareOfTheDistance)
+  {
+    // One second of the forward or the side key moves the ground point by cam.orbit.pan_rate (0.5) × the camera's
+    // distance from it, × cam.orbit.fast_pan_factor (3) with the fast pan, level along the heading or across it; the
+    // height is kept and the ground point stays on the ground.
     for (const bool fast : {false, true})
     {
       for (const bool side : {false, true})
       {
         Neuron::PointPx pointer;
         auto camera = EnteredCamera(pointer);
-        Species::CameraControls raise;
-        raise.wheelNotches = 40.0f;
-        RunHeld(*camera, raise, pointer, 0.01, 1);
-        const Neuron::Vec3 before = camera->Target();
+        const Neuron::Vec3 before = camera->Focus();
+        const double distance = DistanceOf(*camera);
         Species::CameraControls keys;
         keys.panForward = !side;
         keys.panLeft = side;
         keys.fastPan = fast;
-        RunHeld(*camera, keys, pointer, 0.01, 100);
-        const double moved = Neuron::Length(camera->Target() - before);
-        Assert::AreEqual(fast ? 1'000.0 : 250.0, moved, fast ? 4.0 : 1.0, L"the path, nearly straight");
-        if (side)
-        {
-          Assert::AreEqual(before.y, camera->Target().y, 1e-9, L"the side keys keep the height");
-        }
+        Run(*camera, keys, pointer, 0.01, 100);
+        Settle(*camera, pointer);
+        const double moved = Neuron::HorizontalDistance(camera->Focus(), before);
+        Assert::AreEqual(0.5 * distance * (fast ? 3.0 : 1.0), moved, 0.5, L"a share of the distance a second");
+        Assert::AreEqual(1'000.0, camera->Height(), 1e-9, L"the height kept");
+        const Neuron::Vec3 direction{(camera->Focus().x - before.x) / moved, 0.0, (camera->Focus().z - before.z) / moved};
+        Assert::AreEqual(1.0, Neuron::Dot(direction, side ? LeftOf(*camera) : ForwardOf(*camera)), 1e-6, L"along the heading or across it");
+        Assert::AreEqual(Land(camera->Focus()), camera->Focus().y, 1.0, L"on the ground");
       }
     }
   }
 
-  BEGIN_TEST_METHOD_ATTRIBUTE(O90TheForwardKeyFliesAlongTheView)
-  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-471")
+  BEGIN_TEST_METHOD_ATTRIBUTE(O108TheWheelZoomsTowardsThePointUnderThePointer)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-461")
   END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(O90TheForwardKeyFliesAlongTheView)
+  TEST_METHOD(O108TheWheelZoomsTowardsThePointUnderThePointer)
   {
-    // From the entry pose, which looks down along the fallback direction, one second of the forward key lowers the
-    // camera by about 250 wu × the front's downward share and moves it the rest along the ground; the front turns a
-    // little towards the ground point as the camera closes on it (R-CTRL-471 step 8).
+    // A notch forward multiplies the height by cam.orbit.zoom_step (0.85) and a notch back divides it, between
+    // cam.orbit.height_min and ref.ctrl.camera.max_height, and the ground under a still pointer stays under it.
     Neuron::PointPx pointer;
     auto camera = EnteredCamera(pointer);
-    const Neuron::Vec3 front = camera->Front();
-    const double height = camera->Height();
-    const Neuron::Vec3 before = camera->Target();
+    pointer = {600, 700};
+    const Neuron::Vec3 ground = GroundUnder(*camera, pointer);
+    Species::CameraControls wheel;
+    wheel.wheelNotches = 1.0f;
+    Run(*camera, wheel, pointer, 0.01, 1);
+    Settle(*camera, pointer);
+    Assert::AreEqual(850.0, camera->Height(), 1e-3, L"one notch forward");
+    Neuron::Vec3 under = GroundUnder(*camera, pointer);
+    Assert::IsTrue(Neuron::HorizontalDistance(ground, under) < 2.0 * FootprintAt(*camera, under), L"the ground under the pointer");
+    wheel.wheelNotches = -2.0f;
+    Run(*camera, wheel, pointer, 0.01, 1);
+    Settle(*camera, pointer);
+    Assert::AreEqual(850.0 / 0.85 / 0.85, camera->Height(), 1e-3, L"two notches back");
+    under = GroundUnder(*camera, pointer);
+    Assert::IsTrue(Neuron::HorizontalDistance(ground, under) < 3.0 * FootprintAt(*camera, under), L"and out again");
+    wheel.wheelNotches = 60.0f;
+    Run(*camera, wheel, pointer, 0.01, 1);
+    Run(*camera, {}, pointer, 0.01, 400);
+    Assert::AreEqual(40.0, camera->Height(), 1e-3, L"at least cam.orbit.height_min");
+    // Low over the ground, a pan keeps the camera above the land under it by the ground clearance (R-CTRL-471 step 6).
     Species::CameraControls forward;
     forward.panForward = true;
-    Run(*camera, forward, pointer, 0.01, 100);
-    Assert::AreEqual(height + front.y * 250.0, camera->Height(), 2.0, L"down along the view");
-    Assert::AreEqual(std::hypot(front.x, front.z) * 250.0, Neuron::HorizontalDistance(camera->Target(), before), 2.0,
-                     L"and forward along the ground");
-    Species::CameraControls back;
-    back.panBack = true;
-    Run(*camera, back, pointer, 0.01, 100);
-    Assert::AreEqual(height, camera->Height(), 2.0, L"back up along it");
+    for (int n = 0; n < 100; ++n)
+    {
+      Run(*camera, forward, pointer, 0.01, 1);
+      Assert::IsTrue(camera->Position().y >= Land(camera->Position()) + 10.0 - 1e-6, L"above the land");
+    }
+    wheel.wheelNotches = -80.0f;
+    Run(*camera, wheel, pointer, 0.01, 1);
+    Run(*camera, {}, pointer, 0.01, 400);
+    Assert::AreEqual(5'000.0, camera->Height(), 1e-3, L"at most 5,000 wu");
   }
 
-  BEGIN_TEST_METHOD_ATTRIBUTE(O90TheForwardKeyFliesToThePointUnderThePointer)
-  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-471")
-  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-464")
+  BEGIN_TEST_METHOD_ATTRIBUTE(O108TheZoomKeysZoomAboutTheCenter)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-461")
   END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(O90TheForwardKeyFliesToThePointUnderThePointer)
+  TEST_METHOD(O108TheZoomKeysZoomAboutTheCenter)
   {
-    // While the steward looks (O107, ADR-179), the cursor lock keeps the pointer on its ground point and the camera turns
-    // to face it, so the forward key held brings the camera down onto that point: it comes to rest above it at the ground
-    // clearance, looking almost straight down (ADR-142). The back key held climbs away from it to the highest height.
+    // One second of Page Down is cam.orbit.zoom_key_notches (4) notches in, and the ground point does not move.
     Neuron::PointPx pointer;
     auto camera = EnteredCamera(pointer);
-    const auto& entered = camera->PointerGround();
-    Assert::IsTrue(entered.has_value() && entered->onTerrain);
-    const Neuron::Vec3 ground = entered.value_or(Species::SettlementCamera::GroundPoint{}).position;
-    Species::CameraControls forward;
-    forward.panForward = true;
-    forward.fastPan = true;
-    forward.look = true;
-    Run(*camera, forward, pointer, 0.01, 1'000);
-    const double clearance = CommittedPresentation().ref.ctrl.camera.groundClearance;
-    Assert::IsTrue(Neuron::HorizontalDistance(camera->Position(), ground) < 50.0, L"above the point");
-    Assert::AreEqual(Land(camera->Target()) + clearance, camera->Height(), 1.0, L"at the ground clearance");
-    Assert::IsTrue(camera->Front().y < -0.99, L"looking down");
-    Species::CameraControls climb;
-    climb.panBack = true;
-    climb.fastPan = true;
-    Run(*camera, climb, pointer, 0.25, 200);
-    Assert::AreEqual(CommittedPresentation().ref.ctrl.camera.maxHeight, camera->Height(), 1e-9, L"at most 5,000 wu");
+    const Neuron::Vec3 focus = camera->Focus();
+    Species::CameraControls lower;
+    lower.lower = true;
+    Run(*camera, lower, pointer, 0.01, 100);
+    Settle(*camera, pointer);
+    Assert::AreEqual(1'000.0 * std::pow(0.85, 4.0), camera->Height(), 0.5, L"four notches");
+    Assert::AreEqual(0.0, Neuron::HorizontalDistance(camera->Focus(), focus), 1e-9, L"about the screen's center");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(O108QAndETurnAboutTheGroundPoint)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-471")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(O108QAndETurnAboutTheGroundPoint)
+  {
+    // One second of Q turns the heading cam.orbit.turn_rate (90°) to the left about the ground point, which stays under
+    // the screen's center; Backspace restores the entry heading, and three seconds of E turn 270° to the right.
+    Neuron::PointPx pointer;
+    auto camera = EnteredCamera(pointer);
+    const Neuron::Vec3 focus = camera->Focus();
+    const double radius = Neuron::HorizontalDistance(camera->Position(), focus);
+    Species::CameraControls left;
+    left.turnLeft = true;
+    Run(*camera, left, pointer, 0.01, 100);
+    Settle(*camera, pointer);
+    Assert::AreEqual(135.0 * DEGREES, camera->HeadingRadians(), 1e-3, L"90° to the left");
+    Assert::AreEqual(0.0, Neuron::HorizontalDistance(camera->Focus(), focus), 1e-9, L"about the ground point");
+    Assert::AreEqual(radius, Neuron::HorizontalDistance(camera->Position(), focus), 1e-6, L"on its circle");
+    const Neuron::Vec3 ground = GroundUnder(*camera, CENTER);
+    Assert::IsTrue(Neuron::HorizontalDistance(ground, focus) < 5.0 * FootprintAt(*camera, ground), L"under the screen's center");
+    Species::CameraControls reset;
+    reset.resetHeading = true;
+    Run(*camera, reset, pointer, 0.01, 1);
+    Settle(*camera, pointer);
+    Assert::AreEqual(45.0 * DEGREES, camera->HeadingRadians(), 1e-3, L"the entry heading");
+    Species::CameraControls right;
+    right.turnRight = true;
+    Run(*camera, right, pointer, 0.01, 300);
+    Settle(*camera, pointer);
+    Assert::AreEqual(0.0, std::remainder(camera->HeadingRadians() - (45.0 - 270.0) * DEGREES, 2.0 * std::numbers::pi), 1e-3,
+                     L"270° to the right");
+    Assert::AreEqual(0.0, Neuron::HorizontalDistance(camera->Focus(), focus), 1e-9, L"still about the ground point");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(O108TheMiddleButtonDraggedHoldsTheGround)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-471")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(O108TheMiddleButtonDraggedHoldsTheGround)
+  {
+    // The ground under the pointer when the middle button goes down stays under it as it moves, the pointer is never
+    // moved, and the camera stays where the drag left it.
+    Neuron::PointPx pointer;
+    auto camera = EnteredCamera(pointer);
+    pointer = {900, 600};
+    const Neuron::Vec3 ground = GroundUnder(*camera, pointer);
+    Species::CameraControls drag;
+    drag.drag = true;
+    static_cast<void>(camera->Advance(0.016, drag, pointer, VIEW, SeedOne().field));
+    for (int n = 0; n < 50; ++n)
+    {
+      pointer.x += 4;
+      pointer.y -= 2;
+      Assert::IsFalse(camera->Advance(0.016, drag, pointer, VIEW, SeedOne().field).warpTo.has_value(), L"the pointer is free");
+    }
+    const Neuron::Vec3 under = GroundUnder(*camera, pointer);
+    Assert::IsTrue(Neuron::HorizontalDistance(ground, under) < 2.0 * FootprintAt(*camera, under), L"the ground follows the pointer");
+    Assert::IsTrue(Neuron::HorizontalDistance(camera->Focus(), SeedOne().layout.sites[0]) > 100.0, L"the camera moved");
+    const Neuron::Vec3 held = camera->Focus();
+    Run(*camera, {}, pointer, 0.01, 100);
+    Assert::AreEqual(0.0, Neuron::HorizontalDistance(camera->Focus(), held), 1e-6, L"no drift after the release");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(O108TheMiddleButtonDraggedWithAltTurns)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-471")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(O108TheMiddleButtonDraggedWithAltTurns)
+  {
+    // With Alt held both drag actions fire (INP-085) and the camera turns: the pointer 100 px to the right turns the
+    // heading 100 × cam.orbit.drag_turn (0.3°) to the right at once, and holds no ground.
+    Neuron::PointPx pointer;
+    auto camera = EnteredCamera(pointer);
+    Species::CameraControls turn;
+    turn.turnDrag = true;
+    turn.drag = true;
+    Run(*camera, turn, pointer, 0.016, 1);
+    const Neuron::Vec3 focus = camera->Focus();
+    pointer.x += 100;
+    Run(*camera, turn, pointer, 0.016, 1);
+    Assert::AreEqual((45.0 - 30.0) * DEGREES, camera->HeadingRadians(), 1e-9, L"30° to the right");
+    Assert::AreEqual(0.0, Neuron::HorizontalDistance(camera->Focus(), focus), 1e-9, L"no ground held");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(O108TheHorizontalWheelPansAcross)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-471")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(O108TheHorizontalWheelPansAcross)
+  {
+    // A notch of the horizontal wheel to the right, or a touchpad's slide, moves the ground point to the right by
+    // cam.orbit.wheel_pan_share (0.1) of the distance.
+    Neuron::PointPx pointer;
+    auto camera = EnteredCamera(pointer);
+    const Neuron::Vec3 focus = camera->Focus();
+    const double distance = DistanceOf(*camera);
+    Species::CameraControls across;
+    across.panWheelNotches = 1.0f;
+    Run(*camera, across, pointer, 0.01, 1);
+    Settle(*camera, pointer);
+    Assert::AreEqual(-0.1 * distance, Neuron::Dot(camera->Focus() - focus, LeftOf(*camera)), 1e-6, L"to the right");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(O108HomeFliesBackToTheSite)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-471")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(O108HomeFliesBackToTheSite)
+  {
+    // After a pan, a turn and a zoom, Home brings the camera back to its entry pose over the steward's site.
+    Neuron::PointPx pointer;
+    auto camera = EnteredCamera(pointer);
+    Species::CameraControls away;
+    away.panForward = true;
+    away.fastPan = true;
+    away.turnLeft = true;
+    Run(*camera, away, pointer, 0.01, 200);
+    Species::CameraControls closer;
+    closer.wheelNotches = 3.0f;
+    Run(*camera, closer, pointer, 0.01, 1);
+    Settle(*camera, pointer);
+    Species::CameraControls home;
+    home.home = true;
+    Run(*camera, home, pointer, 0.01, 1);
+    Run(*camera, {}, pointer, 0.01, 300);
+    Assert::AreEqual(0.0, Neuron::HorizontalDistance(camera->Focus(), SeedOne().layout.sites[0]), 1e-3, L"over the site");
+    Assert::AreEqual(1'000.0, camera->Height(), 1e-3, L"at the entry height");
+    Assert::AreEqual(45.0 * DEGREES, camera->HeadingRadians(), 1e-3, L"with the entry heading");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr181OneFingerHoldsTheGroundUnderIt)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr181OneFingerHoldsTheGroundUnderIt)
+  {
+    // The ground where the finger went down stays under it as it drags, the camera stays where the drag left it, and a
+    // hold's drag, which the verbs take (ADR-182), moves nothing.
+    Neuron::PointPx pointer;
+    auto camera = EnteredCamera(pointer);
+    const Neuron::TouchPoint start{900.0, 600.0};
+    const Neuron::Vec3 ground = GroundUnder(*camera, {900, 600});
+    Species::CameraControls finger;
+    finger.touchDrag = Neuron::TouchDrag{Neuron::GesturePhase::Begin, start, {915.0, 600.0}, false};
+    Run(*camera, finger, pointer, 0.016, 1);
+    for (int n = 1; n <= 40; ++n)
+    {
+      finger.touchDrag = Neuron::TouchDrag{Neuron::GesturePhase::Move, start, {915.0 + 5.0 * n, 600.0 - 3.0 * n}, false};
+      Run(*camera, finger, pointer, 0.016, 1);
+    }
+    const Neuron::Vec3 under = GroundUnder(*camera, {1'115, 480});
+    Assert::IsTrue(Neuron::HorizontalDistance(ground, under) < 2.0 * FootprintAt(*camera, under), L"the ground follows the finger");
+    finger.touchDrag = Neuron::TouchDrag{Neuron::GesturePhase::End, start, {1'115.0, 480.0}, false};
+    Run(*camera, finger, pointer, 0.016, 1);
+    const Neuron::Vec3 held = camera->Focus();
+    Run(*camera, {}, pointer, 0.01, 100);
+    Assert::AreEqual(0.0, Neuron::HorizontalDistance(camera->Focus(), held), 1e-6, L"no drift after the lift");
+    Species::CameraControls hold;
+    hold.touchDrag = Neuron::TouchDrag{Neuron::GesturePhase::Begin, start, start, true};
+    Run(*camera, hold, pointer, 0.016, 1);
+    hold.touchDrag = Neuron::TouchDrag{Neuron::GesturePhase::Move, start, {1'200.0, 300.0}, true};
+    Run(*camera, hold, pointer, 0.016, 10);
+    Assert::AreEqual(0.0, Neuron::HorizontalDistance(camera->Focus(), held), 1e-6, L"a hold's drag moves no camera");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr181TwoFingersPanPinchAndTurn)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr181TwoFingersPanPinchAndTurn)
+  {
+    // Over ten frames two fingers spread to 1.25 times their span, turn 20° clockwise and move their center 100 px to the
+    // right: the height falls to 1,000 ÷ 1.25 at once, the heading turns 20° to the left, which turns the picture with
+    // the fingers, and the ground under their center stays under it.
+    Neuron::PointPx pointer;
+    auto camera = EnteredCamera(pointer);
+    const Neuron::Vec3 ground = GroundUnder(*camera, {800, 600});
+    const double heading = camera->HeadingRadians();
+    Species::CameraControls two;
+    two.touchManipulation = Neuron::TouchManipulation{Neuron::GesturePhase::Begin, {800.0, 600.0}, 1.0, 0.0};
+    Run(*camera, two, pointer, 0.016, 1);
+    for (int n = 1; n <= 10; ++n)
+    {
+      two.touchManipulation =
+        Neuron::TouchManipulation{Neuron::GesturePhase::Move, {800.0 + 10.0 * n, 600.0}, std::pow(1.25, 0.1), 2.0 * DEGREES};
+      Run(*camera, two, pointer, 0.016, 1);
+    }
+    Assert::AreEqual(800.0, camera->Height(), 1e-6, L"pinched closer");
+    Assert::AreEqual(0.0, std::remainder(camera->HeadingRadians() - heading - 20.0 * DEGREES, 2.0 * std::numbers::pi), 1e-9,
+                     L"turned with the fingers");
+    const Neuron::Vec3 under = GroundUnder(*camera, {900, 600});
+    Assert::IsTrue(Neuron::HorizontalDistance(ground, under) < 2.0 * FootprintAt(*camera, under), L"the ground under their center");
+    two.touchManipulation = Neuron::TouchManipulation{Neuron::GesturePhase::End, {900.0, 600.0}, 1.0, 0.0};
+    Run(*camera, two, pointer, 0.016, 1);
+    const Neuron::Vec3 held = camera->Focus();
+    Run(*camera, {}, pointer, 0.01, 100);
+    Assert::AreEqual(0.0, Neuron::HorizontalDistance(camera->Focus(), held), 1e-6, L"no drift after the lift");
+    Assert::AreEqual(800.0, camera->Height(), 1e-6, L"nor any zoom");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(AcCtrlCa02ZoomConvergesOnAQuarterOfTheField)
@@ -249,60 +489,33 @@ public:
     Assert::AreEqual(60.0, camera->FieldOfViewDegrees(), 1e-3, L"back to the base field once released");
   }
 
-  BEGIN_TEST_METHOD_ATTRIBUTE(AcCtrlCa03AWheelNotchRaisesByTheRootOfTheAltitude)
-  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-461")
-  END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(AcCtrlCa03AWheelNotchRaisesByTheRootOfTheAltitude)
-  {
-    Neuron::PointPx pointer;
-    auto camera = EnteredCamera(pointer);
-    const double altitude = camera->Height() - Land(camera->Position());
-    Species::CameraControls wheel;
-    wheel.wheelNotches = 1.0f;
-    const double before = camera->Height();
-    Run(*camera, wheel, pointer, 0.01, 1);
-    Assert::AreEqual(2.0 * std::sqrt(altitude), camera->Height() - before, 1e-9, L"2 × √altitude per notch");
-    // The height never passes ref.ctrl.camera.max_height, and never falls below the land + the ground clearance.
-    Species::CameraControls raise;
-    raise.raise = true;
-    Run(*camera, raise, pointer, 0.25, 400);
-    Assert::AreEqual(5'000.0, camera->Height(), 1e-9, L"at most 5,000 wu");
-    Species::CameraControls lower;
-    lower.lower = true;
-    Run(*camera, lower, pointer, 0.25, 2'000);
-    Assert::IsTrue(camera->Height() >= Land(camera->Position()) + 10.0 - 1e-9, L"at least the clearance above the land");
-  }
-
-  BEGIN_TEST_METHOD_ATTRIBUTE(AcCtrlCa04ThePanStopsAtTheRegionsBorder)
+  BEGIN_TEST_METHOD_ATTRIBUTE(AcCtrlCa04TheGroundPointStopsAtTheRegionsBorder)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-471")
   END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(AcCtrlCa04ThePanStopsAtTheRegionsBorder)
+  TEST_METHOD(AcCtrlCa04TheGroundPointStopsAtTheRegionsBorder)
   {
-    // With the pointer high on the screen, on a point beyond the region's low corner, flying for 60 s towards it leaves
-    // the camera on the bound on at least one axis (ADR-119); a sandbox has no territory, so the region alone bounds it.
+    // Panning back for 60 s, away from the entry heading's corner, leaves the ground point on the bound on at least one
+    // axis (ADR-119, ADR-180); a sandbox has no territory, so the region alone bounds it.
     Neuron::PointPx pointer;
     auto camera = EnteredCamera(pointer);
-    pointer = FAR_POINTER;
-    camera->UpdatePointerGround(pointer, VIEW, SeedOne().field);
-    Species::CameraControls forward;
-    forward.panForward = true;
-    forward.fastPan = true;
+    Species::CameraControls back;
+    back.panBack = true;
+    back.fastPan = true;
     Species::StewardAreas areas;
-    Run(*camera, forward, pointer, 0.25, 240, &areas);
+    Run(*camera, back, pointer, 0.25, 240, &areas);
     const Species::CameraBounds& bounds = camera->Bounds();
-    Assert::IsTrue(camera->Position().x >= bounds.minX - 1e-9 && camera->Position().z >= bounds.minZ - 1e-9, L"never beyond it");
-    Assert::IsTrue(std::abs(camera->Position().x - bounds.minX) < 1e-6 || std::abs(camera->Position().z - bounds.minZ) < 1e-6,
-                   L"on the bound");
+    Assert::IsTrue(camera->Focus().x <= bounds.maxX + 1e-9 && camera->Focus().z <= bounds.maxZ + 1e-9, L"never beyond it");
+    Assert::IsTrue(std::abs(camera->Focus().x - bounds.maxX) < 1e-6 || std::abs(camera->Focus().z - bounds.maxZ) < 1e-6, L"on the bound");
   }
 
-  BEGIN_TEST_METHOD_ATTRIBUTE(Wld244TheCameraStaysInTheStewardsAreas)
+  BEGIN_TEST_METHOD_ATTRIBUTE(Wld244TheGroundPointStaysInTheStewardsAreas)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"WLD-244")
   END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(Wld244TheCameraStaysInTheStewardsAreas)
+  TEST_METHOD(Wld244TheGroundPointStaysInTheStewardsAreas)
   {
-    // With the steward's territory a disc of 300 wu about its site, its areas reach 1,100 wu from the site. Flying for
-    // 60 s towards a point beyond them, looking at it (O107), the camera's ground point never leaves them, and comes to
-    // rest at their edge (ADR-142).
+    // With the steward's territory a disc of 300 wu about its site, its areas reach 1,100 wu from the site. Panning for
+    // 6.4 s towards a point beyond them, the camera's ground point never leaves them, and comes to rest at their edge
+    // (ADR-142, ADR-180).
     constexpr double RADIUS = 300.0;
     const double reach = RADIUS + CommittedTuning().wld.view.settlementMargin;
     const double cell = CommittedTuning().mvp.territory.cellSize;
@@ -312,80 +525,66 @@ public:
     const Neuron::Vec3& site = SeedOne().layout.sites[0];
     Neuron::PointPx pointer;
     auto camera = EnteredCamera(pointer);
-    pointer = FAR_POINTER;
-    camera->UpdatePointerGround(pointer, VIEW, SeedOne().field);
     Species::CameraControls forward;
     forward.panForward = true;
-    forward.fastPan = true;
-    forward.look = true;
     double farthest = 0.0;
-    for (int n = 0; n < 240; ++n)
+    for (int n = 0; n < 400; ++n)
     {
-      Run(*camera, forward, pointer, 0.25, 1, &areas);
-      Assert::IsTrue(areas.Contains(camera->Target().x, camera->Target().z) && areas.Contains(camera->Position().x, camera->Position().z),
-                     L"inside the areas every frame");
-      farthest = std::max(farthest, Neuron::HorizontalDistance(camera->Target(), site));
+      Run(*camera, forward, pointer, 0.016, 1, &areas);
+      Assert::IsTrue(areas.Contains(camera->Focus().x, camera->Focus().z), L"inside the areas every frame");
+      farthest = std::max(farthest, Neuron::HorizontalDistance(camera->Focus(), site));
     }
     Assert::IsTrue(farthest <= reach + cell * std::numbers::sqrt2, L"never beyond the margin's last cell");
-    Assert::IsTrue(Neuron::HorizontalDistance(camera->Target(), site) > reach - 3.0 * cell, L"at rest on the areas' edge");
+    Assert::IsTrue(Neuron::HorizontalDistance(camera->Focus(), site) > reach - 3.0 * cell, L"at rest on the areas' edge");
   }
 
-  BEGIN_TEST_METHOD_ATTRIBUTE(AcCtrlCa05ThePointerStaysOnItsGroundPointWhileTheCameraMoves)
+  BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl464ThePointerIsFreeUnlessLookingAround)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-464")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-472")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-058")
   END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(AcCtrlCa05ThePointerStaysOnItsGroundPointWhileTheCameraMoves)
+  TEST_METHOD(RCtrl464ThePointerIsFreeUnlessLookingAround)
   {
+    // O108 (ADR-180): the pointer stays where it is on the screen while the keys move the camera. Looking around holds the
+    // camera still over its ground point, turns its front towards the point under the pointer, and the cursor lock keeps
+    // that point under it; released, the front returns to the ground point.
     Neuron::PointPx pointer;
     auto camera = EnteredCamera(pointer);
-    // The pointer off the centre, then a pan with the mouse still.
     pointer = {700, 650};
-    camera->UpdatePointerGround(pointer, VIEW, SeedOne().field);
-    const auto& before = camera->PointerGround();
-    Assert::IsTrue(before.has_value() && before->onTerrain);
-    // O107 (ADR-179): without the look held, the pointer stays where it is on the screen while the camera moves.
     Species::CameraControls right;
     right.panRight = true;
-    Run(*camera, right, pointer, 0.016, 5);
-    Assert::IsTrue(pointer.x == 700 && pointer.y == 650, L"the free pointer stays put");
-    camera->UpdatePointerGround(pointer, VIEW, SeedOne().field);
-    const auto start = camera->PointerGround().value_or(Species::SettlementCamera::GroundPoint{});
-    right.look = true;
     Run(*camera, right, pointer, 0.016, 30);
-    Assert::IsTrue(camera->PointerGround().has_value(), L"still a ground point");
-    const auto end = camera->PointerGround().value_or(Species::SettlementCamera::GroundPoint{});
-    // One pixel's footprint at the point's distance: the distance × the field's height ÷ the view's rows.
-    const double distance = Neuron::Length(end.position - camera->Position());
-    const double footprint = distance * 2.0 * std::tan(std::numbers::pi / 6.0) / static_cast<double>(VIEW.height);
-    const double drift = Neuron::HorizontalDistance(end.position, start.position);
-    Assert::IsTrue(drift < 3.0 * footprint / std::max(0.2, -camera->Front().y), L"the ground point holds within a few pixels");
-    Assert::IsTrue(pointer.x != 700 || pointer.y != 650, L"the cursor lock moved the pointer");
-  }
-
-  BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl471TheCameraTurnsTowardsThePointUnderThePointer)
-  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-471")
-  END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(RCtrl471TheCameraTurnsTowardsThePointUnderThePointer)
-  {
-    Neuron::PointPx pointer;
-    auto camera = EnteredCamera(pointer);
+    Assert::IsTrue(pointer.x == 700 && pointer.y == 650, L"the free pointer stays put");
+    const Neuron::Vec3 ground = GroundUnder(*camera, pointer);
+    const Neuron::Vec3 focus = camera->Focus();
     const Neuron::Vec3 front = camera->Front();
-    pointer = {1'500, 540}; // to the right of the centre
-    camera->UpdatePointerGround(pointer, VIEW, SeedOne().field);
-    Run(*camera, {}, pointer, 0.016, 5);
-    Assert::AreEqual(0.0, Neuron::Length(camera->Front() - front), 1e-12, L"O107: the pointer alone does not turn it");
-    Species::CameraControls looking;
-    looking.look = true;
-    Run(*camera, looking, pointer, 0.016, 5);
-    const Neuron::Vec3 right = Neuron::Normalized({-front.z, 0.0, front.x}); // world up × front, negated
-    Assert::IsTrue(Neuron::Dot(camera->Front() - front, right) > 0.0, L"the look held turns the front to the right");
-    // Looking around freezes the position while the front still follows the pointer.
-    const Neuron::Vec3 position = camera->Position();
     Species::CameraControls look;
     look.lookAround = true;
     look.panForward = true;
-    Run(*camera, look, pointer, 0.016, 5);
-    Assert::AreEqual(0.0, Neuron::Length(camera->Position() - position), 1e-9, L"frozen");
+    Run(*camera, look, pointer, 0.016, 30);
+    Assert::AreEqual(0.0, Neuron::HorizontalDistance(camera->Focus(), focus), 1e-9, L"held still");
+    Assert::IsTrue(Neuron::Length(camera->Front() - front) > 0.01, L"the front turned");
+    Assert::IsTrue(pointer.x != 700 || pointer.y != 650, L"the cursor lock moved the pointer");
+    const Neuron::Vec3 under = GroundUnder(*camera, pointer);
+    Assert::IsTrue(Neuron::HorizontalDistance(ground, under) < 3.0 * FootprintAt(*camera, under) / std::max(0.2, -camera->Front().y),
+                   L"the ground point holds within a few pixels");
+    Run(*camera, {}, pointer, 0.016, 120);
+    const double pitch = camera->PitchRadiansAt(camera->Height());
+    const Neuron::Vec3 onto = ForwardOf(*camera) * std::cos(pitch) + Neuron::Vec3{0.0, -std::sin(pitch), 0.0};
+    Assert::IsTrue(Neuron::Length(camera->Front() - onto) < 1e-2, L"back onto the ground point");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr126TheBenchHoldsTheEntryPose)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"CAM-060")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr126TheBenchHoldsTheEntryPose)
+  {
+    // ADR-180 keeps the frame bench's view: O76's pose at the fallback height along the fallback direction.
+    Neuron::PointPx pointer;
+    auto camera = EnteredCamera(pointer);
+    camera->HoldEntryPose(SeedOne().field, SeedOne().layout.sites[0]);
+    Assert::AreEqual(1'000.0, camera->Position().y, 1e-9, L"ref.sim.match_entry.fallback_camera_height");
+    Assert::AreEqual(1.0, Neuron::Dot(camera->Front(), Neuron::Normalized({-1.0, -0.7, -1.0})), 1e-12, L"along the fallback direction");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl055TheHoverIsTheOwnLeaderNearestThePointerOnScreen)

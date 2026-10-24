@@ -754,6 +754,19 @@
   "cam": {
     "pick": {
       "row_offset": 1
+    },
+    "orbit": {
+      "height_min": 40,
+      "pitch_low": 30,
+      "pitch_high": 65,
+      "pan_rate": 0.5,
+      "fast_pan_factor": 3,
+      "wheel_pan_share": 0.1,
+      "zoom_step": 0.85,
+      "zoom_key_notches": 4,
+      "turn_rate": 90,
+      "drag_turn": 0.3,
+      "smoothing": 12
     }
   },
   "vfx": {
@@ -1218,6 +1231,14 @@
     "repeat": {
       "initial_delay": 0.3,
       "period": 0.3
+    },
+    "touch": {
+      "slop": 10,
+      "double_tap_slop": 24,
+      "tap_ms": 250,
+      "hold_ms": 350,
+      "double_tap_ms": 300,
+      "turn_threshold": 10
     }
   },
   "aen": {
