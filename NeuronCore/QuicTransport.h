@@ -49,6 +49,8 @@ struct QuicPathStats
   std::uint64_t streamBytesSent = 0; // the stream frames' payloads: the reliable channel's framed messages
   std::uint64_t streamBytesReceived = 0;
   std::uint32_t congestionEvents = 0;
+  std::uint64_t datagramsSent = 0;        // the state datagrams MsQuic put in packets, at its SENT report
+  std::uint64_t datagramBytesSent = 0;    // and their bytes, the message's header included
   bool datagramsEnabled = false;          // the peer takes QUIC datagrams (ADR-089)
   std::uint16_t datagramMaxSendBytes = 0; // the largest datagram MsQuic will send now (ADR-088 item 3)
   std::uint64_t datagramsRefused = 0;     // received empty or above STATE_DATAGRAM_MAX_BYTES, and dropped

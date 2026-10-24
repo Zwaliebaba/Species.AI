@@ -62,7 +62,7 @@ What is built:
   - After the session, the server's journal is replayed headless, and each tick's hash is compared.
 * **The lines** (`RunPerformance.py --link`, judged):
   - a figure's longest freeze over one lost datagram that carried it is at most 2 ticks;
-  - the overhead per state datagram is within 5 bytes of 73.25 bytes on IPv4. The overhead is every UDP byte the server sent, with 28 bytes of IPv4 and UDP per packet, less MsQuic's stream payload and the records' bytes, over the state datagrams sent. It is counted over each connection after its first 10 s. This charges every ACK-only packet, every probe and the stream frames' headers to the datagrams, so it is an upper bound. 73.25 is item 3's 69 with ADR-111's header: the 3-byte message header and the 10-bit record count above the 8 bytes item 3 counts;
+  - the overhead per state datagram is within 5 bytes of 73.25 bytes on IPv4. The overhead is every UDP byte the server sent, with 28 bytes of IPv4 and UDP per packet, less MsQuic's stream payload and the state datagrams' own bytes, over the state datagrams MsQuic reported sent, plus the 12.25 bytes of headers inside each datagram. A datagram counts at MsQuic's `QUIC_DATAGRAM_SEND_SENT` report (`QuicPathStats::datagramsSent`, `datagramBytesSent`), so one still queued, or canceled at a close, is not charged to the link. It is counted over each connection after its first 10 s. This charges every ACK-only packet, every probe and the stream frames' headers to the datagrams, so it is an upper bound. 73.25 is item 3's 69 with ADR-111's header: the 3-byte message header and the 10-bit record count above the 8 bytes item 3 counts;
   - a rejoin's first state is within 10 s of its connection's start;
   - every tick's hash equals the journal's replay;
   - the peer's datagram support is enabled at both ends.
@@ -79,7 +79,7 @@ What is built:
 
   Each is delivered or dropped with its reason. Its corpus is those encodings and the generator's pinned seed, as ADR-069 has it, so a failing input is found again. A default message holds empty lists, so the deep structures (a state update's records, a status's rows) are reached by the random bodies alone. ADR-088's 10⁷ inputs per parser are the same code at 10,000,000 inputs per message (3.9 × 10⁸ in all), run once and recorded in `playtests/M4.md`.
 * **The pinned DLL.** `Build/CheckServerImports.py` fails when the server imports `msquic.dll`, which the transport loads itself and no project links (ADR-185). It also fails when the `msquic.dll` beside the built programs is not the pinned package's copy for their platform, byte for byte.
-* **`QuicPathStats`** gains MsQuic's stream payload bytes each way and its congestion events.
+* **`QuicPathStats`** gains MsQuic's stream payload bytes each way, its congestion events, and the state datagrams it reported sent with their bytes.
 
 ### Consequences
 
@@ -117,6 +117,13 @@ What is built:
 * Owner decisions O44, O108, O109; MVP-071, MVP-090, PLT-100; the [M4 plan](../implementation/m4_plan.md), task T11.
 * Amends [ADR-088](ADR-088-transport-messages-identity-and-diagnostics.md) (item 7's simulator, the overhead's model with ADR-111's header), [ADR-086](ADR-086-replication-and-interest-management.md) (how M4's line is measured), [ADR-089](ADR-089-msquic-transport-package.md) (the pin re-checked, the DLL checked) and [ADR-185](ADR-185-the-quic-transport-and-the-servers-certificate.md) (the path statistics).
 * The pin, re-checked on nuget.org on 2026-10-24: `Microsoft.Native.Quic.MsQuic.Schannel` 2.6.3 is the latest version, published 2026-10-13, MIT, with no deprecation or advisory. 2.6.1 and 2.6.2 are deprecated for critical bugs (GHSA-2mxg-prvg-9jfg). Read from nuget.org's registration index.
+* CI's first quick link run through the simulator on MsQuic (300 ticks, Debug build on the Windows runner, 2026-10-24) found:
+  - a figure's longest freeze over one lost datagram was 1 tick, over 1,207 such freezes, and over two or more 2 ticks;
+  - the rejoin's first state came 0.69 s after its connection started;
+  - all 352 hashes equal the replay's;
+  - datagrams were enabled at both ends, and MsQuic's round trip was 162.7 ms.
+
+  It also showed that MsQuic puts several DATAGRAM frames in one packet (0.93 packets a datagram), which item 3's model of one datagram per packet does not count. Its overhead, computed then from the datagrams the world handed to MsQuic, came out negative, because datagrams queued under congestion or canceled at the rejoin were charged to the link. The overhead now counts only the datagrams MsQuic reports sent.
 * The scene's logic was run before CI on a Linux build of the portable libraries, with a stand-in for MsQuic over `InProcessTransport` that loses 10 % of the state datagrams. Over 300 ticks:
   - every freeze over one lost datagram was 1 tick, and every one over two was 2;
   - there was no other freeze;

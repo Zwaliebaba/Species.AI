@@ -98,6 +98,8 @@ struct QuicLink
   std::vector<DatagramOutcome> outcomes;
   std::uint64_t nextDatagram = 1;
   std::uint64_t datagramsRefused = 0;
+  std::uint64_t datagramsSent = 0; // ADR-189: put in packets, as MsQuic reports them sent
+  std::uint64_t datagramBytesSent = 0;
   TransportStats stats;
 
   // Under the lock: the connection is ending, for _reason unless an earlier one was recorded.
@@ -413,6 +415,11 @@ QUIC_STATUS QUIC_API OnConnectionEvent(HQUIC _connection, void* _context, QUIC_C
       const QUIC_DATAGRAM_SEND_STATE state = _event->DATAGRAM_SEND_STATE_CHANGED.State;
       {
         const std::lock_guard lock(link.mutex);
+        if (state == QUIC_DATAGRAM_SEND_SENT)
+        {
+          ++link.datagramsSent;
+          link.datagramBytesSent += block->bytes.size();
+        }
         if (!block->decided && state != QUIC_DATAGRAM_SEND_UNKNOWN && state != QUIC_DATAGRAM_SEND_SENT)
         {
           const bool acknowledged = state == QUIC_DATAGRAM_SEND_ACKNOWLEDGED || state == QUIC_DATAGRAM_SEND_ACKNOWLEDGED_SPURIOUS;
@@ -885,6 +892,8 @@ std::optional<QuicPathStats> QuicTransport::PathStats() const
   stats.datagramsEnabled = link.datagramsEnabled;
   stats.datagramMaxSendBytes = link.datagramMaxSendBytes;
   stats.datagramsRefused = link.datagramsRefused;
+  stats.datagramsSent = link.datagramsSent;
+  stats.datagramBytesSent = link.datagramBytesSent;
   return stats;
 }
 

@@ -37,15 +37,16 @@ struct Freezes
 };
 
 // A server end's figures over the window that excludes each connection's first OVERHEAD_SETTLE_TICKS: MsQuic's own and
-// what the world sent through it.
+// what the world sent through it. A state datagram counts once MsQuic has put it in a packet, so one still queued, or
+// canceled at the close, is not charged to the link.
 struct LinkWindow
 {
-  std::uint64_t stateDatagrams = 0;
-  std::uint64_t recordBits = 0;      // the records of those datagrams, without the message's and Species' headers
-  std::uint64_t reliableBytes = 0;   // the reliable messages the world sent, before their framing
-  std::uint64_t packetsSent = 0;     // MsQuic's QUIC packets
-  std::uint64_t udpBytesSent = 0;    // MsQuic's UDP payloads
-  std::uint64_t streamBytesSent = 0; // MsQuic's stream payloads, the framing included
+  std::uint64_t stateDatagrams = 0;    // MsQuic's datagrams sent
+  std::uint64_t datagramBytesSent = 0; // and their bytes, the message's and Species' headers included
+  std::uint64_t reliableBytes = 0;     // the reliable messages the world sent, before their framing
+  std::uint64_t packetsSent = 0;       // MsQuic's QUIC packets
+  std::uint64_t udpBytesSent = 0;      // MsQuic's UDP payloads
+  std::uint64_t streamBytesSent = 0;   // MsQuic's stream payloads, the framing included
 };
 
 /// One run of the link scene: a valley of four settlements, the steward's run by its scripted steward and watched, served

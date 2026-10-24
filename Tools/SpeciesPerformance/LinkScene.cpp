@@ -69,8 +69,6 @@ double Seconds(Neuron::Nanoseconds _duration)
 // What a server end's counters hold at one sample.
 struct EndCounters
 {
-  std::uint64_t stateDatagrams = 0;
-  std::uint64_t recordBits = 0;
   std::uint64_t reliableBytes = 0;
   Neuron::QuicPathStats path;
 };
@@ -353,11 +351,6 @@ private:
     }
     m_sent.insert_or_assign({_connection, _number}, std::move(sent));
     ++m_datagrams;
-    if (end != nullptr)
-    {
-      ++end->counted.stateDatagrams;
-      end->counted.recordBits += _message.size() * 8 - std::min<std::size_t>(_message.size() * 8, Species::StateUpdate::HEADER_BITS);
-    }
   }
 
   void Sample(ServerEnd& _end) const
@@ -697,11 +690,13 @@ std::string PathJson(const Neuron::QuicPathStats& _path)
   return std::format("{{\"rtt_us\": {}, \"rtt_variance_us\": {}, \"congestion_window_bytes\": {}, \"path_mtu_bytes\": {}, "
                      "\"packets_sent\": {}, \"packets_suspected_lost\": {}, \"packets_spuriously_lost\": {}, \"packets_received\": {}, "
                      "\"udp_bytes_sent\": {}, \"udp_bytes_received\": {}, \"stream_bytes_sent\": {}, \"stream_bytes_received\": {}, "
-                     "\"congestion_events\": {}, \"datagrams_enabled\": {}, \"datagram_max_send_bytes\": {}, \"datagrams_refused\": {}}}",
+                     "\"congestion_events\": {}, \"datagrams_sent\": {}, \"datagram_bytes_sent\": {}, \"datagrams_enabled\": {}, "
+                     "\"datagram_max_send_bytes\": {}, \"datagrams_refused\": {}}}",
                      _path.roundTripMicroseconds, _path.roundTripVarianceMicroseconds, _path.congestionWindowBytes, _path.pathMtuBytes,
                      _path.packetsSent, _path.packetsSuspectedLost, _path.packetsSpuriouslyLost, _path.packetsReceived, _path.udpBytesSent,
-                     _path.udpBytesReceived, _path.streamBytesSent, _path.streamBytesReceived, _path.congestionEvents,
-                     _path.datagramsEnabled ? "true" : "false", _path.datagramMaxSendBytes, _path.datagramsRefused);
+                     _path.udpBytesReceived, _path.streamBytesSent, _path.streamBytesReceived, _path.congestionEvents, _path.datagramsSent,
+                     _path.datagramBytesSent, _path.datagramsEnabled ? "true" : "false", _path.datagramMaxSendBytes,
+                     _path.datagramsRefused);
 }
 
 } // namespace
@@ -828,8 +823,8 @@ std::expected<LinkRun, std::string> RunLink(const LinkSceneDesc& _desc)
     }
     if (end.first && end.latest)
     {
-      run.window.stateDatagrams += end.latest->stateDatagrams - end.first->stateDatagrams;
-      run.window.recordBits += end.latest->recordBits - end.first->recordBits;
+      run.window.stateDatagrams += end.latest->path.datagramsSent - end.first->path.datagramsSent;
+      run.window.datagramBytesSent += end.latest->path.datagramBytesSent - end.first->path.datagramBytesSent;
       run.window.reliableBytes += end.latest->reliableBytes - end.first->reliableBytes;
       run.window.packetsSent += end.latest->path.packetsSent - end.first->path.packetsSent;
       run.window.udpBytesSent += end.latest->path.udpBytesSent - end.first->path.udpBytesSent;
@@ -859,11 +854,15 @@ std::expected<LinkRun, std::string> RunLink(const LinkSceneDesc& _desc)
 std::string LinkJson(const LinkRun& _run)
 {
   const LinkWindow& window = _run.window;
-  // ADR-088 item 3: what a state datagram costs on the link besides its records, every packet the server sent in the
-  // window charged to its datagrams, the reliable channel's payloads taken out.
+  // ADR-088 item 3: what a state datagram costs on the link besides its records: every byte the server sent in the window
+  // but the reliable channel's payloads and the datagrams' own, over the datagrams sent, and the message's and Species'
+  // headers inside each datagram (ADR-111).
   const double datagrams = static_cast<double>(std::max<std::uint64_t>(1, window.stateDatagrams));
   const double wire = static_cast<double>(window.udpBytesSent) + IPV4_UDP_HEADER_BYTES * static_cast<double>(window.packetsSent);
-  const double overhead = (wire - static_cast<double>(window.streamBytesSent) - static_cast<double>(window.recordBits) / 8.0) / datagrams;
+  const double headerBytes = static_cast<double>(Species::StateUpdate::HEADER_BITS) / 8.0;
+  const double recordBytes = static_cast<double>(window.datagramBytesSent) - headerBytes * static_cast<double>(window.stateDatagrams);
+  const double overhead =
+    (wire - static_cast<double>(window.streamBytesSent) - static_cast<double>(window.datagramBytesSent)) / datagrams + headerBytes;
   return std::format(
     "{{\"ticks\": {}, \"evaluated_ticks\": {}, \"unevaluated_ticks\": {}, \"state_datagrams\": {}, \"datagrams_acknowledged\": {}, "
     "\"datagrams_lost\": {}, \"datagrams_unresolved\": {}, \"figures_single_loss\": {}, \"figures_multiple_loss\": {}, "
@@ -874,8 +873,8 @@ std::string LinkJson(const LinkRun& _run)
     "\"messages_dropped\": {}, \"hashes_compared\": {}, \"hashes_match\": {}, \"stalls\": {}}}",
     _run.ticks, _run.evaluatedTicks, _run.unevaluatedTicks, _run.stateDatagrams, _run.datagramsAcknowledged, _run.datagramsLost,
     _run.datagramsUnresolved, FreezesJson(_run.figuresSingleLoss), FreezesJson(_run.figuresMultipleLoss), FreezesJson(_run.figuresNoLoss),
-    FreezesJson(_run.others), window.stateDatagrams, static_cast<double>(window.recordBits) / 8.0, window.reliableBytes, window.packetsSent,
-    window.udpBytesSent, window.streamBytesSent, overhead, static_cast<double>(window.packetsSent) / datagrams, PathJson(_run.serverPath),
+    FreezesJson(_run.others), window.stateDatagrams, recordBytes, window.reliableBytes, window.packetsSent, window.udpBytesSent,
+    window.streamBytesSent, overhead, static_cast<double>(window.packetsSent) / datagrams, PathJson(_run.serverPath),
     PathJson(_run.clientPath), _run.joinSeconds, _run.rejoined ? "true" : "false", _run.rejoinSeconds, _run.terrains, _run.requestsSent,
     _run.answers, _run.missingBaselines, _run.lateUpdates, _run.messagesDropped, _run.hashesCompared, _run.hashesMatch ? "true" : "false",
     _run.stalls);
