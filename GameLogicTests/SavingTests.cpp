@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include "BitReader.h"
+#include "BitWriter.h"
 #include "CommandJournal.h"
 #include "Files.h"
 #include "MessageCodec.h"
@@ -9,6 +11,7 @@
 #include "TestSupport.h"
 #include "WorkerPool.h"
 #include "WorldServer.h"
+#include "WorldRecord.h"
 #include "WorldSimulation.h"
 #include "WorldSnapshot.h"
 
@@ -21,6 +24,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -194,12 +198,14 @@ public:
   BEGIN_TEST_METHOD_ATTRIBUTE(Pil131AnUncleanStopAndAStallAreFreezesOfTheWorldRecord)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"PIL-131")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-075")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-071")
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Pil131AnUncleanStopAndAStallAreFreezesOfTheWorldRecord)
   {
     // A stall that froze the world is recorded with its tick and the seconds the loop gave up, and saved with the world.
     // A server that stops without its final snapshot leaves no marker, so the next records a freeze of cause "unclean
-    // stop" from the snapshot it opens, as long as the calendar time since that snapshot. A clean stop records none.
+    // stop" from the snapshot it opens, as long as the calendar time since that snapshot. From M4 a clean stop is a
+    // freeze too, of cause "server stopped", as long as the server was not running (MVP-071, ADR-188).
     const TemporaryFolder folder;
     std::int64_t now = 1'800'000'000;
     Neuron::WorkerPool pool(0);
@@ -225,7 +231,66 @@ public:
     now += 3'600;
     Species::WorldServer clean(SettledDesc(folder.Path(), &now));
     ExpectEqual(100, static_cast<std::int64_t>(clean.Open()), L"opened again at tick 100");
-    Assert::IsTrue(clean.Simulation()->Record().freezes == expected, L"no freeze for a clean stop");
+    std::vector<Species::FreezeRecord> stopped = expected;
+    stopped.push_back({100, Species::FreezeCause::ServerStopped, 3'600});
+    Assert::IsTrue(clean.Simulation()->Record().freezes == stopped, L"a clean stop's freeze, as long as the server was stopped");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp071AStallAcrossASuspendIsTheComputersSleep)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-071")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PIL-131")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp071AStallAcrossASuspendIsTheComputersSleep)
+  {
+    // ADR-188: a freezing stall after the computer suspended is a freeze of cause "sleep"; one after none is a stall; a
+    // short stall across a suspend freezes nothing, and the suspend it crossed is spent.
+    std::uint64_t suspends = 4;
+    Species::WorldServer::Desc desc = SettledDesc({});
+    desc.suspensions = [&suspends] { return suspends; };
+    Species::WorldServer server(desc);
+    static_cast<void>(server.Open());
+    Neuron::WorkerPool pool(0);
+    static_cast<void>(Run(server, 0, 20, pool));
+    ++suspends;
+    server.Stalled({20, Neuron::Nanoseconds{600'000'000'000}, true});
+    static_cast<void>(Run(server, 20, 40, pool));
+    server.Stalled({40, Neuron::Nanoseconds{11'000'000'000}, true});
+    ++suspends;
+    server.Stalled({41, Neuron::Nanoseconds{2'000'000'000}, false});
+    server.Stalled({42, Neuron::Nanoseconds{15'000'000'000}, true});
+    const std::vector<Species::FreezeRecord> expected{
+      {20, Species::FreezeCause::Sleep, 600}, {40, Species::FreezeCause::ServerStall, 11}, {42, Species::FreezeCause::ServerStall, 15}};
+    Assert::IsTrue(server.Simulation()->Record().freezes == expected, L"the sleep, then two stalls");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp095AWorldRecordOfVersion21ReadsItsOneBitCauses)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-095")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PIL-131")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp095AWorldRecordOfVersion21ReadsItsOneBitCauses)
+  {
+    // ADR-188: version 22 writes a freeze's cause in two bits; a record of version 21 or older, written in one, reads as
+    // it was.
+    Neuron::BitWriter older;
+    older.WriteSigned(1'800'000'000, 64);
+    older.WriteBounded(2, 65'535);
+    for (const auto& [tick, cause] : {std::pair<std::uint64_t, std::uint64_t>{60, 0}, {100, 1}})
+    {
+      older.WriteBits(tick, 64);
+      older.WriteBounded(cause, Species::FREEZE_CAUSE_MAX_BEFORE_M4);
+      older.WriteBits(30, 64);
+    }
+    Species::WorldRecord record;
+    Neuron::BitReader reader(older.Bytes());
+    Assert::IsTrue(Species::ReadWorldRecord(reader, record, 21) && reader.Finish(), L"reads whole");
+    const std::vector<Species::FreezeRecord> expected{{60, Species::FreezeCause::ServerStall, 30},
+                                                      {100, Species::FreezeCause::UncleanStop, 30}};
+    Assert::IsTrue(record.savedAtSeconds == 1'800'000'000 && record.freezes == expected, L"as it was");
+    Neuron::BitWriter current;
+    Species::WriteWorldRecord(current, record);
+    Species::WorldRecord again;
+    Neuron::BitReader currentReader(current.Bytes());
+    Assert::IsTrue(Species::ReadWorldRecord(currentReader, again, Species::WORLD_STATE_VERSION) && again == record, L"and round-trips");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp075ATornNewestSnapshotFallsBackToTheOneBefore)

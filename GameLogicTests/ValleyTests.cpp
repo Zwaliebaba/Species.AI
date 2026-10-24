@@ -318,7 +318,7 @@ public:
     // commanding an AI settlement whose crowd makes its main cycle promote a formation Leader (R-BOT-091) at the first
     // step after the restore. The snapshot is of the tick before the first main cycle that promotes one after the crowd
     // is spawned and the nodes have counted it, as they do every ref.bot.node.recount_ticks; a later cycle's promotion
-    // would hang on where the crowd's gatherers stand (O110).
+    // would hang on where the crowd's gatherers stand (O112).
     const std::unique_ptr<Species::WorldSimulation> world = ValleyWorld();
     Species::RegionSimulation& region = world->Region(0);
     const Species::Settlement& settlement = region.Settlements().back();

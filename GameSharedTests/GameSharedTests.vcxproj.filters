@@ -23,6 +23,18 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AlwaysOnServerTests.cpp">
+      <Filter>Records</Filter>
+    </ClCompile>
+    <ClCompile Include="AwayMessageTests.cpp">
+      <Filter>Messages</Filter>
+    </ClCompile>
+    <ClCompile Include="JoinMessageTests.cpp">
+      <Filter>Messages</Filter>
+    </ClCompile>
+    <ClCompile Include="MessageFuzzTests.cpp">
+      <Filter>Messages</Filter>
+    </ClCompile>
     <ClCompile Include="NavigationTests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
@@ -42,6 +54,12 @@
       <Filter>Tests</Filter>
     </ClCompile>
     <ClCompile Include="TuningTests.cpp">
+      <Filter>Records</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldPaceTests.cpp">
+      <Filter>Records</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldSavesTests.cpp">
       <Filter>Records</Filter>
     </ClCompile>
     <ClCompile Include="WorldTerrainTests.cpp">

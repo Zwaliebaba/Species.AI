@@ -139,13 +139,13 @@ public:
     Assert::IsTrue(settlement.storesMilliRu > 0, L"loads deposited, beyond the upkeep");
   }
 
-  BEGIN_TEST_METHOD_ATTRIBUTE(O110AGathererGoesBackToItsHomePortAndWaitsItsTurn)
+  BEGIN_TEST_METHOD_ATTRIBUTE(O112AGathererGoesBackToItsHomePortAndWaitsItsTurn)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-031")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-036")
   END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(O110AGathererGoesBackToItsHomePortAndWaitsItsTurn)
+  TEST_METHOD(O112AGathererGoesBackToItsHomePortAndWaitsItsTurn)
   {
-    // O110 (ADR-184): with gathering at 100 %, every gatherer walks to its home port and to no other; one that has put
+    // O112 (ADR-195): with gathering at 100 %, every gatherer walks to its home port and to no other; one that has put
     // its load down goes back to the port it carried it from; and the gatherers that share a port wait their turn beside
     // it, so that none is sent away to look for another.
     Neuron::WorkerPool pool(0);
@@ -192,12 +192,12 @@ public:
     Assert::IsTrue(waited, L"a gatherer waits its turn beside a manned port");
   }
 
-  BEGIN_TEST_METHOD_ATTRIBUTE(O110AWorkerThatStopsGatheringLeavesItsHomePort)
+  BEGIN_TEST_METHOD_ATTRIBUTE(O112AWorkerThatStopsGatheringLeavesItsHomePort)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-036")
   END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(O110AWorkerThatStopsGatheringLeavesItsHomePort)
+  TEST_METHOD(O112AWorkerThatStopsGatheringLeavesItsHomePort)
   {
-    // O110 (ADR-184): the home ports are saved, and a region of version 17 reads with none; once the priorities move
+    // O112 (ADR-195): the home ports are saved, and a region of version 22 reads with none; once the priorities move
     // every Worker to guard duty, each gatherer leaves its home port at its next search, and no Worker of another task
     // has one.
     Neuron::WorkerPool pool(0);
@@ -223,11 +223,11 @@ public:
       restoredHomes += worker->homeStructureId != 0 ? 1 : 0;
     }
     ExpectEqual(static_cast<std::int64_t>(homes), static_cast<std::int64_t>(restoredHomes), L"the home ports are saved");
-    const std::vector<std::byte> older = RegionStateOf(region, 17);
-    Species::RegionSimulation seventeen(0, SETTLED_TEST_KEY, region.NextTick(), CommittedTuning(), ValleyTerrain(), &TestRecords());
+    const std::vector<std::byte> older = RegionStateOf(region, 22);
+    Species::RegionSimulation twentyTwo(0, SETTLED_TEST_KEY, region.NextTick(), CommittedTuning(), ValleyTerrain(), &TestRecords());
     Neuron::BitReader reader(older);
-    Assert::IsTrue(seventeen.ReadState(reader, 17) && reader.Finish(), L"a version-17 region reads whole");
-    for (const Species::Figure* worker : WorkersOf(seventeen))
+    Assert::IsTrue(twentyTwo.ReadState(reader, 22) && reader.Finish(), L"a version-22 region reads whole");
+    for (const Species::Figure* worker : WorkersOf(twentyTwo))
     {
       Assert::IsTrue(worker->homeStructureId == 0, L"with no home port");
     }
@@ -331,8 +331,8 @@ public:
   TEST_METHOD(Mvp037AnIdleWorkerSaysWhy)
   {
     // Construction alone with an empty queue: every Worker has no task, because the queue is empty, and wanders.
-    // Gathering alone with more Workers than the gathering ports take, each as many as fit one gatherer's round (O110,
-    // ADR-184), at most six for a port 500 wu from its drop-off: each Worker gathers or has no free port, and some have
+    // Gathering alone with more Workers than the gathering ports take, each as many as fit one gatherer's round (O112,
+    // ADR-195), at most six for a port 500 wu from its drop-off: each Worker gathers or has no free port, and some have
     // none.
     Neuron::WorkerPool pool(0);
     std::uint64_t tick = 0;

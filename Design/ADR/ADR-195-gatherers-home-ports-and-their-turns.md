@@ -1,7 +1,7 @@
 ---
 status: proposed
 date: 2026-10-24
-decision-makers: Species technology lead (owner decision O110)
+decision-makers: Species technology lead (owner decision O112)
 ---
 
 # Gatherers' home ports and their turns
@@ -10,9 +10,9 @@ decision-makers: Species technology lead (owner decision O110)
 
 [ADR-135](ADR-135-settlement-tasks-gathering-and-upkeep-at-m2.md) gives gathering work while a resource site in the territory has a free port, and sends each searching Worker to the nearest one (O84). A gatherer leaves its port when it carries its load, so the port is free for the whole carry. Every Worker on guard duty near the Wellspring searches again every 1.1 to 2.0 s, so one of them takes the port within a tick or two and walks 250 to 450 wu to it. The carrier puts its load down, finds every port taken and becomes a guard, walking back to the Wellspring.
 
-On the owner's M3 build two crossing streams of Workers ran between the Wellspring and the sites, and the Workers did not walk between the mines and the three storehouses beside them. The owner read this as Workers wandering (O110). MVP-031 has a gatherer carry its load to the nearest drop-off point "and return", which the relay never did.
+On the owner's M3 build two crossing streams of Workers ran between the Wellspring and the sites, and the Workers did not walk between the mines and the three storehouses beside them. The owner read this as Workers wandering (O112). MVP-031 has a gatherer carry its load to the nearest drop-off point "and return", which the relay never did.
 
-The owner chose that a gatherer keeps its port while it carries and goes back to it (O110, option A). Built and measured as stated, that is worse than the relay:
+The owner chose that a gatherer keeps its port while it carries and goes back to it (O112, option A). Built and measured as stated, that is worse than the relay:
 - until a storehouse stands beside a site, the drop-off is the Wellspring, about 350 wu away;
 - a port kept for one gatherer stands empty for that gatherer's whole round trip, about 32 s in every 42 s;
 - the relay refills the port within seconds.
@@ -26,7 +26,7 @@ The owner chose that a gatherer keeps its port while it carries and goes back to
 
 ## Considered Options
 
-1. **The home port kept by one gatherer** (O110's option A as stated). The port's keeper is saved on the port, and no other Worker takes it while its gatherer carries.
+1. **The home port kept by one gatherer** (O112's option A as stated). The port's keeper is saved on the port, and no other Worker takes it while its gatherer carries.
 2. **The home port shared by its turns.** A port takes as many gatherers as fit one gatherer's round, and a gatherer whose port is manned waits its turn beside it.
 3. **A home site with a queue.** A gatherer belongs to a resource site, takes any free port there and waits at the site when none is free.
 4. **The relay as it is**, with only the explanation.
@@ -41,8 +41,8 @@ Chosen option: 2. It keeps option 1's lanes and fills each port as the relay did
 What is built:
 
 * **The state.** A Worker holds its home port: the structure's id and slot and the port's index (`Figure::homeStructureId`, `homeStructureSlot`, `homePortIndex`).
-  - The region writes them for every figure of every team, in team and slot order, as a new last section of its state: a bit, then the three values when there is a home port.
-  - `WORLD_STATE_VERSION` is 18 (`STATE_VERSION_WITH_HOME_PORTS`). A region of version 17 or older reads with no home port, and its gatherers take one as they next gather, so the owner's world continues (O98).
+  - The region writes them for every figure of every team, in team and slot order, as a new last section of its state after M4's deputies: a bit, then the three values when there is a home port.
+  - `WORLD_STATE_VERSION` is 23 (`STATE_VERSION_WITH_HOME_PORTS`). A region of version 22 or older reads with no home port, and its gatherers take one as they next gather, so the owner's world continues (O98).
 * **The turns** (`PortTurns`). A resource site's port takes ⌈(p + w) ÷ p⌉ gatherers, where:
   - p is `mvp.gather.port_ticks`;
   - w is the ticks of the walk from the site to its settlement's nearest drop-off point and back, at `ref.unit.worker.speed`.
@@ -98,7 +98,7 @@ Of the three levers tried, only the time at the port meets all of M2's criteria.
   - a carrier goes back to the port it carried from;
   - a gatherer waits its turn beside a manned port, and none is sent away for want of a port;
   - Workers moved to guard duty have no home port;
-  - the home ports are saved, and a region of version 17 reads with none;
+  - the home ports are saved, and a region of version 22 reads with none;
   - with more Workers than the ports' turns take, the rest have no free port.
 * `GameLogicTests/ValleyTests`: the AI settlement's battle AI continues alike from a snapshot taken before its first main cycle that promotes a formation Leader. The crowd's gatherers now leave the Wellspring for their ports, so the later cycle that the test waited for no longer promotes.
 * `GameLogicTests/GrowthSceneTests`: the scene's first hour stays inside its bounds.
@@ -129,6 +129,6 @@ Of the three levers tried, only the time at the port meets all of M2's criteria.
 
 ## More Information
 
-* Owner decisions O84, O98, O110; DEC-1012; MVP-031, MVP-036, MVP-037; R-UNIT-069, R-BLDG-023.
+* Owner decisions O84, O98, O112; DEC-1012; MVP-031, MVP-036, MVP-037; R-UNIT-069, R-BLDG-023.
 * Amends [ADR-131](ADR-131-structure-step-collision-shapes-and-ports-at-m2.md) (a Worker walking to its port) and [ADR-135](ADR-135-settlement-tasks-gathering-and-upkeep-at-m2.md) (the gathering search).
 * The code: `GameLogic/SettlementTasks`, `GameLogic/FigureAdvance`, `GameLogic/Figure`, `GameLogic/RegionSimulation`, `GameLogic/WorldSnapshot`, `GameData/Records/tuning/mvp.json`.

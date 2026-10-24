@@ -322,7 +322,7 @@ SettlementVerbResult SettlementVerbs::Update(const SettlementFrame& _frame, std:
     ghost.yawRadians = std::atan2(ground.x - _view.wellspring->x, ground.z - _view.wellspring->z);
   }
   m_ghost = ghost;
-  // ADR-153: the press sends what the client foresees refused too, so that the reason shown is the server's. O109: a
+  // ADR-153: the press sends what the client foresees refused too, so that the reason shown is the server's. O111: a
   // placement it foresees taken leaves the mode, so that another is placed only from the bar; one it foresees refused
   // stays in it, for another place.
   if (_frame.primaryDown)
@@ -384,6 +384,9 @@ void SettlementVerbs::PressHud(const HudZoneRect& _zone, std::uint8_t _team, con
   }
   case HudZone::Result:
     ++m_resultsClosed; // ADR-168: the press closes the result the card shows
+    break;
+  case HudZone::AwayReport:
+    _result.openAwayReport = true; // O110 (ADR-192): the latest away report is one press away
     break;
   case HudZone::GrowthHold:
     // O106 (ADR-178): the button holds the growth, or lets it run, from the hold last sent or the status's.

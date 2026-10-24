@@ -36,7 +36,8 @@ constexpr std::array<std::string_view, static_cast<std::size_t>(UiImage::Count)>
   "textures/icon/hud/attack",         "textures/icon/hud/battle",
   "textures/icon/hud/tribute",        "textures/icon/hud/withdraw",
   "textures/icon/hud/respite",        "textures/icon/hud/renown",
-  "textures/icon/hud/runclock",       "textures/icon/hud/resultcard"};
+  "textures/icon/hud/runclock",       "textures/icon/hud/resultcard",
+  "textures/icon/hud/deputy"};
 
 // The test page's measures, in pixels; its own, not the game's.
 constexpr float PAGE_MARGIN = 24.0f;

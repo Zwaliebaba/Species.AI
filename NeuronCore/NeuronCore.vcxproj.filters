@@ -84,6 +84,9 @@
     <ClInclude Include="InProcessTransport.h">
       <Filter>Network</Filter>
     </ClInclude>
+    <ClInclude Include="InstanceLock.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
     <ClInclude Include="JobQueue.h">
       <Filter>Platform</Filter>
     </ClInclude>
@@ -114,10 +117,22 @@
     <ClInclude Include="NativeWindowHandle.h">
       <Filter>Platform</Filter>
     </ClInclude>
+    <ClInclude Include="ProgramStart.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="QuicTransport.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="ServerCertificate.h">
+      <Filter>Network</Filter>
+    </ClInclude>
     <ClInclude Include="SettingsFile.h">
       <Filter>Platform</Filter>
     </ClInclude>
     <ClInclude Include="SettingsStore.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="SuspendWatch.h">
       <Filter>Platform</Filter>
     </ClInclude>
     <ClInclude Include="UserData.h">
@@ -254,6 +269,9 @@
     <ClCompile Include="InProcessTransport.cpp">
       <Filter>Network</Filter>
     </ClCompile>
+    <ClCompile Include="InstanceLock.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
     <ClCompile Include="JobQueue.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
@@ -281,10 +299,22 @@
     <ClCompile Include="MessagePattern.cpp">
       <Filter>Content</Filter>
     </ClCompile>
+    <ClCompile Include="ProgramStart.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="QuicTransport.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
+    <ClCompile Include="ServerCertificate.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
     <ClCompile Include="SettingsFile.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
     <ClCompile Include="SettingsStore.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="SuspendWatch.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
     <ClCompile Include="UserData.cpp">

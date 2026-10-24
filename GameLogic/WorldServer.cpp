@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include "AwayMessages.h"
+#include "AwayReport.h"
 #include "Check.h"
 #include "Development.h"
 #include "Files.h"
@@ -7,6 +9,7 @@
 #include "MarkerTimings.h"
 #include "Profile.h"
 #include "SecureRandom.h"
+#include "Presence.h"
 #include "PresentationEvents.h"
 #include "ServerStats.h"
 #include "SettlementCommands.h"
@@ -221,6 +224,7 @@ WorldServer::WorldServer(const Desc& _desc)
 
 std::uint64_t WorldServer::Open()
 {
+  m_suspensionsSeen = m_desc.suspensions ? m_desc.suspensions() : 0; // ADR-188
   if (!m_desc.snapshotFolder.empty())
   {
     // PIL-131 (ADR-137): a world that froze cleanly left a marker naming its final snapshot. It goes as the world opens,
@@ -264,16 +268,16 @@ std::uint64_t WorldServer::Open()
       m_runEnded = m_world->RunState().ended;
       m_runQuiet = m_runEnded || m_world->Region(0).InQuietMinutes();
       // MVP-075, PIL-131: a world that did not freeze cleanly at this snapshot lost what it ran after it, a freeze of
-      // cause "unclean stop" from the snapshot's tick.
-      if (cleanTick != m_world->NextTick())
-      {
-        const std::optional<std::int64_t> now = CalendarSeconds();
-        const std::int64_t saved = m_world->Record().savedAtSeconds;
-        const std::uint64_t seconds = now && saved > 0 && *now > saved ? static_cast<std::uint64_t>(*now - saved) : 0;
-        m_world->Record().freezes.push_back({m_world->NextTick(), FreezeCause::UncleanStop, seconds});
-        Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning,
-                    "the world did not stop cleanly: a freeze of {} s from tick {}, cause unclean stop", seconds, m_world->NextTick());
-      }
+      // cause "unclean stop" from the snapshot's tick; MVP-071 (ADR-188): one that did was frozen while its server was not
+      // running, a freeze of cause "server stopped". Either lasted from the snapshot's calendar time to now.
+      const std::optional<std::int64_t> now = CalendarSeconds();
+      const std::int64_t saved = m_world->Record().savedAtSeconds;
+      const std::uint64_t seconds = now && saved > 0 && *now > saved ? static_cast<std::uint64_t>(*now - saved) : 0;
+      const bool clean = cleanTick == m_world->NextTick();
+      m_world->Record().freezes.push_back({m_world->NextTick(), clean ? FreezeCause::ServerStopped : FreezeCause::UncleanStop, seconds});
+      Neuron::Log(Neuron::LogCategory::Simulation, clean ? Neuron::LogLevel::Info : Neuron::LogLevel::Warning,
+                  "the world {}: a freeze of {} s from tick {}, cause {}", clean ? "stopped cleanly" : "did not stop cleanly", seconds,
+                  m_world->NextTick(), clean ? "server stopped" : "unclean stop");
       m_journal = RestoredJournal(); // MVP-076: the journal from the snapshot it opened (ADR-137)
       Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Info, "the world opens from {} at tick {}",
                   snapshot.filename().string(), m_world->NextTick());
@@ -311,8 +315,8 @@ bool WorldServer::StartNew(std::uint64_t _seed, std::uint64_t _firstTick)
   // A new world draws its simulation key from the system's cryptographic generator (ADR-082 item 1), and holds the
   // seed that passed (MVP-011), which gives the same terrain at its first attempt. Its journal starts with it.
   CommandJournal journal;
-  journal.start = WorldStart{Neuron::DrawSecretKey(), terrain->seed,           _firstTick,         m_desc.regionCount,  m_desc.sandbox,
-                             m_desc.watched,          m_desc.syntheticFigures, m_desc.stewardSite, m_desc.aiSettlements};
+  journal.start = WorldStart{Neuron::DrawSecretKey(), terrain->seed,           _firstTick,         m_desc.regionCount,   m_desc.sandbox,
+                             m_desc.watched,          m_desc.syntheticFigures, m_desc.stewardSite, m_desc.aiSettlements, m_desc.pace};
   std::unique_ptr<WorldSimulation> world = StartWorld(journal.start, terrain, m_desc.tuning, &m_desc.structures);
   Adopt(std::move(world), std::move(terrain));
   m_journal = std::move(journal);
@@ -399,7 +403,7 @@ CommandJournal WorldServer::RestoredJournal() const
   journal.start =
     WorldStart{m_world->SimulationKey(), m_world->WorldSeed(), m_world->NextTick(),     static_cast<std::uint16_t>(m_world->RegionCount()),
                m_desc.sandbox,           m_desc.watched,       m_desc.syntheticFigures, m_desc.stewardSite,
-               m_desc.aiSettlements};
+               m_desc.aiSettlements,     m_world->Pace()};
   journal.restored = true;
   return journal;
 }
@@ -460,9 +464,21 @@ std::size_t WorldServer::SnapshotsKept() const noexcept
 
 void WorldServer::Connect(Neuron::ConnectionId _connection)
 {
+  // ADR-190: a server given its identity takes nothing from a connection but its join until the join is accepted.
+  if (m_desc.identity)
+  {
+    m_joining.insert(_connection);
+    return;
+  }
+  AdmitSteward(_connection);
+}
+
+void WorldServer::AdmitSteward(Neuron::ConnectionId _connection)
+{
   // ADR-109: the next id of the world owner and, in the sandbox, the steward's side.
   const StableId steward = ConnectSteward(*m_world, m_desc.sandbox, m_desc.watched);
-  m_stewards.emplace(_connection, Steward{steward, 0, false, {}, {}, {}});
+  // MVP-072 (ADR-185): connecting is the steward's input.
+  m_stewards.emplace(_connection, Steward{.id = steward, .inputTick = m_world->NextTick()});
   if (m_journal)
   {
     m_journal->entries.push_back({m_world->NextTick(), true, JOURNAL_WORLD_OWNER, steward, 0, {}});
@@ -473,10 +489,43 @@ void WorldServer::Connect(Neuron::ConnectionId _connection)
 void WorldServer::Disconnect(Neuron::ConnectionId _connection)
 {
   m_stewards.erase(_connection);
+  m_joining.erase(_connection);
+  std::erase_if(m_answers, [_connection](const auto& _answer) { return _answer.first == _connection; });
+}
+
+void WorldServer::ReceiveJoin(Neuron::ConnectionId _connection, const Neuron::ReceivedMessage& _message)
+{
+  Neuron::BitReader reader(_message.bytes);
+  const Neuron::MessageHeader header = Neuron::ReadMessageHeader(reader);
+  if (!m_desc.identity || _message.channel != Neuron::Channel::Reliable || reader.Failed() || header.type != JoinCommand::TYPE)
+  {
+    return; // ADR-190: nothing counts before the join
+  }
+  const JoinIdentity server = *m_desc.identity;
+  // A join that does not read is of a protocol this server does not speak.
+  JoinCommand join;
+  const bool read = CheckAnswered(header, reader, _message.bytes.size(), join) == CommandResult::Applied;
+  const JoinRefusal refusal = read ? JoinRefusalOf(server, join.identity) : JoinRefusal::Protocol;
+  m_joining.erase(_connection);
+  m_answers.emplace_back(_connection, JoinAnswer{refusal, server});
+  if (refusal == JoinRefusal::None)
+  {
+    AdmitSteward(_connection);
+    return;
+  }
+  Neuron::Log(Neuron::LogCategory::Network, Neuron::LogLevel::Warning,
+              "connection {} is refused: {}; its protocol {}, build {}, content {}; this server's protocol {}, build {}, content {}",
+              _connection, JoinRefusalName(refusal), join.identity.protocol, Neuron::ShortHex(join.identity.build),
+              Neuron::ShortHex(join.identity.content), server.protocol, Neuron::ShortHex(server.build), Neuron::ShortHex(server.content));
 }
 
 void WorldServer::Receive(Neuron::ConnectionId _connection, const Neuron::ReceivedMessage& _message)
 {
+  if (m_joining.contains(_connection))
+  {
+    ReceiveJoin(_connection, _message);
+    return;
+  }
   const auto found = m_stewards.find(_connection);
   if (found == m_stewards.end() || _message.channel != Neuron::Channel::Reliable)
   {
@@ -503,19 +552,39 @@ void WorldServer::Receive(Neuron::ConnectionId _connection, const Neuron::Receiv
     return;
   }
 #endif
+  // MVP-072 (ADR-185): a presence report is read, not queued: it notes the steward's input for the next tick.
+  if (!reader.Failed() && header.type == PresenceReportCommand::TYPE)
+  {
+    PresenceReportCommand report;
+    const CommandResult result = CheckAnswered(header, reader, _message.bytes.size(), report);
+    if (result == CommandResult::Applied)
+    {
+      steward.inputTick = m_world->NextTick();
+    }
+    steward.reports.push_back({sequence, m_world->NextTick(), result, 0});
+    return;
+  }
   // MVP-098 (ADR-136, ADR-165): a request for a settlement's status or its valley's is read, not queued, by a steward who
   // commands the settlement's team; the status goes after the next tick, which the outcome names.
   // From M3 task T14 (ADR-169) the epilogue is asked for the same way.
+  // From M4 task T5 (ADR-187) the away report is asked for the same way.
   if (!reader.Failed() && (header.type == ReadSettlementStatusCommand::TYPE || header.type == ReadValleyStatusCommand::TYPE ||
-                           header.type == ReadEpilogueCommand::TYPE))
+                           header.type == ReadEpilogueCommand::TYPE || header.type == ReadAwayReportCommand::TYPE))
   {
     const bool valley = header.type == ReadValleyStatusCommand::TYPE;
     const bool epilogue = header.type == ReadEpilogueCommand::TYPE;
+    const bool away = header.type == ReadAwayReportCommand::TYPE;
     std::uint8_t team = 0;
     CommandResult result = CommandResult::Applied;
     if (valley)
     {
       ReadValleyStatusCommand request;
+      result = CheckAnswered(header, reader, _message.bytes.size(), request);
+      team = request.team;
+    }
+    else if (away)
+    {
+      ReadAwayReportCommand request;
       result = CheckAnswered(header, reader, _message.bytes.size(), request);
       team = request.team;
     }
@@ -543,7 +612,7 @@ void WorldServer::Receive(Neuron::ConnectionId _connection, const Neuron::Receiv
     }
     if (result == CommandResult::Applied)
     {
-      (epilogue ? steward.epilogueTeams : valley ? steward.valleyTeams : steward.statusTeams).push_back(team);
+      (away ? steward.awayTeams : epilogue ? steward.epilogueTeams : valley ? steward.valleyTeams : steward.statusTeams).push_back(team);
     }
     steward.reports.push_back({sequence, m_world->NextTick(), result, 0});
     return;
@@ -557,12 +626,56 @@ void WorldServer::Receive(Neuron::ConnectionId _connection, const Neuron::Receiv
   Neuron::CommandQueue& region = m_world->Region(0).Commands();
   const bool regional = !reader.Failed() && region.Handles(header.type);
   Neuron::CommandQueue& queue = regional ? region : m_world->Commands();
-  if (queue.Submit(steward.id, sequence, _message.bytes) && m_journal)
+  if (queue.Submit(steward.id, sequence, _message.bytes))
   {
-    // MVP-076: the command with the tick it executes in, which is the world's next.
-    m_journal->entries.push_back({m_world->NextTick(), false, regional ? std::uint16_t{1} : JOURNAL_WORLD_OWNER, steward.id, sequence,
-                                  std::vector<std::byte>(_message.bytes.begin(), _message.bytes.end())});
+    steward.inputTick = m_world->NextTick(); // MVP-072: a command the queue took is the steward's input (ADR-185)
+    if (m_journal)
+    {
+      // MVP-076: the command with the tick it executes in, which is the world's next.
+      m_journal->entries.push_back({m_world->NextTick(), false, regional ? std::uint16_t{1} : JOURNAL_WORLD_OWNER, steward.id, sequence,
+                                    std::vector<std::byte>(_message.bytes.begin(), _message.bytes.end())});
+    }
   }
+}
+
+void WorldServer::UpdatePresence(std::uint64_t _tick)
+{
+  // MVP-072: a world at the session pace has no away state, and a watched world's settlement is the scripted steward's
+  // (ADR-140), which no deputy relieves.
+  if (m_world->Pace() != WorldPace::AlwaysOn || m_desc.sandbox || m_desc.watched)
+  {
+    return;
+  }
+  const auto idleTicks = static_cast<std::uint64_t>(
+    std::max<std::int64_t>(0, std::llround(m_desc.tuning.mvp.presence.idleMinutes * 60.0 / m_desc.tuning.ref.sim.tickPeriod)));
+  const bool present =
+    std::ranges::any_of(m_stewards, [_tick, idleTicks](const auto& _entry) { return _tick < _entry.second.inputTick + idleTicks; });
+  if (!SetStewardPresence(*m_world, !present))
+  {
+    return;
+  }
+  if (m_journal)
+  {
+    m_journal->entries.push_back({_tick, false, JOURNAL_WORLD_OWNER, 0, 0, {}, true, !present});
+  }
+  // O110 (ADR-187): a return sends each connected steward the away report of each settlement it commands, after the
+  // tick, when the absence has news.
+  if (present)
+  {
+    const RegionSimulation& region = m_world->Region(0);
+    for (auto& [connection, steward] : m_stewards)
+    {
+      for (const Settlement& settlement : region.Settlements())
+      {
+        if (settlement.stewarded && region.CommanderOf(settlement.team).sender == steward.id)
+        {
+          steward.returnTeams.push_back(settlement.team);
+        }
+      }
+    }
+  }
+  Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Info, "the steward is {} from tick {}", present ? "present" : "away",
+              _tick);
 }
 
 void WorldServer::CollectAllReports()
@@ -603,6 +716,7 @@ void WorldServer::Step(std::uint64_t _tick, Neuron::WorkerPool& _workers)
   // ADR-120: the tick's wall time starts here, for the overlay; a measurement the simulated state never reads.
   m_statsTickStart = Neuron::MarkerClockNanoseconds();
 #endif
+  UpdatePresence(_tick);
   m_world->Step(_tick, _workers);
   // MVP-075: a snapshot after every mvp.persist.snapshot_seconds of world time.
   if (const std::uint64_t period = SnapshotTicks(); !m_desc.snapshotFolder.empty() && period > 0 && m_world->NextTick() % period == 0)
@@ -619,6 +733,17 @@ void WorldServer::Step(std::uint64_t _tick, Neuron::WorkerPool& _workers)
 
 void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender)
 {
+  // ADR-190: each join's answer goes before anything else its connection is sent, and a refused connection is closed
+  // after it.
+  for (const auto& [joined, answer] : m_answers)
+  {
+    static_cast<void>(_sender.Send(joined, Neuron::Channel::Reliable, Neuron::EncodeMessage(answer)));
+    if (answer.refusal != JoinRefusal::None)
+    {
+      _sender.Close(joined);
+    }
+  }
+  m_answers.clear();
   CollectAllReports();
   // ADR-111: the MVP's one region, which ViewForSteward narrows to each steward's seen layers (MVP-097, ADR-158).
   const RegionSimulation& region = m_world->Region(0);
@@ -730,6 +855,23 @@ void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender
       ++epilogues;
     }
     steward.epilogueTeams.erase(steward.epilogueTeams.begin(), steward.epilogueTeams.begin() + static_cast<std::ptrdiff_t>(epilogues));
+    // ADR-187: each away report requested, then each that a return sends, the latter only when its absence has news.
+    for (const bool onReturn : {false, true})
+    {
+      std::vector<std::uint8_t>& teams = onReturn ? steward.returnTeams : steward.awayTeams;
+      std::size_t reported = 0;
+      while (reported < teams.size())
+      {
+        const AwayReport report = AwayReportOf(*m_world, teams[reported], _tick, onReturn);
+        if ((!onReturn || report.HasNews()) &&
+            !_sender.Send(connection, Neuron::Channel::Reliable, Neuron::EncodeMessage(report)).has_value())
+        {
+          break;
+        }
+        ++reported;
+      }
+      teams.erase(teams.begin(), teams.begin() + static_cast<std::ptrdiff_t>(reported));
+    }
     if (!steward.terrainSent && m_terrain)
     {
       // MVP-011: the seed and digest go once on the reliable channel, with the team the steward commands (ADR-119); a
@@ -787,16 +929,20 @@ void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender
 
 void WorldServer::Stalled(const Neuron::ScheduleStall& _stall)
 {
+  // MVP-071 (ADR-188): a stall across a suspend of the computer is its sleep.
+  const std::uint64_t suspensions = m_desc.suspensions ? m_desc.suspensions() : 0;
+  const bool slept = suspensions != m_suspensionsSeen;
+  m_suspensionsSeen = suspensions;
   if (_stall.freeze)
   {
     // PIL-131 (ADR-137): the freeze in the world record, with the wall time the loop gave up.
     const auto seconds = static_cast<std::uint64_t>(std::max<std::int64_t>(0, _stall.lost.count() / 1'000'000'000));
     if (m_world != nullptr)
     {
-      m_world->Record().freezes.push_back({_stall.tick, FreezeCause::ServerStall, seconds});
+      m_world->Record().freezes.push_back({_stall.tick, slept ? FreezeCause::Sleep : FreezeCause::ServerStall, seconds});
     }
-    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "freeze of {} s before tick {}, cause server stall", seconds,
-                _stall.tick);
+    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "freeze of {} s before tick {}, cause {}", seconds, _stall.tick,
+                slept ? "sleep" : "server stall");
   }
 }
 

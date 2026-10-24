@@ -38,6 +38,12 @@ bool InstallConsoleStopHandler() noexcept
   return SetConsoleCtrlHandler(&HandleConsoleControl, TRUE) != FALSE;
 }
 
+void RequestConsoleStop() noexcept
+{
+  g_stopRequested.store(true, std::memory_order_release);
+  g_stopRequested.notify_all();
+}
+
 void WaitForConsoleStop() noexcept
 {
   g_stopRequested.wait(false, std::memory_order_acquire);

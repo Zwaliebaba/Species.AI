@@ -184,7 +184,18 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-181](ADR-181-touch-input.md) | Touch input | Proposed | 2026-10-24 |
 | [ADR-182](ADR-182-the-verbs-under-touch.md) | The verbs under touch | Proposed | 2026-10-24 |
 | [ADR-183](ADR-183-a-drop-off-point-pushed-clear-of-its-structure.md) | A drop-off point pushed clear of its structure | Proposed | 2026-10-23 |
-| [ADR-184](ADR-184-gatherers-home-ports-and-their-turns.md) | Gatherers' home ports and their turns | Proposed | 2026-10-24 |
+| [ADR-184](ADR-184-the-always-on-pace.md) | The always-on pace | Proposed | 2026-10-24 |
+| [ADR-185](ADR-185-presence-and-absences.md) | Presence and absences | Proposed | 2026-10-24 |
+| [ADR-186](ADR-186-the-deputy.md) | The deputy | Proposed | 2026-10-24 |
+| [ADR-187](ADR-187-the-away-report.md) | The away report | Proposed | 2026-10-24 |
+| [ADR-188](ADR-188-the-freezes-of-a-stopped-server-and-a-sleeping-computer.md) | The freezes of a stopped server and a sleeping computer | Proposed | 2026-10-24 |
+| [ADR-189](ADR-189-the-quic-transport-and-the-servers-certificate.md) | The QUIC transport and the server's certificate | Proposed | 2026-10-24 |
+| [ADR-190](ADR-190-the-join-and-its-refusal.md) | The join and its refusal | Proposed | 2026-10-24 |
+| [ADR-191](ADR-191-the-always-on-worlds-server-process.md) | The always-on world's server process | Proposed | 2026-10-24 |
+| [ADR-192](ADR-192-the-away-report-and-the-pace-in-the-client.md) | The away report and the pace in the client | Proposed | 2026-10-24 |
+| [ADR-193](ADR-193-the-link-simulator-and-the-transports-confirmations.md) | The link simulator and the transport's confirmations | Proposed | 2026-10-24 |
+| [ADR-194](ADR-194-the-away-run.md) | The away run | Proposed | 2026-10-24 |
+| [ADR-195](ADR-195-gatherers-home-ports-and-their-turns.md) | Gatherers' home ports and their turns | Proposed | 2026-10-24 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

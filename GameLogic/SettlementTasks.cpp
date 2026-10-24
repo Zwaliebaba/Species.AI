@@ -70,7 +70,7 @@ bool IsDropOff(const Structure& _structure, std::uint8_t _team) noexcept
          _structure.owner == std::optional<std::uint8_t>(_team) && _structure.built && _structure.active;
 }
 
-// O110 (ADR-184): whether _worker belongs to its home port: a living Worker of a settlement's task that follows no Leader
+// O112 (ADR-195): whether _worker belongs to its home port: a living Worker of a settlement's task that follows no Leader
 // and no order, and gathers.
 bool AtHomePort(const Figure& _worker) noexcept
 {
@@ -84,7 +84,7 @@ std::uint64_t PortKey(std::uint32_t _slot, std::uint32_t _port) noexcept
   return (std::uint64_t{_slot} << 32U) | _port;
 }
 
-// O110 (ADR-184): the home ports of _team's gatherers other than _self, as PortKey, sorted.
+// O112 (ADR-195): the home ports of _team's gatherers other than _self, as PortKey, sorted.
 std::vector<std::uint64_t> HomePortsOf(const RegionSimulation& _region, std::uint8_t _team, StableId _self)
 {
   std::vector<std::uint64_t> homes;
@@ -115,7 +115,7 @@ std::uint32_t GatherersAt(const std::vector<std::uint64_t>& _homes, std::uint32_
   return static_cast<std::uint32_t>(std::distance(first, last));
 }
 
-// O110 (ADR-184): how many gatherers each port of a resource site at _position takes: the turns at the port,
+// O112 (ADR-195): how many gatherers each port of a resource site at _position takes: the turns at the port,
 // mvp.gather.port_ticks each, that one gatherer's round lasts, rounded up, the round being its turn and its walk to _team's
 // nearest drop-off point and back at the Worker's speed; one while _team has no drop-off point.
 std::uint32_t PortTurns(const RegionSimulation& _region, const Neuron::Vec3& _position, std::uint8_t _team)
@@ -140,7 +140,7 @@ std::uint32_t PortTurns(const RegionSimulation& _region, const Neuron::Vec3& _po
   return static_cast<std::uint32_t>(std::ceil((portTicks + walkTicks) / portTicks));
 }
 
-// O110 (ADR-184): the port _worker gathers at: its home port while that port still takes it, else, of the ports of the
+// O112 (ADR-195): the port _worker gathers at: its home port while that port still takes it, else, of the ports of the
 // structures that _accept takes with room for another gatherer, the one with the fewest, the nearest to the Worker first
 // and then in slot and port order.
 template <class Accept>
@@ -182,7 +182,7 @@ std::optional<PortChoice> GatherPort(const RegionSimulation& _region, std::uint8
   return best;
 }
 
-// O110 (ADR-184): the gatherer's home port, or none.
+// O112 (ADR-195): the gatherer's home port, or none.
 void SetHomePort(Figure& _worker, StableId _structure, std::uint32_t _slot, std::uint32_t _port) noexcept
 {
   _worker.homeStructureId = _structure;
@@ -275,7 +275,7 @@ bool SettlementTaskSearch(Figure& _worker, const FigureContext& _context)
   std::array<std::optional<PortChoice>, TASKS> ports;
   // MVP-053 (ADR-160): the central resource site is gathered by the settlement a claim gave it to.
   const bool holdsCentral = MovedTo(region, CLAIM_AREA_CENTRAL) == std::optional<std::uint8_t>(settlement->site);
-  // O110 (ADR-184): a gatherer goes back to its home port, where it waits its turn.
+  // O112 (ADR-195): a gatherer goes back to its home port, where it waits its turn.
   ports[0] = GatherPort(region, team, _worker,
                         [&](const Structure& _structure, std::uint32_t)
                         {
@@ -380,7 +380,7 @@ void GatherAtPort(Figure& _worker, const FigureContext& _context)
   }
   _worker.taskTicks = 0;
   _worker.carriedMilliRu = MilliRuOf(gather.loadRu);
-  // O110 (ADR-184): it comes back to this port; a gatherer sent here before the home ports existed takes it now.
+  // O112 (ADR-195): it comes back to this port; a gatherer sent here before the home ports existed takes it now.
   SetHomePort(_worker, site->id, _worker.portStructureSlot, _worker.portIndex);
   StartCarrying(region, _worker, _context.self.team);
 }

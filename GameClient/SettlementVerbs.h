@@ -98,6 +98,7 @@ struct SettlementVerbResult
   std::vector<SettlementCommand> commands;
   bool tookPrimary = false;
   bool tookSecondary = false;
+  bool openAwayReport = false; // O110 (ADR-192): the press on the away report's button
 };
 
 /// The client's settlement verbs (M2 task T17, ADR-153; MVP-032, MVP-036, MVP-101):
@@ -107,7 +108,7 @@ struct SettlementVerbResult
 ///   row's button it holds the growth or lets it run (O106, ADR-178), shown in the same way.
 /// - **Placing** is a mode that takes the primary and secondary presses before the battle verbs: the primary press on the
 ///   region sends the placement at the pointer ground point and leaves the mode, or stays in it when the client foresees
-///   the placement refused (O109); the secondary press leaves it, as it releases a selection (O82). The mode shows the
+///   the placement refused (O111); the secondary press leaves it, as it releases a selection (O82). The mode shows the
 ///   ghost and the cursor of what the client foresees at the pointer.
 /// - **Refusals.** The server's refusal of a placement is kept mvp.hud.notice_seconds for the HUD with its reason.
 /// - **Conflicts** (M3 task T12, ADR-167). A relations row's button makes a claim, withdraws one, withdraws the
@@ -115,6 +116,7 @@ struct SettlementVerbResult
 ///   shows the attack with its cost and whether it is unprovoked, a second on the same button declares it, and the
 ///   secondary press, or any other press over the HUD, drops it. Their refusals are kept as a placement's is.
 /// - **Results** (M3 task T13, ADR-168). A press on the result card closes the result it shows.
+/// - **The away report** (O110, ADR-192). A press on the always-on row's button asks for the latest away report's page.
 /// Nothing is sent while the client commands no settlement. Frame thread only.
 class SettlementVerbs
 {

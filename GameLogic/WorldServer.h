@@ -2,6 +2,7 @@
 
 #include "CommandJournal.h"
 #include "CommandMessages.h"
+#include "JoinMessages.h"
 #include "RegionTerrain.h"
 #include "ServerHost.h"
 #include "SettlementMessages.h"
@@ -20,6 +21,8 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
+#include <utility>
 #include <vector>
 
 namespace Species
@@ -54,10 +57,17 @@ public:
     std::uint32_t syntheticFigures = 0;      // ADR-126: the sandbox's sides are a synthetic battle of this many figures, watched
     std::optional<std::uint8_t> stewardSite; // MVP-012: a new world that is no sandbox has the steward's settlement here
     std::uint8_t aiSettlements = 0;          // MVP-013 (ADR-157): a new world's AI settlements at the other sites
+    WorldPace pace = WorldPace::Session;     // PIL-104 (ADR-184): a new world's pace; a continued world keeps its own
     bool restoreOnly = false;                // ADR-155: a world the steward continues: when no snapshot validates, the world
                                              // opens new without its folder, so that it saves and removes nothing there
     // The calendar time, for the world record alone (ADR-137, PLT-053); none: the record holds no wall times.
     std::function<std::chrono::system_clock::time_point()> calendar;
+    // MVP-071 (ADR-188): the computer's suspends so far (Neuron::SuspendWatch), for the world record alone; none: a sleep
+    // is recorded as a stall.
+    std::function<std::uint64_t()> suspensions;
+    // ADR-190: the server's own identity; with one, a connection is a steward only once its join is accepted, and a
+    // refused one is answered and closed. None takes every connection as it connects, as a test's server does.
+    std::optional<JoinIdentity> identity;
   };
 
   // ADR-155: a snapshot that opening the world refused, and why; none: the snapshot decoded, but its seed gives no terrain.
@@ -159,9 +169,24 @@ private:
     std::vector<std::uint8_t> statusTeams;   // MVP-098: the settlements whose status it asked for, by team, not yet sent
     std::vector<std::uint8_t> valleyTeams;   // ADR-165: the settlements whose valley status it asked for, not yet sent
     std::vector<std::uint8_t> epilogueTeams; // ADR-169: the settlements whose epilogue it asked for, not yet sent
+    std::vector<std::uint8_t> awayTeams;     // ADR-187: the settlements whose away report it asked for, not yet sent
+    std::vector<std::uint8_t> returnTeams;   // ADR-187: the settlements whose away report its return sends, not yet sent
     // ADR-139, ADR-165: the guaranteed events of its teams and the battle results not yet sent, encoded, in order.
     std::vector<std::vector<std::byte>> notices;
+    // MVP-072 (ADR-185): the tick of its latest input as the server knows it: its connection, each command a queue took
+    // and each presence report.
+    std::uint64_t inputTick = 0;
   };
+
+  // MVP-072 (ADR-185): before the step of _tick, the steward's presence in a world at the always-on pace: present while
+  // a steward is connected whose latest input is less than mvp.presence.idle_minutes old, away otherwise. A change enters
+  // the world between ticks, as a connection does, and the journal.
+  void UpdatePresence(std::uint64_t _tick);
+
+  // ADR-109, ADR-185: the connection becomes a steward from the next tick: its id, its journal entry and its input.
+  void AdmitSteward(Neuron::ConnectionId _connection);
+  // ADR-190: a message of a connection that has not joined: its join, answered at the next publication, or nothing.
+  void ReceiveJoin(Neuron::ConnectionId _connection, const Neuron::ReceivedMessage& _message);
 
   // Each queue's outcomes of the tick, to the steward that sent each command; an AI's are its own (ADR-106).
   void CollectReports(Neuron::CommandQueue& _queue);
@@ -172,6 +197,9 @@ private:
   std::unique_ptr<WorldSimulation> m_world;
   std::shared_ptr<const RegionTerrain> m_terrain;
   std::map<Neuron::ConnectionId, Steward> m_stewards;
+  // ADR-190: the connections that have not joined yet, and the answers to joins not yet sent, in the order they came.
+  std::set<Neuron::ConnectionId> m_joining;
+  std::vector<std::pair<Neuron::ConnectionId, JoinAnswer>> m_answers;
   std::optional<WorldHashes> m_lastHashes;
   OpenOutcome m_opened;
   std::optional<CommandJournal> m_journal;
@@ -179,6 +207,8 @@ private:
   // that each steward is told once when either begins; a world continued in either is not told again.
   bool m_runQuiet = false;
   bool m_runEnded = false;
+  // ADR-188: the suspends counted when the world opened or at its last stall, so that a stall across a new one is a sleep.
+  std::uint64_t m_suspensionsSeen = 0;
   // ADR-120: the ticks of the current second, for the development overlay's statistics (Debug builds): when the tick
   // being measured started its step, none outside a tick, and the ticks' summed and longest wall time.
   std::int64_t m_statsTickStart = 0;

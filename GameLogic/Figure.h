@@ -124,7 +124,7 @@ struct Figure
   IdleReason idleReason = IdleReason::None; // MVP-037
   std::int32_t taskTicks = 0;               // MVP-031: the ticks it has manned its gathering port
   std::int64_t carriedMilliRu = 0;          // MVP-031: the load it carries
-  // From state version 18 (O110, ADR-184), written in its region's last section rather than by WriteFigure: a gatherer's
+  // From state version 23 (O112, ADR-195), written in its region's last section rather than by WriteFigure: a gatherer's
   // home port, which it goes back to after each load and where it waits its turn while another Worker mans it.
   StableId homeStructureId = 0;        // the resource site of the port; 0 for none
   std::uint32_t homeStructureSlot = 0; // that structure's slot, which resolves only while the structure holds it
@@ -161,7 +161,7 @@ void WriteFigure(Neuron::BitWriter& _writer, const Figure& _figure);
 // one before 6 has no threat, the full threat range, and the base of its first grenade timer; one before 7 follows no
 // Leader, and a Leader of one has no order and no formation; one before 8 has no nearest node.
 [[nodiscard]] bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure, std::uint32_t _stateVersion, const TuningMvp& _tuning);
-// O110 (ADR-184): a figure's home port as its region's last section holds it from state version 18: whether it has one,
+// O112 (ADR-195): a figure's home port as its region's last section holds it from state version 23: whether it has one,
 // then its structure's id and slot and its port. Read is false when the values do not read whole or name structure 0.
 void WriteHomePort(Neuron::BitWriter& _writer, const Figure& _figure);
 [[nodiscard]] bool ReadHomePort(Neuron::BitReader& _reader, Figure& _figure);

@@ -235,8 +235,8 @@ This file records the decisions of the Species design and of the MVP built from 
 
 ### DEC-1012 The settlement's pace after the gatherers' home ports
 - Status: Open
-- Affects: implementation/mvp_scope.md (MVP-031, §7's M2 exit with O84's amendment, and table 3's `mvp.gather.port_ticks`); ADR-184
-- Specified behaviour: `mvp.gather.port_ticks` is 215, the smallest value measured that holds all three of O84's growth criteria with the gatherers' home ports of O110: on the growth scene's seeds 1 to 8 the plateau comes at 4.28 h, the largest gap between growth steps is 18.5 minutes and the first halfway line falls at 2.93 h ([ADR-184](../ADR/ADR-184-gatherers-home-ports-and-their-turns.md)).
+- Affects: implementation/mvp_scope.md (MVP-031, §7's M2 exit with O84's amendment, and table 3's `mvp.gather.port_ticks`); ADR-195
+- Specified behaviour: `mvp.gather.port_ticks` is 215, the smallest value measured that holds all three of O84's growth criteria with the gatherers' home ports of O112: on the growth scene's seeds 1 to 8 the plateau comes at 4.28 h, the largest gap between growth steps is 18.5 minutes and the first halfway line falls at 2.93 h ([ADR-195](../ADR/ADR-195-gatherers-home-ports-and-their-turns.md)).
   - The home ports keep each port manned, so at the former 100 port ticks the settlement grows much faster: 73 Workers after the first hour against the relay's 60, and the plateau at 2.56 h. The first halfway line then falls at 1.78 h, before hour 2, which O84 holds.
   - At 215 the first hour is slower than the relay's: 54 Workers against 60.
   - O84 lets the plateau window yield first, but only where all three criteria cannot hold. At 150 port ticks the step and the contact hold (16.2 minutes, 2.20 h), the plateau comes at 3.16 h, and the first hour has 69 Workers.

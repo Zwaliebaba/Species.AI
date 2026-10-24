@@ -423,6 +423,39 @@ public:
     Assert::AreEqual(row * 6.0, static_cast<double>(heightOf() - alone), 1e-3, L"the time left, the heading and four settlements");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp074TheAlwaysOnRowHoldsTheAwayReportsButton)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-074")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-102")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp074TheAlwaysOnRowHoldsTheAwayReportsButton)
+  {
+    // O110 (ADR-192): in an always-on world the world panel holds the always-on row, one row taller, with the away
+    // report's button at its end, found before the panel; a world at the session pace has neither.
+    Species::HudModel model = SettlementModel();
+    Species::SettlementHud hud(CommittedPresentation(), CommittedTuning());
+    const Neuron::UiMetrics metrics = MetricsAt({1920, 1080});
+    hud.SetModel(model, metrics);
+    const auto worldOf = [&] { return std::ranges::find(hud.Zones(), Species::HudZone::World, &Species::HudZoneRect::zone)->rect; };
+    const auto buttonOf = [&] { return std::ranges::find(hud.Zones(), Species::HudZone::AwayReport, &Species::HudZoneRect::zone); };
+    const float session = worldOf().Height();
+    Assert::IsTrue(buttonOf() == hud.Zones().end(), L"no button at the session pace");
+    model.pace = Species::WorldPace::AlwaysOn;
+    hud.SetModel(model, metrics);
+    const double row = std::round(CommittedPresentation().mvp.hud.rowHeight * 1080.0 / 600.0);
+    Assert::AreEqual(row, static_cast<double>(worldOf().Height() - session), 1e-3, L"the always-on row has its room");
+    const auto button = buttonOf();
+    Assert::IsTrue(button != hud.Zones().end(), L"the away report's button");
+    const Neuron::UiRect world = worldOf();
+    Assert::IsTrue(world.Contains(button->rect.left + 1.0f, button->rect.top + 1.0f) &&
+                     world.Contains(button->rect.right - 1.0f, button->rect.bottom - 1.0f),
+                   L"inside the world panel");
+    const double padding = std::round(CommittedPresentation().mvp.hud.padding * 1080.0 / 600.0);
+    Assert::IsTrue(button->rect.top >= world.top + padding + row - 1.0 && button->rect.bottom <= world.top + padding + 2.0 * row + 1.0,
+                   L"on the row after the seed's, which is the always-on row");
+    const auto hit = hud.ZoneAt({static_cast<std::int32_t>(button->rect.left + 1.0f), static_cast<std::int32_t>(button->rect.top + 1.0f)});
+    Assert::IsTrue(hit.has_value() && hit->zone == Species::HudZone::AwayReport, L"the button, not the panel");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp048AResultsRowsAreItsRecord)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-048")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"PIL-046")

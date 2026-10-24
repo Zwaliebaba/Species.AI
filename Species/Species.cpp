@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "AlwaysOnClient.h"
 #include "AppWindow.h"
 #include "AssetError.h"
 #include "AudioEngine.h"
@@ -193,7 +194,11 @@ using WorldStarter = std::function<std::expected<ClientWorld, ContinueFault>(con
 void EndWorld(ClientWorld& _world)
 {
   _world.session->Close();
-  _world.server->Stop();
+  // ADR-191: an always-on world's headless server runs on when the client leaves.
+  if (_world.server)
+  {
+    _world.server->Stop();
+  }
 }
 
 // MVP-103 and MVP-063 (ADR-155, ADR-170): the world Continue opens and the ended worlds whose epilogues open, from _saves;
@@ -386,6 +391,7 @@ std::uint64_t RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _wi
       view.Update(session, router, std::chrono::duration<double>(frameTime).count(), _window.ClientSize(), _window.HasFocus(),
                   &_world.Hud());
       endStep(ClientStep::Input);
+      session.NoteInput(!router.IsIdle()); // MVP-072 (ADR-185): the steward's presence
       session.Update();
       endStep(ClientStep::Session);
       // MVP-005: the saved world's seed, as its terrain gave it, which a drawn seed or MVP-011's re-roll decides.
@@ -407,6 +413,12 @@ std::uint64_t RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _wi
       if (_worldMenu.TakeEpilogueArrived())
       {
         _world.OpenWorldMenu(GamePage::WorldEpilogue);
+      }
+      // MVP-074 (O110): a return whose absence has news opens on its away report, as the HUD's button does once a report
+      // has come (ADR-192).
+      else if (const bool pressed = view.TakeAwayReportRequest(); _worldMenu.TakeAwayReportArrived() || (pressed && _worldMenu.Away()))
+      {
+        _world.OpenWorldMenu(GamePage::WorldAwayReport);
       }
       _world.Update(session);
       _world.UpdateHud(session, view, _window.ClientSize(), _window.DpiScale());
@@ -609,33 +621,54 @@ int Run()
     // ADR-155: a world as the integrated server runs it, a child of this root (ADR-083 item 2) on its own tick thread
     // until the world ends, when stopping it freezes the world (O4). It loads the tuning record when it starts (MVP-099),
     // and a record that cannot be loaded ends the run; a world to continue that cannot be is the front end's to show.
+    // ADR-190: the client's and its integrated server's identity, which a headless server of another build refuses.
+    const JoinIdentity identity = OwnJoinIdentity(content->Identity());
     const auto makeWorld = [&](IntegratedServer::Desc _desc, std::optional<SavedWorld> _saved) -> std::expected<ClientWorld, ContinueFault>
     {
       _desc.clock = &clock;
       _desc.content = &*content;
+      _desc.identity = identity;
 #if ENGINE_DEVELOPMENT
       // O77: a Debug build's --watch, both sides under the AI; in a world, the steward's settlement under the scripted
       // steward (ADR-140).
       _desc.watched = options.watch;
 #endif
       ClientWorld made;
-      made.server = std::make_unique<IntegratedServer>(_desc);
-      if (const auto started = made.server->Start(); !started)
-      {
-        if (const auto* fault = std::get_if<ContinueFault>(&started.error()); fault != nullptr)
-        {
-          Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "the world in {} cannot be continued",
-                      Neuron::ToUtf8(_desc.snapshotFolder.wstring()));
-          return std::unexpected(*fault);
-        }
-        endWithError(std::get<Neuron::AssetError>(started.error()));
-      }
       ClientSession::Desc sessionDesc;
-      sessionDesc.transport = made.server->Connect();
+      if (_saved.has_value() && _saved->pace == WorldPace::AlwaysOn)
+      {
+        // MVP-071 (ADR-191): an always-on world runs in its own headless server, which the client starts when it is not
+        // running and leaves running.
+        std::expected<AlwaysOnReach, std::string> reached = ReachAlwaysOnWorld(*_saved, identity.build, options.linkPort.value_or(0));
+        if (!reached.has_value())
+        {
+          Neuron::Log(Neuron::LogCategory::Network, Neuron::LogLevel::Error, "the always-on world in {} cannot be reached: {}",
+                      Neuron::ToUtf8(_saved->folder.wstring()), reached.error());
+          return std::unexpected(ContinueFault::Server);
+        }
+        sessionDesc.transport = std::move(reached->transport);
+      }
+      else
+      {
+        made.server = std::make_unique<IntegratedServer>(_desc);
+        if (const auto started = made.server->Start(); !started)
+        {
+          if (const auto* fault = std::get_if<ContinueFault>(&started.error()); fault != nullptr)
+          {
+            Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "the world in {} cannot be continued",
+                        Neuron::ToUtf8(_desc.snapshotFolder.wstring()));
+            return std::unexpected(*fault);
+          }
+          endWithError(std::get<Neuron::AssetError>(started.error()));
+        }
+        sessionDesc.transport = made.server->Connect();
+      }
       sessionDesc.showTitle = [&window = *presentation.window](std::string_view _title) { window.SetTitle(_title); };
       sessionDesc.productName = std::string(PRODUCT_NAME);
       sessionDesc.tuning = &*clientTuning;
       sessionDesc.clock = &clock;
+      sessionDesc.identity = identity;
+      sessionDesc.pace = _saved.has_value() ? _saved->pace : WorldPace::Session;
       made.session = std::make_unique<ClientSession>(std::move(sessionDesc));
       SettlementView::Desc viewDesc;
       viewDesc.tuning = &*clientTuning;
@@ -684,7 +717,7 @@ int Run()
         desc.aiSettlements = _choice.aiSettlements;
         if (savesFolder.has_value())
         {
-          saved = CreateWorld(*savesFolder, _choice.seed, _choice.site, _choice.aiSettlements);
+          saved = CreateWorld(*savesFolder, _choice.seed, _choice.site, _choice.aiSettlements, _choice.pace);
           desc.snapshotFolder = saved.has_value() ? saved->folder : std::filesystem::path{};
         }
       }

@@ -104,4 +104,4 @@ The settled world restored from its snapshot still gives the hashes of the world
 
 ## More Information
 
-* **Amendment 2026-10-24 (owner decision O110, [ADR-184](ADR-184-gatherers-home-ports-and-their-turns.md)).** A gatherer walking to its home port while another Worker mans it does not become Idle. It stands `ref.unit.worker.arrival_slow_radius` from the port until the port is free, then mans it.
+* **Amendment 2026-10-24 (owner decision O112, [ADR-195](ADR-195-gatherers-home-ports-and-their-turns.md)).** A gatherer walking to its home port while another Worker mans it does not become Idle. It stands `ref.unit.worker.arrival_slow_radius` from the port until the port is free, then mans it.

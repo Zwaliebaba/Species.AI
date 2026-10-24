@@ -13,8 +13,8 @@ namespace Species
 
 class RegionSimulation;
 
-// The first state version whose regions hold the gatherers' home ports (O110, ADR-184).
-inline constexpr std::uint32_t STATE_VERSION_WITH_HOME_PORTS = 18;
+// The first state version whose regions hold the gatherers' home ports (O112, ADR-195).
+inline constexpr std::uint32_t STATE_VERSION_WITH_HOME_PORTS = 23;
 
 // The settlement whose team is _team, or null for a team that is no settlement's, as the battle sandbox's are.
 [[nodiscard]] Settlement* SettlementOfTeam(RegionSimulation& _region, std::uint8_t _team);
@@ -37,7 +37,7 @@ void StartCarrying(RegionSimulation& _region, Figure& _worker, std::uint8_t _tea
 // orders and its Leader search. Each task that has work keeps its share, and the shares of those with none go to the
 // others in proportion to theirs:
 // - gathering has work while a port of a resource site in the territory has room for another gatherer: as many share a
-//   port as there are turns at it in one gatherer's round to the nearest drop-off point and back (O110, ADR-184). A
+//   port as there are turns at it in one gatherer's round to the nearest drop-off point and back (O112, ADR-195). A
 //   gatherer goes back to its home port while that port has room for it; another takes the port with the fewest
 //   gatherers, the nearest on a tie (O84);
 // - construction while the first queued site has a free port;
@@ -50,7 +50,7 @@ void StartCarrying(RegionSimulation& _region, Figure& _worker, std::uint8_t _tea
 [[nodiscard]] bool SettlementTaskSearch(Figure& _worker, const FigureContext& _context);
 
 // MVP-031: a gatherer manning a resource site's port counts mvp.gather.port_ticks, then picks up mvp.gather.load_ru and
-// carries it to the nearest drop-off point of its settlement; the port stays its home port, to which it goes back (ADR-184).
+// carries it to the nearest drop-off point of its settlement; the port stays its home port, to which it goes back (ADR-195).
 void GatherAtPort(Figure& _worker, const FigureContext& _context);
 
 // MVP-031: a carrier walks along its route to its drop-off point, the Wellspring's door or an active storehouse's

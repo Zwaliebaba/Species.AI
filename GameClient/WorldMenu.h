@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AwayMessages.h"
 #include "ClientSession.h"
 #include "MessageLocale.h"
 #include "RelationMessages.h"
@@ -37,8 +38,12 @@ struct WorldMenuChoice
 enum class WorldMenuPage : std::uint8_t
 {
   Menu,
-  Epilogue
+  Epilogue,
+  AwayReport // MVP-074 (ADR-191)
 };
+
+// ADR-191: the most lines of each section of the away report's page; the rest are counted on its last line.
+inline constexpr std::size_t AWAY_PAGE_LINES_MAX = 8;
 
 /// A part of the epilogue (ADR-170): its title, which names its row on the page, and its lines, each short enough for the
 /// page's right box in the small font.
@@ -55,6 +60,11 @@ struct EpilogueText
 {
   std::vector<EpilogueSection> sections;
 };
+
+// MVP-074 (ADR-191): _report's text in the epilogue's form: its summary, then the deputy's actions with the standing order
+// of each (PIL-026), at most AWAY_PAGE_LINES_MAX lines a section; its ticks _tickSeconds long.
+[[nodiscard]] EpilogueText AwayReportTextOf(const AwayReport& _report, double _tickSeconds, const Neuron::StringTable& _strings,
+                                            const Neuron::MessageLocale& _locale);
 
 // MVP-063 (ADR-170): _epilogue's text in _strings, its ticks _tickSeconds long.
 [[nodiscard]] EpilogueText EpilogueTextOf(const Epilogue& _epilogue, double _tickSeconds, const Neuron::StringTable& _strings,
@@ -95,6 +105,13 @@ public:
   }
   // The epilogue of the ended run came since the last call, so that its page opens once.
   [[nodiscard]] bool TakeEpilogueArrived() noexcept;
+  // MVP-074 (ADR-191): the latest away report of an absence; none in a world the steward was never away from.
+  [[nodiscard]] const std::optional<AwayReport>& Away() const noexcept
+  {
+    return m_away;
+  }
+  // O110: a return's away report with news came since the last call, so that its page opens first.
+  [[nodiscard]] bool TakeAwayReportArrived() noexcept;
   // The page of _page's id, for the UI core's factory.
   [[nodiscard]] std::unique_ptr<Neuron::UiPage> MakePage(WorldMenuPage _page);
   // The steward's choice since the last call.
@@ -122,6 +139,9 @@ private:
   bool m_requested = false;
   bool m_arrived = false;
   std::optional<Epilogue> m_epilogue;
+  std::optional<AwayReport> m_away;
+  bool m_awayAsked = false;
+  bool m_awayArrived = false;
   std::optional<WorldMenuChoice> m_choice;
 };
 

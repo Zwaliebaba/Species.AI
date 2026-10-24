@@ -28,7 +28,8 @@ enum class GamePage : Neuron::UiPageId
   FrontEndOptions,
   FrontEndPastRuns, // ADR-170: the ended worlds whose epilogues open
   WorldMenu = 32,   // ADR-170: the world's menu, its screen's root
-  WorldEpilogue     // MVP-063's epilogue
+  WorldEpilogue,    // MVP-063's epilogue
+  WorldAwayReport   // MVP-074's away report (ADR-191)
 };
 
 class FrontEnd;

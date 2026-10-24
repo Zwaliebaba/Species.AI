@@ -191,12 +191,12 @@ void TaskSearch(Figure& _figure, const FigureContext& _context)
 
 // R-UNIT-069: a Worker walking to its port operates it for its team every tick and becomes Manning on arrival, facing
 // the port's front and still; it becomes Idle when its structure is gone or another Worker occupies the port, unless it
-// is a gatherer walking to its home port, which waits its turn (O110, ADR-184).
+// is a gatherer walking to its home port, which waits its turn (O112, ADR-195).
 void ToPortStep(Figure& _worker, const FigureContext& _context)
 {
   StructurePort* port = TargetPort(*_context.region, _worker);
   const bool taken = port != nullptr && port->occupant.has_value() && port->occupant.value_or(ActorRef{}).id != _worker.id;
-  // O110 (ADR-184): a gatherer walking to its home port while another Worker mans it waits its turn there.
+  // O112 (ADR-195): a gatherer walking to its home port while another Worker mans it waits its turn there.
   const bool waits = taken && _worker.task == WorkerTask::Gather && _worker.homeStructureId == _worker.portStructureId &&
                      _worker.homePortIndex == _worker.portIndex;
   if (port == nullptr || (taken && !waits))

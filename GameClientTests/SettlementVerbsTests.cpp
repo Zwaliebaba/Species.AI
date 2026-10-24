@@ -272,7 +272,7 @@ public:
     Assert::AreEqual(std::numbers::pi * 0.5, ghost.yawRadians, 1e-9, L"facing away from the Wellspring, +x");
     Assert::IsFalse(verbs.Foreseen().has_value(), L"no refusal foreseen");
 
-    // The primary press places and leaves the mode (O109); it never orders.
+    // The primary press places and leaves the mode (O111); it never orders.
     frame.primaryDown = true;
     result = verbs.Update(frame, TEAM, view, areas);
     Assert::IsTrue(result.tookPrimary && result.commands.size() == 1, L"one placement");
@@ -284,7 +284,7 @@ public:
     Assert::IsFalse(result.tookPrimary || !result.commands.empty(), L"the next press places nothing");
 
     // A refusal foreseen is still sent, so that the reason shown is the server's (ADR-153), and stays in the mode for
-    // another place (O109).
+    // another place (O111).
     frame.hudZone = Zone(Species::HudZone::Build, 1);
     static_cast<void>(verbs.Update(frame, TEAM, view, areas));
     frame.hudZone.reset();
@@ -391,6 +391,27 @@ public:
     frame.primaryDown = true;
     frame.hudZone = Zone(Species::HudZone::PriorityRaise, 0);
     Assert::IsTrue(verbs.Update(frame, TEAM, view, areas).commands.empty(), L"gathering is at 100 already");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp074TheAwayReportsButtonAsksForItsPage)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-074")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp074TheAwayReportsButtonAsksForItsPage)
+  {
+    // O110 (ADR-192): a press on the always-on row's button asks for the latest away report's page and sends nothing; the
+    // press reaches no world verb, and another frame asks for nothing.
+    Species::SettlementVerbs verbs(CommittedTuning(), CommittedPresentation());
+    const Species::StateReplica::View replica = Replica(1'000'000);
+    const Species::StewardAreas areas = AreasOf(replica);
+    const Species::PlacementView view = Species::PlacementViewOf(replica, TEAM, Status(10));
+    Species::SettlementFrame frame;
+    frame.primaryDown = true;
+    frame.hudZone = Zone(Species::HudZone::AwayReport, 0);
+    const Species::SettlementVerbResult pressed = verbs.Update(frame, TEAM, view, areas);
+    Assert::IsTrue(pressed.openAwayReport && pressed.tookPrimary && pressed.commands.empty(), L"the page is asked for");
+    frame.primaryDown = false;
+    Assert::IsFalse(verbs.Update(frame, TEAM, view, areas).openAwayReport, L"a frame without the press asks for nothing");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp024TheHoldButtonSendsTheHoldShownUntilAStatusHoldsIt)

@@ -9,11 +9,13 @@
 #include "BotNavigation.h"
 #include "Claims.h"
 #include "CommandQueue.h"
+#include "Deputy.h"
 #include "EffectEvent.h"
 #include "EssenceOrb.h"
 #include "Figure.h"
 #include "Movement.h"
 #include "ObstacleGrid.h"
+#include "Presence.h"
 #include "RegionTerrain.h"
 #include "Relations.h"
 #include "Renown.h"
@@ -320,6 +322,23 @@ public:
   {
     return m_claimEnds;
   }
+  // MVP-072 to MVP-074 (ADR-185): the stewarded settlements' open and latest closed absences, in the order they opened.
+  [[nodiscard]] const std::vector<Absence>& Absences() const noexcept
+  {
+    return m_absences;
+  }
+  [[nodiscard]] std::vector<Absence>& Absences() noexcept
+  {
+    return m_absences;
+  }
+  // MVP-073 (ADR-186): the stewarded settlements' deputies, in the order they were made.
+  [[nodiscard]] const std::vector<Deputy>& Deputies() const noexcept
+  {
+    return m_deputies;
+  }
+  // The deputy of the settlement of _team, made with a new stable id of the region when it has none. Called between
+  // ticks, as its steward goes away (ADR-185).
+  Deputy& EnsureDeputy(std::uint8_t _team);
   // WLD-066 (ADR-160): a territory event that is no first contact, a claim's move of a border area.
   void RecordContactEvent(const ContactEvent& _event)
   {
@@ -595,6 +614,8 @@ private:
   std::vector<SettlementAi> m_settlementAis;                              // MVP-055 (ADR-162), state from version 14
   std::vector<SettlementRenown> m_renown;                                 // MVP-061 (ADR-163), state from version 15
   std::vector<ClaimEnd> m_claimEnds;                                      // O102 (DEC-1008), state from version 16
+  std::vector<Absence> m_absences;                                        // MVP-072 (ADR-185), state from version 19
+  std::vector<Deputy> m_deputies;                                         // MVP-073 (ADR-186), state from version 20
   std::uint64_t m_runEndTick = std::numeric_limits<std::uint64_t>::max(); // the world owner's (ADR-163), not region state
   std::uint16_t m_halfwayReached = 0;      // a bit for each site and pair, from the statistics (ADR-163), not region state
   std::vector<EffectEvent> m_events;       // presentation, never state
