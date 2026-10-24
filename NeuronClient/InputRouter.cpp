@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <format>
 #include <limits>
@@ -508,6 +509,18 @@ void InputRouter::AdvanceFrame(const FrameGates& _gates, SizePx _clientSize, Nan
   {
     Apply(event);
   }
+  // ADR-181: the frame's touch gestures; a tap is the primary button's press and release at its point in this frame, so
+  // that every reader of the primary press takes it as a click.
+  m_touchSuppressed = false;
+  const TouchFrame& touch = m_touch.Advance(_realTime);
+  if (!touch.taps.empty() && m_focused)
+  {
+    const TouchPoint tap = touch.taps.back();
+    m_pointer.positionPixels = {static_cast<std::int32_t>(std::lround(tap.x)), static_cast<std::int32_t>(std::lround(tap.y))};
+    ControlState& primary = m_buttons[static_cast<std::size_t>(MouseControl::Primary)];
+    ++primary.presses;
+    ++primary.releases;
+  }
   // INP-101 step 7, INP-133, INP-134: each control's repeat timer fires on the press, then at the press + the initial
   // delay and every period after while it is held; its firings in the frame are the condition's value.
   const auto advance = [this, _realTime](ControlState& _state)
@@ -550,14 +563,24 @@ void InputRouter::AdvanceFrame(const FrameGates& _gates, SizePx _clientSize, Nan
   const auto activeControl = [](const ControlState& _state) { return _state.held || _state.presses > 0 || _state.releases > 0; };
   const bool active = std::ranges::any_of(m_keys, activeControl) || std::ranges::any_of(m_buttons, activeControl) || m_motionX != 0.0f ||
                       m_motionY != 0.0f || m_wheelNotches != 0.0f || m_wheelHorizontalNotches != 0.0f;
-  UpdateEnvironment(_realTime, active);
+  UpdateEnvironment(_realTime, active, touch.active);
 }
 
-void InputRouter::UpdateEnvironment(Nanoseconds _realTime, bool _active)
+const TouchFrame& InputRouter::Touch() const noexcept
+{
+  static const TouchFrame NONE;
+  return m_touchSuppressed ? NONE : m_touch.Frame();
+}
+
+void InputRouter::UpdateEnvironment(Nanoseconds _realTime, bool _active, bool _touchActive)
 {
   // INP-150: the keyboard and the mouse are player 0's, and no gamepad exists at M2, so an active frame keeps
-  // KeyboardMouse.
-  if (_active)
+  // KeyboardMouse; a frame with touch is Touch's (ADR-181), whose taps also press the primary button.
+  if (_touchActive)
+  {
+    m_mode = InputMode::Touch;
+  }
+  else if (_active)
   {
     m_mode = InputMode::KeyboardMouse;
   }
@@ -565,7 +588,7 @@ void InputRouter::UpdateEnvironment(Nanoseconds _realTime, bool _active)
   const double elapsed = m_lastRealTime.has_value() ? std::chrono::duration<double>(_realTime - *m_lastRealTime).count() : 0.0;
   m_lastRealTime = _realTime;
   m_previousIdleSeconds = m_idleSeconds;
-  m_idle = !_active;
+  m_idle = !_active && !_touchActive;
   m_idleSeconds = !m_idle ? 0.0 : m_wasIdle ? m_idleSeconds + std::max(elapsed, 0.0) : 0.0;
   m_wasIdle = m_idle;
   // INP-101 step 7, INP-140: each latch once a frame, state := (state and not off) or (not state and on).
@@ -588,9 +611,19 @@ void InputRouter::UpdateEnvironment(Nanoseconds _realTime, bool _active)
 
 void InputRouter::Apply(const InputEvent& _event)
 {
-  // INP-111: while the window has no focus nothing is pressed and nothing moves; releases still apply.
-  if (!m_focused && _event.kind != InputEvent::Kind::Release)
+  // INP-111: while the window has no focus nothing is pressed and nothing moves; releases and cancels still apply.
+  if (!m_focused && _event.kind != InputEvent::Kind::Release && _event.kind != InputEvent::Kind::Cancel)
   {
+    return;
+  }
+  // ADR-181: a touch contact goes to the recognizer, and the pointer follows it.
+  if (_event.device == InputDevice::Touch)
+  {
+    m_touch.Contact(_event);
+    if (_event.kind != InputEvent::Kind::Cancel)
+    {
+      m_pointer.positionPixels = _event.pointer;
+    }
     return;
   }
   if (_event.kind == InputEvent::Kind::Axis)

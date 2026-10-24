@@ -151,6 +151,8 @@ public:
   [[nodiscard]] SizePx ClientSize() const noexcept;
   [[nodiscard]] float DpiScale() const noexcept;
   [[nodiscard]] bool HasFocus() const noexcept;
+  // ADR-181: a screen position, as a pointer message's lParam carries it, in client pixels.
+  [[nodiscard]] PointPx ClientFromScreen(PointPx _screen) const noexcept;
   [[nodiscard]] bool IsMinimized() const noexcept;
   [[nodiscard]] WindowMode Mode() const noexcept;
   [[nodiscard]] const MonitorInfo& Monitor() const noexcept;

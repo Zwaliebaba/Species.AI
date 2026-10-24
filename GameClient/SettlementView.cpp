@@ -302,6 +302,10 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
       {
         controls.panWheelNotches = across.x;
       }
+      // ADR-181: one finger's drag and two fingers move the camera; a focused window withholds them (UI-006).
+      const Neuron::TouchFrame& touch = _router.Touch();
+      controls.touchDrag = touch.drag;
+      controls.touchManipulation = touch.manipulation;
       if (const std::optional<Neuron::PointPx> warp =
             m_camera.Advance(_dtSeconds, controls, m_pointer, _view, terrain->field, &m_areas).warpTo)
       {

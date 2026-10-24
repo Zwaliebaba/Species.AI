@@ -3,6 +3,7 @@
 #include "FrameView.h"
 #include "Picking.h"
 #include "TerrainField.h"
+#include "TouchGestures.h"
 #include "TuningPresentation.h"
 #include "Vec3.h"
 #include "WindowGeometry.h"
@@ -35,6 +36,10 @@ struct CameraControls
   bool resetHeading = false;    // action.camera.reset_heading, Backspace pressed this frame
   float wheelNotches = 0.0f;    // action.camera.height_wheel, forward positive: closer
   float panWheelNotches = 0.0f; // action.camera.pan_wheel, the horizontal wheel, right positive
+  // ADR-181: one finger's drag, which holds the ground under it; a hold's drag is the verbs' (ADR-182).
+  std::optional<Neuron::TouchDrag> touchDrag;
+  // ADR-181: two fingers, which hold the ground under their center while their pinch zooms and their turn turns.
+  std::optional<Neuron::TouchManipulation> touchManipulation;
 };
 
 /// The horizontal square that bounds the camera's ground point (R-CTRL-471 step 10 as O108 amends it), in world units.
@@ -151,7 +156,11 @@ private:
              const Neuron::TerrainField& _terrain);
   void Ease(double _dt, const Neuron::TerrainField& _terrain) noexcept;
   void Place(const Neuron::TerrainField& _terrain) noexcept;
-  void HoldUnder(const Neuron::Vec3& _ground, Neuron::PointPx _pixel, Neuron::SizePx _view, const Neuron::TerrainField& _terrain) noexcept;
+  void HoldUnder(const Neuron::Vec3& _ground, double _pixelX, double _pixelY, Neuron::SizePx _view,
+                 const Neuron::TerrainField& _terrain) noexcept;
+  [[nodiscard]] std::optional<GroundPoint> GroundAt(double _pixelX, double _pixelY, Neuron::SizePx _view,
+                                                    const Neuron::TerrainField& _terrain) const;
+  void GrabAt(double _pixelX, double _pixelY, Neuron::SizePx _view, const Neuron::TerrainField& _terrain);
   void Bound(const Neuron::Vec3& _startFocus, const Neuron::Vec3& _startGoal, const StewardAreas* _areas);
   void LookAround(double _dt) noexcept;
 
@@ -174,8 +183,10 @@ private:
   Neuron::Vec3 m_lookFront{0.0, -0.4472135954999579, -0.8944271909999159}; // looking around's front (R-CTRL-472)
   double m_lookBlend = 0.0;                                                // 1 while looking around, closing on 0 after it
   double m_lookYaw = 0.0;                                                  // the last yaw of a look front that was not vertical (CAM-034)
-  std::optional<Neuron::Vec3> m_grab;                                      // the ground held under the pointer by action.camera.drag
-  std::optional<ZoomAnchor> m_zoomAnchor;                                  // the ground the wheel zooms towards, held under its pixel
+  std::optional<Neuron::Vec3> m_grab; // the ground held under m_grabPixel by action.camera.drag or a touch (ADR-181)
+  Neuron::TouchPoint m_grabPixel;
+  bool m_releaseGrab = false;             // a touch gesture that ended in this frame lets its ground go after holding it
+  std::optional<ZoomAnchor> m_zoomAnchor; // the ground the wheel zooms towards, held under its pixel
   std::optional<Neuron::PointPx> m_lastPointer;
   double m_fovDegrees = 60.0;
   double m_targetFovDegrees = 60.0;

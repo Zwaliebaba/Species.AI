@@ -3275,7 +3275,29 @@ struct TuningPresentation
       double period = 0.0;
     };
 
+    struct Touch
+    {
+      // inp.touch.slop, in effective px
+      double slop = 0.0;
+
+      // inp.touch.double_tap_slop, in effective px
+      double doubleTapSlop = 0.0;
+
+      // inp.touch.tap_ms, in ms of real time
+      double tapMs = 0.0;
+
+      // inp.touch.hold_ms, in ms of real time
+      double holdMs = 0.0;
+
+      // inp.touch.double_tap_ms, in ms of real time
+      double doubleTapMs = 0.0;
+
+      // inp.touch.turn_threshold, in degrees
+      double turnThreshold = 0.0;
+    };
+
     Repeat repeat;
+    Touch touch;
   };
 
   struct Aen
@@ -5644,9 +5666,21 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Inp::Touch& _out)
+{
+  _out.slop = _reader.Decimal(_object, "slop", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.doubleTapSlop = _reader.Decimal(_object, "double_tap_slop", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.tapMs = _reader.Decimal(_object, "tap_ms", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.holdMs = _reader.Decimal(_object, "hold_ms", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.doubleTapMs = _reader.Decimal(_object, "double_tap_ms", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.turnThreshold = _reader.Decimal(_object, "turn_threshold", {.minimum = 0.0, .maximum = 180.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Inp& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "repeat"), _out.repeat);
+  ReadFields(_reader, _reader.Object(_object, "touch"), _out.touch);
   _reader.Close(_object);
 }
 
@@ -9672,14 +9706,36 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.period = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Inp::Touch& _in)
+{
+  _writer.F64(_in.slop);
+  _writer.F64(_in.doubleTapSlop);
+  _writer.F64(_in.tapMs);
+  _writer.F64(_in.holdMs);
+  _writer.F64(_in.doubleTapMs);
+  _writer.F64(_in.turnThreshold);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Inp::Touch& _out)
+{
+  _out.slop = _reader.F64();
+  _out.doubleTapSlop = _reader.F64();
+  _out.tapMs = _reader.F64();
+  _out.holdMs = _reader.F64();
+  _out.doubleTapMs = _reader.F64();
+  _out.turnThreshold = _reader.F64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Inp& _in)
 {
   CookFields(_writer, _in.repeat);
+  CookFields(_writer, _in.touch);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Inp& _out)
 {
   ReadCookedFields(_reader, _out.repeat);
+  ReadCookedFields(_reader, _out.touch);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Aen::Update& _in)

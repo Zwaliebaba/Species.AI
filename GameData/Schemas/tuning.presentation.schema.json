@@ -10093,10 +10093,83 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "touch": {
+          "type": "object",
+          "description": "the inp.touch.* keys (O108, ADR-181)",
+          "properties": {
+            "slop": {
+              "type": "number",
+              "description": "inp.touch.slop (MVP-100)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "effective px",
+              "x-species-presence": "required"
+            },
+            "double_tap_slop": {
+              "type": "number",
+              "description": "inp.touch.double_tap_slop (MVP-100)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "effective px",
+              "x-species-presence": "required"
+            },
+            "tap_ms": {
+              "type": "number",
+              "description": "inp.touch.tap_ms (MVP-100)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ms of real time",
+              "x-species-presence": "required"
+            },
+            "hold_ms": {
+              "type": "number",
+              "description": "inp.touch.hold_ms (MVP-100)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ms of real time",
+              "x-species-presence": "required"
+            },
+            "double_tap_ms": {
+              "type": "number",
+              "description": "inp.touch.double_tap_ms (MVP-100)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ms of real time",
+              "x-species-presence": "required"
+            },
+            "turn_threshold": {
+              "type": "number",
+              "description": "inp.touch.turn_threshold (MVP-100)",
+              "minimum": 0,
+              "maximum": 180,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "degrees",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "slop",
+            "double_tap_slop",
+            "tap_ms",
+            "hold_ms",
+            "double_tap_ms",
+            "turn_threshold"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
-        "repeat"
+        "repeat",
+        "touch"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

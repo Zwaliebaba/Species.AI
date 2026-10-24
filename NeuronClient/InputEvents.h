@@ -144,32 +144,37 @@ enum class MouseControl : std::uint8_t
 
 inline constexpr std::uint8_t MOUSE_BUTTON_COUNT = 3; // primary, secondary and middle
 
+inline constexpr std::uint8_t TOUCH_CONTACT_COUNT = 10; // ADR-181: the contacts a touch or pen back-end tracks at once
+
 enum class InputDevice : std::uint8_t
 {
   Key,
-  Mouse
+  Mouse,
+  Touch // ADR-181: a touch or pen contact, its control the contact's slot below TOUCH_CONTACT_COUNT
 };
 
 /// One event of a frame's ordered queue (ADR-029, INP-115): a press or a release of a key or mouse button, with the
 /// operating system's auto-repeat flag on keys, or a movement or wheel sample. A pointer movement also carries the
-/// pointer's client position after it.
+/// pointer's client position after it. A touch contact (ADR-181) goes down as a press, moves as an axis sample and lifts
+/// as a release, each with its client position, or ends as a cancel.
 struct InputEvent
 {
   enum class Kind : std::uint8_t
   {
     Press,
     Release,
-    Axis
+    Axis,
+    Cancel // ADR-181: a touch contact that ended without lifting (a capture change, a canceled pointer, a focus loss)
   };
 
   Kind kind = Kind::Press;
   InputDevice device = InputDevice::Key;
-  std::uint16_t control = 0; // a KeyCode or a MouseControl
+  std::uint16_t control = 0; // a KeyCode, a MouseControl or a touch contact's slot
   bool osRepeat = false;     // INP-053: never a new press
   Nanoseconds time{};        // the platform time at which the pump retrieved it (PLT-008)
   float x = 0.0f;            // an axis sample's delta: client pixels for motion, notches for the wheel (INP-183)
   float y = 0.0f;
-  PointPx pointer; // a motion sample's pointer position after it, in client pixels
+  PointPx pointer; // a motion sample's pointer position after it, or a touch contact's, in client pixels
 };
 
 /// A device back-end of the input component (INP-105): every event since the previous collection, in order, and on a

@@ -60,6 +60,17 @@ public:
     event.x = _notches;
     Queue(event);
   }
+  // ADR-181: a touch contact's event.
+  void Touch(Neuron::InputEvent::Kind _kind, std::uint16_t _slot, Neuron::PointPx _point, Neuron::Nanoseconds _time)
+  {
+    Neuron::InputEvent event;
+    event.kind = _kind;
+    event.device = Neuron::InputDevice::Touch;
+    event.control = _slot;
+    event.pointer = _point;
+    event.time = _time;
+    Queue(event);
+  }
   void WheelHorizontal(float _notches)
   {
     Neuron::InputEvent event;
@@ -85,6 +96,15 @@ public:
       _queue.push_back(event);
     }
     m_heldKeys.clear();
+    for (const std::uint16_t slot : m_heldTouches)
+    {
+      Neuron::InputEvent event;
+      event.kind = Neuron::InputEvent::Kind::Cancel;
+      event.device = Neuron::InputDevice::Touch;
+      event.control = slot;
+      _queue.push_back(event);
+    }
+    m_heldTouches.clear();
   }
 
 private:
@@ -98,11 +118,20 @@ private:
         m_heldKeys.push_back(_event.control);
       }
     }
+    if (_event.device == Neuron::InputDevice::Touch)
+    {
+      std::erase(m_heldTouches, _event.control);
+      if (_event.kind == Neuron::InputEvent::Kind::Press || _event.kind == Neuron::InputEvent::Kind::Axis)
+      {
+        m_heldTouches.push_back(_event.control);
+      }
+    }
     m_pending.push_back(_event);
   }
 
   std::vector<Neuron::InputEvent> m_pending;
   std::vector<std::uint16_t> m_heldKeys;
+  std::vector<std::uint16_t> m_heldTouches;
   Neuron::PointPx m_pointer;
 };
 
@@ -604,6 +633,46 @@ public:
     Assert::IsFalse(Neuron::JoinUtf16(pending, char16_t{0xDE00}).has_value(), L"a low half alone gives nothing");
     static_cast<void>(Neuron::JoinUtf16(pending, char16_t{0xD83D}));
     Assert::IsTrue(Neuron::JoinUtf16(pending, u'B') == std::optional<char32_t>(U'B') && pending == 0, L"a high half then another unit");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr181ATapPressesThePrimaryButtonAtItsPoint)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-151")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-111")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-100")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr181ATapPressesThePrimaryButtonAtItsPoint)
+  {
+    using namespace std::chrono_literals;
+    using Kind = Neuron::InputEvent::Kind;
+    ScriptedBackEnd device;
+    const std::vector<Neuron::ActionBindings> actions = Actions();
+    Neuron::InputRouter router(actions, device, nullptr);
+    router.SetTouchThresholds({10.0, 24.0, 250ms, 350ms, 300ms, 0.17});
+    device.Touch(Kind::Press, 0, {300, 200}, Neuron::Nanoseconds{0ms});
+    router.AdvanceFrame({}, CLIENT, Neuron::Nanoseconds{16ms});
+    Assert::IsTrue(router.Mode() == Neuron::InputMode::Touch, L"a contact makes touch the input mode");
+    Assert::IsFalse(router.Query(PICK), L"no press while it is down");
+    device.Touch(Kind::Release, 0, {303, 202}, Neuron::Nanoseconds{100ms});
+    router.AdvanceFrame({}, CLIENT, Neuron::Nanoseconds{116ms});
+    Assert::IsTrue(router.Query(PICK) && router.Touch().taps.size() == 1, L"the tap presses the primary button");
+    Assert::IsTrue(router.Pointer().positionPixels.x == 300 && router.Pointer().positionPixels.y == 200, L"at the tap's point");
+    router.AdvanceFrame({}, CLIENT, Neuron::Nanoseconds{132ms});
+    Assert::IsFalse(router.Query(PICK), L"in its frame only");
+    // A drag presses nothing; SuppressTouch withholds the frame's gestures (UI-006).
+    device.Touch(Kind::Press, 0, {300, 200}, Neuron::Nanoseconds{200ms});
+    device.Touch(Kind::Axis, 0, {350, 200}, Neuron::Nanoseconds{210ms});
+    router.AdvanceFrame({}, CLIENT, Neuron::Nanoseconds{216ms});
+    Assert::IsTrue(!router.Query(PICK) && router.Touch().drag.has_value(), L"a drag, no press");
+    router.SuppressTouch();
+    Assert::IsFalse(router.Touch().drag.has_value(), L"withheld");
+    // INP-111: a focus loss cancels the contact; then the mouse moving takes the mode back.
+    router.AdvanceFrame({.windowFocused = false}, CLIENT, Neuron::Nanoseconds{232ms});
+    const Neuron::TouchFrame& canceled = router.Touch();
+    Assert::IsTrue(canceled.drag.value_or(Neuron::TouchDrag{}).phase == Neuron::GesturePhase::Cancel && canceled.drag.has_value(),
+                   L"canceled");
+    device.Move(100, 100);
+    router.AdvanceFrame({}, CLIENT, Neuron::Nanoseconds{248ms});
+    Assert::IsTrue(router.Mode() == Neuron::InputMode::KeyboardMouse, L"the mouse takes the mode back");
   }
 };
 

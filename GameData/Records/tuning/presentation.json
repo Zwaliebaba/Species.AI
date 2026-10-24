@@ -1231,6 +1231,14 @@
     "repeat": {
       "initial_delay": 0.3,
       "period": 0.3
+    },
+    "touch": {
+      "slop": 10,
+      "double_tap_slop": 24,
+      "tap_ms": 250,
+      "hold_ms": 350,
+      "double_tap_ms": 300,
+      "turn_threshold": 10
     }
   },
   "aen": {

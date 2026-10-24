@@ -2,6 +2,7 @@
 
 #include "InputEvents.h"
 #include "PlatformClock.h"
+#include "TouchGestures.h"
 #include "WindowGeometry.h"
 
 #include <array>
@@ -22,7 +23,8 @@ namespace Neuron
 enum class InputMode : std::uint8_t
 {
   KeyboardMouse,
-  Gamepad
+  Gamepad,
+  Touch // ADR-181: a touch or pen contact was the last active device
 };
 
 // INP-050: an action's value kind.
@@ -204,6 +206,19 @@ public:
   {
     m_repeat = _timing;
   }
+  // ADR-181: the touch recognizer's thresholds, in client pixels and real time.
+  void SetTouchThresholds(const TouchThresholds& _thresholds) noexcept
+  {
+    m_touch.SetThresholds(_thresholds);
+  }
+  // ADR-181: the frame's touch gestures, recognized after its events; none once SuppressTouch was called in the frame.
+  // A tap is also the primary button's press and release at its point, in its frame, which the bindings read.
+  [[nodiscard]] const TouchFrame& Touch() const noexcept;
+  // ADR-181, UI-006: the frame's gestures reach no reader after this call, until the next AdvanceFrame.
+  void SuppressTouch() noexcept
+  {
+    m_touchSuppressed = true;
+  }
 
   // INP-020: true at the first satisfied binding of the action, whose value is returned; a cleared value otherwise.
   [[nodiscard]] bool Query(ActionId _action, ActionValue* _value = nullptr) const;
@@ -224,7 +239,8 @@ public:
     return m_actions.size();
   }
 
-  // INP-150: the class of the last active device; always KeyboardMouse until a gamepad back-end exists (MVP-100).
+  // INP-150: the class of the last active device: KeyboardMouse, or Touch after a touch or pen contact (ADR-181); no
+  // gamepad back-end exists (MVP-100).
   [[nodiscard]] InputMode Mode() const noexcept
   {
     return m_mode;
@@ -257,7 +273,7 @@ private:
   [[nodiscard]] std::optional<std::string> CheckNode(const InputBinding& _node, ValueKind& _kind) const;
   [[nodiscard]] bool AliasReaches(const InputBinding& _node, std::string_view _target, std::uint32_t _depth) const;
   void AssignSlots(InputBinding& _node);
-  void UpdateEnvironment(Nanoseconds _realTime, bool _active);
+  void UpdateEnvironment(Nanoseconds _realTime, bool _active, bool _touchActive);
 
   std::vector<ActionBindings> m_defaults;
   std::vector<ActionBindings> m_actions;
@@ -287,6 +303,8 @@ private:
   std::vector<InputEvent> m_queue;
   RepeatTiming m_repeat;
   bool m_focused = true;
+  TouchGestures m_touch; // ADR-181
+  bool m_touchSuppressed = false;
 };
 
 } // namespace Neuron

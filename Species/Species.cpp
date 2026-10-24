@@ -281,6 +281,7 @@ std::uint64_t RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _wi
       }
     }
     router.AdvanceFrame({.windowFocused = _window.HasFocus()}, _window.ClientSize(), _clock.Now());
+    _world.SetTouchMode(router.Mode() == Neuron::InputMode::Touch); // ADR-181
     if (keyboardMouse.TakeCloseRequest())
     {
       break;

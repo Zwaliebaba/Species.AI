@@ -38,10 +38,10 @@ Chosen option: 1 (O108).
 - Option 3 is undefined behavior by Windows' rule (ADR-181), and leaves the circle on every drag.
 
 What T20 builds:
-* **The camera** (`SettlementCamera`, [ADR-180](ADR-180-the-camera-over-a-point-on-the-ground.md)).
+* **The camera** (`SettlementCamera`, [ADR-180](ADR-180-the-camera-over-a-point-on-the-ground.md)), built with T19 ([ADR-181](ADR-181-touch-input.md)), whose run follows one finger and two.
   - A one-finger drag holds the ground under the finger, as the middle button's drag does, by the same level shift.
   - Two fingers hold the ground under their center, multiply the height by the inverse of their spans' ratio with that ground as the zoom's anchor, and turn the heading by their angle's change past its threshold, all in the same frame.
-* **A tap** is the primary press at its point, sent when the tap ends: the select, the order with its modifiers, the HUD's button, the placement, the front end's control.
+* **A tap** is the primary press at its point, sent when the tap ends: the select, the order with its modifiers, the HUD's button, the placement, the front end's control. T19 builds it in the router, as the primary button's press and release in the tap's frame (ADR-181).
 * **A hold.**
   - With nothing selected it begins the selection circle at its point, which grows as BattleVerbs' circle grows, with time and with the drag, up to `ref.ctrl.select.circle_max_radius` as for the mouse.
   - With a selection the route preview follows the finger, and the order is sent where it lifts.

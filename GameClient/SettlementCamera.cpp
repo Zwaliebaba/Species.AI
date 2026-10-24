@@ -8,6 +8,7 @@
 #include <cmath>
 #include <initializer_list>
 #include <numbers>
+#include <utility>
 
 namespace Species
 {
@@ -236,11 +237,16 @@ SettlementCamera::PointerRequest SettlementCamera::Advance(double _dtSeconds, co
     Place(_terrain);
     if (m_grab)
     {
-      HoldUnder(*m_grab, _pointer, _view, _terrain);
+      HoldUnder(*m_grab, m_grabPixel.x, m_grabPixel.y, _view, _terrain);
+      if (std::exchange(m_releaseGrab, false))
+      {
+        m_grab.reset();
+      }
     }
     else if (m_zoomAnchor)
     {
-      HoldUnder(m_zoomAnchor->ground, m_zoomAnchor->pixel, _view, _terrain);
+      HoldUnder(m_zoomAnchor->ground, static_cast<double>(m_zoomAnchor->pixel.x), static_cast<double>(m_zoomAnchor->pixel.y), _view,
+                _terrain);
       if (std::abs(m_height - m_heightGoal) <= ZOOM_SETTLED_SHARE * m_heightGoal)
       {
         m_zoomAnchor.reset();
@@ -299,9 +305,42 @@ void SettlementCamera::Steer(double _dt, const CameraControls& _controls, Neuron
 {
   const TuningPresentation::Cam::Orbit& orbit = m_presentation.cam.orbit;
   const double distance = Distance();
+  m_releaseGrab = false;
+  // ADR-181: two fingers hold the ground under their center, and their pinch and turn act at once; one finger's drag holds
+  // the ground where it went down under it. A new gesture grabs anew, and its end lets the ground go after this frame.
+  if (_controls.touchManipulation.has_value())
+  {
+    const Neuron::TouchManipulation& two = *_controls.touchManipulation;
+    if (two.phase == Neuron::GesturePhase::Begin)
+    {
+      m_grab.reset();
+    }
+    GrabAt(two.center.x, two.center.y, _view, _terrain);
+    if (two.scale > 0.0)
+    {
+      m_height = ClampHeight(m_height / two.scale);
+      m_heightGoal = m_height;
+    }
+    m_yawRadians += two.turnRadians;
+    m_yawGoal += two.turnRadians;
+    m_releaseGrab = two.phase == Neuron::GesturePhase::End || two.phase == Neuron::GesturePhase::Cancel;
+    m_zoomAnchor.reset();
+  }
+  else if (_controls.touchDrag.has_value() && !_controls.touchDrag->held)
+  {
+    const Neuron::TouchDrag& one = *_controls.touchDrag;
+    if (one.phase == Neuron::GesturePhase::Begin)
+    {
+      m_grab.reset();
+    }
+    GrabAt(one.start.x, one.start.y, _view, _terrain);
+    m_grabPixel = one.point;
+    m_releaseGrab = one.phase == Neuron::GesturePhase::End || one.phase == Neuron::GesturePhase::Cancel;
+    m_zoomAnchor.reset();
+  }
   // The middle button dragged with Alt held turns the heading with the pointer's movement at once, the view following
   // the pointer; dragged alone it holds the ground under the pointer.
-  if (_controls.turnDrag)
+  else if (_controls.turnDrag)
   {
     if (m_lastPointer)
     {
@@ -314,14 +353,7 @@ void SettlementCamera::Steer(double _dt, const CameraControls& _controls, Neuron
   }
   else if (_controls.drag)
   {
-    if (!m_grab)
-    {
-      UpdatePointerGround(_pointer, _view, _terrain);
-      if (m_ground && m_ground->onTerrain)
-      {
-        m_grab = m_ground->position;
-      }
-    }
+    GrabAt(static_cast<double>(_pointer.x), static_cast<double>(_pointer.y), _view, _terrain);
     m_zoomAnchor.reset();
   }
   else
@@ -440,13 +472,26 @@ void SettlementCamera::Place(const Neuron::TerrainField& _terrain) noexcept
     m_lookBlend > 0.0 ? Neuron::NormalizedOr(m_orbitFront * (1.0 - m_lookBlend) + m_lookFront * m_lookBlend, m_orbitFront) : m_orbitFront;
 }
 
-void SettlementCamera::HoldUnder(const Neuron::Vec3& _ground, Neuron::PointPx _pixel, Neuron::SizePx _view,
+void SettlementCamera::GrabAt(double _pixelX, double _pixelY, Neuron::SizePx _view, const Neuron::TerrainField& _terrain)
+{
+  // ADR-180, ADR-181: the ground under the pixel is held from now on, unless ground is held already; the held pixel
+  // follows it until the next frame says otherwise.
+  if (!m_grab)
+  {
+    if (const std::optional<GroundPoint> ground = GroundAt(_pixelX, _pixelY, _view, _terrain); ground && ground->onTerrain)
+    {
+      m_grab = ground->position;
+    }
+  }
+  m_grabPixel = {_pixelX, _pixelY};
+}
+
+void SettlementCamera::HoldUnder(const Neuron::Vec3& _ground, double _pixelX, double _pixelY, Neuron::SizePx _view,
                                  const Neuron::TerrainField& _terrain) noexcept
 {
-  // ADR-180: the ground point and its goal move level until _ground lies under _pixel again, as the camera now stands. A
-  // level move of the camera moves the ray's meeting with a level plane by as much, so one step is exact on that plane.
-  const Neuron::Ray ray =
-    Neuron::PickRayAt(static_cast<double>(_pixel.x), static_cast<double>(_pixel.y), View(_view), _view, m_presentation.cam.pick.rowOffset);
+  // ADR-180: the ground point and its goal move level until _ground lies under the pixel again, as the camera now stands.
+  // A level move of the camera moves the ray's meeting with a level plane by as much, so one step is exact on that plane.
+  const Neuron::Ray ray = Neuron::PickRayAt(_pixelX, _pixelY, View(_view), _view, m_presentation.cam.pick.rowOffset);
   const std::optional<Neuron::Vec3> hit = OnLevel(ray, _ground.y);
   if (!hit)
   {
@@ -514,14 +559,18 @@ void SettlementCamera::LookAround(double _dt) noexcept
 
 void SettlementCamera::UpdatePointerGround(Neuron::PointPx _pointer, Neuron::SizePx _view, const Neuron::TerrainField& _terrain)
 {
-  const Neuron::Ray ray = Neuron::PickRayAt(static_cast<double>(_pointer.x), static_cast<double>(_pointer.y), View(_view), _view,
-                                            m_presentation.cam.pick.rowOffset);
+  m_ground = GroundAt(static_cast<double>(_pointer.x), static_cast<double>(_pointer.y), _view, _terrain);
+}
+
+std::optional<SettlementCamera::GroundPoint> SettlementCamera::GroundAt(double _pixelX, double _pixelY, Neuron::SizePx _view,
+                                                                        const Neuron::TerrainField& _terrain) const
+{
+  const Neuron::Ray ray = Neuron::PickRayAt(_pixelX, _pixelY, View(_view), _view, m_presentation.cam.pick.rowOffset);
   // TER-017 may report a hit behind the start, which is no ground point.
   if (const std::optional<Neuron::Vec3> hit = _terrain.CastRay(ray.origin, ray.direction);
       hit && Neuron::Dot(*hit - ray.origin, ray.direction) >= 0.0)
   {
-    m_ground = GroundPoint{*hit, true};
-    return;
+    return GroundPoint{*hit, true};
   }
   // R-CTRL-058 about the region (ADR-119): the ray, reversed from miss_ray_start radii out, meets the inside of the
   // sphere at the region's centre whose radius is miss_sphere_factor × the region's side; that is its far meeting.
@@ -533,10 +582,9 @@ void SettlementCamera::UpdatePointerGround(Neuron::PointPx _pointer, Neuron::Siz
   const double discriminant = b * b - (Neuron::Dot(offset, offset) - radius * radius);
   if (discriminant < 0.0)
   {
-    m_ground.reset();
-    return;
+    return std::nullopt;
   }
-  m_ground = GroundPoint{ray.origin + ray.direction * (-b + std::sqrt(discriminant)), false};
+  return GroundPoint{ray.origin + ray.direction * (-b + std::sqrt(discriminant)), false};
 }
 
 Neuron::CameraPose SettlementCamera::Pose() const noexcept

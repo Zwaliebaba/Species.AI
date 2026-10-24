@@ -111,7 +111,7 @@ The parts of M3 that cost most rest on what M2 measures. M2's code is written, a
 
 *Table 3 — The tasks of M3.*
 
-> **Amendment 2026-10-24 (O108).** T18 to T20 come before T17's exit, in their order, each with its run checklist: Playtest 1 waits for them. The tablet's frame rate is judged on the tablet, with the frame bench's ARM64 build, apart from the reference test machine's criteria (O58, O100). Their provisional values are DEC-1011.
+> **Amendment 2026-10-24 (O108).** T18 to T20 come before T17's exit, in their order, each with its run checklist: Playtest 1 waits for them. T19 lands in two steps: the touch back-end, the recognizer, the input mode of touch, taps as the primary press and the camera's gestures first, then the touch keyboard (ADR-181). The tablet's frame rate is judged on the tablet, with the frame bench's ARM64 build, apart from the reference test machine's criteria (O58, O100). Their provisional values are DEC-1011.
 
 ## 6 Playtest 1 and the stop rule
 

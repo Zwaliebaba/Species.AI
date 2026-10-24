@@ -2,6 +2,7 @@
 
 #include "KeyboardMouseBackEnd.h"
 
+#include <algorithm>
 #include <utility>
 
 namespace Neuron
@@ -163,6 +164,12 @@ void KeyboardMouseBackEnd::OnWindowMessage(const WindowMessage& _message)
       m_text.push_back({*codePoint, m_modifierSides[0] != 0, m_modifierSides[1] != 0, m_modifierSides[2] != 0});
     }
     break;
+  case WM_POINTERDOWN:
+  case WM_POINTERUPDATE:
+  case WM_POINTERUP:
+  case WM_POINTERCAPTURECHANGED:
+    Contact(_message);
+    break;
   case WM_CLOSE:
     m_closeRequested = true; // PLT-009: action.app.quit, which no binding raises (INP-076)
     break;
@@ -213,6 +220,64 @@ void KeyboardMouseBackEnd::Button(const WindowMessage& _message, MouseControl _b
        _message.time);
 }
 
+void KeyboardMouseBackEnd::Contact(const WindowMessage& _message)
+{
+  // ADR-181: a touch or pen pointer holds a contact slot from its down to its up. A capture change or a canceled pointer
+  // ends its contact as a cancel; the capture change's lParam is a window, not a position.
+  const auto pointerId = static_cast<std::uint32_t>(GET_POINTERID_WPARAM(_message.wParam));
+  const auto held = std::ranges::find_if(m_contacts, [pointerId](const std::optional<std::uint32_t>& _id) { return _id == pointerId; });
+  std::optional<std::size_t> slot;
+  if (held != m_contacts.end())
+  {
+    slot = static_cast<std::size_t>(held - m_contacts.begin());
+  }
+  if (_message.id == WM_POINTERCAPTURECHANGED || IS_POINTER_CANCELED_WPARAM(_message.wParam))
+  {
+    if (slot.has_value())
+    {
+      PushContact(InputEvent::Kind::Cancel, *slot, {}, _message.time);
+      m_contacts[*slot].reset();
+    }
+    return;
+  }
+  const PointPx client = m_window.ClientFromScreen({SignedLow(_message.lParam), SignedHigh(_message.lParam)});
+  if (_message.id == WM_POINTERDOWN)
+  {
+    const auto free = std::ranges::find_if(m_contacts, [](const std::optional<std::uint32_t>& _id) { return !_id.has_value(); });
+    if (slot.has_value() || free == m_contacts.end())
+    {
+      return; // a pointer already down, or more contacts than the recognizer tracks
+    }
+    *free = pointerId;
+    PushContact(InputEvent::Kind::Press, static_cast<std::size_t>(free - m_contacts.begin()), client, _message.time);
+    return;
+  }
+  if (!slot.has_value())
+  {
+    return;
+  }
+  if (_message.id == WM_POINTERUP)
+  {
+    PushContact(InputEvent::Kind::Release, *slot, client, _message.time);
+    m_contacts[*slot].reset();
+  }
+  else if (IS_POINTER_INCONTACT_WPARAM(_message.wParam))
+  {
+    PushContact(InputEvent::Kind::Axis, *slot, client, _message.time);
+  }
+}
+
+void KeyboardMouseBackEnd::PushContact(InputEvent::Kind _kind, std::size_t _slot, PointPx _point, Nanoseconds _time)
+{
+  InputEvent event;
+  event.kind = _kind;
+  event.device = InputDevice::Touch;
+  event.control = static_cast<std::uint16_t>(_slot);
+  event.time = _time;
+  event.pointer = _point;
+  m_pending.push_back(event);
+}
+
 void KeyboardMouseBackEnd::Push(InputEvent::Kind _kind, InputDevice _device, std::uint16_t _control, Nanoseconds _time, bool _repeat)
 {
   InputEvent event;
@@ -253,6 +318,19 @@ void KeyboardMouseBackEnd::ReleaseAll(std::vector<InputEvent>& _queue)
       event.kind = InputEvent::Kind::Release;
       event.device = InputDevice::Mouse;
       event.control = static_cast<std::uint16_t>(button);
+      event.time = m_lastTime;
+      _queue.push_back(event);
+    }
+  }
+  // ADR-181: every touch contact down ends as a cancel.
+  for (std::size_t slot = 0; slot < m_contacts.size(); ++slot)
+  {
+    if (std::exchange(m_contacts[slot], std::nullopt).has_value())
+    {
+      InputEvent event;
+      event.kind = InputEvent::Kind::Cancel;
+      event.device = InputDevice::Touch;
+      event.control = static_cast<std::uint16_t>(slot);
       event.time = m_lastTime;
       _queue.push_back(event);
     }

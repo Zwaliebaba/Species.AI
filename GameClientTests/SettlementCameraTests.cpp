@@ -405,6 +405,74 @@ public:
     Assert::AreEqual(45.0 * DEGREES, camera->HeadingRadians(), 1e-3, L"with the entry heading");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr181OneFingerHoldsTheGroundUnderIt)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr181OneFingerHoldsTheGroundUnderIt)
+  {
+    // The ground where the finger went down stays under it as it drags, the camera stays where the drag left it, and a
+    // hold's drag, which the verbs take (ADR-182), moves nothing.
+    Neuron::PointPx pointer;
+    auto camera = EnteredCamera(pointer);
+    const Neuron::TouchPoint start{900.0, 600.0};
+    const Neuron::Vec3 ground = GroundUnder(*camera, {900, 600});
+    Species::CameraControls finger;
+    finger.touchDrag = Neuron::TouchDrag{Neuron::GesturePhase::Begin, start, {915.0, 600.0}, false};
+    Run(*camera, finger, pointer, 0.016, 1);
+    for (int n = 1; n <= 40; ++n)
+    {
+      finger.touchDrag = Neuron::TouchDrag{Neuron::GesturePhase::Move, start, {915.0 + 5.0 * n, 600.0 - 3.0 * n}, false};
+      Run(*camera, finger, pointer, 0.016, 1);
+    }
+    const Neuron::Vec3 under = GroundUnder(*camera, {1'115, 480});
+    Assert::IsTrue(Neuron::HorizontalDistance(ground, under) < 2.0 * FootprintAt(*camera, under), L"the ground follows the finger");
+    finger.touchDrag = Neuron::TouchDrag{Neuron::GesturePhase::End, start, {1'115.0, 480.0}, false};
+    Run(*camera, finger, pointer, 0.016, 1);
+    const Neuron::Vec3 held = camera->Focus();
+    Run(*camera, {}, pointer, 0.01, 100);
+    Assert::AreEqual(0.0, Neuron::HorizontalDistance(camera->Focus(), held), 1e-6, L"no drift after the lift");
+    Species::CameraControls hold;
+    hold.touchDrag = Neuron::TouchDrag{Neuron::GesturePhase::Begin, start, start, true};
+    Run(*camera, hold, pointer, 0.016, 1);
+    hold.touchDrag = Neuron::TouchDrag{Neuron::GesturePhase::Move, start, {1'200.0, 300.0}, true};
+    Run(*camera, hold, pointer, 0.016, 10);
+    Assert::AreEqual(0.0, Neuron::HorizontalDistance(camera->Focus(), held), 1e-6, L"a hold's drag moves no camera");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr181TwoFingersPanPinchAndTurn)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr181TwoFingersPanPinchAndTurn)
+  {
+    // Over ten frames two fingers spread to 1.25 times their span, turn 20° clockwise and move their center 100 px to the
+    // right: the height falls to 1,000 ÷ 1.25 at once, the heading turns 20° to the left, which turns the picture with
+    // the fingers, and the ground under their center stays under it.
+    Neuron::PointPx pointer;
+    auto camera = EnteredCamera(pointer);
+    const Neuron::Vec3 ground = GroundUnder(*camera, {800, 600});
+    const double heading = camera->HeadingRadians();
+    Species::CameraControls two;
+    two.touchManipulation = Neuron::TouchManipulation{Neuron::GesturePhase::Begin, {800.0, 600.0}, 1.0, 0.0};
+    Run(*camera, two, pointer, 0.016, 1);
+    for (int n = 1; n <= 10; ++n)
+    {
+      two.touchManipulation =
+        Neuron::TouchManipulation{Neuron::GesturePhase::Move, {800.0 + 10.0 * n, 600.0}, std::pow(1.25, 0.1), 2.0 * DEGREES};
+      Run(*camera, two, pointer, 0.016, 1);
+    }
+    Assert::AreEqual(800.0, camera->Height(), 1e-6, L"pinched closer");
+    Assert::AreEqual(0.0, std::remainder(camera->HeadingRadians() - heading - 20.0 * DEGREES, 2.0 * std::numbers::pi), 1e-9,
+                     L"turned with the fingers");
+    const Neuron::Vec3 under = GroundUnder(*camera, {900, 600});
+    Assert::IsTrue(Neuron::HorizontalDistance(ground, under) < 2.0 * FootprintAt(*camera, under), L"the ground under their center");
+    two.touchManipulation = Neuron::TouchManipulation{Neuron::GesturePhase::End, {900.0, 600.0}, 1.0, 0.0};
+    Run(*camera, two, pointer, 0.016, 1);
+    const Neuron::Vec3 held = camera->Focus();
+    Run(*camera, {}, pointer, 0.01, 100);
+    Assert::AreEqual(0.0, Neuron::HorizontalDistance(camera->Focus(), held), 1e-6, L"no drift after the lift");
+    Assert::AreEqual(800.0, camera->Height(), 1e-6, L"nor any zoom");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(AcCtrlCa02ZoomConvergesOnAQuarterOfTheField)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-460")
   END_TEST_METHOD_ATTRIBUTE()

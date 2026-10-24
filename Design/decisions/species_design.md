@@ -140,7 +140,7 @@ This file records the decisions of the Species design and of the MVP built from 
   - **Zoom.** A wheel notch forward multiplies the height by `cam.orbit.zoom_step` (0.85), and a notch back divides it. The zoom keys, Page Up and Page Down, run at `cam.orbit.zoom_key_notches` (4) notches a second.
   - **Turn.** Q and E turn the camera at `cam.orbit.turn_rate` (90° a second), and the middle button dragged with Alt held at `cam.orbit.drag_turn` (0.3° a pixel).
   - **Easing.** The ground point, the height and the heading close on their goals at `cam.orbit.smoothing` (12 a second). A drag moves the ground point at once, so the ground stays under the pointer.
-  - **Touch.** ADR-181 and ADR-182 state the first values of the movement before a touch becomes a drag, the hold time, the double-tap's interval and the turn's threshold. They join the presentation record, and this entry, with M3 tasks T19 and T20.
+  - **Touch** (ADR-181, from M3 task T19's first step). A contact moved more than `inp.touch.slop` (10 effective px) from where it went down is a drag; one down and up within `inp.touch.tap_ms` (250 ms) and never past the slop is a tap; one still for `inp.touch.hold_ms` (350 ms) is a hold. A second tap within `inp.touch.double_tap_ms` (300 ms) and `inp.touch.double_tap_slop` (24 effective px) of the first completes a double tap. Two fingers' turn is reported once its sum passes `inp.touch.turn_threshold` (10°). ADR-182's values join with T20.
 - Options:
   - A — as stated, each value a key of the client's presentation record that the owner retunes after each run;
   - B — values the owner sets before the run of T18.

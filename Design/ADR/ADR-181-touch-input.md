@@ -38,13 +38,14 @@ Chosen option: 1.
 - Option 3 has no turn and no second finger. A drag is a left-button drag, so it cannot pan.
 - Option 4 models a scrolled surface, not a camera over terrain, and gives no tap, hold or double tap.
 
-What T19 builds:
-* **The back-end** (`NeuronClient/TouchBackEnd`).
-  - It takes `WM_POINTERDOWN`, `WM_POINTERUPDATE`, `WM_POINTERUP` and `WM_POINTERCAPTURECHANGED` for pointers of type touch and pen (`GetPointerType`). It reads each contact's id, client position and flags with `GetPointerInfo`.
-  - It returns them handled, so `DefWindowProc` never reads them. The mouse stays on its window messages: `EnableMouseInPointer` is not called.
-  - Each contact becomes an event of the router's queue with the pump's timestamp (PLT-008), in arrival order (ADR-029).
-  - A capture change, a canceled pointer (`POINTER_FLAG_CANCELED`) or the loss of focus ends every contact (INP-111).
-  - At the window's creation `SetWindowFeedbackSetting` turns off Windows' contact, tap, double-tap, press-and-hold and right-tap feedback for it, since the client draws its own.
+What T19 builds, in two steps: the first all but the on-screen keyboard, the second the on-screen keyboard.
+* **The window** (`NeuronClient/AppWindow`).
+  - It takes `WM_POINTERDOWN`, `WM_POINTERUPDATE` and `WM_POINTERUP` for pointers of type touch and pen (`GetPointerType`), and every `WM_POINTERCAPTURECHANGED`. It forwards them to the input back-end and returns them handled, so `DefWindowProc` never reads them. The mouse stays on its window messages: `EnableMouseInPointer` is not called.
+  - At its creation `SetWindowFeedbackSetting` turns off Windows' touch and pen feedback for it (contact, tap, double tap, press-and-hold, right tap, press-and-tap and the pen's barrel), since the client draws its own.
+  - `ClientFromScreen` turns a pointer message's screen position into client pixels.
+* **The back-end** is the window's own (`NeuronClient/KeyboardMouseBackEnd`, ADR-028), which reads touch beside the keyboard and the mouse, since the router has one back-end of window messages.
+  - Each touch or pen pointer holds one of `TOUCH_CONTACT_COUNT` (10) contact slots from its down to its up. Each down, movement in contact and up becomes an event of the router's queue (`InputDevice::Touch`, its slot the control) with its client position and the pump's timestamp (PLT-008), in arrival order (ADR-029).
+  - A capture change or a canceled pointer (`IS_POINTER_CANCELED_WPARAM`) ends its contact as a cancel (`InputEvent::Kind::Cancel`), and the loss of focus ends every contact so (INP-111).
 * **The recognizer** (`NeuronClient/TouchGestures`), from the contacts to a frame's gestures, with its thresholds in effective pixels × the DPI scale (ADR-033):
   - a **tap**: one contact down and up within `inp.touch.tap_ms` (250 ms), moved less than `inp.touch.slop` (10 effective px);
   - a **double tap**: a second tap within `inp.touch.double_tap_ms` (300 ms) and `inp.touch.double_tap_slop` (24 effective px) of the first. The first is reported as a tap when it ends, never held back;
@@ -54,16 +55,20 @@ What T19 builds:
   - a **two-finger tap**: two contacts down and up within the tap time, neither past the slop;
   - three or more contacts: nothing.
 * **The router** (`InputRouter`) gives the frame's gestures as `Touch()`, as it gives the frame's characters (ADR-154). Gestures are not bindings: INP-060 has no node for them and nothing rebinds them.
-* **The input mode** (INP-151) gains touch, the last device with activity. While it is touch, the game cursor is not drawn and the pointer is the last contact's point. Moving the mouse returns it to keyboard and mouse.
-* **The on-screen keyboard.** When a page text field (UI-121) takes the focus while the mode is touch, the client asks for the system's touch keyboard through `IInputPaneInterop::GetForWindow` and `IInputPane2::TryShow`, and hides it when the field loses the focus. These are the Windows SDK's `Windows.UI.ViewManagement` interfaces, with no package. Their behavior on the tablet in a desktop window is confirmed on T19's run, and a failure to show is logged and leaves the field typed by any keyboard.
+  - **A tap** is also the primary button's press and release at its point, in its frame, with the pointer moved there. So every reader of the primary press takes it as a click: the UI's pages and HUD (UI-035 takes a press released within its frame), the front end, the placement and the battle verbs. This is ADR-182's tap, built with the back-end, since Windows' promotion stops the day the back-end lands.
+  - `SuppressTouch` withholds the frame's gestures, which `GameUi` calls while a window has the focus, as it suppresses the world's actions (UI-006).
+  - `SetTouchThresholds` takes the keys × the DPI scale, which `GameUi` gives it each frame.
+* **The input mode** (INP-151) gains touch, the mode of a frame with any touch event or contact down. While it is touch, the game cursor is not drawn (`WorldPresentation::SetTouchMode`) and the pointer is the last contact's point. A frame with keyboard or mouse activity and no touch returns it to keyboard and mouse.
+* **The camera** takes one finger's drag and two fingers' manipulation (ADR-180, `CameraControls::touchDrag`, `touchManipulation`). The drag holds the ground where the finger went down under it, by the middle button's level shift. The manipulation holds the ground under the two fingers' center, multiplies the height by the inverse of their spans' ratio and turns the heading by their turn, all at once. A hold's drag moves no camera: it is ADR-182's. This is ADR-182's camera, built here, since T19's run follows one finger and two.
+* **The on-screen keyboard** (the second step). When a page text field (UI-121) takes the focus while the mode is touch, the client asks for the system's touch keyboard through `IInputPaneInterop::GetForWindow` and `IInputPane2::TryShow`, and hides it when the field loses the focus. These are the Windows SDK's `Windows.UI.ViewManagement` interfaces, with no package. Their behavior on the tablet in a desktop window is confirmed on T19's run, and a failure to show is logged and leaves the field typed by any keyboard.
 * **Not changed.** The server links none of it (ADR-028). Windows' edge swipes stay Windows'.
-* **The keys** `inp.touch.*` join the presentation record with T19, with DEC-1011's first values.
+* **The keys** `inp.touch.*` join the presentation record and the input component's tuning table, with DEC-1011's first values.
 
 ### Consequences
 
 * Good, because touch, pen, mouse and touchpad work on one 2-in-1, and each gesture's threshold is the client's own key.
 * Good, because the recognizer is a pure function, tested from recorded contacts on CI without a touchscreen.
-* Bad, because the client must read touch everywhere at once: the HUD, the menus and the front end lose Windows' promotion the day the back-end lands, and each must take taps by ADR-182.
+* Bad, because the client must read touch everywhere at once: the HUD, the menus and the front end lose Windows' promotion the day the back-end lands. A tap as the primary press keeps every click working, but a drag on a page scrolls nothing until ADR-182's.
 * Bad, because the touch keyboard's interfaces are WinRT ones, whose desktop behavior varies across Windows builds, and CI cannot run them.
 * Neutral, because pen is read as touch: Species has no use for its pressure or hover at M3.
 * It forecloses: Windows' own gesture messages and its mouse promotion in the client's window.
@@ -71,7 +76,8 @@ What T19 builds:
 ### Confirmation
 
 * `NeuronClientTests/TouchGesturesTests`, from recorded contact streams: a tap, a double tap and two slow taps; a drag against a hold at the slop and the hold time; a manipulation's center, ratio and angle, with the turn held below its threshold; a two-finger tap; three contacts ignored; a canceled contact ending its gesture.
-* `NeuronClientTests/InputRouterTests`: the gestures in a frame, the input mode switching to touch and back on the mouse's movement, and every contact ended by the loss of focus.
+* `NeuronClientTests/InputRouterTests`: a tap pressing the primary button at its point in its frame alone, a drag pressing nothing, `SuppressTouch` withholding the frame's drag, the input mode switching to touch and back on the mouse's movement, and the contact ended by the loss of focus.
+* `GameClientTests/SettlementCameraTests`: one finger's drag keeping the ground under it within two pixels, with no drift after the lift, and a hold's drag moving nothing; two fingers spread to 1.25 times their span, turned 20° and moved 100 px giving 800 wu, the heading turned 20° and the ground under their center within two pixels.
 * The owner's run of T19 on the ARM64 tablet: Windows draws no feedback of its own, a drag no longer draws the selection circle, and the touch keyboard opens for the seed.
 
 ## Pros and Cons of the Options
