@@ -88,3 +88,4 @@ What is built:
 * Amends [ADR-088](ADR-088-transport-messages-identity-and-diagnostics.md) (the idle timeouts' effect, the loopback interface at M4) and [ADR-089](ADR-089-msquic-transport-package.md) (MsQuic loaded by the transport, not linked).
 * MsQuic's API as its 2.6.3 headers state it: `msquic.h` (the function table, `QUIC_SETTINGS`, the connection, stream and listener events, the datagram send states, `QUIC_PARAM_CONN_STATISTICS_V2`) and `msquic_winuser.h` (the address helpers, which need no socket library), read from the restored package on 2026-10-24.
 * The code: `NeuronCore/QuicTransport`, `NeuronCore/ServerCertificate`, `NeuronCoreTests/QuicTransportTests`.
+* **Amendment 2026-10-24 (M4 task T9, [ADR-187](ADR-187-the-always-on-worlds-server-process.md)).** The headless server's certificate is named `Species server`.

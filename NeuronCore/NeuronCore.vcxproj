@@ -161,6 +161,7 @@
     <ClInclude Include="FrameProfile.h" />
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="InProcessTransport.h" />
+    <ClInclude Include="InstanceLock.h" />
     <ClInclude Include="JobQueue.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="LogBuffer.h" />
@@ -171,6 +172,7 @@
     <ClInclude Include="MessageCodec.h" />
     <ClInclude Include="MessagePattern.h" />
     <ClInclude Include="NativeWindowHandle.h" />
+    <ClInclude Include="ProgramStart.h" />
     <ClInclude Include="QuicTransport.h" />
     <ClInclude Include="ServerCertificate.h" />
     <ClInclude Include="SettingsFile.h" />
@@ -222,6 +224,7 @@
     <ClCompile Include="FrameProfile.cpp" />
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="InProcessTransport.cpp" />
+    <ClCompile Include="InstanceLock.cpp" />
     <ClCompile Include="JobQueue.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="LogBuffer.cpp" />
@@ -231,6 +234,7 @@
     <ClCompile Include="MeshAsset.cpp" />
     <ClCompile Include="MessageCodec.cpp" />
     <ClCompile Include="MessagePattern.cpp" />
+    <ClCompile Include="ProgramStart.cpp" />
     <ClCompile Include="QuicTransport.cpp" />
     <ClCompile Include="ServerCertificate.cpp" />
     <ClCompile Include="SettingsFile.cpp" />

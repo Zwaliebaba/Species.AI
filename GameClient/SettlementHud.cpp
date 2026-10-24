@@ -34,7 +34,8 @@ constexpr std::string_view STRING_BUILD = "ui.hud.build";
 constexpr std::string_view STRING_COST = "ui.hud.cost";
 constexpr std::string_view STRING_COMPLETED = "ui.hud.completed";
 constexpr std::string_view STRING_SEED = "ui.hud.seed";
-constexpr std::string_view STRING_PLACING = "ui.hud.placing"; // ADR-153
+constexpr std::string_view STRING_ALWAYS_ON = "ui.hud.always_on"; // ADR-187
+constexpr std::string_view STRING_PLACING = "ui.hud.placing";     // ADR-153
 constexpr std::string_view STRING_REFUSED = "ui.hud.refused";
 // M3 task T11 (ADR-166): the relations panel and the notices of M3's kinds.
 constexpr std::string_view STRING_CLADAN = "ui.hud.cladan";
@@ -493,6 +494,8 @@ HudModel HudModelOf(const ClientSession& _session, const TuningMvp& _tuning, con
   model.tickSeconds = _tuning.ref.sim.tickPeriod;
   model.settlement = _session.OwnSettlement();
   model.seed = _session.WorldSeed();
+  model.pace = _session.Pace();
+  model.idleMinutes = _tuning.mvp.presence.idleMinutes;
   const std::optional<SettlementStatus>& status = _session.LatestStatus();
   if (model.settlement.has_value() && status.has_value() && status->team == model.settlement->team)
   {
@@ -533,11 +536,6 @@ std::vector<HudNotice> AgeNotices(std::vector<HudNotice> _notices, std::span<con
   return _notices;
 }
 
-namespace
-{
-
-// ADR-166: an area's name: the central site, or a half of a valley border area by the settlement whose half it is and the
-// neighbour it faces.
 std::string AreaName(std::uint8_t _area, const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale)
 {
   if (_area >= CLAIM_AREA_CENTRAL)
@@ -553,8 +551,6 @@ std::string AreaName(std::uint8_t _area, const Neuron::StringTable& _strings, co
                              Neuron::FormatArgument{"facing", std::string_view(facing)}};
   return _strings.Format(STRING_AREA, arguments, _locale);
 }
-
-} // namespace
 
 SettlementHud::SettlementHud(const TuningPresentation& _presentation, const TuningMvp& _tuning)
   : m_presentation(_presentation),
@@ -810,6 +806,14 @@ std::vector<HudRow> SettlementHud::WorldRows(const Neuron::StringTable& _strings
     const std::string seed = std::to_string(*m_model.seed);
     const std::array arguments{Neuron::FormatArgument{"seed", std::string_view(seed)}};
     seedRow.text = _strings.Format(STRING_SEED, arguments, _locale);
+  }
+  // MVP-071 and MVP-072 (ADR-187): an always-on world, and when its steward counts as away.
+  if (m_model.pace == WorldPace::AlwaysOn)
+  {
+    const std::array arguments{Neuron::FormatArgument{"minutes", static_cast<std::int64_t>(std::llround(m_model.idleMinutes))}};
+    HudRow& pace = rows.emplace_back();
+    pace.text = _strings.Format(STRING_ALWAYS_ON, arguments, _locale);
+    pace.color = text;
   }
   if (!m_model.valley.has_value())
   {

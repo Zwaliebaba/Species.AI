@@ -18,6 +18,7 @@ namespace
 {
 
 constexpr std::wstring_view USER_DATA_OPTION = L"--user-data";
+constexpr std::wstring_view ALWAYS_ON_WORLD_OPTION = L"--always-on-world"; // ADR-187
 #if ENGINE_DEVELOPMENT
 constexpr std::wstring_view LOOSE_CONTENT_OPTION = L"--loose-content";
 constexpr std::wstring_view SEED_OPTION = L"--seed";
@@ -81,6 +82,12 @@ StartupOptions ParseArguments(std::span<const std::wstring> _arguments)
     if (_arguments[i] == USER_DATA_OPTION && i + 1 < _arguments.size())
     {
       options.userDataDirectory = std::filesystem::path(_arguments[i + 1]);
+      ++i;
+      continue;
+    }
+    if (_arguments[i] == ALWAYS_ON_WORLD_OPTION && i + 1 < _arguments.size())
+    {
+      options.alwaysOnWorld = std::filesystem::path(_arguments[i + 1]);
       ++i;
       continue;
     }

@@ -70,6 +70,18 @@ public:
     Assert::IsFalse(Parse({L"--user-data"}).userDataDirectory.has_value(), L"without a value it names nothing");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp071TheAlwaysOnWorldIsAnOptionOfEveryBuild)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-071")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp071TheAlwaysOnWorldIsAnOptionOfEveryBuild)
+  {
+    // ADR-187: the client starts the headless server of an always-on world with its folder, in Debug and Release alike.
+    const Neuron::StartupOptions options = Parse({L"--always-on-world", L"C:\\saves\\world-0003", L"extra"});
+    Assert::IsTrue(options.alwaysOnWorld == std::filesystem::path(L"C:\\saves\\world-0003"), L"the option takes the next argument");
+    Assert::IsTrue(IgnoredAre(options, {"extra"}), L"in Debug and Release alike");
+    Assert::IsFalse(Parse({L"--always-on-world"}).alwaysOnWorld.has_value(), L"without a value it names nothing");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Plt022TheSeedIsReadInAnyPosition)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-022")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-107")

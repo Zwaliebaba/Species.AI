@@ -84,6 +84,9 @@
     <ClInclude Include="InProcessTransport.h">
       <Filter>Network</Filter>
     </ClInclude>
+    <ClInclude Include="InstanceLock.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
     <ClInclude Include="JobQueue.h">
       <Filter>Platform</Filter>
     </ClInclude>
@@ -112,6 +115,9 @@
       <Filter>Content</Filter>
     </ClInclude>
     <ClInclude Include="NativeWindowHandle.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="ProgramStart.h">
       <Filter>Platform</Filter>
     </ClInclude>
     <ClInclude Include="QuicTransport.h">
@@ -263,6 +269,9 @@
     <ClCompile Include="InProcessTransport.cpp">
       <Filter>Network</Filter>
     </ClCompile>
+    <ClCompile Include="InstanceLock.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
     <ClCompile Include="JobQueue.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
@@ -289,6 +298,9 @@
     </ClCompile>
     <ClCompile Include="MessagePattern.cpp">
       <Filter>Content</Filter>
+    </ClCompile>
+    <ClCompile Include="ProgramStart.cpp">
+      <Filter>Platform</Filter>
     </ClCompile>
     <ClCompile Include="QuicTransport.cpp">
       <Filter>Network</Filter>

@@ -175,6 +175,7 @@
     <ClCompile Include="DdsHeaderTests.cpp" />
     <ClCompile Include="FilesTests.cpp" />
     <ClCompile Include="FrameProfileTests.cpp" />
+    <ClCompile Include="InstanceLockTests.cpp" />
     <ClCompile Include="JobQueueTests.cpp" />
     <ClCompile Include="LogBufferTests.cpp" />
     <ClCompile Include="LogTests.cpp" />

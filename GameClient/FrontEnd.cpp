@@ -40,6 +40,8 @@ constexpr std::string_view STRING_SITE = "ui.front.site";
 constexpr std::string_view STRING_SITE_OPTION = "ui.front.site_option";
 constexpr std::string_view STRING_NEIGHBORS = "ui.front.neighbors";               // O103
 constexpr std::string_view STRING_NEIGHBORS_OPTION = "ui.front.neighbors_option"; // O103
+constexpr std::string_view STRING_PACE = "ui.front.pace";                         // ADR-187
+constexpr std::string_view STRING_PACE_OPTION = "ui.front.pace_option";           // ADR-187
 constexpr std::string_view STRING_WINDOW = "ui.front.window";
 constexpr std::string_view STRING_ANTI_ALIASING = "ui.front.anti_aliasing";
 constexpr std::string_view STRING_ANTI_ALIASING_OPTION = "ui.front.anti_aliasing_option";
@@ -52,7 +54,7 @@ constexpr std::string_view STRING_PAST_RUN = "ui.front.past_run";
 constexpr std::string_view STRING_NO_PAST_RUN = "ui.front.no_past_run";
 
 // ContinueFault's selectors, in its order.
-constexpr std::array<std::string_view, 4> FAULT_SELECTORS{"no_snapshot", "unreadable", "damaged", "version"};
+constexpr std::array<std::string_view, 5> FAULT_SELECTORS{"no_snapshot", "unreadable", "damaged", "version", "server"};
 // The anti-aliasing options, as the settings store spells them and as the string's selector names them (O96).
 constexpr std::array<std::string_view, 3> ANTI_ALIASING_VALUES{ANTI_ALIASING_OFF, ANTI_ALIASING_2X, ANTI_ALIASING_4X};
 constexpr std::array<std::string_view, 3> ANTI_ALIASING_SELECTORS{"off", "two", "four"};
@@ -60,6 +62,8 @@ constexpr std::uint8_t SITE_COUNT = 4; // WLD-040: the region's settlement sites
 // O103: the neighbors cycler's options, the AI settlements at the other sites (MVP-013) first, then none.
 constexpr std::array<std::string_view, 2> NEIGHBOR_SELECTORS{"three", "none"};
 constexpr std::array<std::uint8_t, 2> NEIGHBOR_COUNTS{AI_SETTLEMENTS_FULL, 0};
+// MVP-071 (ADR-187): the pace cycler's options, the session pace first; each option's selector is its pace's name.
+constexpr std::array<WorldPace, 2> PACES{WorldPace::Session, WorldPace::AlwaysOn};
 constexpr std::int64_t PERCENT_FULL = 100; // the volume's 100 %
 /// The front end's page skeleton (ADR-155): the shared skeleton, with the front end for its strings and its Back.
 class SkeletonPage : public PageSkeleton
@@ -229,7 +233,8 @@ private:
   std::vector<Neuron::UiHandle> m_worlds;
 };
 
-/// MVP-005 and MVP-012: the new world's seed, typed or drawn, and its steward's site, then Start.
+/// MVP-005 and MVP-012: the new world's seed, typed or drawn, its steward's site, its neighbors (O103) and its pace
+/// (MVP-071), then Start.
 class NewWorldPage final : public SkeletonPage
 {
 public:
@@ -270,6 +275,16 @@ public:
       neighbors.options.push_back(m_frontEnd.Text(STRING_NEIGHBORS_OPTION, arguments));
     }
     m_neighbors = Row(_window, std::move(neighbors));
+    Neuron::UiWidgetDesc pace;
+    pace.kind = Neuron::UiWidgetKind::Cycler;
+    pace.id = "pace";
+    pace.text = m_frontEnd.Text(STRING_PACE);
+    for (const WorldPace option : PACES)
+    {
+      const std::array arguments{Neuron::FormatArgument{"pace", PaceName(option)}};
+      pace.options.push_back(m_frontEnd.Text(STRING_PACE_OPTION, arguments));
+    }
+    m_pace = Row(_window, std::move(pace));
     m_start = Row(_window, Neuron::UiWidgetKind::PageButton, "start", m_frontEnd.Text(STRING_START));
     Finish(_window, true);
   }
@@ -296,6 +311,7 @@ public:
         choice.seed = *seed;
         choice.site = static_cast<std::uint8_t>(_window.Selected(m_site));
         choice.aiSettlements = NEIGHBOR_COUNTS.at(_window.Selected(m_neighbors));
+        choice.pace = PACES.at(_window.Selected(m_pace));
         m_frontEnd.Choose(choice);
       }
       else if (event.widget == m_back)
@@ -309,6 +325,7 @@ private:
   Neuron::UiHandle m_seed;
   Neuron::UiHandle m_site;
   Neuron::UiHandle m_neighbors;
+  Neuron::UiHandle m_pace;
   Neuron::UiHandle m_start;
 };
 

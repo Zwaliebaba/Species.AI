@@ -35,6 +35,25 @@ constexpr std::string_view STRING_CLAIMS = "ui.epilogue.claims";
 constexpr std::string_view STRING_STRUCTURES = "ui.epilogue.structures";
 constexpr std::string_view STRING_WORKERS = "ui.epilogue.workers";
 constexpr std::string_view STRING_STRENGTH = "ui.epilogue.strength";
+// MVP-074's away report (ADR-187).
+constexpr std::string_view STRING_AWAY_REPORT = "ui.world.away_report";
+constexpr std::string_view STRING_AWAY_WAITS = "ui.world.away_waits";
+constexpr std::string_view STRING_AWAY_SUMMARY = "ui.away.summary";
+constexpr std::string_view STRING_AWAY_DEPUTY = "ui.away.deputy";
+constexpr std::string_view STRING_AWAY_LENGTH = "ui.away.length";
+constexpr std::string_view STRING_AWAY_WORKERS = "ui.away.workers";
+constexpr std::string_view STRING_AWAY_STORES = "ui.away.stores";
+constexpr std::string_view STRING_AWAY_BUILT = "ui.away.built";
+constexpr std::string_view STRING_AWAY_BATTLE = "ui.away.battle";
+constexpr std::string_view STRING_AWAY_CLAIM = "ui.away.claim";
+constexpr std::string_view STRING_AWAY_GRIEVANCES = "ui.away.grievances";
+constexpr std::string_view STRING_AWAY_FREEZE = "ui.away.freeze";
+constexpr std::string_view STRING_AWAY_QUIET = "ui.away.quiet";
+constexpr std::string_view STRING_AWAY_ACTION = "ui.away.action";
+constexpr std::string_view STRING_AWAY_NO_ACTION = "ui.away.no_action";
+constexpr std::string_view STRING_AWAY_MORE = "ui.away.more";
+// FreezeCause's selectors, in its order (PIL-131).
+constexpr std::array<std::string_view, 4> FREEZE_SELECTORS{"stall", "unclean", "stopped", "sleep"};
 
 constexpr std::int64_t MILLI = 1'000;
 constexpr double SECONDS_PER_MINUTE = 60.0;
@@ -57,6 +76,13 @@ public:
   {
     Begin(_window, m_menu.Text(STRING_MENU));
     m_resume = Row(_window, Neuron::UiWidgetKind::PageButton, "resume", m_menu.Text(STRING_RESUME));
+    // MVP-074 (ADR-187): the away report, once an absence has one.
+    Neuron::UiWidgetDesc away;
+    away.kind = Neuron::UiWidgetKind::PageButton;
+    away.id = "away";
+    away.text = m_menu.Text(STRING_AWAY_REPORT);
+    away.inactive = !m_menu.Away().has_value();
+    m_away = Row(_window, std::move(away));
     Neuron::UiWidgetDesc epilogue;
     epilogue.kind = Neuron::UiWidgetKind::PageButton;
     epilogue.id = "epilogue";
@@ -88,6 +114,10 @@ public:
       {
         _navigator.Request({Neuron::UiPageRequest::Kind::Push, static_cast<Neuron::UiPageId>(GamePage::WorldEpilogue)});
       }
+      else if (event.widget == m_away)
+      {
+        _navigator.Request({Neuron::UiPageRequest::Kind::Push, static_cast<Neuron::UiPageId>(GamePage::WorldAwayReport)});
+      }
       else if (event.widget == m_leave)
       {
         m_menu.Choose({WorldMenuChoice::Kind::Leave});
@@ -108,6 +138,7 @@ public:
 private:
   WorldMenu& m_menu;
   Neuron::UiHandle m_resume;
+  Neuron::UiHandle m_away;
   Neuron::UiHandle m_epilogue;
   Neuron::UiHandle m_leave;
   Neuron::UiHandle m_quit;
@@ -115,24 +146,30 @@ private:
 
 /// MVP-063's epilogue (ADR-170): a row for each of its sections in the left box, which shows that section in the right
 /// box, the standing at first, then Leave to the front end and Back; the section's title and its lines in the right box.
+/// MVP-074's away report (ADR-187) takes the same page: its summary first, then the deputy's actions, without Leave.
 class EpiloguePage final : public PageSkeleton
 {
 public:
-  explicit EpiloguePage(WorldMenu& _menu)
-    : PageSkeleton(*_menu.Settings().presentation, "epilogue"),
-      m_menu(_menu)
+  EpiloguePage(WorldMenu& _menu, bool _away)
+    : PageSkeleton(*_menu.Settings().presentation, _away ? "away report" : "epilogue"),
+      m_menu(_menu),
+      m_away(_away)
   {
   }
 
   void Enter(Neuron::UiWindow& _window) override
   {
-    Begin(_window, m_menu.Text(STRING_EPILOGUE));
+    Begin(_window, m_menu.Text(m_away ? STRING_AWAY_REPORT : STRING_EPILOGUE));
     m_text = {};
     m_rows.clear();
     m_lines.clear();
-    if (m_menu.Ended().has_value())
+    const WorldMenu::Desc& desc = m_menu.Settings();
+    if (m_away && m_menu.Away().has_value())
     {
-      const WorldMenu::Desc& desc = m_menu.Settings();
+      m_text = AwayReportTextOf(*m_menu.Away(), desc.tuning->ref.sim.tickPeriod, *desc.strings, *desc.locale);
+    }
+    else if (!m_away && m_menu.Ended().has_value())
+    {
       m_text = EpilogueTextOf(*m_menu.Ended(), desc.tuning->ref.sim.tickPeriod, *desc.strings, *desc.locale);
     }
     std::size_t lines = 0;
@@ -141,11 +178,14 @@ public:
       m_rows.push_back(Row(_window, Neuron::UiWidgetKind::PageButton, std::format("section_{}", index), m_text.sections[index].title));
       lines = std::max(lines, m_text.sections[index].lines.size());
     }
-    m_leave = Row(_window, Neuron::UiWidgetKind::PageButton, "leave", m_menu.Text(STRING_LEAVE));
+    if (!m_away)
+    {
+      m_leave = Row(_window, Neuron::UiWidgetKind::PageButton, "leave", m_menu.Text(STRING_LEAVE));
+    }
     Finish(_window, m_menu.Text(STRING_BACK), m_rows.empty() ? m_leave : m_rows.front());
     if (m_text.sections.empty())
     {
-      _window.SetText(m_notice, m_menu.Text(STRING_EPILOGUE_WAITS));
+      _window.SetText(m_notice, m_menu.Text(m_away ? STRING_AWAY_WAITS : STRING_EPILOGUE_WAITS));
       return;
     }
     // The right box's labels, as many as the longest section has lines, which each section fills.
@@ -222,6 +262,7 @@ private:
   }
 
   WorldMenu& m_menu;
+  bool m_away;
   EpilogueText m_text;
   std::vector<Neuron::UiHandle> m_rows;
   Neuron::UiHandle m_leave;
@@ -230,6 +271,94 @@ private:
 };
 
 } // namespace
+
+EpilogueText AwayReportTextOf(const AwayReport& _report, double _tickSeconds, const Neuron::StringTable& _strings,
+                              const Neuron::MessageLocale& _locale)
+{
+  using Argument = Neuron::FormatArgument;
+  const auto format = [&](std::string_view _id, std::span<const Argument> _arguments) { return _strings.Format(_id, _arguments, _locale); };
+  // A span of world time as hours and two-digit minutes.
+  const auto clock = [_tickSeconds](std::uint64_t _ticks)
+  {
+    const auto minutes = static_cast<std::int64_t>(static_cast<double>(_ticks) * _tickSeconds / SECONDS_PER_MINUTE);
+    return std::pair{minutes / MINUTES_PER_HOUR, std::format("{:02}", minutes % MINUTES_PER_HOUR)};
+  };
+  // At most AWAY_PAGE_LINES_MAX lines, the last counting the lines left out.
+  const auto keep = [&](std::vector<std::string>& _lines, std::size_t _more)
+  {
+    const std::size_t total = _lines.size() + _more;
+    if (total > AWAY_PAGE_LINES_MAX)
+    {
+      _lines.resize(AWAY_PAGE_LINES_MAX - 1);
+      const std::array more{Argument{"count", static_cast<std::int64_t>(total - _lines.size())}};
+      _lines.push_back(format(STRING_AWAY_MORE, more));
+    }
+  };
+  EpilogueText text;
+  // PIL-073: the summary on one page.
+  EpilogueSection summary{format(STRING_AWAY_SUMMARY, {}), {}};
+  const auto [hours, minutes] = clock(_report.toTick - _report.fromTick);
+  const std::array length{Argument{"hours", hours}, Argument{"minutes", std::string_view(minutes)}};
+  summary.lines.push_back(format(STRING_AWAY_LENGTH, length));
+  const std::array workers{Argument{"from", std::int64_t{_report.workersFrom}}, Argument{"to", std::int64_t{_report.workersTo}}};
+  summary.lines.push_back(format(STRING_AWAY_WORKERS, workers));
+  const std::array stores{Argument{"from", _report.storesFromMilliRu / MILLI}, Argument{"to", _report.storesToMilliRu / MILLI}};
+  summary.lines.push_back(format(STRING_AWAY_STORES, stores));
+  const std::array built{Argument{"dwellings", std::int64_t{_report.structuresCompleted[0]}},
+                         Argument{"storehouses", std::int64_t{_report.structuresCompleted[1]}},
+                         Argument{"turrets", std::int64_t{_report.structuresCompleted[2]}}};
+  summary.lines.push_back(format(STRING_AWAY_BUILT, built));
+  if (!_report.HasNews())
+  {
+    summary.lines.push_back(format(STRING_AWAY_QUIET, {}));
+  }
+  for (const AwayBattleLine& battle : _report.battles)
+  {
+    const std::string name = CladanName(battle.other, _strings, _locale);
+    const std::array arguments{Argument{"won", std::string_view(battle.won ? "yes" : "no")},
+                               Argument{"defended", std::string_view(battle.defended ? "yes" : "no")},
+                               Argument{"cladan", std::string_view(name)}, Argument{"lost", std::int64_t{battle.workersLost}}};
+    summary.lines.push_back(format(STRING_AWAY_BATTLE, arguments));
+  }
+  for (const AwayClaimLine& claim : _report.claims)
+  {
+    const std::string area = AreaName(claim.area, _strings, _locale);
+    const std::string name = CladanName(claim.to, _strings, _locale);
+    const std::array arguments{Argument{"area", std::string_view(area)}, Argument{"cladan", std::string_view(name)}};
+    summary.lines.push_back(format(STRING_AWAY_CLAIM, arguments));
+  }
+  if (_report.grievancesTotal > 0)
+  {
+    const std::array arguments{Argument{"count", std::int64_t{_report.grievancesTotal}}};
+    summary.lines.push_back(format(STRING_AWAY_GRIEVANCES, arguments));
+  }
+  for (const AwayFreezeLine& freeze : _report.freezes)
+  {
+    const std::array arguments{Argument{"cause", FREEZE_SELECTORS.at(static_cast<std::size_t>(freeze.cause))},
+                               Argument{"minutes", static_cast<std::int64_t>(freeze.seconds / 60)}};
+    summary.lines.push_back(format(STRING_AWAY_FREEZE, arguments));
+  }
+  keep(summary.lines, 0);
+  text.sections.push_back(std::move(summary));
+  // PIL-026: every deputy action, with the standing order that permitted it, one step away.
+  EpilogueSection deputy{format(STRING_AWAY_DEPUTY, {}), {}};
+  for (const AwayActionLine& action : _report.actions)
+  {
+    const auto [actionHours, actionMinutes] = clock(action.tick - _report.fromTick);
+    const std::string name = CladanName(action.other, _strings, _locale);
+    const std::array arguments{Argument{"hours", actionHours}, Argument{"minutes", std::string_view(actionMinutes)},
+                               Argument{"cladan", std::string_view(name)},
+                               Argument{"order", std::string_view(action.order == StandingOrder::TheStewardsAttack ? "attack" : "defend")}};
+    deputy.lines.push_back(format(STRING_AWAY_ACTION, arguments));
+  }
+  if (deputy.lines.empty())
+  {
+    deputy.lines.push_back(format(STRING_AWAY_NO_ACTION, {}));
+  }
+  keep(deputy.lines, _report.actionsTotal - static_cast<std::uint32_t>(_report.actions.size()));
+  text.sections.push_back(std::move(deputy));
+  return text;
+}
 
 EpilogueText EpilogueTextOf(const Epilogue& _epilogue, double _tickSeconds, const Neuron::StringTable& _strings,
                             const Neuron::MessageLocale& _locale)
@@ -314,6 +443,17 @@ void WorldMenu::Update(ClientSession& _session)
     m_ended = true;
     m_arrived = true;
   }
+  // MVP-074 (ADR-187): in an always-on world, the latest away report is asked for once, for the menu's entry; a return
+  // with news sends its own, which opens first (O109).
+  if (_session.Pace() == WorldPace::AlwaysOn && !m_awayAsked)
+  {
+    m_awayAsked = _session.SendCommand(ReadAwayReportCommand{own->team}).has_value();
+  }
+  if (const std::optional<AwayReport>& away = _session.LatestAwayReport(); away.has_value() && away->team == own->team && away->absence)
+  {
+    m_away = away;
+  }
+  m_awayArrived = _session.TakeAwayReportArrived() || m_awayArrived;
 }
 
 void WorldMenu::Reset() noexcept
@@ -323,12 +463,20 @@ void WorldMenu::Reset() noexcept
   m_requested = false;
   m_arrived = false;
   m_epilogue.reset();
+  m_away.reset();
+  m_awayAsked = false;
+  m_awayArrived = false;
   m_choice.reset();
 }
 
 bool WorldMenu::TakeEpilogueArrived() noexcept
 {
   return std::exchange(m_arrived, false);
+}
+
+bool WorldMenu::TakeAwayReportArrived() noexcept
+{
+  return std::exchange(m_awayArrived, false);
 }
 
 std::unique_ptr<Neuron::UiPage> WorldMenu::MakePage(WorldMenuPage _page)
@@ -338,7 +486,9 @@ std::unique_ptr<Neuron::UiPage> WorldMenu::MakePage(WorldMenuPage _page)
   case WorldMenuPage::Menu:
     return std::make_unique<MenuPage>(*this);
   case WorldMenuPage::Epilogue:
-    return std::make_unique<EpiloguePage>(*this);
+    return std::make_unique<EpiloguePage>(*this, false);
+  case WorldMenuPage::AwayReport:
+    return std::make_unique<EpiloguePage>(*this, true);
   }
   return nullptr;
 }

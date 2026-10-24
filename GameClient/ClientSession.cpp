@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "AwayMessages.h"
 #include "Check.h"
 #include "ClientSession.h"
 #include "CommandMessages.h"
@@ -38,6 +39,7 @@ ClientSession::ClientSession(Desc _desc)
     m_tuning(_desc.tuning),
     m_clock(_desc.clock),
     m_timing(TickPeriodOf(_desc.tuning)),
+    m_pace(_desc.pace),
     m_shownTitle(m_productName)
 {
   ENGINE_CHECK(m_tuning != nullptr, "the session builds the terrain from the client's own tuning record");
@@ -63,6 +65,12 @@ ClientSession::ClientSession(Desc _desc)
   m_dispatcher.Register<ValleyStatus>([this](const ValleyStatus& _status) { m_valleyStatus = _status; });
   m_dispatcher.Register<Epilogue>([this](const Epilogue& _epilogue) { m_epilogue = _epilogue; });
   m_dispatcher.Register<BattleResultNotice>([this](const BattleResultNotice& _result) { m_results.push_back(_result); });
+  m_dispatcher.Register<AwayReport>(
+    [this](const AwayReport& _report)
+    {
+      m_awayReportArrived = m_awayReportArrived || (_report.onReturn && _report.HasNews());
+      m_awayReport = _report;
+    });
   m_dispatcher.Register<JoinAnswer>(
     [this](const JoinAnswer& _answer)
     {
@@ -94,6 +102,29 @@ ClientSession::ClientSession(Desc _desc)
     Neuron::Log(Neuron::LogCategory::Network, sent ? Neuron::LogLevel::Info : Neuron::LogLevel::Error,
                 "join {}: protocol {}, build {}, content {}", sent ? "sent" : "not sent", _desc.identity->protocol,
                 Neuron::ShortHex(_desc.identity->build), Neuron::ShortHex(_desc.identity->content));
+  }
+}
+
+bool ClientSession::TakeAwayReportArrived() noexcept
+{
+  return std::exchange(m_awayReportArrived, false);
+}
+
+void ClientSession::NoteInput(bool _input)
+{
+  constexpr auto REPORT_PERIOD = std::chrono::duration_cast<Neuron::Nanoseconds>(std::chrono::duration<double>(PRESENCE_REPORT_SECONDS));
+  if (!_input)
+  {
+    return;
+  }
+  const Neuron::Nanoseconds now = m_clock->Now();
+  if (m_lastPresenceReport.has_value() && now - *m_lastPresenceReport < REPORT_PERIOD)
+  {
+    return;
+  }
+  if (SendCommand(PresenceReportCommand{}).has_value())
+  {
+    m_lastPresenceReport = now;
   }
 }
 

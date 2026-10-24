@@ -84,6 +84,8 @@ struct HudModel
   std::optional<ReplicatedSettlement> settlement; // none: no settlement of the client's, and no HUD (the sandbox)
   std::optional<SettlementStatus> status;
   std::optional<std::uint64_t> seed;
+  WorldPace pace = WorldPace::Session; // MVP-071 (ADR-187)
+  double idleMinutes = 0.0;            // mvp.presence.idle_minutes (MVP-072)
   std::array<std::int64_t, BUILD_KINDS.size()> buildCostsMilliRu{};
   std::vector<HudNotice> notices; // oldest first
   double nowSeconds = 0.0;        // real time
@@ -180,6 +182,9 @@ struct ResultRow
 
 // MVP-013 (ADR-166): a Cladan's name by its colour, `ui.hud.cladan` with its site's selector.
 [[nodiscard]] std::string CladanName(std::uint8_t _site, const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale);
+// ADR-166: an area's name: the central site, or a half of a valley border area by the settlement whose half it is and the
+// neighbour it faces.
+[[nodiscard]] std::string AreaName(std::uint8_t _area, const Neuron::StringTable& _strings, const Neuron::MessageLocale& _locale);
 
 // MVP-062 (ADR-169): the settlements' renown in the order of the standing, the most first and the lower site on a tie, as
 // the server's Standing orders them.

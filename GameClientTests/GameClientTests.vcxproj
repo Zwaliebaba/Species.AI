@@ -190,7 +190,6 @@
     <ClCompile Include="WorldMarkersTests.cpp" />
     <ClCompile Include="WorldMenuTests.cpp" />
     <ClCompile Include="WorldPresentationTests.cpp" />
-    <ClCompile Include="WorldSavesTests.cpp" />
     <ClCompile Include="WorldSoundsTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>

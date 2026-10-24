@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "AwayMessages.h"
 #include "BitReader.h"
 #include "ClientSession.h"
 #include "GameUi.h"
@@ -56,7 +57,7 @@ const Species::RegionTerrain& SeedOne()
 /// A session on a manual clock (PLT-048) with the server's end of its transport, and the titles it showed.
 struct Fixture
 {
-  explicit Fixture(std::optional<Species::JoinIdentity> _identity = std::nullopt)
+  explicit Fixture(std::optional<Species::JoinIdentity> _identity = std::nullopt, Species::WorldPace _pace = Species::WorldPace::Session)
     : clock(MakeSource())
   {
     auto [client, serverEnd] = Neuron::InProcessTransport::CreatePair({});
@@ -68,6 +69,7 @@ struct Fixture
     desc.tuning = &CommittedTuning();
     desc.clock = &clock;
     desc.identity = _identity;
+    desc.pace = _pace;
     session = std::make_unique<Species::ClientSession>(std::move(desc));
   }
 
@@ -363,6 +365,37 @@ public:
                    L"the refusal's message");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp072InputIsReportedAtMostEveryFifteenSeconds)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-072")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp072InputIsReportedAtMostEveryFifteenSeconds)
+  {
+    // ADR-181: a frame with input sends a presence report when none has gone for PRESENCE_REPORT_SECONDS; a frame without
+    // input sends none, however long it has been. Each report is numbered as a command.
+    Fixture f;
+    const auto reports = [&f]()
+    {
+      std::size_t count = 0;
+      while (std::optional<Neuron::ReceivedMessage> message = f.server->Receive())
+      {
+        Neuron::BitReader reader(message->bytes);
+        count += Neuron::ReadMessageHeader(reader).type == Species::PresenceReportCommand::TYPE ? 1 : 0;
+      }
+      return count;
+    };
+    f.session->NoteInput(true);
+    ExpectEqual(1, static_cast<std::int64_t>(reports()), L"the first input is reported");
+    f.manual->Advance(1'000 * MILLISECOND);
+    f.session->NoteInput(true);
+    ExpectEqual(0, static_cast<std::int64_t>(reports()), L"not again within the period");
+    f.manual->Advance(15'000 * MILLISECOND);
+    f.session->NoteInput(false);
+    ExpectEqual(0, static_cast<std::int64_t>(reports()), L"a frame without input reports nothing");
+    f.session->NoteInput(true);
+    ExpectEqual(1, static_cast<std::int64_t>(reports()), L"input after the period is reported");
+    Assert::IsTrue(f.session->SendCommand(Species::SelectCommand{0, 0}) == std::uint64_t{2}, L"each report was numbered");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Adr095CommandsAreNumberedAsTheServerCountsThemAndTheirReportsArrive)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
   END_TEST_METHOD_ATTRIBUTE()
@@ -522,6 +555,81 @@ public:
     verbs.resultsClosed = 6;
     hud.Update(*f.session, 1.2, metrics, verbs);
     Assert::IsTrue(hud.Model().results.empty(), L"and the second");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp074AReturnWithNewsOpensItsAwayReportOnce)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-074")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-372")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp074AReturnWithNewsOpensItsAwayReportOnce)
+  {
+    // ADR-187, O109: in an always-on world the menu asks once for the latest away report; one the server sends at a return
+    // with news opens its page, once; one without news is kept for the menu but opens nothing.
+    Fixture f(std::nullopt, Species::WorldPace::AlwaysOn);
+    const Species::WorldTerrain sent{SeedOne().seed, SeedOne().digest, std::uint8_t{2}};
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(sent)).has_value());
+    const Species::ReplicatedSettlement own{2, 2, 2, 120'500, 1'500'000, 20, 40, 5'600};
+    f.Send(Species::StateUpdate{3, 0, {RecordOf(Species::SettlementObjectId(2), own, nullptr)}});
+    f.session->Update();
+    const Neuron::MessageLocale locale("en-US");
+    Species::WorldMenu::Desc desc;
+    desc.presentation = &CommittedPresentation();
+    desc.tuning = &CommittedTuning();
+    desc.strings = &CommittedStrings();
+    desc.locale = &locale;
+    Species::WorldMenu menu(desc);
+    std::vector<std::uint8_t> asked;
+    Neuron::MessageDispatcher server;
+    server.Register<Species::ReadAwayReportCommand>([&asked](const Species::ReadAwayReportCommand& _command)
+                                                    { asked.push_back(_command.team); });
+    const auto drain = [&]()
+    {
+      while (std::optional<Neuron::ReceivedMessage> message = f.server->Receive())
+      {
+        static_cast<void>(server.Dispatch(message->bytes));
+      }
+    };
+    menu.Update(*f.session);
+    menu.Update(*f.session);
+    drain();
+    Assert::IsTrue(asked == std::vector<std::uint8_t>{2} && !menu.Away().has_value(), L"asked for once, and none yet");
+
+    Species::AwayReport quiet;
+    quiet.tick = 10;
+    quiet.team = 2;
+    quiet.absence = true;
+    quiet.onReturn = true;
+    quiet.toTick = 600;
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(quiet)).has_value());
+    f.session->Update();
+    menu.Update(*f.session);
+    Assert::IsTrue(menu.Away().has_value() && !menu.TakeAwayReportArrived(), L"a return without news opens nothing");
+    Species::AwayReport news = quiet;
+    news.battles = {{3, true, true, Species::BattleEnd::ObjectiveHeld, 500, 4, 0, false}};
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(news)).has_value());
+    f.session->Update();
+    menu.Update(*f.session);
+    Assert::IsTrue(menu.Away() == std::optional<Species::AwayReport>(news), L"the latest report kept");
+    Assert::IsTrue(menu.TakeAwayReportArrived(), L"a return with news opens it");
+    menu.Update(*f.session);
+    Assert::IsFalse(menu.TakeAwayReportArrived(), L"once");
+
+    // Its page over the menu: the summary and the deputy's actions, and Back, without Leave.
+    Neuron::UiCore ui(
+      [&menu](Neuron::UiPageId _page) -> std::unique_ptr<Neuron::UiPage>
+      { return menu.MakePage(static_cast<Species::WorldMenuPage>(_page - static_cast<Neuron::UiPageId>(Species::GamePage::WorldMenu))); });
+    const Neuron::UiMetrics metrics = Species::UiMetricsOf(CommittedPresentation(), {1920, 1080}, 1.0f, std::nullopt, std::nullopt);
+    ui.OpenScreen(static_cast<Neuron::UiPageId>(Species::GamePage::WorldMenu));
+    ui.Request({Neuron::UiPageRequest::Kind::Push, static_cast<Neuron::UiPageId>(Species::GamePage::WorldAwayReport)});
+    ui.Update({}, metrics);
+    ui.Update({}, metrics);
+    const Neuron::UiWindow* page = ui.Focused();
+    Assert::IsTrue(ui.Stack().size() == 2 && page != nullptr && Neuron::ValidateWindow(*page).empty(),
+                   L"UI-372: the away report passes the validator");
+    Assert::IsTrue(page->Contains(page->Find("section_1")) && !page->Contains(page->Find("section_2")) &&
+                     !page->Contains(page->Find("leave")),
+                   L"two sections and no Leave");
+    Assert::IsTrue(page->Cursor() == page->Find("section_0"), L"the cursor starts on the summary");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp063TheEpilogueIsAskedForOnceTheRunEndsAndOpensOnce)

@@ -1,16 +1,21 @@
 #include "pch.h"
 
+#include "AlwaysOnServer.h"
 #include "AssetError.h"
 #include "ConsoleStop.h"
 #include "FatalPath.h"
 #include "Files.h"
 #include "FloatEnvironment.h"
+#include "InstanceLock.h"
 #include "Log.h"
 #include "LooseContent.h"
 #include "PlatformClock.h"
 #include "PlatformLogSink.h"
 #include "PlatformThread.h"
+#include "ProgramStart.h"
+#include "QuicTransport.h"
 #include "RunId.h"
+#include "ServerCertificate.h"
 #include "ServerHost.h"
 #include "Sha256.h"
 #include "StartupOptions.h"
@@ -18,6 +23,7 @@
 #include "SuspendWatch.h"
 #include "TextEncoding.h"
 #include "Tuning.h"
+#include "WorldSaves.h"
 #include "WorldServer.h"
 
 #include <algorithm>
@@ -69,6 +75,101 @@ std::filesystem::path InterimLogsFolder()
   std::error_code error;
   std::filesystem::create_directories(folder, error);
   return error ? std::filesystem::path{} : folder;
+}
+
+// MVP-071 (ADR-187): the always-on world of _folder, listening on the loopback interface for its client, until its
+// console closes or a client raises the stop signal; stopping freezes the world (O4). One runs at a time (O109).
+int RunAlwaysOn(const std::filesystem::path& _folder, const TuningMvp& _tuning, StructureRecords _structures,
+                const Neuron::LooseContent& _content, const Neuron::PlatformClock& _clock)
+{
+  const auto refuse = [](std::string_view _why)
+  {
+    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Error, "the always-on world does not start: {}", _why);
+    Print(stderr, std::format("the always-on world does not start: {}", _why));
+    return Neuron::EXIT_CODE_FATAL;
+  };
+  const std::optional<Neuron::InstanceLock> lock = Neuron::InstanceLock::TryTake(ALWAYS_ON_LOCK);
+  if (!lock)
+  {
+    return refuse("another always-on world is running, and one runs at a time");
+  }
+  const std::optional<SavedWorld> described = DescribedWorld(_folder);
+  if (!described || described->pace != WorldPace::AlwaysOn)
+  {
+    return refuse(std::format("{} holds no always-on world", Neuron::ToUtf8(_folder.wstring())));
+  }
+  const std::optional<Neuron::StopSignal> stop = Neuron::StopSignal::Create(ALWAYS_ON_STOP);
+  if (!stop)
+  {
+    return refuse("its stop signal cannot be made");
+  }
+  const std::expected<Neuron::ServerCertificate, std::string> certificate =
+    Neuron::ServerCertificate::OpenOrCreate(SERVER_CERTIFICATE_NAME);
+  if (!certificate)
+  {
+    return refuse(std::format("its certificate cannot be made: {}", certificate.error()));
+  }
+  const std::expected<std::unique_ptr<Neuron::QuicListener>, std::string> listener = Neuron::QuicListener::Start({0, &*certificate});
+  if (!listener)
+  {
+    return refuse(std::format("it cannot listen: {}", listener.error()));
+  }
+  const JoinIdentity identity = OwnJoinIdentity(_content.Identity());
+  WorldServer::Desc worldDesc;
+  worldDesc.tuning = _tuning;
+  worldDesc.structures = std::move(_structures);
+  worldDesc.snapshotFolder = _folder;
+  // ADR-155: a world with snapshots is continued or not run, so that a world that cannot be continued is never written over.
+  worldDesc.restoreOnly = !Neuron::ListFiles(_folder, WORLD_SNAPSHOT_SUFFIX).empty();
+  worldDesc.worldSeed = described->seed;
+  worldDesc.stewardSite = described->site;
+  worldDesc.aiSettlements = described->aiSettlements;
+  worldDesc.pace = WorldPace::AlwaysOn;
+  worldDesc.calendar = [&_clock] { return _clock.CalendarUtc(); }; // ADR-137
+  const Neuron::SuspendWatch suspends;                             // ADR-184
+  worldDesc.suspensions = [&suspends] { return suspends.Suspensions(); };
+  worldDesc.identity = identity; // ADR-186
+  WorldServer world(worldDesc);
+  Neuron::ServerHost::Desc hostDesc;
+  hostDesc.clock = &_clock;
+  hostDesc.tickPeriod = TickPeriodOf(world.Tuning());
+  hostDesc.workers = SERVER_WORKERS;
+  hostDesc.listener = listener->get();
+  Neuron::ServerHost host(std::move(hostDesc), world);
+  host.Start();
+  if (worldDesc.restoreOnly && !world.Opened().restored)
+  {
+    host.Stop();
+    return refuse(std::format("the world in {} cannot be continued", Neuron::ToUtf8(_folder.wstring())));
+  }
+  if (!WriteServerListing(_folder, {(*listener)->Port(), certificate->Fingerprint(), identity.build, Neuron::CurrentProcessId()}))
+  {
+    host.Stop();
+    return refuse("its listing cannot be written");
+  }
+  // A client's stop signal ends the wait as closing the console does.
+  const Neuron::StopSignal& stopSignal = *stop;
+  Neuron::PlatformThread watcher = Neuron::PlatformThread::Start("server.stop",
+                                                                 [&stopSignal](const std::stop_token& _stop)
+                                                                 {
+                                                                   while (!_stop.stop_requested())
+                                                                   {
+                                                                     if (stopSignal.Wait(250))
+                                                                     {
+                                                                       Neuron::RequestConsoleStop();
+                                                                       return;
+                                                                     }
+                                                                   }
+                                                                 });
+  Print(stdout, std::format("the always-on world of seed {} runs on port {}; closing this window stops it", world.Terrain()->seed,
+                            (*listener)->Port()));
+  Neuron::WaitForConsoleStop();
+  watcher.RequestStop();
+  watcher.Join();
+  RemoveServerListing(_folder);
+  host.Stop();
+  Print(stdout, std::format("the world froze before tick {}", world.Simulation() != nullptr ? world.Simulation()->NextTick() : 0));
+  return Neuron::EXIT_CODE_NORMAL;
 }
 
 int Run(std::span<const std::wstring> _arguments)
@@ -127,6 +228,10 @@ int Run(std::span<const std::wstring> _arguments)
       Neuron::Log(Neuron::LogCategory::Platform, Neuron::LogLevel::Error, "the console's stop handler could not be installed");
       Print(stderr, "the console's stop handler could not be installed");
       exitCode = Neuron::EXIT_CODE_FATAL;
+    }
+    else if (options.alwaysOnWorld)
+    {
+      exitCode = RunAlwaysOn(*options.alwaysOnWorld, *tuning, std::move(*structures), *content, clock);
     }
     else
     {

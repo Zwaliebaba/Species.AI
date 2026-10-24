@@ -112,3 +112,4 @@ What is built:
 * Owner decisions O6, O108, O109; MVP-074, MVP-098, PIL-026, PIL-073, PIL-075, PIL-131; the [M4 plan](../implementation/m4_plan.md), task T5.
 * Amends [ADR-137](ADR-137-saving-the-journal-cut-and-the-world-record-at-m2.md) (where the freeze cause lives), [ADR-181](ADR-181-presence-and-absences.md) (the absence) and [ADR-099](ADR-099-world-snapshots.md) (the state version).
 * The code: `GameShared/AwayMessages`, `GameShared/GameMessages`, `GameLogic/AwayReport`, `GameLogic/Presence`, `GameLogic/Relations`, `GameLogic/WorldRecord`, `GameLogic/WorldServer`, `GameLogic/WorldSnapshot`.
+* **Amendment 2026-10-24 (M4 task T10, [ADR-188](ADR-188-the-away-report-and-the-pace-in-the-client.md)).** The client asks once for the latest report in an always-on world, and a return's report with news opens its page.

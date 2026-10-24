@@ -59,6 +59,9 @@
     <ClCompile Include="FrameProfileTests.cpp">
       <Filter>Profiling</Filter>
     </ClCompile>
+    <ClCompile Include="InstanceLockTests.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
     <ClCompile Include="JobQueueTests.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
