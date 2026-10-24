@@ -153,6 +153,7 @@
     <ClInclude Include="Combat.h" />
     <ClInclude Include="CommandJournal.h" />
     <ClInclude Include="Construction.h" />
+    <ClInclude Include="Deputy.h" />
     <ClInclude Include="DrawPurpose.h" />
     <ClInclude Include="EssenceOrb.h" />
     <ClInclude Include="Figure.h" />
@@ -207,6 +208,7 @@
     <ClCompile Include="Combat.cpp" />
     <ClCompile Include="CommandJournal.cpp" />
     <ClCompile Include="Construction.cpp" />
+    <ClCompile Include="Deputy.cpp" />
     <ClCompile Include="EssenceOrb.cpp" />
     <ClCompile Include="Figure.cpp" />
     <ClCompile Include="FigureAdvance.cpp" />

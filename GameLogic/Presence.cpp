@@ -67,7 +67,7 @@ bool ReadAbsence(Neuron::BitReader& _reader, Absence& _absence)
     action.detail = static_cast<std::uint32_t>(_reader.ReadBits(32));
     // The kinds and orders that exist; actions in the order they were taken, inside the absence.
     if (kind > static_cast<std::uint64_t>(DeputyActionKind::LeaderToObjective) ||
-        order > static_cast<std::uint64_t>(StandingOrder::NeverAttack) || action.tick < previous ||
+        order > static_cast<std::uint64_t>(StandingOrder::TheStewardsAttack) || action.tick < previous ||
         (absence.toTick && action.tick > *absence.toTick))
     {
       return false;
@@ -125,6 +125,7 @@ bool SetStewardPresence(WorldSimulation& _world, bool _away)
       const std::uint32_t workers = std::min<std::uint32_t>(Population(region, settlement), WORKERS_BOUND);
       if (_away && open == absences.end())
       {
+        static_cast<void>(region.EnsureDeputy(settlement.team)); // MVP-073 (ADR-182)
         Absence absence;
         absence.team = settlement.team;
         absence.fromTick = region.NextTick();

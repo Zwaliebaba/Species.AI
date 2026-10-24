@@ -142,12 +142,14 @@ public:
     state.WriteBits(world->SimulationKey().high, 64);
     state.WriteBits(world->RegionCount(), 16);
     world->WriteState(state);
-    // The region's state without its last section, version 19's absences (none here: the steward was never away).
+    // The region's state without its last sections, version 19's absences and version 20's deputies, both empty: the
+    // steward was never away.
     Neuron::BitWriter region;
     world->Region(0).WriteState(region);
-    Neuron::BitWriter absences;
-    absences.WriteBounded(0, Species::ABSENCES_MAX);
-    const std::size_t bits = region.BitCount() - absences.BitCount();
+    Neuron::BitWriter later;
+    later.WriteBounded(0, Species::ABSENCES_MAX);
+    later.WriteBounded(0, 4);
+    const std::size_t bits = region.BitCount() - later.BitCount();
     Neuron::BitReader regionBits(region.Bytes());
     for (std::size_t done = 0; done < bits;)
     {

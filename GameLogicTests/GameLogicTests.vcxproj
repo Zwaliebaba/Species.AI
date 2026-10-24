@@ -175,6 +175,7 @@
     <ClCompile Include="CombatTests.cpp" />
     <ClCompile Include="CommandPathTests.cpp" />
     <ClCompile Include="CommandTests.cpp" />
+    <ClCompile Include="DeputyTests.cpp" />
     <ClCompile Include="EssenceTests.cpp" />
     <ClCompile Include="FormationTests.cpp" />
     <ClCompile Include="GrowthSceneTests.cpp" />

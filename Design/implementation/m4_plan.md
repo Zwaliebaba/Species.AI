@@ -83,9 +83,9 @@ The scripted situations of its second line, and the deputy's actions this plan e
 
 | Situation | The deputy's action |
 |---|---|
-| An attack declared on the settlement | none during the warning; when the battle starts, each Leader's formation to the objective (defend the settlement), and the guards' share at the turrets as the steward left it |
+| An attack declared on the settlement | none during the warning; at the battle's first tick, each Leader's formation to the objective (defend the settlement), and the guards' share at the turrets as the steward left it |
 | A claim battle at a border area the settlement holds | each Leader's formation to the objective (defend the settlement) |
-| The stores below the next queued cost | none: the construction waits for the stores (finish the queued construction) |
+| The stores below the next queued cost | none: what is queued was paid for when it was placed (MVP-032) and is built in its order, and the deputy places and pays for nothing (finish the queued construction) |
 | The population at the limit with a dwelling queued | none: the dwelling is built by the Workers whose priority is construction (finish the queued construction) |
 | A respite ending while a neighbor's anger is above its threshold | none: the deputy never attacks |
 

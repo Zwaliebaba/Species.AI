@@ -19,13 +19,15 @@ class WorldSimulation;
 inline constexpr std::uint32_t STATE_VERSION_WITH_ABSENCES = 19;
 
 /// PIL-079 (MVP-073): the default orders a steward who sets none leaves the deputy, by which each deputy action is
-/// permitted (PIL-026). A state value that is never renumbered.
+/// permitted (PIL-026), and the steward's own declared attack, whose battle the deputy fights while the steward is away
+/// but never declares again (O109). A state value that is never renumbered.
 enum class StandingOrder : std::uint8_t
 {
   DefendTheSettlement = 0,
   KeepGathering = 1,
   FinishTheQueuedConstruction = 2,
-  NeverAttack = 3
+  NeverAttack = 3,
+  TheStewardsAttack = 4
 };
 
 // The bound a standing order is written with, which leaves room for the orders a later stage adds (PIL-083).
@@ -34,7 +36,7 @@ inline constexpr std::uint64_t STANDING_ORDER_MAX = 15;
 /// MVP-073 (ADR-182): what a deputy action did. A state value that is never renumbered.
 enum class DeputyActionKind : std::uint8_t
 {
-  LeaderToObjective = 0 // sent a Leader's formation to its battle's objective; the detail is the battle's place
+  LeaderToObjective = 0 // sent a Leader's formation to its battle's objective; the detail is the other side's site
 };
 
 inline constexpr std::uint64_t DEPUTY_ACTION_KIND_MAX = 15;

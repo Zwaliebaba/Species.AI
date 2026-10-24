@@ -42,6 +42,9 @@
     <ClInclude Include="Construction.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="Deputy.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="DrawPurpose.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -198,6 +201,9 @@
       <Filter>Server</Filter>
     </ClCompile>
     <ClCompile Include="Construction.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Deputy.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="EssenceOrb.cpp">

@@ -182,6 +182,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-179](ADR-179-the-camera-turns-only-while-the-middle-button-is-held.md) | The camera turns only while the middle button is held | Proposed | 2026-10-23 |
 | [ADR-180](ADR-180-the-always-on-pace.md) | The always-on pace | Proposed | 2026-10-24 |
 | [ADR-181](ADR-181-presence-and-absences.md) | Presence and absences | Proposed | 2026-10-24 |
+| [ADR-182](ADR-182-the-deputy.md) | The deputy | Proposed | 2026-10-24 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 
