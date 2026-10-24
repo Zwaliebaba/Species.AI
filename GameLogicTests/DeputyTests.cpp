@@ -278,8 +278,12 @@ public:
     // The battle walks the expedition to its objective; the steward turns its Leader back before going away.
     const Neuron::Vec3 objective = region.Battles().front().objective;
     const std::optional<Species::ActorRef> ref = region.FindFigure(Species::ExpeditionTeamOf(STEWARD_SITE), leader);
-    Assert::IsTrue(ref.has_value(), L"the expedition's Leader");
-    Species::AssignWaypoint(*region.Resolve(*ref), StagingOf(region, STEWARD_SITE, NEIGHBOR_SITE));
+    Species::Figure* turned = ref ? region.Resolve(*ref) : nullptr;
+    Assert::IsNotNull(turned, L"the expedition's Leader");
+    if (turned != nullptr)
+    {
+      Species::AssignWaypoint(*turned, StagingOf(region, STEWARD_SITE, NEIGHBOR_SITE));
+    }
     Assert::IsTrue(Species::SetStewardPresence(*world, true), L"the steward goes away");
     StepFor(*world, 3 * DecisionTicks());
     ExpectSentToObjective(region, Species::ExpeditionTeamOf(STEWARD_SITE), leader, objective, Species::StandingOrder::TheStewardsAttack,

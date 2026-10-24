@@ -66,13 +66,14 @@ public:
     Neuron::MessageDispatcher dispatcher;
     std::optional<Species::AwayReport> read;
     dispatcher.Register<Species::AwayReport>([&read](const Species::AwayReport& _report) { read = _report; });
-    Assert::IsTrue(dispatcher.Dispatch(bytes) && read == full && read->HasNews(), L"reads back whole");
+    Assert::IsTrue(dispatcher.Dispatch(bytes) && read.has_value() && *read == full && read->HasNews(), L"reads back whole");
 
     Species::AwayReport none;
     none.tick = 5;
     none.team = 2;
     read.reset();
-    Assert::IsTrue(dispatcher.Dispatch(Neuron::EncodeMessage(none)) && read == none && !read->HasNews(), L"no absence, no news");
+    Assert::IsTrue(dispatcher.Dispatch(Neuron::EncodeMessage(none)) && read.has_value() && *read == none && !read->HasNews(),
+                   L"no absence, no news");
 
     Species::AwayReport wrong = full;
     wrong.actions.assign(1, {800, Species::DeputyActionKind::LeaderToObjective, static_cast<Species::StandingOrder>(9), 1, 3});

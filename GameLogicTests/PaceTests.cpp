@@ -181,9 +181,10 @@ public:
     const std::unique_ptr<Species::WorldSimulation> alwaysOn = LoneAt(Species::WorldPace::AlwaysOn, tuning);
     const std::optional<std::uint64_t> sessionTick = TickOfPopulation(*session, 30, 30'000);
     Assert::IsTrue(sessionTick.has_value(), L"30 Workers at the session pace");
-    const std::optional<std::uint64_t> alwaysOnTick = TickOfPopulation(*alwaysOn, 30, 6 * *sessionTick);
+    const std::uint64_t sessionTicks = sessionTick.value_or(1);
+    const std::optional<std::uint64_t> alwaysOnTick = TickOfPopulation(*alwaysOn, 30, 6 * sessionTicks);
     Assert::IsTrue(alwaysOnTick.has_value(), L"30 Workers at the always-on pace");
-    const double ratio = static_cast<double>(*alwaysOnTick) / static_cast<double>(*sessionTick);
+    const double ratio = static_cast<double>(alwaysOnTick.value_or(0)) / static_cast<double>(sessionTicks);
     Assert::IsTrue(ratio > 3.6 && ratio <= 4.0, std::format(L"30 Workers at {:.3f} times the session's ticks", ratio).c_str());
   }
 

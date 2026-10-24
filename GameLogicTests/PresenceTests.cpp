@@ -17,6 +17,8 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
+#include <utility>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -185,22 +187,25 @@ public:
       server.Step(tick, pool);
       hashes.push_back(Species::HashWorld(*server.Simulation()).world);
     }
-    const std::optional<Species::CommandJournal> journal = Species::ReadJournal(Species::WriteJournal(*server.Journal()));
-    Assert::IsTrue(journal.has_value(), L"the journal reads back");
-    std::vector<std::uint64_t> presence;
-    for (const Species::JournalEntry& entry : journal->entries)
+    const std::optional<Species::CommandJournal> read =
+      Species::ReadJournal(Species::WriteJournal(server.Journal().value_or(Species::CommandJournal{})));
+    Assert::IsTrue(read.has_value(), L"the journal reads back");
+    const Species::CommandJournal journal = read.value_or(Species::CommandJournal{});
+    // Each presence change as its tick and whether it went away.
+    std::vector<std::pair<std::uint64_t, bool>> presence;
+    for (const Species::JournalEntry& entry : journal.entries)
     {
       if (entry.presence)
       {
-        presence.push_back(entry.tick * 2 + (entry.away ? 1 : 0));
+        presence.emplace_back(entry.tick, entry.away);
       }
     }
-    Assert::IsTrue(presence == std::vector<std::uint64_t>{0 * 2 + 1, 50 * 2, (120 + IDLE_TICKS) * 2 + 1},
-                   L"away at 0, back at the connection, away once the command is the idle minutes old");
+    const std::vector<std::pair<std::uint64_t, bool>> expected{{0, true}, {50, false}, {120 + IDLE_TICKS, true}};
+    Assert::IsTrue(presence == expected, L"away at 0, back at the connection, away once the command is the idle minutes old");
 
     std::vector<std::uint64_t> replayed;
     const std::unique_ptr<Species::WorldSimulation> replay =
-      Species::ReplayJournal(*journal, ValleyTerrain(), server.Tuning(), &server.Structures(), 3 * IDLE_TICKS, pool,
+      Species::ReplayJournal(journal, ValleyTerrain(), server.Tuning(), &server.Structures(), 3 * IDLE_TICKS, pool,
                              [&replayed](const Species::WorldSimulation& _world) { replayed.push_back(Species::HashWorld(_world).world); });
     Assert::IsTrue(replayed == hashes, L"the replay hashes as the server's world on every tick");
     Assert::IsTrue(replay->Region(0).Absences() == server.Simulation()->Region(0).Absences(), L"with the same absences");
