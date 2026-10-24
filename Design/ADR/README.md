@@ -189,6 +189,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-186](ADR-186-the-join-and-its-refusal.md) | The join and its refusal | Proposed | 2026-10-24 |
 | [ADR-187](ADR-187-the-always-on-worlds-server-process.md) | The always-on world's server process | Proposed | 2026-10-24 |
 | [ADR-188](ADR-188-the-away-report-and-the-pace-in-the-client.md) | The away report and the pace in the client | Proposed | 2026-10-24 |
+| [ADR-189](ADR-189-the-link-simulator-and-the-transports-confirmations.md) | The link simulator and the transport's confirmations | Proposed | 2026-10-24 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

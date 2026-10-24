@@ -142,6 +142,26 @@ public:
 #endif
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Plt022TheLinkPortTakesAPort)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-022")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-107")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Plt022TheLinkPortTakesAPort)
+  {
+    // ADR-189: `--link-port` takes a port from 1 to 65535; a Release build knows no such option.
+    const Neuron::StartupOptions options = Parse({L"--link-port", L"50123"});
+#if ENGINE_DEVELOPMENT
+    Assert::IsTrue(options.linkPort == std::uint16_t{50123} && options.ignoredArguments.empty(), L"the port");
+    for (const std::wstring_view value : {std::wstring_view{L"0"}, std::wstring_view{L"65536"}, std::wstring_view{L"x"}})
+    {
+      const Neuron::StartupOptions refused = Parse({L"--link-port", value});
+      Assert::IsTrue(!refused.linkPort.has_value() && refused.ignoredArguments.size() == 2, L"a port out of range is ignored");
+    }
+#else
+    Assert::IsTrue(!options.linkPort.has_value() && options.ignoredArguments.size() == 2, L"no link port in Release");
+#endif
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Plt022TheWatchOptionTakesNoValue)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-022")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-107")

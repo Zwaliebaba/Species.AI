@@ -27,7 +27,9 @@ struct AlwaysOnReach
 // MVP-071 (ADR-187): a connection to the server of _world, an always-on world. The server that runs it is reached when it
 // is of _build; any other running server is asked to stop, as closing its console does, since one runs at a time
 // (O109); then the world's own is started beside the client in a console of its own, which it leaves running when it
-// leaves. Waits for each; why it cannot reach it, when it cannot.
-[[nodiscard]] std::expected<AlwaysOnReach, std::string> ReachAlwaysOnWorld(const SavedWorld& _world, const Neuron::Sha256Digest& _build);
+// leaves. Waits for each; why it cannot reach it, when it cannot. A Debug build's _linkPort, when not 0, is the link
+// simulator's, which relays the connection to the listed port (ADR-088 item 7, ADR-189); the pin is the listing's.
+[[nodiscard]] std::expected<AlwaysOnReach, std::string> ReachAlwaysOnWorld(const SavedWorld& _world, const Neuron::Sha256Digest& _build,
+                                                                           std::uint16_t _linkPort = 0);
 
 } // namespace Species

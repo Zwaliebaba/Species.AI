@@ -46,7 +46,8 @@ std::optional<ServerListing> RunningListing(const std::filesystem::path& _folder
 
 } // namespace
 
-std::expected<AlwaysOnReach, std::string> ReachAlwaysOnWorld(const SavedWorld& _world, const Neuron::Sha256Digest& _build)
+std::expected<AlwaysOnReach, std::string> ReachAlwaysOnWorld(const SavedWorld& _world, const Neuron::Sha256Digest& _build,
+                                                             std::uint16_t _linkPort)
 {
   AlwaysOnReach reach;
   std::optional<ServerListing> listing;
@@ -93,7 +94,7 @@ std::expected<AlwaysOnReach, std::string> ReachAlwaysOnWorld(const SavedWorld& _
     }
   }
   std::expected<std::unique_ptr<Neuron::QuicTransport>, std::string> transport =
-    Neuron::QuicTransport::Connect({listing->port, listing->fingerprint});
+    Neuron::QuicTransport::Connect({_linkPort != 0 ? _linkPort : listing->port, listing->fingerprint});
   if (!transport.has_value())
   {
     return std::unexpected(std::format("the connection to the world's server does not start: {}", transport.error()));

@@ -878,6 +878,9 @@ std::optional<QuicPathStats> QuicTransport::PathStats() const
   stats.packetsReceived = statistics.RecvTotalPackets;
   stats.udpBytesSent = statistics.SendTotalBytes;
   stats.udpBytesReceived = statistics.RecvTotalBytes;
+  stats.streamBytesSent = statistics.SendTotalStreamBytes;
+  stats.streamBytesReceived = statistics.RecvTotalStreamBytes;
+  stats.congestionEvents = statistics.SendCongestionCount;
   const std::lock_guard lock(link.mutex);
   stats.datagramsEnabled = link.datagramsEnabled;
   stats.datagramMaxSendBytes = link.datagramMaxSendBytes;

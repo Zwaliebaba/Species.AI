@@ -28,6 +28,7 @@ constexpr std::wstring_view WORLD_OPTION = L"--world";
 constexpr std::wstring_view SANDBOX_OPTION = L"--sandbox"; // ADR-155
 constexpr std::wstring_view UI_TEST_OPTION = L"--ui-test";
 constexpr std::wstring_view GPU_VALIDATION_OPTION = L"--gpu-validation"; // ADR-174
+constexpr std::wstring_view LINK_PORT_OPTION = L"--link-port";           // ADR-189
 
 // A decimal number of digits only that fits 64 bits, or none.
 std::optional<std::uint64_t> DecimalOf(std::wstring_view _text) noexcept
@@ -138,6 +139,16 @@ StartupOptions ParseArguments(std::span<const std::wstring> _arguments)
       if (frames.has_value() && *frames >= 1 && *frames <= RENDER_CHECK_FRAMES_MAX)
       {
         options.renderCheckFrames = static_cast<std::uint32_t>(*frames);
+        ++i;
+        continue;
+      }
+    }
+    if (_arguments[i] == LINK_PORT_OPTION && i + 1 < _arguments.size())
+    {
+      const std::optional<std::uint64_t> port = DecimalOf(_arguments[i + 1]);
+      if (port.has_value() && *port >= 1 && *port <= std::numeric_limits<std::uint16_t>::max())
+      {
+        options.linkPort = static_cast<std::uint16_t>(*port);
         ++i;
         continue;
       }

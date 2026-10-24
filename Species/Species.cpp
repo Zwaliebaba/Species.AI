@@ -632,7 +632,7 @@ int Run()
       {
         // MVP-071 (ADR-187): an always-on world runs in its own headless server, which the client starts when it is not
         // running and leaves running.
-        std::expected<AlwaysOnReach, std::string> reached = ReachAlwaysOnWorld(*_saved, identity.build);
+        std::expected<AlwaysOnReach, std::string> reached = ReachAlwaysOnWorld(*_saved, identity.build, options.linkPort.value_or(0));
         if (!reached.has_value())
         {
           Neuron::Log(Neuron::LogCategory::Network, Neuron::LogLevel::Error, "the always-on world in {} cannot be reached: {}",

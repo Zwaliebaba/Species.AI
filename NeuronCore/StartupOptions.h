@@ -24,7 +24,9 @@ inline constexpr std::uint32_t RENDER_CHECK_FRAMES_MAX = 10'000;
 /// <frames>` the number of world frames a render check draws (ADR-113), `--watch` a session that watches and
 /// commands nothing (O77), `--world` a new world in place of the development sandbox (ADR-139), `--sandbox` the battle
 /// sandbox in place of the front end (ADR-155), `--ui-test` the UI's test page over the world (ADR-145), and
-/// `--gpu-validation` the debug layer's GPU-based validation on the session's own adapter (ADR-006, ADR-174); all are
+/// `--gpu-validation` the debug layer's GPU-based validation on the session's own adapter (ADR-006, ADR-174), and
+/// `--link-port <port>` the loopback port of the link simulator, through which the client connects to an always-on
+/// world's server (ADR-088 item 7, ADR-189); all are
 /// compiled into Debug builds only, so a Release build ignores them as
 /// unknown arguments (PLT-107). The other options of the table arrive with the services
 /// they configure.
@@ -35,6 +37,7 @@ struct StartupOptions
   std::optional<std::filesystem::path> alwaysOnWorld; // ADR-187: the headless server's always-on world, in every build
   std::optional<std::uint64_t> worldSeed;             // a decimal number of at most 64 bits
   std::optional<std::uint32_t> renderCheckFrames;     // a decimal number from 1 to RENDER_CHECK_FRAMES_MAX
+  std::optional<std::uint16_t> linkPort;              // a decimal number from 1 to 65535 (ADR-189)
   bool watch = false;                                 // takes no value
   bool world = false;                                 // takes no value
   bool sandbox = false;                               // takes no value (ADR-155)
