@@ -123,7 +123,7 @@ What is built:
   - all 352 hashes equal the replay's;
   - datagrams were enabled at both ends, and MsQuic's round trip was 162.7 ms.
 
-  It also showed that MsQuic puts several DATAGRAM frames in one packet (0.93 packets a datagram), which item 3's model of one datagram per packet does not count. Its overhead, computed then from the datagrams the world handed to MsQuic, came out negative, because datagrams queued under congestion or canceled at the rejoin were charged to the link. The overhead now counts only the datagrams MsQuic reports sent.
+  It also showed that MsQuic puts several DATAGRAM frames in one packet (0.93 packets a datagram), which item 3's model of one datagram per packet does not count. Its overhead, computed then from the datagrams the world handed to MsQuic, came out negative, because datagrams queued under congestion or canceled at the rejoin were charged to the link. The overhead now counts only the datagrams MsQuic reports sent. CI's next quick run (run 313) put it at 87.5 bytes over 124 datagrams, with 1.36 packets a datagram, so that about a third of a packet a datagram, its acknowledgements and probes, is charged to it; its freezes over one lost datagram were again at most 1 tick, over 797.
 * The scene's logic was run before CI on a Linux build of the portable libraries, with a stand-in for MsQuic over `InProcessTransport` that loses 10 % of the state datagrams. Over 300 ticks:
   - every freeze over one lost datagram was 1 tick, and every one over two was 2;
   - there was no other freeze;
