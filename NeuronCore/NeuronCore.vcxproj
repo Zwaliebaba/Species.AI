@@ -171,6 +171,8 @@
     <ClInclude Include="MessageCodec.h" />
     <ClInclude Include="MessagePattern.h" />
     <ClInclude Include="NativeWindowHandle.h" />
+    <ClInclude Include="QuicTransport.h" />
+    <ClInclude Include="ServerCertificate.h" />
     <ClInclude Include="SettingsFile.h" />
     <ClInclude Include="SettingsStore.h" />
     <ClInclude Include="SuspendWatch.h" />
@@ -229,6 +231,8 @@
     <ClCompile Include="MeshAsset.cpp" />
     <ClCompile Include="MessageCodec.cpp" />
     <ClCompile Include="MessagePattern.cpp" />
+    <ClCompile Include="QuicTransport.cpp" />
+    <ClCompile Include="ServerCertificate.cpp" />
     <ClCompile Include="SettingsFile.cpp" />
     <ClCompile Include="SettingsStore.cpp" />
     <ClCompile Include="SuspendWatch.cpp" />

@@ -185,6 +185,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-182](ADR-182-the-deputy.md) | The deputy | Proposed | 2026-10-24 |
 | [ADR-183](ADR-183-the-away-report.md) | The away report | Proposed | 2026-10-24 |
 | [ADR-184](ADR-184-the-freezes-of-a-stopped-server-and-a-sleeping-computer.md) | The freezes of a stopped server and a sleeping computer | Proposed | 2026-10-24 |
+| [ADR-185](ADR-185-the-quic-transport-and-the-servers-certificate.md) | The QUIC transport and the server's certificate | Proposed | 2026-10-24 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

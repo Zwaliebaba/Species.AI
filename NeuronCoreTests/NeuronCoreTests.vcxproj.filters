@@ -83,6 +83,9 @@
     <ClCompile Include="MessagePatternTests.cpp">
       <Filter>Content</Filter>
     </ClCompile>
+    <ClCompile Include="QuicTransportTests.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
     <ClCompile Include="SettingsStoreTests.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
