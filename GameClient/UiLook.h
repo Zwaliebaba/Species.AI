@@ -53,6 +53,7 @@ enum class UiImage : std::uint16_t
   IconRenown,   // icon.hud.renown: the renown standing
   IconRunClock, // icon.hud.run_clock: the run's time left and its quiet minutes
   ResultCard,   // icon.hud.result_card: the frame of a battle's result
+  IconDeputy,   // icon.hud.deputy: the away report's button and the deputy's actions (O109, ADR-188)
   Count
 };
 

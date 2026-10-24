@@ -85,6 +85,7 @@ struct HudModel
   std::optional<SettlementStatus> status;
   std::optional<std::uint64_t> seed;
   WorldPace pace = WorldPace::Session; // MVP-071 (ADR-187)
+  bool awayReport = false;             // MVP-074 (O109, ADR-188): an away report of an absence has come, which its button opens
   double idleMinutes = 0.0;            // mvp.presence.idle_minutes (MVP-072)
   std::array<std::int64_t, BUILD_KINDS.size()> buildCostsMilliRu{};
   std::vector<HudNotice> notices; // oldest first
@@ -230,7 +231,8 @@ enum class HudZone : std::uint8_t
   Relations,      // the relations panel (ADR-166)
   RelationAction, // a button of a relations row (ADR-167); its index is the row's place × 2 + the action's
   Result,         // the result card (ADR-168)
-  GrowthHold      // the growth row's button that holds the growth or lets it run (O106, ADR-178)
+  GrowthHold,     // the growth row's button that holds the growth or lets it run (O106, ADR-178)
+  AwayReport      // the always-on row's button that opens the latest away report (O109, ADR-188)
 };
 
 struct HudZoneRect
@@ -371,6 +373,7 @@ private:
   std::array<Neuron::UiRect, BUILD_KINDS.size()> m_build{};
   std::array<std::array<Neuron::UiRect, 2>, 3> m_arrows{}; // each priority's lowering and raising arrows (ADR-153)
   Neuron::UiRect m_holdButton;                             // the growth row's hold button (O106, ADR-178)
+  Neuron::UiRect m_awayButton;                             // the always-on row's away report button (O109, ADR-188)
   Neuron::UiRect m_queue;
   Neuron::UiRect m_relations;
   std::vector<RelationRow> m_relationRows;

@@ -21,6 +21,7 @@
 #include <optional>
 #include <span>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace Species
@@ -164,6 +165,11 @@ public:
   {
     return m_viewSize;
   }
+  // O109 (ADR-188): the away report's button was pressed since the last call, so that its page opens.
+  [[nodiscard]] bool TakeAwayReportRequest() noexcept
+  {
+    return std::exchange(m_awayReportRequested, false);
+  }
 
 private:
   // The preview's start and end (O78): a selected Leader's position, unless a press would form it up (R-UNIT-170), or
@@ -186,7 +192,8 @@ private:
   std::vector<Neuron::OverlayQuad> m_badge;
   std::optional<BadgeLabel> m_badgeCount;
   Neuron::SizePx m_viewSize;
-  std::size_t m_selectedWorkers = 0;        // the local team's living Workers under control in this frame's figures
+  std::size_t m_selectedWorkers = 0; // the local team's living Workers under control in this frame's figures
+  bool m_awayReportRequested = false;
   std::optional<std::uint8_t> m_battleTeam; // ADR-167: the settlement's team or its expedition's
   std::vector<StewardAreas::Field> m_fields;
   std::vector<MarkerTarget> m_targets;

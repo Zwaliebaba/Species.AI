@@ -386,6 +386,27 @@ public:
     Assert::IsTrue(verbs.Update(frame, TEAM, view, areas).commands.empty(), L"gathering is at 100 already");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp074TheAwayReportsButtonAsksForItsPage)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-074")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp074TheAwayReportsButtonAsksForItsPage)
+  {
+    // O109 (ADR-188): a press on the always-on row's button asks for the latest away report's page and sends nothing; the
+    // press reaches no world verb, and another frame asks for nothing.
+    Species::SettlementVerbs verbs(CommittedTuning(), CommittedPresentation());
+    const Species::StateReplica::View replica = Replica(1'000'000);
+    const Species::StewardAreas areas = AreasOf(replica);
+    const Species::PlacementView view = Species::PlacementViewOf(replica, TEAM, Status(10));
+    Species::SettlementFrame frame;
+    frame.primaryDown = true;
+    frame.hudZone = Zone(Species::HudZone::AwayReport, 0);
+    const Species::SettlementVerbResult pressed = verbs.Update(frame, TEAM, view, areas);
+    Assert::IsTrue(pressed.openAwayReport && pressed.tookPrimary && pressed.commands.empty(), L"the page is asked for");
+    frame.primaryDown = false;
+    Assert::IsFalse(verbs.Update(frame, TEAM, view, areas).openAwayReport, L"a frame without the press asks for nothing");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp024TheHoldButtonSendsTheHoldShownUntilAStatusHoldsIt)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-024")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")

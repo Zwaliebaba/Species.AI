@@ -408,8 +408,9 @@ std::uint64_t RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _wi
       {
         _world.OpenWorldMenu(GamePage::WorldEpilogue);
       }
-      // MVP-074 (O109): a return whose absence has news opens on its away report.
-      else if (_worldMenu.TakeAwayReportArrived())
+      // MVP-074 (O109): a return whose absence has news opens on its away report, as the HUD's button does once a report
+      // has come (ADR-188).
+      else if (const bool pressed = view.TakeAwayReportRequest(); _worldMenu.TakeAwayReportArrived() || (pressed && _worldMenu.Away()))
       {
         _world.OpenWorldMenu(GamePage::WorldAwayReport);
       }
