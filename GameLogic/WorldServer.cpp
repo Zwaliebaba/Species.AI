@@ -804,18 +804,18 @@ void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender
     for (const bool onReturn : {false, true})
     {
       std::vector<std::uint8_t>& teams = onReturn ? steward.returnTeams : steward.awayTeams;
-      std::size_t sent = 0;
-      while (sent < teams.size())
+      std::size_t reported = 0;
+      while (reported < teams.size())
       {
-        const AwayReport report = AwayReportOf(*m_world, teams[sent], _tick, onReturn);
+        const AwayReport report = AwayReportOf(*m_world, teams[reported], _tick, onReturn);
         if ((!onReturn || report.HasNews()) &&
             !_sender.Send(connection, Neuron::Channel::Reliable, Neuron::EncodeMessage(report)).has_value())
         {
           break;
         }
-        ++sent;
+        ++reported;
       }
-      teams.erase(teams.begin(), teams.begin() + static_cast<std::ptrdiff_t>(sent));
+      teams.erase(teams.begin(), teams.begin() + static_cast<std::ptrdiff_t>(reported));
     }
     if (!steward.terrainSent && m_terrain)
     {

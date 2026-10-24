@@ -36,7 +36,7 @@ AwayReport AwayReportOf(const WorldSimulation& _world, std::uint8_t _team, std::
   const std::uint8_t site = settlement->site;
   const std::uint64_t from = absence->fromTick;
   const std::uint64_t to = *absence->toTick;
-  const auto within = [from, to](std::uint64_t _tick) { return _tick >= from && _tick < to; };
+  const auto within = [from, to](std::uint64_t _at) { return _at >= from && _at < to; };
   report.absence = true;
   report.fromTick = from;
   report.toTick = to;
