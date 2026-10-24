@@ -162,7 +162,15 @@ private:
     std::vector<std::uint8_t> epilogueTeams; // ADR-169: the settlements whose epilogue it asked for, not yet sent
     // ADR-139, ADR-165: the guaranteed events of its teams and the battle results not yet sent, encoded, in order.
     std::vector<std::vector<std::byte>> notices;
+    // MVP-072 (ADR-181): the tick of its latest input as the server knows it: its connection, each command a queue took
+    // and each presence report.
+    std::uint64_t inputTick = 0;
   };
+
+  // MVP-072 (ADR-181): before the step of _tick, the steward's presence in a world at the always-on pace: present while
+  // a steward is connected whose latest input is less than mvp.presence.idle_minutes old, away otherwise. A change enters
+  // the world between ticks, as a connection does, and the journal.
+  void UpdatePresence(std::uint64_t _tick);
 
   // Each queue's outcomes of the tick, to the steward that sent each command; an AI's are its own (ADR-106).
   void CollectReports(Neuron::CommandQueue& _queue);

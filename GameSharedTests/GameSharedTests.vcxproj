@@ -168,6 +168,7 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AwayMessageTests.cpp" />
     <ClCompile Include="NavigationTests.cpp" />
     <ClCompile Include="RegionTerrainTests.cpp" />
     <ClCompile Include="RelationMessageTests.cpp" />

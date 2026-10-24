@@ -281,8 +281,18 @@ std::vector<std::byte> RegionStateOf(const Species::RegionSimulation& _region, s
   {
     bits -= version > _version ? Neuron::BitsFor(bound) : 0;
   }
-  // Version 17's growth holds, the last section, a bit for each settlement, and version 16's claim ends, version 15's
-  // renown and version 14's AI settlements' decisions before it, go whole.
+  // Version 19's absences, the last section, version 17's growth holds before it, a bit for each settlement, and
+  // version 16's claim ends, version 15's renown and version 14's AI settlements' decisions before those, go whole.
+  if (_version < Species::STATE_VERSION_WITH_ABSENCES)
+  {
+    Neuron::BitWriter absences;
+    absences.WriteBounded(_region.Absences().size(), Species::ABSENCES_MAX);
+    for (const Species::Absence& absence : _region.Absences())
+    {
+      Species::WriteAbsence(absences, absence);
+    }
+    bits -= absences.BitCount();
+  }
   if (_version < Species::STATE_VERSION_WITH_GROWTH_HOLD)
   {
     bits -= _region.Settlements().size();

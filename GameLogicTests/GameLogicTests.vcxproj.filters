@@ -59,6 +59,9 @@
     <ClCompile Include="PaceTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="PresenceTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="RegionSimulationTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>

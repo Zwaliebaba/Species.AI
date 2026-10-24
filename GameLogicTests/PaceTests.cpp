@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "BitReader.h"
 #include "BitWriter.h"
 #include "CommandJournal.h"
 #include "Construction.h"
@@ -11,6 +12,7 @@
 #include "WorldSimulation.h"
 #include "WorldSnapshot.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -140,7 +142,19 @@ public:
     state.WriteBits(world->SimulationKey().high, 64);
     state.WriteBits(world->RegionCount(), 16);
     world->WriteState(state);
-    world->Region(0).WriteState(state);
+    // The region's state without its last section, version 19's absences (none here: the steward was never away).
+    Neuron::BitWriter region;
+    world->Region(0).WriteState(region);
+    Neuron::BitWriter absences;
+    absences.WriteBounded(0, Species::ABSENCES_MAX);
+    const std::size_t bits = region.BitCount() - absences.BitCount();
+    Neuron::BitReader regionBits(region.Bytes());
+    for (std::size_t done = 0; done < bits;)
+    {
+      const auto chunk = static_cast<std::uint32_t>(std::min<std::size_t>(64, bits - done));
+      state.WriteBits(regionBits.ReadBits(chunk), chunk);
+      done += chunk;
+    }
     Species::WriteWorldRecord(state, world->Record());
     auto restored = Species::RestoreWorld(Neuron::SnapshotContents{17, world->NextTick(), state.Take()}, CommittedTuning(), &TestRecords());
     Assert::IsTrue(restored.has_value(), L"a version-17 world restores");

@@ -24,6 +24,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AwayMessages.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
     <ClInclude Include="CommandMessages.h">
       <Filter>Messages</Filter>
     </ClInclude>
@@ -110,6 +113,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AwayMessages.cpp">
+      <Filter>Messages</Filter>
+    </ClCompile>
     <ClCompile Include="CommandMessages.cpp">
       <Filter>Messages</Filter>
     </ClCompile>

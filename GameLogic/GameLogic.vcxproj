@@ -164,6 +164,7 @@
     <ClInclude Include="Movement.h" />
     <ClInclude Include="ObstacleGrid.h" />
     <ClInclude Include="OrderMarkers.h" />
+    <ClInclude Include="Presence.h" />
     <ClInclude Include="RegionCommands.h" />
     <ClInclude Include="RegionSimulation.h" />
     <ClInclude Include="Relations.h" />
@@ -216,6 +217,7 @@
     <ClCompile Include="Movement.cpp" />
     <ClCompile Include="ObstacleGrid.cpp" />
     <ClCompile Include="OrderMarkers.cpp" />
+    <ClCompile Include="Presence.cpp" />
     <ClCompile Include="RegionCommands.cpp" />
     <ClCompile Include="RegionSimulation.cpp" />
     <ClCompile Include="Relations.cpp" />

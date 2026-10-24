@@ -1092,6 +1092,12 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
   {
     _writer.WriteBool(settlement.growthHeld);
   }
+  // MVP-072 (ADR-181): the absences, in the order they opened.
+  _writer.WriteBounded(m_absences.size(), ABSENCES_MAX);
+  for (const Absence& absence : m_absences)
+  {
+    WriteAbsence(_writer, absence);
+  }
 }
 
 bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stateVersion)
@@ -1462,6 +1468,26 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
   for (Settlement& settlement : m_settlements)
   {
     settlement.growthHeld = _stateVersion >= STATE_VERSION_WITH_GROWTH_HOLD && _reader.ReadBool();
+  }
+  // MVP-072 (ADR-181): the absences of stewarded settlements, each of a tick the region has reached, at most one open
+  // and one closed for each team; a region before version 19 has none, its steward present.
+  m_absences.clear();
+  if (_stateVersion >= STATE_VERSION_WITH_ABSENCES)
+  {
+    m_absences.resize(_reader.ReadBounded(ABSENCES_MAX));
+    for (std::size_t place = 0; place < m_absences.size(); ++place)
+    {
+      const Absence& absence = m_absences[place];
+      if (!ReadAbsence(_reader, m_absences[place]) || absence.fromTick > m_nextTick ||
+          (absence.toTick && (*absence.toTick < absence.fromTick || *absence.toTick > m_nextTick)) ||
+          std::ranges::find(m_settlements, absence.team, &Settlement::team) == m_settlements.end() ||
+          std::ranges::count_if(m_absences.begin(), m_absences.begin() + static_cast<std::ptrdiff_t>(place),
+                                [&absence](const Absence& _other)
+                                { return _other.team == absence.team && _other.toTick.has_value() == absence.toTick.has_value(); }) > 0)
+      {
+        return false;
+      }
+    }
   }
   // An order marker follows a route the region holds, from its first point to its last (R-UNIT-185).
   for (std::uint32_t slot = 0; slot < m_effects.Capacity(); ++slot)

@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "AwayMessages.h"
 #include "Check.h"
 #include "Development.h"
 #include "Files.h"
@@ -7,6 +8,7 @@
 #include "MarkerTimings.h"
 #include "Profile.h"
 #include "SecureRandom.h"
+#include "Presence.h"
 #include "PresentationEvents.h"
 #include "ServerStats.h"
 #include "SettlementCommands.h"
@@ -462,7 +464,8 @@ void WorldServer::Connect(Neuron::ConnectionId _connection)
 {
   // ADR-109: the next id of the world owner and, in the sandbox, the steward's side.
   const StableId steward = ConnectSteward(*m_world, m_desc.sandbox, m_desc.watched);
-  m_stewards.emplace(_connection, Steward{steward, 0, false, {}, {}, {}});
+  // MVP-072 (ADR-181): connecting is the steward's input.
+  m_stewards.emplace(_connection, Steward{steward, 0, false, {}, {}, {}, {}, {}, {}, m_world->NextTick()});
   if (m_journal)
   {
     m_journal->entries.push_back({m_world->NextTick(), true, JOURNAL_WORLD_OWNER, steward, 0, {}});
@@ -503,6 +506,18 @@ void WorldServer::Receive(Neuron::ConnectionId _connection, const Neuron::Receiv
     return;
   }
 #endif
+  // MVP-072 (ADR-181): a presence report is read, not queued: it notes the steward's input for the next tick.
+  if (!reader.Failed() && header.type == PresenceReportCommand::TYPE)
+  {
+    PresenceReportCommand report;
+    const CommandResult result = CheckAnswered(header, reader, _message.bytes.size(), report);
+    if (result == CommandResult::Applied)
+    {
+      steward.inputTick = m_world->NextTick();
+    }
+    steward.reports.push_back({sequence, m_world->NextTick(), result, 0});
+    return;
+  }
   // MVP-098 (ADR-136, ADR-165): a request for a settlement's status or its valley's is read, not queued, by a steward who
   // commands the settlement's team; the status goes after the next tick, which the outcome names.
   // From M3 task T14 (ADR-169) the epilogue is asked for the same way.
@@ -557,12 +572,40 @@ void WorldServer::Receive(Neuron::ConnectionId _connection, const Neuron::Receiv
   Neuron::CommandQueue& region = m_world->Region(0).Commands();
   const bool regional = !reader.Failed() && region.Handles(header.type);
   Neuron::CommandQueue& queue = regional ? region : m_world->Commands();
-  if (queue.Submit(steward.id, sequence, _message.bytes) && m_journal)
+  if (queue.Submit(steward.id, sequence, _message.bytes))
   {
-    // MVP-076: the command with the tick it executes in, which is the world's next.
-    m_journal->entries.push_back({m_world->NextTick(), false, regional ? std::uint16_t{1} : JOURNAL_WORLD_OWNER, steward.id, sequence,
-                                  std::vector<std::byte>(_message.bytes.begin(), _message.bytes.end())});
+    steward.inputTick = m_world->NextTick(); // MVP-072: a command the queue took is the steward's input (ADR-181)
+    if (m_journal)
+    {
+      // MVP-076: the command with the tick it executes in, which is the world's next.
+      m_journal->entries.push_back({m_world->NextTick(), false, regional ? std::uint16_t{1} : JOURNAL_WORLD_OWNER, steward.id, sequence,
+                                    std::vector<std::byte>(_message.bytes.begin(), _message.bytes.end())});
+    }
   }
+}
+
+void WorldServer::UpdatePresence(std::uint64_t _tick)
+{
+  // MVP-072: a world at the session pace has no away state, and a watched world's settlement is the scripted steward's
+  // (ADR-140), which no deputy relieves.
+  if (m_world->Pace() != WorldPace::AlwaysOn || m_desc.sandbox || m_desc.watched)
+  {
+    return;
+  }
+  const auto idleTicks = static_cast<std::uint64_t>(
+    std::max<std::int64_t>(0, std::llround(m_desc.tuning.mvp.presence.idleMinutes * 60.0 / m_desc.tuning.ref.sim.tickPeriod)));
+  const bool present =
+    std::ranges::any_of(m_stewards, [_tick, idleTicks](const auto& _entry) { return _tick < _entry.second.inputTick + idleTicks; });
+  if (!SetStewardPresence(*m_world, !present))
+  {
+    return;
+  }
+  if (m_journal)
+  {
+    m_journal->entries.push_back({_tick, false, JOURNAL_WORLD_OWNER, 0, 0, {}, true, !present});
+  }
+  Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Info, "the steward is {} from tick {}", present ? "present" : "away",
+              _tick);
 }
 
 void WorldServer::CollectAllReports()
@@ -603,6 +646,7 @@ void WorldServer::Step(std::uint64_t _tick, Neuron::WorkerPool& _workers)
   // ADR-120: the tick's wall time starts here, for the overlay; a measurement the simulated state never reads.
   m_statsTickStart = Neuron::MarkerClockNanoseconds();
 #endif
+  UpdatePresence(_tick);
   m_world->Step(_tick, _workers);
   // MVP-075: a snapshot after every mvp.persist.snapshot_seconds of world time.
   if (const std::uint64_t period = SnapshotTicks(); !m_desc.snapshotFolder.empty() && period > 0 && m_world->NextTick() % period == 0)

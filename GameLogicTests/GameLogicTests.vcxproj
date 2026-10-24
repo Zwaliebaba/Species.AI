@@ -180,6 +180,7 @@
     <ClCompile Include="GrowthSceneTests.cpp" />
     <ClCompile Include="MovementTests.cpp" />
     <ClCompile Include="PaceTests.cpp" />
+    <ClCompile Include="PresenceTests.cpp" />
     <ClCompile Include="RegionSimulationTests.cpp" />
     <ClCompile Include="RelationTests.cpp" />
     <ClCompile Include="ReplicationTests.cpp" />

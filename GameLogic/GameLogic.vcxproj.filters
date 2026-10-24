@@ -75,6 +75,9 @@
     <ClInclude Include="OrderMarkers.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="Presence.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="RegionCommands.h">
       <Filter>Server</Filter>
     </ClInclude>
@@ -225,6 +228,9 @@
       <Filter>Space</Filter>
     </ClCompile>
     <ClCompile Include="OrderMarkers.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Presence.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="RegionCommands.cpp">
