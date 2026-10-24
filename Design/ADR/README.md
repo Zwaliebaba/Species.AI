@@ -183,6 +183,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-180](ADR-180-the-camera-over-a-point-on-the-ground.md) | The camera over a point on the ground | Proposed | 2026-10-24 |
 | [ADR-181](ADR-181-touch-input.md) | Touch input | Proposed | 2026-10-24 |
 | [ADR-182](ADR-182-the-verbs-under-touch.md) | The verbs under touch | Proposed | 2026-10-24 |
+| [ADR-183](ADR-183-a-drop-off-point-pushed-clear-of-its-structure.md) | A drop-off point pushed clear of its structure | Proposed | 2026-10-23 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

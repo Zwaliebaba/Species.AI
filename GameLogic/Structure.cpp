@@ -271,6 +271,34 @@ ObstacleShape StructureShape(const Structure& _structure, const StructureRecords
   return shape;
 }
 
+Neuron::Vec3 DropPointOf(const Structure& _structure, const Neuron::SimulationRecord& _record, const ObstacleShape& _shape,
+                         const Neuron::TerrainField& _field, const TuningMvp& _tuning)
+{
+  const auto kind = _structure.kind == StructureKind::Wellspring ? Neuron::SocketKind::Door : Neuron::SocketKind::Entrance;
+  const std::vector<const Neuron::SimulationSocket*> sockets = Neuron::SocketsOf(_record, kind);
+  Neuron::Vec3 point =
+    sockets.empty() ? _structure.position : StructurePoint(_structure, Neuron::RestPositionOf(_record, *sockets.front()));
+  point.y = _field.Height(point.x, point.z);
+  if (sockets.empty())
+  {
+    return point;
+  }
+  // A Worker within the snap distance of the point is clear of the shape when the point is clear by the sum: the Worker
+  // is tested on the terrain, so the point is too.
+  const auto& worker = _tuning.ref.unit.worker;
+  const double clearance = worker.structureClearRadius + worker.snapDistance;
+  const double step = _tuning.ref.bldg.structure.pushStepWu;
+  const Neuron::Vec3 away = Horizontal(point - _structure.position, _structure.front);
+  const auto pushesMax = static_cast<std::int64_t>(
+    std::ceil((_structure.radius + clearance + Neuron::Length(_structure.center - _structure.position)) / step) + 1.0);
+  for (std::int64_t push = 0; push < pushesMax && SphereHits(_shape, point, clearance); ++push)
+  {
+    point = point + away * step;
+    point.y = _field.Height(point.x, point.z);
+  }
+  return point;
+}
+
 void WriteStructure(Neuron::BitWriter& _writer, const Structure& _structure)
 {
   _writer.WriteBits(_structure.id, 64);
