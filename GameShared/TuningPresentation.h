@@ -2016,7 +2016,44 @@ struct TuningPresentation
       double rowOffset = 0.0;
     };
 
+    struct Orbit
+    {
+      // cam.orbit.height_min, in wu
+      double heightMin = 0.0;
+
+      // cam.orbit.pitch_low, in degrees
+      double pitchLow = 0.0;
+
+      // cam.orbit.pitch_high, in degrees
+      double pitchHigh = 0.0;
+
+      // cam.orbit.pan_rate, in times the distance, per s
+      double panRate = 0.0;
+
+      // cam.orbit.fast_pan_factor, in times
+      double fastPanFactor = 0.0;
+
+      // cam.orbit.wheel_pan_share, in times the distance, per notch
+      double wheelPanShare = 0.0;
+
+      // cam.orbit.zoom_step, in times the height, per notch
+      double zoomStep = 0.0;
+
+      // cam.orbit.zoom_key_notches, in notches per s
+      double zoomKeyNotches = 0.0;
+
+      // cam.orbit.turn_rate, in degrees per s
+      double turnRate = 0.0;
+
+      // cam.orbit.drag_turn, in degrees per px
+      double dragTurn = 0.0;
+
+      // cam.orbit.smoothing, in per s
+      double smoothing = 0.0;
+    };
+
     Pick pick;
+    Orbit orbit;
   };
 
   struct Vfx
@@ -3238,7 +3275,29 @@ struct TuningPresentation
       double period = 0.0;
     };
 
+    struct Touch
+    {
+      // inp.touch.slop, in effective px
+      double slop = 0.0;
+
+      // inp.touch.double_tap_slop, in effective px
+      double doubleTapSlop = 0.0;
+
+      // inp.touch.tap_ms, in ms of real time
+      double tapMs = 0.0;
+
+      // inp.touch.hold_ms, in ms of real time
+      double holdMs = 0.0;
+
+      // inp.touch.double_tap_ms, in ms of real time
+      double doubleTapMs = 0.0;
+
+      // inp.touch.turn_threshold, in degrees
+      double turnThreshold = 0.0;
+    };
+
     Repeat repeat;
+    Touch touch;
   };
 
   struct Aen
@@ -4720,9 +4779,26 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Cam::Orbit& _out)
+{
+  _out.heightMin = _reader.Decimal(_object, "height_min", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.pitchLow = _reader.Decimal(_object, "pitch_low", {.minimum = 1.0, .maximum = 89.0}, Neuron::SimPrecision::Binary64);
+  _out.pitchHigh = _reader.Decimal(_object, "pitch_high", {.minimum = 1.0, .maximum = 89.0}, Neuron::SimPrecision::Binary64);
+  _out.panRate = _reader.Decimal(_object, "pan_rate", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.fastPanFactor = _reader.Decimal(_object, "fast_pan_factor", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.wheelPanShare = _reader.Decimal(_object, "wheel_pan_share", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.zoomStep = _reader.Decimal(_object, "zoom_step", {.exclusiveMinimum = 0.0, .maximum = 1.0}, Neuron::SimPrecision::Binary64);
+  _out.zoomKeyNotches = _reader.Decimal(_object, "zoom_key_notches", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.turnRate = _reader.Decimal(_object, "turn_rate", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.dragTurn = _reader.Decimal(_object, "drag_turn", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.smoothing = _reader.Decimal(_object, "smoothing", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Cam& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "pick"), _out.pick);
+  ReadFields(_reader, _reader.Object(_object, "orbit"), _out.orbit);
   _reader.Close(_object);
 }
 
@@ -5590,9 +5666,21 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Inp::Touch& _out)
+{
+  _out.slop = _reader.Decimal(_object, "slop", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.doubleTapSlop = _reader.Decimal(_object, "double_tap_slop", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.tapMs = _reader.Decimal(_object, "tap_ms", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.holdMs = _reader.Decimal(_object, "hold_ms", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.doubleTapMs = _reader.Decimal(_object, "double_tap_ms", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.turnThreshold = _reader.Decimal(_object, "turn_threshold", {.minimum = 0.0, .maximum = 180.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Inp& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "repeat"), _out.repeat);
+  ReadFields(_reader, _reader.Object(_object, "touch"), _out.touch);
   _reader.Close(_object);
 }
 
@@ -8094,14 +8182,46 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.rowOffset = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Cam::Orbit& _in)
+{
+  _writer.F64(_in.heightMin);
+  _writer.F64(_in.pitchLow);
+  _writer.F64(_in.pitchHigh);
+  _writer.F64(_in.panRate);
+  _writer.F64(_in.fastPanFactor);
+  _writer.F64(_in.wheelPanShare);
+  _writer.F64(_in.zoomStep);
+  _writer.F64(_in.zoomKeyNotches);
+  _writer.F64(_in.turnRate);
+  _writer.F64(_in.dragTurn);
+  _writer.F64(_in.smoothing);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Cam::Orbit& _out)
+{
+  _out.heightMin = _reader.F64();
+  _out.pitchLow = _reader.F64();
+  _out.pitchHigh = _reader.F64();
+  _out.panRate = _reader.F64();
+  _out.fastPanFactor = _reader.F64();
+  _out.wheelPanShare = _reader.F64();
+  _out.zoomStep = _reader.F64();
+  _out.zoomKeyNotches = _reader.F64();
+  _out.turnRate = _reader.F64();
+  _out.dragTurn = _reader.F64();
+  _out.smoothing = _reader.F64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Cam& _in)
 {
   CookFields(_writer, _in.pick);
+  CookFields(_writer, _in.orbit);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Cam& _out)
 {
   ReadCookedFields(_reader, _out.pick);
+  ReadCookedFields(_reader, _out.orbit);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Vfx::Worker::ControlGlowColor& _in)
@@ -9586,14 +9706,36 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.period = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Inp::Touch& _in)
+{
+  _writer.F64(_in.slop);
+  _writer.F64(_in.doubleTapSlop);
+  _writer.F64(_in.tapMs);
+  _writer.F64(_in.holdMs);
+  _writer.F64(_in.doubleTapMs);
+  _writer.F64(_in.turnThreshold);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Inp::Touch& _out)
+{
+  _out.slop = _reader.F64();
+  _out.doubleTapSlop = _reader.F64();
+  _out.tapMs = _reader.F64();
+  _out.holdMs = _reader.F64();
+  _out.doubleTapMs = _reader.F64();
+  _out.turnThreshold = _reader.F64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Inp& _in)
 {
   CookFields(_writer, _in.repeat);
+  CookFields(_writer, _in.touch);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Inp& _out)
 {
   ReadCookedFields(_reader, _out.repeat);
+  ReadCookedFields(_reader, _out.touch);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Aen::Update& _in)

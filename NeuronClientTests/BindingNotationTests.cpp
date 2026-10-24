@@ -39,6 +39,7 @@ public:
       std::string_view{R"({"value": "always_true"})"},
       std::string_view{R"({"value": "feature", "flag": "tutorial"})"},
       std::string_view{R"({"mouse": "wheel", "when": "move"})"},
+      std::string_view{R"({"mouse": "wheel_horizontal", "when": "move"})"},
       std::string_view{R"({"key": "num_minus", "when": "repeat"})"},
     };
     for (const std::string_view text : CANONICAL)

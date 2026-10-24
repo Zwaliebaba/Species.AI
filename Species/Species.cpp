@@ -27,6 +27,7 @@
 #include "Sha256.h"
 #include "StartupOptions.h"
 #include "TextEncoding.h"
+#include "TouchKeyboard.h"
 #include "Tuning.h"
 #include "UserData.h"
 #include "WorldMenu.h"
@@ -229,7 +230,8 @@ std::uint64_t RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _wi
   const std::size_t replaced = router.Rebuild(BindingLayers(_settings, _window.ActiveKeyboardLayoutTag()));
   Neuron::Log(Neuron::LogCategory::Input, Neuron::LogLevel::Info, "bindings built for the keyboard layout {}: {} replaced", layoutTag,
               replaced);
-  router.SetTextSource(&keyboardMouse); // INP-112 (ADR-154): characters reach the UI, never the bindings
+  router.SetTextSource(&keyboardMouse);                  // INP-112 (ADR-154): characters reach the UI, never the bindings
+  Neuron::TouchKeyboard touchKeyboard(_window.Native()); // ADR-181
   bool layoutChanged = false;
   _window.SetInputSink(&keyboardMouse);
   const Neuron::WindowListenerId listener = _window.AddListener(
@@ -281,6 +283,9 @@ std::uint64_t RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _wi
       }
     }
     router.AdvanceFrame({.windowFocused = _window.HasFocus()}, _window.ClientSize(), _clock.Now());
+    const bool touchMode = router.Mode() == Neuron::InputMode::Touch;
+    _world.SetTouchMode(touchMode);                   // ADR-181
+    const bool tapped = !router.Touch().taps.empty(); // read before a focused window suppresses the gestures
     if (keyboardMouse.TakeCloseRequest())
     {
       break;
@@ -291,6 +296,7 @@ std::uint64_t RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _wi
     }
     // ADR-149: the UI before the camera and the verbs, so that a focused window's actions reach neither (UI-006).
     _world.UpdateUi(router, _window.ClientSize(), _window.DpiScale(), _window.HasFocus());
+    touchKeyboard.Follow(_world.Ui().Core().IsTextEditing(), touchMode, tapped);
     if (router.Query(ActionOf(GameAction::WindowToggleMode)))
     {
       const bool windowed = _window.Mode() == Neuron::WindowMode::Windowed;

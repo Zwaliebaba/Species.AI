@@ -341,9 +341,10 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
   inputs.background = Rgb(background.r, background.g, background.b);
   inputs.presentationSeconds = std::chrono::duration<double>(m_desc.clock->Now() - m_start).count();
   inputs.brightness = static_cast<float>(m_desc.display.brightness); // render.brightness (RND-275, ADR-150)
-  // The player camera's pose (ADR-119), and the game cursor in every frame, since the system pointer is hidden (O65).
+  // The player camera's pose (ADR-119), and the game cursor in every frame, since the system pointer is hidden (O65),
+  // but in touch mode (ADR-181).
   inputs.camera = _view.Pose();
-  if (m_cursorImages != nullptr)
+  if (m_cursorImages != nullptr && !m_touchMode)
   {
     inputs.cursorImages = m_cursorImages;
     inputs.cursor = _view.CursorDraw();
@@ -537,8 +538,9 @@ Neuron::FrameInputs WorldPresentation::FrontEndFrame(Neuron::PointPx _pointer, N
   inputs.background = Rgb(background.r, background.g, background.b);
   inputs.presentationSeconds = std::chrono::duration<double>(m_desc.clock->Now() - m_start).count();
   inputs.brightness = static_cast<float>(m_desc.display.brightness);
-  // O65, UI-465: the system pointer is hidden, and the world cursor draws the standard pointer over the pages.
-  if (m_cursorImages != nullptr)
+  // O65, UI-465: the system pointer is hidden, and the world cursor draws the standard pointer over the pages, but in
+  // touch mode (ADR-181).
+  if (m_cursorImages != nullptr && !m_touchMode)
   {
     inputs.cursorImages = m_cursorImages;
     inputs.cursor = CursorAt(CursorKind::World, _pointer, *m_desc.presentation);

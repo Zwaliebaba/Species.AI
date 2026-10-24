@@ -431,7 +431,7 @@ public:
     // The storehouse of the owner's meshes of 2026-10-23 on level ground: its entrance socket stands 1 wu in front of the
     // collision box of its loading platform, inside a Worker's structure clearance, so a Worker sent to the socket is
     // pushed back on every step and never arrives. Its drop point is pushed out by whole steps until a Worker within the
-    // snap distance of it is clear of the box, and a Worker sent there from in front arrives (ADR-180).
+    // snap distance of it is clear of the box, and a Worker sent there from in front arrives (ADR-183).
     const Species::TuningMvp& tuning = CommittedTuning();
     const auto& walker = tuning.ref.unit.worker;
     const std::shared_ptr<const Species::RegionTerrain> terrain = FlatTerrain(50.0);

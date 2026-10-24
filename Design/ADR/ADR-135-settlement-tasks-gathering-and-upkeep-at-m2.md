@@ -111,4 +111,4 @@ GameLogicTests (`UpkeepTests`):
 
 ## More Information
 
-* **Amendment 2026-10-23 ([ADR-180](ADR-180-a-drop-off-point-pushed-clear-of-its-structure.md)).** The drop-off point is the door or the entrance pushed clear of its structure, as a port is, until a Worker within its snap distance is clear of the structure. A carrier reaches it whatever the mesh puts there. The region derives each structure's drop point with its obstacle grid.
+* **Amendment 2026-10-23 ([ADR-183](ADR-183-a-drop-off-point-pushed-clear-of-its-structure.md)).** The drop-off point is the door or the entrance pushed clear of its structure, as a port is, until a Worker within its snap distance is clear of the structure. A carrier reaches it whatever the mesh puts there. The region derives each structure's drop point with its obstacle grid.

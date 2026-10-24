@@ -139,9 +139,13 @@ struct MouseName
 };
 
 // Table 3.2-B.
-constexpr std::array MOUSE_NAMES{MouseName{MouseControl::Primary, "primary"},      MouseName{MouseControl::Secondary, "secondary"},
-                                 MouseName{MouseControl::Middle, "middle"},        MouseName{MouseControl::Motion, "motion"},
-                                 MouseName{MouseControl::RawMotion, "raw_motion"}, MouseName{MouseControl::Wheel, "wheel"}};
+constexpr std::array MOUSE_NAMES{MouseName{MouseControl::Primary, "primary"},
+                                 MouseName{MouseControl::Secondary, "secondary"},
+                                 MouseName{MouseControl::Middle, "middle"},
+                                 MouseName{MouseControl::Motion, "motion"},
+                                 MouseName{MouseControl::RawMotion, "raw_motion"},
+                                 MouseName{MouseControl::Wheel, "wheel"},
+                                 MouseName{MouseControl::WheelHorizontal, "wheel_horizontal"}};
 
 struct ConditionName
 {
