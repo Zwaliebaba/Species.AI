@@ -147,7 +147,7 @@ public:
   AppWindow& operator=(const AppWindow&) = delete;
   ~AppWindow();
 
-  [[nodiscard]] NativeWindowHandle Native() const noexcept; // swap-chain creation only
+  [[nodiscard]] NativeWindowHandle Native() const noexcept; // swap-chain creation and the touch keyboard (ADR-181) only
   [[nodiscard]] SizePx ClientSize() const noexcept;
   [[nodiscard]] float DpiScale() const noexcept;
   [[nodiscard]] bool HasFocus() const noexcept;

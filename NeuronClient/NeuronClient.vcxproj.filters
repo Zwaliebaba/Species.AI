@@ -168,6 +168,9 @@
     <ClInclude Include="TouchGestures.h">
       <Filter>Input</Filter>
     </ClInclude>
+    <ClInclude Include="TouchKeyboard.h">
+      <Filter>Input</Filter>
+    </ClInclude>
     <ClInclude Include="UiCore.h">
       <Filter>Ui</Filter>
     </ClInclude>
@@ -321,6 +324,9 @@
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="TouchGestures.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="TouchKeyboard.cpp">
       <Filter>Input</Filter>
     </ClCompile>
     <ClCompile Include="UiCore.cpp">

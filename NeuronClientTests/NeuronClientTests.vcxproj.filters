@@ -86,6 +86,9 @@
     <ClCompile Include="TouchGesturesTests.cpp">
       <Filter>Input</Filter>
     </ClCompile>
+    <ClCompile Include="TouchKeyboardTests.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
     <ClCompile Include="UiCoreTests.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>

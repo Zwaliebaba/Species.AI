@@ -60,7 +60,12 @@ What T19 builds, in two steps: the first all but the on-screen keyboard, the sec
   - `SetTouchThresholds` takes the keys × the DPI scale, which `GameUi` gives it each frame.
 * **The input mode** (INP-151) gains touch, the mode of a frame with any touch event or contact down. While it is touch, the game cursor is not drawn (`WorldPresentation::SetTouchMode`) and the pointer is the last contact's point. A frame with keyboard or mouse activity and no touch returns it to keyboard and mouse.
 * **The camera** takes one finger's drag and two fingers' manipulation (ADR-180, `CameraControls::touchDrag`, `touchManipulation`). The drag holds the ground where the finger went down under it, by the middle button's level shift. The manipulation holds the ground under the two fingers' center, multiplies the height by the inverse of their spans' ratio and turns the heading by their turn, all at once. A hold's drag moves no camera: it is ADR-182's. This is ADR-182's camera, built here, since T19's run follows one finger and two.
-* **The on-screen keyboard** (the second step). When a page text field (UI-121) takes the focus while the mode is touch, the client asks for the system's touch keyboard through `IInputPaneInterop::GetForWindow` and `IInputPane2::TryShow`, and hides it when the field loses the focus. These are the Windows SDK's `Windows.UI.ViewManagement` interfaces, with no package. Their behavior on the tablet in a desktop window is confirmed on T19's run, and a failure to show is logged and leaves the field typed by any keyboard.
+* **The on-screen keyboard** (the second step, `NeuronClient/TouchKeyboard`).
+  - The client asks for the system's touch keyboard through `IInputPaneInterop::GetForWindow` and `IInputPane2::TryShow` in two cases: a page text field (UI-121) starts editing in a frame in touch mode, or a tap lands while one edits, which brings back a keyboard closed by its own key. It asks `TryHide` as the editing ends (`TouchKeyboardRequestOf`).
+  - Typing on the keyboard returns the input mode to keyboard and mouse, and the keyboard stays open.
+  - These are the Windows SDK's `Windows.UI.ViewManagement` interfaces, linked from `runtimeobject.lib`, with no package. Windows Runtime is initialized on the main thread at the first request to show the keyboard, so a session without touch never initializes it. The main thread is a single-threaded apartment, since it pumps the window's messages.
+  - The keyboard is drawn over the window, and the page under it is neither moved nor resized.
+  - The interfaces' behavior on the tablet in a desktop window is confirmed on T19's run. A failure to get the pane or to show the keyboard is logged once and leaves the field typed by any keyboard.
 * **Not changed.** The server links none of it (ADR-028). Windows' edge swipes stay Windows'.
 * **The keys** `inp.touch.*` join the presentation record and the input component's tuning table, with DEC-1011's first values.
 
@@ -70,6 +75,7 @@ What T19 builds, in two steps: the first all but the on-screen keyboard, the sec
 * Good, because the recognizer is a pure function, tested from recorded contacts on CI without a touchscreen.
 * Bad, because the client must read touch everywhere at once: the HUD, the menus and the front end lose Windows' promotion the day the back-end lands. A tap as the primary press keeps every click working, but a drag on a page scrolls nothing until ADR-182's.
 * Bad, because the touch keyboard's interfaces are WinRT ones, whose desktop behavior varies across Windows builds, and CI cannot run them.
+* Bad, because the touch keyboard covers the lower part of the window, and a field under it stays hidden until the page is moved above it, which T19 does not do.
 * Neutral, because pen is read as touch: Species has no use for its pressure or hover at M3.
 * It forecloses: Windows' own gesture messages and its mouse promotion in the client's window.
 
@@ -77,6 +83,7 @@ What T19 builds, in two steps: the first all but the on-screen keyboard, the sec
 
 * `NeuronClientTests/TouchGesturesTests`, from recorded contact streams: a tap, a double tap and two slow taps; a drag against a hold at the slop and the hold time; a manipulation's center, ratio and angle, with the turn held below its threshold; a two-finger tap; three contacts ignored; a canceled contact ending its gesture.
 * `NeuronClientTests/InputRouterTests`: a tap pressing the primary button at its point in its frame alone, a drag pressing nothing, `SuppressTouch` withholding the frame's drag, the input mode switching to touch and back on the mouse's movement, and the contact ended by the loss of focus.
+* `NeuronClientTests/TouchKeyboardTests`: the keyboard is asked for once as a field starts editing by touch, again on a tap while it edits, never for a click, and hidden as the editing ends.
 * `GameClientTests/SettlementCameraTests`: one finger's drag keeping the ground under it within two pixels, with no drift after the lift, and a hold's drag moving nothing; two fingers spread to 1.25 times their span, turned 20° and moved 100 px giving 800 wu, the heading turned 20° and the ground under their center within two pixels.
 * The owner's run of T19 on the ARM64 tablet: Windows draws no feedback of its own, a drag no longer draws the selection circle, and the touch keyboard opens for the seed.
 

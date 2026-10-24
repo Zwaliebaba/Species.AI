@@ -185,6 +185,7 @@
     <ClCompile Include="StringTableTests.cpp" />
     <ClCompile Include="TextSystemTests.cpp" />
     <ClCompile Include="TouchGesturesTests.cpp" />
+    <ClCompile Include="TouchKeyboardTests.cpp" />
     <ClCompile Include="UiCoreTests.cpp" />
     <ClCompile Include="UiLayoutTests.cpp" />
     <ClCompile Include="UiTextTests.cpp" />
