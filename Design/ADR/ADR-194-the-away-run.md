@@ -59,7 +59,7 @@ What is built:
 * Good, because both lines are measured on the server's own rules, and the deputy is the one the owner's steward will have.
 * Good, because the corpus says before Playtest 2 whether its lines can be met, and which values the owner must decide if not.
 * Bad, because a present steward is a script. It places and decides as the scripted steward does, never as a person, so presence pays only through what the script does better while present.
-* Bad, because an 8-day always-on run is 6.9 million ticks. On the development machine a run takes about 80 minutes, so the corpus takes hours.
+* Bad, because an 8-day always-on run is 6.9 million ticks, and its ticks grow dearer as its settlements grow. On the development machine (four cores, a Linux build of the portable libraries at -O2 with development checks), a run's first 2 world hours took 53 s, but four runs side by side had not finished their 8 world days after more than 4 hours. The corpus of 16 runs therefore takes the better part of a day on a machine of that size, and that first local corpus ended with its session, unfinished.
 * It forecloses nothing: a long absence of `pil.session.long_absence_days` (7 days) is another schedule.
 
 ### Confirmation
