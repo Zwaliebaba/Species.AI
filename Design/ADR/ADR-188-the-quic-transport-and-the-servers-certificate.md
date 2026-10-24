@@ -1,7 +1,7 @@
 ---
 status: proposed
 date: 2026-10-24
-decision-makers: Species technology lead (M4 task T7; owner decisions O44, O108, O109)
+decision-makers: Species technology lead (M4 task T7; owner decisions O44, O109, O110)
 ---
 
 # The QUIC transport and the server's certificate
@@ -10,7 +10,7 @@ decision-makers: Species technology lead (M4 task T7; owner decisions O44, O108,
 
 M4 runs the always-on world in its own server process, which the client connects to over `QuicTransport` (MVP-071, the [M4 plan](../implementation/m4_plan.md) T7). ADR-088 states the transport: one interface and two implementations, a reliable stream and QUIC datagrams with their fates, TLS 1.3 with a self-signed server certificate that the client pins, and the keep-alive and idle timeouts. ADR-089 pins MsQuic 2.6.3, Schannel build, and puts `msquic.dll` beside the executables.
 
-Neither record says how the transport sits on MsQuic's threads, how a static library reaches a DLL that its programs do not link, or where the server's certificate comes from. This record decides those for M4, where the server and the client are on one computer (O109).
+Neither record says how the transport sits on MsQuic's threads, how a static library reaches a DLL that its programs do not link, or where the server's certificate comes from. This record decides those for M4, where the server and the client are on one computer (O110).
 
 ## Decision Drivers
 
@@ -84,10 +84,10 @@ What is built:
 
 ## More Information
 
-* Owner decisions O44, O108, O109; MVP-071, MVP-090, PLT-100; the [M4 plan](../implementation/m4_plan.md), task T7.
+* Owner decisions O44, O109, O110; MVP-071, MVP-090, PLT-100; the [M4 plan](../implementation/m4_plan.md), task T7.
 * Amends [ADR-088](ADR-088-transport-messages-identity-and-diagnostics.md) (the idle timeouts' effect, the loopback interface at M4) and [ADR-089](ADR-089-msquic-transport-package.md) (MsQuic loaded by the transport, not linked).
 * MsQuic's API as its 2.6.3 headers state it: `msquic.h` (the function table, `QUIC_SETTINGS`, the connection, stream and listener events, the datagram send states, `QUIC_PARAM_CONN_STATISTICS_V2`) and `msquic_winuser.h` (the address helpers, which need no socket library), read from the restored package on 2026-10-24.
 * The code: `NeuronCore/QuicTransport`, `NeuronCore/ServerCertificate`, `NeuronCoreTests/QuicTransportTests`.
-* **Amendment 2026-10-24 (M4 task T9, [ADR-187](ADR-187-the-always-on-worlds-server-process.md)).** The headless server's certificate is named `Species server`.
-* **Amendment 2026-10-24 (M4 task T11, [ADR-189](ADR-189-the-link-simulator-and-the-transports-confirmations.md)).** `PathStats()` also gives MsQuic's stream payload bytes each way and its congestion events, from which the link scene computes the overhead per state datagram.
-* **Amendment 2026-10-24 (M4 task T11, CI's first run of the transport's tests).** `Transport`'s contract that reliable messages sent before a `Close` reach the other end holds once the stream exists. A server end has no stream until its client's first message opens it, so a server end closed before then ends the connection at once, and what waited for the stream goes with it. The game never meets this: every client's first message is its join (ADR-186), and the server sends nothing it needs delivered before the join. `QuicTransportTests` closes after the client's first message, as a join's answer and close do.
+* **Amendment 2026-10-24 (M4 task T9, [ADR-190](ADR-190-the-always-on-worlds-server-process.md)).** The headless server's certificate is named `Species server`.
+* **Amendment 2026-10-24 (M4 task T11, [ADR-192](ADR-192-the-link-simulator-and-the-transports-confirmations.md)).** `PathStats()` also gives MsQuic's stream payload bytes each way and its congestion events, from which the link scene computes the overhead per state datagram.
+* **Amendment 2026-10-24 (M4 task T11, CI's first run of the transport's tests).** `Transport`'s contract that reliable messages sent before a `Close` reach the other end holds once the stream exists. A server end has no stream until its client's first message opens it, so a server end closed before then ends the connection at once, and what waited for the stream goes with it. The game never meets this: every client's first message is its join (ADR-189), and the server sends nothing it needs delivered before the join. `QuicTransportTests` closes after the client's first message, as a join's answer and close do.

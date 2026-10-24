@@ -392,7 +392,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp074TheAwayReportsButtonAsksForItsPage)
   {
-    // O109 (ADR-188): a press on the always-on row's button asks for the latest away report's page and sends nothing; the
+    // O110 (ADR-191): a press on the always-on row's button asks for the latest away report's page and sends nothing; the
     // press reaches no world verb, and another frame asks for nothing.
     Species::SettlementVerbs verbs(CommittedTuning(), CommittedPresentation());
     const Species::StateReplica::View replica = Replica(1'000'000);

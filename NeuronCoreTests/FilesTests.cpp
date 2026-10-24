@@ -98,7 +98,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp071AFilesStampChangesWhenOneIsWritten)
   {
-    // ADR-186: the stamp of a build's programs is the same while neither changes, and another once one is written; a
+    // ADR-189: the stamp of a build's programs is the same while neither changes, and another once one is written; a
     // missing file still counts by its name.
     const TemporaryFolder folder;
     const std::array<std::wstring_view, 2> names{L"First.exe", L"Second.exe"};

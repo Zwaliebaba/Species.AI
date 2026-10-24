@@ -131,7 +131,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp071AWorldsPaceIsInItsDescription)
   {
-    // ADR-187: a world keeps its pace, which the headless server reads from its folder alone; a world described before M4
+    // ADR-190: a world keeps its pace, which the headless server reads from its folder alone; a world described before M4
     // is at the session pace, and a pace this build does not know makes the description one that does not read.
     const TemporaryFolder saves;
     std::optional<Species::SavedWorld> always = Species::CreateWorld(saves.Path(), 7, 1, 3, Species::WorldPace::AlwaysOn);

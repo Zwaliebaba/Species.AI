@@ -8,7 +8,7 @@ namespace Neuron
 // waits.
 [[nodiscard]] bool InstallConsoleStopHandler() noexcept;
 
-// A stop that the program requests itself, as a stop signal raised by another process does (ADR-187).
+// A stop that the program requests itself, as a stop signal raised by another process does (ADR-190).
 void RequestConsoleStop() noexcept;
 
 // Blocks the calling thread until a stop is requested.

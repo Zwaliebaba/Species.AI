@@ -8,7 +8,7 @@ namespace Neuron
 {
 
 /// The computer's suspends as the operating system reports them (MVP-071, PIL-131): a count that rises at each suspend,
-/// which a world server reads to tell a sleep from a stall of its own (ADR-184). It registers for the system's suspend
+/// which a world server reads to tell a sleep from a stall of its own (ADR-187). It registers for the system's suspend
 /// and resume notifications when it is made and unregisters when it ends; a registration the system refuses leaves the
 /// count at 0, and Watching says so. The count is read on any thread.
 class SuspendWatch

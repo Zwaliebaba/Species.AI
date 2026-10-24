@@ -1,7 +1,7 @@
 ---
 status: proposed
 date: 2026-10-24
-decision-makers: Species technology lead (M4 task T2; owner decisions O54, O108)
+decision-makers: Species technology lead (M4 task T2; owner decisions O54, O109)
 ---
 
 # The always-on pace
@@ -103,6 +103,6 @@ Measured on the tests' valley of seed 1 (the local Linux build of the game's lib
 
 ## More Information
 
-* Owner decisions O54, O108; MVP-070, MVP-071, MVP-095; PIL-100, PIL-101, PIL-103, PIL-104; the [M4 plan](../implementation/m4_plan.md), task T2.
+* Owner decisions O54, O109; MVP-070, MVP-071, MVP-095; PIL-100, PIL-101, PIL-103, PIL-104; the [M4 plan](../implementation/m4_plan.md), task T2.
 * Amends [ADR-137](ADR-137-saving-the-journal-cut-and-the-world-record-at-m2.md) (the journal's format) and [ADR-099](ADR-099-world-snapshots.md) (the state version).
 * The code: `GameShared/WorldPace`, `GameLogic/WorldSimulation`, `GameLogic/WorldSnapshot`, `GameLogic/CommandJournal`, `GameLogic/WorldServer`.

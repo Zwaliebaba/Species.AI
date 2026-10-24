@@ -18,7 +18,7 @@ class ServerCertificate;
 
 // ADR-088 item 2: the application protocol (ALPN) of a client's session.
 inline constexpr std::string_view QUIC_ALPN_PLAY = "species-play";
-// ADR-185: the interface a server listens on and a client connects to while all play is on one computer (O109).
+// ADR-188: the interface a server listens on and a client connects to while all play is on one computer (O110).
 inline constexpr std::string_view QUIC_LOOPBACK_HOST = "127.0.0.1";
 // ADR-088 item 3: the client's keep-alive, one tick period, and each end's idle timeout. QUIC takes the smaller of the two
 // ends' timeouts (RFC 9000 §10.1), so a connection whose peer vanished closes after the client's at both ends.
@@ -59,13 +59,13 @@ struct QuicPathStats
 struct QuicLink;
 struct QuicEndpoint;
 
-/// The remote transport (ADR-088 items 1 to 4, ADR-185): one QUIC connection through MsQuic (ADR-089), which owns the UDP
+/// The remote transport (ADR-088 items 1 to 4, ADR-188): one QUIC connection through MsQuic (ADR-089), which owns the UDP
 /// socket. The reliable channel is one bidirectional stream that the client opens when the handshake completes, each
 /// message framed by its length (StreamFraming.h); the state channel is QUIC DATAGRAM frames, each reported acknowledged
 /// or lost once. TLS 1.3 secures it with the server's self-signed certificate, which the client pins by its fingerprint.
 /// Messages sent before the stream exists wait in the reliable backlog and leave at the next call on the end. A server end
 /// has no stream until its client's first message opens it, so one closed before then ends the connection at once and
-/// what waited goes with it; every client's first message is its join (ADR-186).
+/// what waited goes with it; every client's first message is its join (ADR-189).
 class QuicTransport final : public Transport
 {
 public:
@@ -108,7 +108,7 @@ private:
   std::shared_ptr<QuicLink> m_link;
 };
 
-/// A server's listener on MsQuic (ADR-088, ADR-185): it accepts each client's connection on the loopback interface,
+/// A server's listener on MsQuic (ADR-088, ADR-188): it accepts each client's connection on the loopback interface,
 /// secured by the server's certificate, once its handshake has completed.
 class QuicListener final : public TransportListener
 {

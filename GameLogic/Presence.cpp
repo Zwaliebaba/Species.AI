@@ -86,7 +86,7 @@ bool ReadAbsence(Neuron::BitReader& _reader, Absence& _absence, std::uint32_t _s
     previous = action.tick;
   }
   absence.actionsDropped = static_cast<std::uint32_t>(_reader.ReadBits(32));
-  // ADR-183: from version 21 its grievances, in the order they were recorded, inside the absence.
+  // ADR-186: from version 21 its grievances, in the order they were recorded, inside the absence.
   if (_stateVersion >= STATE_VERSION_WITH_ABSENCE_GRIEVANCES)
   {
     absence.grievances.resize(_reader.ReadBounded(ABSENCE_GRIEVANCES_MAX));
@@ -154,7 +154,7 @@ bool SetStewardPresence(WorldSimulation& _world, bool _away)
       const std::uint32_t workers = std::min<std::uint32_t>(Population(region, settlement), WORKERS_BOUND);
       if (_away && open == absences.end())
       {
-        static_cast<void>(region.EnsureDeputy(settlement.team)); // MVP-073 (ADR-182)
+        static_cast<void>(region.EnsureDeputy(settlement.team)); // MVP-073 (ADR-185)
         Absence absence;
         absence.team = settlement.team;
         absence.fromTick = region.NextTick();
@@ -169,7 +169,7 @@ bool SetStewardPresence(WorldSimulation& _world, bool _away)
         open->workersTo = workers;
         open->storesToMilliRu = settlement.storesMilliRu;
         Absence closed = std::move(*open);
-        // The settlement's previous closed absence gives way to this one (O109: the latest is asked for again).
+        // The settlement's previous closed absence gives way to this one (O110: the latest is asked for again).
         std::erase_if(absences, [&settlement](const Absence& _absence) { return _absence.team == settlement.team; });
         absences.push_back(std::move(closed));
         changed = true;

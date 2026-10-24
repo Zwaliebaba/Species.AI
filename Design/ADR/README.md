@@ -180,17 +180,17 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-177](ADR-177-distinct-stand-ins-for-the-huds-icons.md) | Distinct stand-ins for the HUD's icons | Proposed | 2026-10-23 |
 | [ADR-178](ADR-178-the-stewards-growth-hold.md) | The steward's growth hold | Proposed | 2026-10-23 |
 | [ADR-179](ADR-179-the-camera-turns-only-while-the-middle-button-is-held.md) | The camera turns only while the middle button is held | Proposed | 2026-10-23 |
-| [ADR-180](ADR-180-the-always-on-pace.md) | The always-on pace | Proposed | 2026-10-24 |
-| [ADR-181](ADR-181-presence-and-absences.md) | Presence and absences | Proposed | 2026-10-24 |
-| [ADR-182](ADR-182-the-deputy.md) | The deputy | Proposed | 2026-10-24 |
-| [ADR-183](ADR-183-the-away-report.md) | The away report | Proposed | 2026-10-24 |
-| [ADR-184](ADR-184-the-freezes-of-a-stopped-server-and-a-sleeping-computer.md) | The freezes of a stopped server and a sleeping computer | Proposed | 2026-10-24 |
-| [ADR-185](ADR-185-the-quic-transport-and-the-servers-certificate.md) | The QUIC transport and the server's certificate | Proposed | 2026-10-24 |
-| [ADR-186](ADR-186-the-join-and-its-refusal.md) | The join and its refusal | Proposed | 2026-10-24 |
-| [ADR-187](ADR-187-the-always-on-worlds-server-process.md) | The always-on world's server process | Proposed | 2026-10-24 |
-| [ADR-188](ADR-188-the-away-report-and-the-pace-in-the-client.md) | The away report and the pace in the client | Proposed | 2026-10-24 |
-| [ADR-189](ADR-189-the-link-simulator-and-the-transports-confirmations.md) | The link simulator and the transport's confirmations | Proposed | 2026-10-24 |
-| [ADR-190](ADR-190-the-away-run.md) | The away run | Proposed | 2026-10-24 |
+| [ADR-183](ADR-183-the-always-on-pace.md) | The always-on pace | Proposed | 2026-10-24 |
+| [ADR-184](ADR-184-presence-and-absences.md) | Presence and absences | Proposed | 2026-10-24 |
+| [ADR-185](ADR-185-the-deputy.md) | The deputy | Proposed | 2026-10-24 |
+| [ADR-186](ADR-186-the-away-report.md) | The away report | Proposed | 2026-10-24 |
+| [ADR-187](ADR-187-the-freezes-of-a-stopped-server-and-a-sleeping-computer.md) | The freezes of a stopped server and a sleeping computer | Proposed | 2026-10-24 |
+| [ADR-188](ADR-188-the-quic-transport-and-the-servers-certificate.md) | The QUIC transport and the server's certificate | Proposed | 2026-10-24 |
+| [ADR-189](ADR-189-the-join-and-its-refusal.md) | The join and its refusal | Proposed | 2026-10-24 |
+| [ADR-190](ADR-190-the-always-on-worlds-server-process.md) | The always-on world's server process | Proposed | 2026-10-24 |
+| [ADR-191](ADR-191-the-away-report-and-the-pace-in-the-client.md) | The away report and the pace in the client | Proposed | 2026-10-24 |
+| [ADR-192](ADR-192-the-link-simulator-and-the-transports-confirmations.md) | The link simulator and the transport's confirmations | Proposed | 2026-10-24 |
+| [ADR-193](ADR-193-the-away-run.md) | The away run | Proposed | 2026-10-24 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

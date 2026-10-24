@@ -331,7 +331,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp071AJoinGoesFirstAndARefusalClosesTheSession)
   {
-    // ADR-186: the session's first message is its join, which the server does not number; a refusal closes the session,
+    // ADR-189: the session's first message is its join, which the server does not number; a refusal closes the session,
     // which then sends nothing and shows the reason.
     Species::JoinIdentity identity;
     identity.build.fill(std::byte{7});
@@ -370,7 +370,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp072InputIsReportedAtMostEveryFifteenSeconds)
   {
-    // ADR-181: a frame with input sends a presence report when none has gone for PRESENCE_REPORT_SECONDS; a frame without
+    // ADR-184: a frame with input sends a presence report when none has gone for PRESENCE_REPORT_SECONDS; a frame without
     // input sends none, however long it has been. Each report is numbered as a command.
     Fixture f;
     const auto reports = [&f]()
@@ -563,7 +563,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp074AReturnWithNewsOpensItsAwayReportOnce)
   {
-    // ADR-187, O109: in an always-on world the menu asks once for the latest away report; one the server sends at a return
+    // ADR-190, O110: in an always-on world the menu asks once for the latest away report; one the server sends at a return
     // with news opens its page, once; one without news is kept for the menu but opens nothing.
     Fixture f(std::nullopt, Species::WorldPace::AlwaysOn);
     const Species::WorldTerrain sent{SeedOne().seed, SeedOne().digest, std::uint8_t{2}};

@@ -1,7 +1,7 @@
 ---
 status: proposed
 date: 2026-10-24
-decision-makers: Species technology lead (M4 task T8; owner decisions O108, O109)
+decision-makers: Species technology lead (M4 task T8; owner decisions O109, O110)
 ---
 
 # The join and its refusal
@@ -17,7 +17,7 @@ What does a client send, what does a server compare, and what happens to a conne
 ## Decision Drivers
 
 * A client of another build or with other simulation-relevant content is refused with its reason (the [M4 plan](../implementation/m4_plan.md) T8).
-* A refused client changes nothing in the world: no steward, no journal entry, no presence (ADR-181).
+* A refused client changes nothing in the world: no steward, no journal entry, no presence (ADR-184).
 * The same code runs over both transports (ADR-088 item 1).
 * No new build step, which ADR-057's generated identity needs and M4 does not.
 
@@ -82,6 +82,6 @@ What is built:
 
 ## More Information
 
-* Owner decisions O108, O109; MVP-071, MVP-072, MVP-090; the [M4 plan](../implementation/m4_plan.md), task T8.
+* Owner decisions O109, O110; MVP-071, MVP-072, MVP-090; the [M4 plan](../implementation/m4_plan.md), task T8.
 * Amends [ADR-088](ADR-088-transport-messages-identity-and-diagnostics.md) (item 6's identity at M4), [ADR-057](ADR-057-version-identity.md) (the interim build identity), [ADR-095](ADR-095-server-host-tick-loop-and-command-queue.md) (the sender closes a connection) and [ADR-124](ADR-124-battle-verbs-at-m1.md) (the join is not numbered).
 * The code: `GameShared/JoinMessages`, `NeuronCore/Files` (`FilesStamp`), `NeuronServer/ServerHost`, `GameLogic/WorldServer`, `GameLogic/IntegratedServer`, `GameClient/ClientSession`, `Species/Species.cpp`, `SpeciesServer/SpeciesServer.cpp`, `Tools/SpeciesFrameBench/SpeciesFrameBench.cpp`.

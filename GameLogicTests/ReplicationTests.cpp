@@ -154,7 +154,7 @@ private:
     return sent ? std::optional<std::uint64_t>{*sent} : std::nullopt;
   }
 
-  // A sender of a test closes nothing: its server is given no identity, so it refuses no join (ADR-186).
+  // A sender of a test closes nothing: its server is given no identity, so it refuses no join (ADR-189).
   void Close(Neuron::ConnectionId /*_connection*/) override {}
 
   Species::WorldServer& m_server;

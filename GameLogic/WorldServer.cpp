@@ -224,7 +224,7 @@ WorldServer::WorldServer(const Desc& _desc)
 
 std::uint64_t WorldServer::Open()
 {
-  m_suspensionsSeen = m_desc.suspensions ? m_desc.suspensions() : 0; // ADR-184
+  m_suspensionsSeen = m_desc.suspensions ? m_desc.suspensions() : 0; // ADR-187
   if (!m_desc.snapshotFolder.empty())
   {
     // PIL-131 (ADR-137): a world that froze cleanly left a marker naming its final snapshot. It goes as the world opens,
@@ -268,7 +268,7 @@ std::uint64_t WorldServer::Open()
       m_runEnded = m_world->RunState().ended;
       m_runQuiet = m_runEnded || m_world->Region(0).InQuietMinutes();
       // MVP-075, PIL-131: a world that did not freeze cleanly at this snapshot lost what it ran after it, a freeze of
-      // cause "unclean stop" from the snapshot's tick; MVP-071 (ADR-184): one that did was frozen while its server was not
+      // cause "unclean stop" from the snapshot's tick; MVP-071 (ADR-187): one that did was frozen while its server was not
       // running, a freeze of cause "server stopped". Either lasted from the snapshot's calendar time to now.
       const std::optional<std::int64_t> now = CalendarSeconds();
       const std::int64_t saved = m_world->Record().savedAtSeconds;
@@ -464,7 +464,7 @@ std::size_t WorldServer::SnapshotsKept() const noexcept
 
 void WorldServer::Connect(Neuron::ConnectionId _connection)
 {
-  // ADR-186: a server given its identity takes nothing from a connection but its join until the join is accepted.
+  // ADR-189: a server given its identity takes nothing from a connection but its join until the join is accepted.
   if (m_desc.identity)
   {
     m_joining.insert(_connection);
@@ -477,7 +477,7 @@ void WorldServer::AdmitSteward(Neuron::ConnectionId _connection)
 {
   // ADR-109: the next id of the world owner and, in the sandbox, the steward's side.
   const StableId steward = ConnectSteward(*m_world, m_desc.sandbox, m_desc.watched);
-  // MVP-072 (ADR-181): connecting is the steward's input.
+  // MVP-072 (ADR-184): connecting is the steward's input.
   m_stewards.emplace(_connection, Steward{.id = steward, .inputTick = m_world->NextTick()});
   if (m_journal)
   {
@@ -499,7 +499,7 @@ void WorldServer::ReceiveJoin(Neuron::ConnectionId _connection, const Neuron::Re
   const Neuron::MessageHeader header = Neuron::ReadMessageHeader(reader);
   if (!m_desc.identity || _message.channel != Neuron::Channel::Reliable || reader.Failed() || header.type != JoinCommand::TYPE)
   {
-    return; // ADR-186: nothing counts before the join
+    return; // ADR-189: nothing counts before the join
   }
   const JoinIdentity server = *m_desc.identity;
   // A join that does not read is of a protocol this server does not speak.
@@ -552,7 +552,7 @@ void WorldServer::Receive(Neuron::ConnectionId _connection, const Neuron::Receiv
     return;
   }
 #endif
-  // MVP-072 (ADR-181): a presence report is read, not queued: it notes the steward's input for the next tick.
+  // MVP-072 (ADR-184): a presence report is read, not queued: it notes the steward's input for the next tick.
   if (!reader.Failed() && header.type == PresenceReportCommand::TYPE)
   {
     PresenceReportCommand report;
@@ -567,7 +567,7 @@ void WorldServer::Receive(Neuron::ConnectionId _connection, const Neuron::Receiv
   // MVP-098 (ADR-136, ADR-165): a request for a settlement's status or its valley's is read, not queued, by a steward who
   // commands the settlement's team; the status goes after the next tick, which the outcome names.
   // From M3 task T14 (ADR-169) the epilogue is asked for the same way.
-  // From M4 task T5 (ADR-183) the away report is asked for the same way.
+  // From M4 task T5 (ADR-186) the away report is asked for the same way.
   if (!reader.Failed() && (header.type == ReadSettlementStatusCommand::TYPE || header.type == ReadValleyStatusCommand::TYPE ||
                            header.type == ReadEpilogueCommand::TYPE || header.type == ReadAwayReportCommand::TYPE))
   {
@@ -628,7 +628,7 @@ void WorldServer::Receive(Neuron::ConnectionId _connection, const Neuron::Receiv
   Neuron::CommandQueue& queue = regional ? region : m_world->Commands();
   if (queue.Submit(steward.id, sequence, _message.bytes))
   {
-    steward.inputTick = m_world->NextTick(); // MVP-072: a command the queue took is the steward's input (ADR-181)
+    steward.inputTick = m_world->NextTick(); // MVP-072: a command the queue took is the steward's input (ADR-184)
     if (m_journal)
     {
       // MVP-076: the command with the tick it executes in, which is the world's next.
@@ -658,7 +658,7 @@ void WorldServer::UpdatePresence(std::uint64_t _tick)
   {
     m_journal->entries.push_back({_tick, false, JOURNAL_WORLD_OWNER, 0, 0, {}, true, !present});
   }
-  // O109 (ADR-183): a return sends each connected steward the away report of each settlement it commands, after the
+  // O110 (ADR-186): a return sends each connected steward the away report of each settlement it commands, after the
   // tick, when the absence has news.
   if (present)
   {
@@ -733,7 +733,7 @@ void WorldServer::Step(std::uint64_t _tick, Neuron::WorkerPool& _workers)
 
 void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender)
 {
-  // ADR-186: each join's answer goes before anything else its connection is sent, and a refused connection is closed
+  // ADR-189: each join's answer goes before anything else its connection is sent, and a refused connection is closed
   // after it.
   for (const auto& [joined, answer] : m_answers)
   {
@@ -855,7 +855,7 @@ void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender
       ++epilogues;
     }
     steward.epilogueTeams.erase(steward.epilogueTeams.begin(), steward.epilogueTeams.begin() + static_cast<std::ptrdiff_t>(epilogues));
-    // ADR-183: each away report requested, then each that a return sends, the latter only when its absence has news.
+    // ADR-186: each away report requested, then each that a return sends, the latter only when its absence has news.
     for (const bool onReturn : {false, true})
     {
       std::vector<std::uint8_t>& teams = onReturn ? steward.returnTeams : steward.awayTeams;
@@ -929,7 +929,7 @@ void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender
 
 void WorldServer::Stalled(const Neuron::ScheduleStall& _stall)
 {
-  // MVP-071 (ADR-184): a stall across a suspend of the computer is its sleep.
+  // MVP-071 (ADR-187): a stall across a suspend of the computer is its sleep.
   const std::uint64_t suspensions = m_desc.suspensions ? m_desc.suspensions() : 0;
   const bool slept = suspensions != m_suspensionsSeen;
   m_suspensionsSeen = suspensions;

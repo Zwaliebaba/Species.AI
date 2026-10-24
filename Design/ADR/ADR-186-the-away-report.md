@@ -1,7 +1,7 @@
 ---
 status: proposed
 date: 2026-10-24
-decision-makers: Species technology lead (M4 task T5; owner decisions O6, O108, O109)
+decision-makers: Species technology lead (M4 task T5; owner decisions O6, O109, O110)
 ---
 
 # The away report
@@ -16,14 +16,14 @@ A steward who returns sees the away report first (MVP-074, PIL-073). Its summary
 - the claims moved;
 - the freezes.
 
-The list of every deputy action with its standing order is one step away (PIL-026). The report and the settlement status are server messages, not client logic (PIL-075, O6). O109 has it open by itself on a return whose absence has news, and the latest report stays one press away on the HUD.
+The list of every deputy action with its standing order is one step away (PIL-026). The report and the settlement status are server messages, not client logic (PIL-075, O6). O110 has it open by itself on a return whose absence has news, and the latest report stays one press away on the HUD.
 
 The region already keeps most of this with ticks:
 - its battle results (ADR-161);
 - its statistics' completed structures and claim ends (ADR-136, ADR-163);
 - its moved areas (ADR-160);
 - the world record's freezes (ADR-137);
-- each absence's Workers, stores and deputy actions (ADR-181, ADR-182).
+- each absence's Workers, stores and deputy actions (ADR-184, ADR-185).
 
 A grievance carries no tick, and its statistics entry names its holder but not whom it is against.
 
@@ -34,7 +34,7 @@ What does the report hold, how does the server build it, and when does it send i
 * The report is built by the server from what the simulation recorded, so a later companion asks for it with the same call (PIL-075).
 * It agrees with the server's statistics, which the M4 plan's T5 tests.
 * It fits one reliable message, with the deputy's actions bounded.
-* "News" is decided by the server from the report itself, as O109 defines it.
+* "News" is decided by the server from the report itself, as O110 defines it.
 
 ## Considered Options
 
@@ -62,8 +62,8 @@ What is built:
   - at most 64 freezes: tick, cause and seconds;
   - at most 1,024 deputy actions, with their total.
 
-  At every bound it encodes to about 23 KB, inside a reliable message's 64 KiB. `HasNews` is O109's news: a battle, a deputy action, a freeze, a grievance, a claim moved or a structure completed.
-* **The builder.** `AwayReportOf(world, team, tick, onReturn)` (`GameLogic/AwayReport`) reads the settlement's latest closed absence (ADR-181) and keeps what falls in it, from the tick the steward went away up to the tick they came back:
+  At every bound it encodes to about 23 KB, inside a reliable message's 64 KiB. `HasNews` is O110's news: a battle, a deputy action, a freeze, a grievance, a claim moved or a structure completed.
+* **The builder.** `AwayReportOf(world, team, tick, onReturn)` (`GameLogic/AwayReport`) reads the settlement's latest closed absence (ADR-184) and keeps what falls in it, from the tick the steward went away up to the tick they came back:
   - the battle results that ended in it with the settlement as a side;
   - the statistics' structures completed by the settlement, and the central site won by its wait;
   - the territory events of halves moved to or from it;
@@ -76,7 +76,7 @@ What is built:
 ### Consequences
 
 * Good, because the report is a server call that a companion can make (PIL-075), and each of its lines is a record the simulation already keeps.
-* Good, because an absence without news opens nothing, so idling past the presence threshold does not interrupt the steward (O109).
+* Good, because an absence without news opens nothing, so idling past the presence threshold does not interrupt the steward (O110).
 * Bad, because a long absence's report is bounded: beyond 1,024 deputy actions or 256 grievances only the totals are told.
 * Bad, because a version raise again; it migrates as every raise does (MVP-095).
 * It forecloses a report of other settlements' battles; the valley status (ADR-165) and the results' public lines (ADR-168) remain for those.
@@ -109,7 +109,7 @@ What is built:
 
 ## More Information
 
-* Owner decisions O6, O108, O109; MVP-074, MVP-098, PIL-026, PIL-073, PIL-075, PIL-131; the [M4 plan](../implementation/m4_plan.md), task T5.
-* Amends [ADR-137](ADR-137-saving-the-journal-cut-and-the-world-record-at-m2.md) (where the freeze cause lives), [ADR-181](ADR-181-presence-and-absences.md) (the absence) and [ADR-099](ADR-099-world-snapshots.md) (the state version).
+* Owner decisions O6, O109, O110; MVP-074, MVP-098, PIL-026, PIL-073, PIL-075, PIL-131; the [M4 plan](../implementation/m4_plan.md), task T5.
+* Amends [ADR-137](ADR-137-saving-the-journal-cut-and-the-world-record-at-m2.md) (where the freeze cause lives), [ADR-184](ADR-184-presence-and-absences.md) (the absence) and [ADR-099](ADR-099-world-snapshots.md) (the state version).
 * The code: `GameShared/AwayMessages`, `GameShared/GameMessages`, `GameLogic/AwayReport`, `GameLogic/Presence`, `GameLogic/Relations`, `GameLogic/WorldRecord`, `GameLogic/WorldServer`, `GameLogic/WorldSnapshot`.
-* **Amendment 2026-10-24 (M4 task T10, [ADR-188](ADR-188-the-away-report-and-the-pace-in-the-client.md)).** The client asks once for the latest report in an always-on world, and a return's report with news opens its page.
+* **Amendment 2026-10-24 (M4 task T10, [ADR-191](ADR-191-the-away-report-and-the-pace-in-the-client.md)).** The client asks once for the latest report in an always-on world, and a return's report with news opens its page.

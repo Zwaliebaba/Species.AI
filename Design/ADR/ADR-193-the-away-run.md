@@ -1,7 +1,7 @@
 ---
 status: proposed
 date: 2026-10-24
-decision-makers: Species technology lead (M4 task T12; owner decisions O108, O109)
+decision-makers: Species technology lead (M4 task T12; owner decisions O109, O110)
 ---
 
 # The away run
@@ -16,7 +16,7 @@ PIL-102 names the typical pattern, an hour of active play and two check-ins a re
 
 ## Decision Drivers
 
-* The run uses the simulation, the deputy and the presence the server uses (ADR-181, ADR-182), not a model of them.
+* The run uses the simulation, the deputy and the presence the server uses (ADR-184, ADR-185), not a model of them.
 * A present steward is played as the valley run plays one (ADR-164), so that the runs compare.
 * The two lines need runs that differ in the steward's pattern alone.
 * The run is a measurement: it names its schedule and its stand-ins.
@@ -40,10 +40,10 @@ What is built:
   - the check-in pattern checks in for 6 minutes at its start.
 
   6 minutes is the middle of `pil.session.check_in_minutes`' 2 to 10 (PIL-074). The typical pattern's night absence is 12 h less its hour, and the check-in pattern's absence is a day less 6 minutes, so both meet PIL-022's absences of 8 and 24 hours.
-* **Presence.** Between ticks, as the world server applies it (ADR-181), `SetStewardPresence` opens or closes the absence:
+* **Presence.** Between ticks, as the world server applies it (ADR-184), `SetStewardPresence` opens or closes the absence:
   - present: the steward's settlement has a scripted steward with a Territorial settlement's decisions (ADR-162, ADR-164);
-  - away: it has none, and the deputy commands its battles (ADR-182).
-* **The world.** The valley of each seed at the always-on pace (ADR-180), with three AI settlements, run for its run (MVP-060, 8 world days at the always-on pace).
+  - away: it has none, and the deputy commands its battles (ADR-185).
+* **The world.** The valley of each seed at the always-on pace (ADR-183), with three AI settlements, run for its run (MVP-060, 8 world days at the always-on pace).
 * **What it keeps** (`Tools/SpeciesPerformance/AwayScene`):
   - each absence: its ticks; the battles the settlement defended that began in it; the deputy's actions; the strength (MVP-038) when the steward left and came back; and the first hourly sample after the return at which the strength was back;
   - each world day's strength of the steward's settlement and the AI settlements' mean, and the steward's Workers.
@@ -86,6 +86,6 @@ What is built:
 
 ## More Information
 
-* Owner decisions O108, O109; PIL-022, PIL-023, PIL-074, PIL-102, MVP-003, MVP-060; the MVP scope §6.2 (table 6); the [M4 plan](../implementation/m4_plan.md), task T12.
-* Related: [ADR-164](ADR-164-the-command-paths-confirmation-the-valley-run-and-the-valley-at-war-at-m3.md) (the valley run), [ADR-180](ADR-180-the-always-on-pace.md), [ADR-181](ADR-181-presence-and-absences.md), [ADR-182](ADR-182-the-deputy.md).
+* Owner decisions O109, O110; PIL-022, PIL-023, PIL-074, PIL-102, MVP-003, MVP-060; the MVP scope §6.2 (table 6); the [M4 plan](../implementation/m4_plan.md), task T12.
+* Related: [ADR-164](ADR-164-the-command-paths-confirmation-the-valley-run-and-the-valley-at-war-at-m3.md) (the valley run), [ADR-183](ADR-183-the-always-on-pace.md), [ADR-184](ADR-184-presence-and-absences.md), [ADR-185](ADR-185-the-deputy.md).
 * The code: `Tools/SpeciesPerformance/AwayScene`, `Tools/SpeciesPerformance/SpeciesPerformance.cpp`, `Build/RunPerformance.py`.

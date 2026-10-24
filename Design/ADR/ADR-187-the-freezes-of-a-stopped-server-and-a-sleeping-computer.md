@@ -1,14 +1,14 @@
 ---
 status: proposed
 date: 2026-10-24
-decision-makers: Species technology lead (M4 task T6; owner decisions O4, O54, O108)
+decision-makers: Species technology lead (M4 task T6; owner decisions O4, O54, O109)
 ---
 
 # The freezes of a stopped server and a sleeping computer
 
 ## Context and Problem Statement
 
-An always-on world freezes whenever its server process is not running or the computer sleeps, and each freeze is recorded with its cause and its world time (MVP-071, PIL-131). Each appears in the away report (ADR-183).
+An always-on world freezes whenever its server process is not running or the computer sleeps, and each freeze is recorded with its cause and its world time (MVP-071, PIL-131). Each appears in the away report (ADR-186).
 
 M2 recorded two causes in the world record (ADR-137):
 - a stall of 10 s or more, which the tick loop gives up (ADR-095);
@@ -16,7 +16,7 @@ M2 recorded two causes in the world record (ADR-137):
 
 A clean stop recorded nothing, because a session-paced world is meant to be frozen while its client is closed.
 
-At the always-on pace both missing causes matter. The steward closes the server's console (O109), and the world is frozen until it starts again. The computer sleeps overnight, and the tick loop, when it wakes, sees a stall as long as the sleep and records it as a server stall, which tells the steward that the server failed when it did not.
+At the always-on pace both missing causes matter. The steward closes the server's console (O110), and the world is frozen until it starts again. The computer sleeps overnight, and the tick loop, when it wakes, sees a stall as long as the sleep and records it as a server stall, which tells the steward that the server failed when it did not.
 
 How are the two freezes recorded, and how does a server tell a sleep from a stall?
 
@@ -83,6 +83,6 @@ What is built:
 
 ## More Information
 
-* Owner decisions O4, O54, O108, O109; MVP-071, MVP-075, MVP-095, PIL-076, PIL-131; the [M4 plan](../implementation/m4_plan.md), task T6.
+* Owner decisions O4, O54, O109, O110; MVP-071, MVP-075, MVP-095, PIL-076, PIL-131; the [M4 plan](../implementation/m4_plan.md), task T6.
 * Amends [ADR-137](ADR-137-saving-the-journal-cut-and-the-world-record-at-m2.md) (a clean stop is now a freeze), [ADR-095](ADR-095-server-host-tick-loop-and-command-queue.md) (a stall's cause) and [ADR-099](ADR-099-world-snapshots.md) (the state version).
 * The code: `NeuronCore/SuspendWatch`, `GameShared/AwayMessages`, `GameLogic/WorldRecord`, `GameLogic/WorldServer`, `GameLogic/WorldSnapshot`, `GameLogic/IntegratedServer`, `SpeciesServer/SpeciesServer.cpp`.

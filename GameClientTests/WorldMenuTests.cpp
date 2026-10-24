@@ -155,7 +155,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp074TheAwayReportsSummaryAndItsDeputysActionsWithTheirOrders)
   {
-    // ADR-187: the summary on one page, then every deputy action with the standing order that permitted it, at most
+    // ADR-190: the summary on one page, then every deputy action with the standing order that permitted it, at most
     // AWAY_PAGE_LINES_MAX lines a section, the last counting those left out.
     Species::AwayReport report;
     report.team = 2;
@@ -230,7 +230,7 @@ public:
     Assert::AreEqual(std::size_t{1}, h.ui.Stack().size(), L"the epilogue waits for the run's end");
     h.Click("away");
     h.ui.Update({}, h.metrics);
-    Assert::AreEqual(std::size_t{1}, h.ui.Stack().size(), L"ADR-187: the away report waits for an absence");
+    Assert::AreEqual(std::size_t{1}, h.ui.Stack().size(), L"ADR-190: the away report waits for an absence");
     Assert::IsFalse(h.menu.TakeChoice().has_value(), L"and is no choice");
     h.Click("resume");
     Assert::IsTrue(h.Taken() == Species::WorldMenuChoice::Kind::Resume, L"Return to the world");

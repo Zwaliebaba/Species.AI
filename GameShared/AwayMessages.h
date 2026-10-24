@@ -13,10 +13,10 @@
 namespace Species
 {
 
-// The messages of away play (M4, ADR-181, ADR-183), written by hand in the form the generated codecs will take (ADR-062,
+// The messages of away play (M4, ADR-184, ADR-186), written by hand in the form the generated codecs will take (ADR-062,
 // ADR-093), as the settlement's and the relations' are (ADR-136, ADR-160).
 
-// The values of away play that are both saved state (ADR-137, ADR-181, ADR-182) and on the wire (ADR-183): each is
+// The values of away play that are both saved state (ADR-137, ADR-184, ADR-185) and on the wire (ADR-186): each is
 // never renumbered.
 
 // PIL-131: why a world froze.
@@ -24,15 +24,15 @@ enum class FreezeCause : std::uint8_t
 {
   ServerStall = 0,   // the tick loop gave up 10 s or more (ADR-095)
   UncleanStop = 1,   // the server stopped without its final snapshot; the time since the snapshot it opened (MVP-075)
-  ServerStopped = 2, // MVP-071 (ADR-184): the server was not running between its clean stop and its next start
-  Sleep = 3          // MVP-071 (ADR-184): the computer slept; the time the tick loop gave up across it
+  ServerStopped = 2, // MVP-071 (ADR-187): the server was not running between its clean stop and its next start
+  Sleep = 3          // MVP-071 (ADR-187): the computer slept; the time the tick loop gave up across it
 };
 
 inline constexpr std::uint64_t FREEZE_CAUSE_MAX = 3;
 
 /// PIL-079 (MVP-073): the default orders a steward who sets none leaves the deputy, by which each deputy action is
 /// permitted (PIL-026), and the steward's own declared attack, whose battle the deputy fights while the steward is away
-/// but never declares again (O109).
+/// but never declares again (O110).
 enum class StandingOrder : std::uint8_t
 {
   DefendTheSettlement = 0,
@@ -45,7 +45,7 @@ enum class StandingOrder : std::uint8_t
 // The bound a standing order is written with, which leaves room for the orders a later stage adds (PIL-083).
 inline constexpr std::uint64_t STANDING_ORDER_MAX = 15;
 
-/// MVP-073 (ADR-182): what a deputy action did.
+/// MVP-073 (ADR-185): what a deputy action did.
 enum class DeputyActionKind : std::uint8_t
 {
   LeaderToObjective = 0 // sent a Leader's formation to its battle's objective; the detail is the other side's site
@@ -53,7 +53,7 @@ enum class DeputyActionKind : std::uint8_t
 
 inline constexpr std::uint64_t DEPUTY_ACTION_KIND_MAX = 15;
 
-/// MVP-072 (ADR-181): the client's word that its steward gave input, sent on the reliable channel when the input router
+/// MVP-072 (ADR-184): the client's word that its steward gave input, sent on the reliable channel when the input router
 /// sees input and no report has gone for PRESENCE_REPORT_SECONDS. It is read, not queued: the server notes the input's
 /// tick for the steward's presence and answers it as it answers a request, and it changes no simulation state itself.
 struct PresenceReportCommand
@@ -70,7 +70,7 @@ struct PresenceReportCommand
 // plays is never away, and seldom enough to cost nothing on the wire.
 inline constexpr double PRESENCE_REPORT_SECONDS = 15.0;
 
-/// MVP-074 (ADR-183): a request for the away report of the settlement of `team`, which the server answers after the next
+/// MVP-074 (ADR-186): a request for the away report of the settlement of `team`, which the server answers after the next
 /// tick, as it answers a status request (MVP-098).
 struct ReadAwayReportCommand
 {
@@ -84,7 +84,7 @@ struct ReadAwayReportCommand
   void Decode(Neuron::BitReader& _reader);
 };
 
-// MVP-074 (ADR-183): the most lines of each kind an away report carries; the deputy's actions beyond its bound are
+// MVP-074 (ADR-186): the most lines of each kind an away report carries; the deputy's actions beyond its bound are
 // counted, as the absence counts those beyond its own.
 inline constexpr std::uint64_t AWAY_BATTLES_MAX = 64;
 inline constexpr std::uint64_t AWAY_GRIEVANCES_MAX = 256;
@@ -158,10 +158,10 @@ struct AwayActionLine
   friend constexpr bool operator==(const AwayActionLine& _a, const AwayActionLine& _b) noexcept = default;
 };
 
-/// MVP-074 and PIL-073 (ADR-183): the away report of the settlement of `team` at `tick`: its steward's latest absence,
+/// MVP-074 and PIL-073 (ADR-186): the away report of the settlement of `team` at `tick`: its steward's latest absence,
 /// from the tick they went away to the tick they came back, with its summary and every deputy action with its standing
 /// order. `absence` is false when its steward was never away, and the report holds nothing else. `onReturn` marks the
-/// report the server sends unasked at a return whose absence has news (O109).
+/// report the server sends unasked at a return whose absence has news (O110).
 struct AwayReport
 {
   static constexpr Neuron::MessageTypeId TYPE = TypeIdOf(GameMessageType::AwayReport);
@@ -187,7 +187,7 @@ struct AwayReport
   std::uint32_t grievancesTotal = 0; // those beyond the lines included
   std::uint32_t actionsTotal = 0;
 
-  // O109: the absence has news: a battle, a deputy action, a freeze, a grievance, a claim moved or a structure finished.
+  // O110: the absence has news: a battle, a deputy action, a freeze, a grievance, a claim moved or a structure finished.
   [[nodiscard]] bool HasNews() const noexcept;
 
   void Encode(Neuron::BitWriter& _writer) const;

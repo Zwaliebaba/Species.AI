@@ -27,7 +27,7 @@ constexpr std::string_view SEED_KEY = "world.seed";
 constexpr std::string_view SITE_KEY = "world.site";
 constexpr std::string_view AI_SETTLEMENTS_KEY = "world.ai_settlements"; // O103: the AI settlements it was founded with
 constexpr std::string_view RUN_ENDED_KEY = "world.run_ended";           // ADR-170: "true" once the client saw the run end
-constexpr std::string_view PACE_KEY = "world.pace";                     // ADR-187: its pace's name, from M4
+constexpr std::string_view PACE_KEY = "world.pace";                     // ADR-190: its pace's name, from M4
 constexpr std::string_view TRUE_TEXT = "true";
 constexpr std::uint64_t SITE_COUNT = 4;          // WLD-040: the region's settlement sites
 constexpr std::uint32_t WORLD_NUMBER_MAX = 9999; // the most that WORLD_NUMBER_DIGITS digits hold
@@ -182,7 +182,7 @@ std::optional<SavedWorld> LatestWorld(const std::filesystem::path& _saves)
 {
   for (SavedWorld& world : ListWorlds(_saves))
   {
-    // ADR-187: an always-on world whose server runs can be continued before its first snapshot.
+    // ADR-190: an always-on world whose server runs can be continued before its first snapshot.
     const std::optional<ServerListing> listing = world.pace == WorldPace::AlwaysOn ? ReadServerListing(world.folder) : std::nullopt;
     if (!Neuron::ListFiles(world.folder, WORLD_SNAPSHOT_SUFFIX).empty() ||
         (listing.has_value() && Neuron::ProcessRunning(listing->processId)))

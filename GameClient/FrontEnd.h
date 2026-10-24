@@ -39,7 +39,7 @@ struct FrontEndChoice
   std::uint8_t site = 0;               // NewWorld: the steward's site (MVP-012)
   std::uint8_t aiSettlements = 0;      // NewWorld: its AI settlements, AI_SETTLEMENTS_FULL or none (MVP-013, O103)
   std::optional<SavedWorld> world;     // Epilogue: the ended world
-  WorldPace pace = WorldPace::Session; // NewWorld: its pace (MVP-071, ADR-187)
+  WorldPace pace = WorldPace::Session; // NewWorld: its pace (MVP-071, ADR-190)
 };
 
 // The front end's pages, by their UI page ids (GamePage's FrontEnd entries).

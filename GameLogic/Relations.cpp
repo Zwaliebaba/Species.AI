@@ -52,7 +52,7 @@ Grievance& GrievanceOf(RegionSimulation& _region, std::uint8_t _holder, std::uin
   const auto made = static_cast<std::size_t>(place - grievances.begin());
   grievances.insert(place, key);
   RecordEvent(_region, _holder, StatisticKind::GrievanceAdded, static_cast<std::uint32_t>(_cause));
-  RecordAbsenceGrievance(_region, {_region.NextTick(), _holder, _against, _cause}); // MVP-074 (ADR-183)
+  RecordAbsenceGrievance(_region, {_region.NextTick(), _holder, _against, _cause}); // MVP-074 (ADR-186)
   return grievances[made];
 }
 

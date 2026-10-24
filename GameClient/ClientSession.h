@@ -54,8 +54,8 @@ public:
     std::string productName;                         // the title's first part (PLT-057)
     const TuningMvp* tuning = nullptr;               // the client's own record, outliving the session; the terrain is built from it
     const Neuron::PlatformClock* clock = nullptr;    // when each tick arrives, outliving the session
-    std::optional<JoinIdentity> identity;            // ADR-186: sent as the connection's first message; none: no join (a test's)
-    WorldPace pace = WorldPace::Session;             // MVP-071 (ADR-187): the world's pace, from its description
+    std::optional<JoinIdentity> identity;            // ADR-189: sent as the connection's first message; none: no join (a test's)
+    WorldPace pace = WorldPace::Session;             // MVP-071 (ADR-190): the world's pace, from its description
   };
 
   explicit ClientSession(Desc _desc);
@@ -116,7 +116,7 @@ public:
     }
     return m_commandsSent++;
   }
-  // MVP-072 (ADR-181): once per frame, whether the steward gave input in it. A frame with input sends a presence report
+  // MVP-072 (ADR-184): once per frame, whether the steward gave input in it. A frame with input sends a presence report
   // when none has gone for PRESENCE_REPORT_SECONDS, so that the server knows its steward is present.
   void NoteInput(bool _input);
   // ADR-095: the commands' outcomes received and not yet taken, in the order they arrived.
@@ -140,14 +140,14 @@ public:
   {
     return m_valleyStatus;
   }
-  // MVP-074 (ADR-183): the latest away report the server sent, asked for or sent at a return; none before the first.
+  // MVP-074 (ADR-186): the latest away report the server sent, asked for or sent at a return; none before the first.
   [[nodiscard]] const std::optional<AwayReport>& LatestAwayReport() const noexcept
   {
     return m_awayReport;
   }
-  // O109: an away report of a return with news arrived since the last call, so that its page opens first.
+  // O110: an away report of a return with news arrived since the last call, so that its page opens first.
   [[nodiscard]] bool TakeAwayReportArrived() noexcept;
-  // MVP-071 (ADR-187): the world's pace.
+  // MVP-071 (ADR-190): the world's pace.
   [[nodiscard]] WorldPace Pace() const noexcept
   {
     return m_pace;
@@ -164,7 +164,7 @@ public:
   {
     return m_refused;
   }
-  // ADR-186: the server refused the client's join, with its reason and the server's identity, and closed.
+  // ADR-189: the server refused the client's join, with its reason and the server's identity, and closed.
   [[nodiscard]] const std::optional<JoinAnswer>& JoinRefused() const noexcept
   {
     return m_joinRefused;
@@ -219,7 +219,7 @@ private:
                                        bool _waiting = false, const std::optional<ReplicatedSettlement>& _settlement = std::nullopt);
 // The title of a refused world (MVP-011), until the UI shows the message.
 [[nodiscard]] std::string RefusedTitle(std::string_view _productName);
-// ADR-186: the title of a refused join, with its reason, until the UI shows the message.
+// ADR-189: the title of a refused join, with its reason, until the UI shows the message.
 [[nodiscard]] std::string JoinRefusedTitle(std::string_view _productName, JoinRefusal _refusal);
 
 } // namespace Species

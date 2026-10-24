@@ -1,7 +1,7 @@
 ---
 status: proposed
 date: 2026-10-24
-decision-makers: Species technology lead (M4 task T11; owner decisions O44, O108, O109)
+decision-makers: Species technology lead (M4 task T11; owner decisions O44, O109, O110)
 ---
 
 # The link simulator and the transport's confirmations
@@ -48,9 +48,9 @@ What is built:
   - with `--rate-kbps`, each direction is a link of that rate, where a datagram that would wait more than a second is lost.
 
   A datagram on `--listen` from another address is a new client (a rejoin). One generator of `--seed` draws every fate. The figures go to `--stats` every second and at the end. `--self-test` relays 4,000 echoes and checks the loss, the round trip, the reordering and the rate limit. CI runs it.
-* **The Debug route.** A Debug build's `--link-port <port>` makes the client connect to an always-on world's server through that port. The pin stays the listing's fingerprint (ADR-187), because TLS runs end to end.
+* **The Debug route.** A Debug build's `--link-port <port>` makes the client connect to an always-on world's server through that port. The pin stays the listing's fingerprint (ADR-190), because TLS runs end to end.
 * **The link scene** (`Tools/SpeciesPerformance/LinkScene`), named only:
-  - A valley of four settlements (seed 1, three AI settlements). The steward's settlement is run by its scripted steward and watched, so its figures move for the whole session. The world is served by `ServerHost` with `QuicListener` and the server's identity (ADR-186), as `SpeciesServer.exe` serves it.
+  - A valley of four settlements (seed 1, three AI settlements). The steward's settlement is run by its scripted steward and watched, so its figures move for the whole session. The world is served by `ServerHost` with `QuicListener` and the server's identity (ADR-189), as `SpeciesServer.exe` serves it.
   - The client joins over `QuicTransport` and asks for its statuses once a second, as the HUD asks.
   - Wrappers of the world and the listener record:
     - each tick's hash;
@@ -78,7 +78,7 @@ What is built:
   - half the encoding of a default message of the type, with a bit flipped, truncated or extended.
 
   Each is delivered or dropped with its reason. Its corpus is those encodings and the generator's pinned seed, as ADR-069 has it, so a failing input is found again. A default message holds empty lists, so the deep structures (a state update's records, a status's rows) are reached by the random bodies alone. ADR-088's 10⁷ inputs per parser are the same code at 10,000,000 inputs per message (3.9 × 10⁸ in all), run once and recorded in `playtests/M4.md`.
-* **The pinned DLL.** `Build/CheckServerImports.py` fails when the server imports `msquic.dll`, which the transport loads itself and no project links (ADR-185). It also fails when the `msquic.dll` beside the built programs is not the pinned package's copy for their platform, byte for byte.
+* **The pinned DLL.** `Build/CheckServerImports.py` fails when the server imports `msquic.dll`, which the transport loads itself and no project links (ADR-188). It also fails when the `msquic.dll` beside the built programs is not the pinned package's copy for their platform, byte for byte.
 * **`QuicPathStats`** gains MsQuic's stream payload bytes each way, its congestion events, and the state datagrams it reported sent with their bytes.
 
 ### Consequences
@@ -114,8 +114,8 @@ What is built:
 
 ## More Information
 
-* Owner decisions O44, O108, O109; MVP-071, MVP-090, PLT-100; the [M4 plan](../implementation/m4_plan.md), task T11.
-* Amends [ADR-088](ADR-088-transport-messages-identity-and-diagnostics.md) (item 7's simulator, the overhead's model with ADR-111's header), [ADR-086](ADR-086-replication-and-interest-management.md) (how M4's line is measured), [ADR-089](ADR-089-msquic-transport-package.md) (the pin re-checked, the DLL checked) and [ADR-185](ADR-185-the-quic-transport-and-the-servers-certificate.md) (the path statistics).
+* Owner decisions O44, O109, O110; MVP-071, MVP-090, PLT-100; the [M4 plan](../implementation/m4_plan.md), task T11.
+* Amends [ADR-088](ADR-088-transport-messages-identity-and-diagnostics.md) (item 7's simulator, the overhead's model with ADR-111's header), [ADR-086](ADR-086-replication-and-interest-management.md) (how M4's line is measured), [ADR-089](ADR-089-msquic-transport-package.md) (the pin re-checked, the DLL checked) and [ADR-188](ADR-188-the-quic-transport-and-the-servers-certificate.md) (the path statistics).
 * The pin, re-checked on nuget.org on 2026-10-24: `Microsoft.Native.Quic.MsQuic.Schannel` 2.6.3 is the latest version, published 2026-10-13, MIT, with no deprecation or advisory. 2.6.1 and 2.6.2 are deprecated for critical bugs (GHSA-2mxg-prvg-9jfg). Read from nuget.org's registration index.
 * CI's first quick link run through the simulator on MsQuic (300 ticks, Debug build on the Windows runner, 2026-10-24) found:
   - a figure's longest freeze over one lost datagram was 1 tick, over 1,207 such freezes, and over two or more 2 ticks;

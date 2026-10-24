@@ -98,7 +98,7 @@ struct QuicLink
   std::vector<DatagramOutcome> outcomes;
   std::uint64_t nextDatagram = 1;
   std::uint64_t datagramsRefused = 0;
-  std::uint64_t datagramsSent = 0; // ADR-189: put in packets, as MsQuic reports them sent
+  std::uint64_t datagramsSent = 0; // ADR-192: put in packets, as MsQuic reports them sent
   std::uint64_t datagramBytesSent = 0;
   TransportStats stats;
 

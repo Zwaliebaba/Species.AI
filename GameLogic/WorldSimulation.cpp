@@ -38,7 +38,7 @@ WorldSimulation::WorldSimulation(const Desc& _desc)
     m_regions.push_back(
       std::make_unique<RegionSimulation>(index, _desc.simulationKey, _desc.nextTick, m_tuning, nullptr, _desc.structures));
   }
-  // MVP-060 (ADR-163): a run begins with its world, mvp.run.length_hours at its pace (ADR-180).
+  // MVP-060 (ADR-163): a run begins with its world, mvp.run.length_hours at its pace (ADR-183).
   SetRunEnd(_desc.nextTick + RunTicks(m_tuning));
 }
 

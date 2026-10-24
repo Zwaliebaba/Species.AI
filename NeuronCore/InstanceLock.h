@@ -6,7 +6,7 @@
 namespace Neuron
 {
 
-/// A lock that one process of the user's session holds at a time, by its name (ADR-187): a named object of the session's
+/// A lock that one process of the user's session holds at a time, by its name (ADR-190): a named object of the session's
 /// namespace, which exists while the process that made it holds it, and goes when it ends, however it ends. Moved,
 /// never copied.
 class InstanceLock
@@ -29,7 +29,7 @@ private:
   void* m_handle = nullptr;
 };
 
-/// A request from one process to another that it stop (ADR-187): a named event of the session's namespace, which the
+/// A request from one process to another that it stop (ADR-190): a named event of the session's namespace, which the
 /// process that may be stopped makes and waits on, and any other raises. Moved, never copied.
 class StopSignal
 {

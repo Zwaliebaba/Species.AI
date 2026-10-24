@@ -43,7 +43,7 @@ std::vector<Side> SidesOf(const RegionSimulation& _region, const Settlement& _se
       sides.push_back({_settlement.team, battle.objective, battle.attacker, StandingOrder::DefendTheSettlement});
     }
   }
-  // O109: the steward's own expedition, once its battle is in progress.
+  // O110: the steward's own expedition, once its battle is in progress.
   if (const Expedition* expedition = ExpeditionOf(_region, _settlement.site); expedition != nullptr)
   {
     if (const Battle* battle = BattleOf(_region, expedition->id); battle != nullptr)

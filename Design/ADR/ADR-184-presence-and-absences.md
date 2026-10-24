@@ -1,7 +1,7 @@
 ---
 status: proposed
 date: 2026-10-24
-decision-makers: Species technology lead (M4 task T3; owner decisions O54, O108, O109)
+decision-makers: Species technology lead (M4 task T3; owner decisions O54, O109, O110)
 ---
 
 # Presence and absences
@@ -55,18 +55,18 @@ What is built:
   - the settlement's Workers (`Population`) and stores at either end;
   - the deputy's actions (T4) in the order they were taken, at most `DEPUTY_ACTIONS_MAX` (4,096), the rest counted.
 
-  `SetStewardPresence(world, away)` opens an absence for each stewarded settlement at the world's next tick, or closes the open one there. A closed absence replaces the settlement's previous closed one, so the region holds at most an open and a closed absence for each settlement: the latest closed one is the report the HUD asks for again (O109, T5). `StewardAway` and `OpenAbsence` read it.
+  `SetStewardPresence(world, away)` opens an absence for each stewarded settlement at the world's next tick, or closes the open one there. A closed absence replaces the settlement's previous closed one, so the region holds at most an open and a closed absence for each settlement: the latest closed one is the report the HUD asks for again (O110, T5). `StewardAway` and `OpenAbsence` read it.
 * **The journal.** Format 8: each entry may be a presence change (`JournalEntry::presence`, `away`), written after its connection flag. The replay applies it before the tick's step, after the tick's connections and commands, as the server does. A journal of format 7 or older holds none.
 * **The state.** The region writes its absences as a new last section. `WORLD_STATE_VERSION` is 19 (`STATE_VERSION_WITH_ABSENCES`). A region of version 18 or older reads with none, its steward present. The reader refuses an absence of a tick the region has not reached, of a team with no settlement, or a second open or closed absence of one team.
 
-A world at the always-on pace that opens with nobody connected is away from its first tick: the client connects a moment after the server starts (T9). That absence closes at the connection with nothing in it, and an absence with no news opens no report (O109, T5).
+A world at the always-on pace that opens with nobody connected is away from its first tick: the client connects a moment after the server starts (T9). That absence closes at the connection with nothing in it, and an absence with no news opens no report (O110, T5).
 
 ### Consequences
 
 * Good, because presence is reproducible from the journal and the snapshot, and no client can set it.
 * Good, because the deputy and the report have one record per absence, with the Workers and stores at both ends that the report's summary needs.
 * Bad, because a short absence replaces the previous closed one, including the absence of a restart; the HUD's "latest report" is always the latest absence, not the latest with news.
-* Bad, because the client must report camera-only input, or a steward who only watches becomes away after the idle minutes. A battle watched without input makes the steward away; the deputy then commands the battle (O109).
+* Bad, because the client must report camera-only input, or a steward who only watches becomes away after the idle minutes. A battle watched without input makes the steward away; the deputy then commands the battle (O110).
 * It forecloses presence per steward: the MVP has one steward, and `SetStewardPresence` applies to every stewarded settlement of the world. Several stewards will need presence per steward, which the journal entry would then name.
 
 ### Confirmation
@@ -101,8 +101,8 @@ A world at the always-on pace that opens with nobody connected is away from its 
 
 ## More Information
 
-* Owner decisions O54, O108, O109; MVP-072, MVP-076, PIL-070; the [M4 plan](../implementation/m4_plan.md), task T3.
+* Owner decisions O54, O109, O110; MVP-072, MVP-076, PIL-070; the [M4 plan](../implementation/m4_plan.md), task T3.
 * Amends [ADR-137](ADR-137-saving-the-journal-cut-and-the-world-record-at-m2.md) (the journal's format) and [ADR-099](ADR-099-world-snapshots.md) (the state version).
 * The code: `GameShared/AwayMessages`, `GameShared/GameMessages`, `GameLogic/Presence`, `GameLogic/RegionSimulation`, `GameLogic/CommandJournal`, `GameLogic/WorldServer`, `GameLogic/WorldSnapshot`.
-* **Amendment 2026-10-24 (M4 task T5, [ADR-183](ADR-183-the-away-report.md)).** Each absence also records the grievances added for or against its settlement while it lasts (`AbsenceGrievance`), for the away report; `StandingOrder` and `DeputyActionKind` live in GameShared's `AwayMessages.h`. `WORLD_STATE_VERSION` is 21.
-* **Amendment 2026-10-24 (M4 task T10, [ADR-188](ADR-188-the-away-report-and-the-pace-in-the-client.md)).** The client sends a presence report in a frame with input when none has gone for 15 s.
+* **Amendment 2026-10-24 (M4 task T5, [ADR-186](ADR-186-the-away-report.md)).** Each absence also records the grievances added for or against its settlement while it lasts (`AbsenceGrievance`), for the away report; `StandingOrder` and `DeputyActionKind` live in GameShared's `AwayMessages.h`. `WORLD_STATE_VERSION` is 21.
+* **Amendment 2026-10-24 (M4 task T10, [ADR-191](ADR-191-the-away-report-and-the-pace-in-the-client.md)).** The client sends a presence report in a frame with input when none has gone for 15 s.

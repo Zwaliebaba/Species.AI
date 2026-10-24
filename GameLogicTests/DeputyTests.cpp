@@ -230,7 +230,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp073TheDeputyDefendsABorderHalfItsSettlementHolds)
   {
-    // Playtest 2's second situation: a claim battle at a border half the settlement holds (O109). The deputy sends the
+    // Playtest 2's second situation: a claim battle at a border half the settlement holds (O110). The deputy sends the
     // settlement's Leader to the claimed half's resource site, the battle's objective.
     const std::unique_ptr<Species::WorldSimulation> world = AwayValley();
     Species::RegionSimulation& region = world->Region(0);
@@ -266,7 +266,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp073TheDeputyFightsTheStewardsOwnExpeditionAndNeverWithdrawsIt)
   {
-    // O109: the steward's raid on site 3 is out when the steward goes away. The deputy sends its Leader to the target's
+    // O110: the steward's raid on site 3 is out when the steward goes away. The deputy sends its Leader to the target's
     // Wellspring under "the steward's attack", and the expedition stays out until its battle ends.
     const std::unique_ptr<Species::WorldSimulation> world = ValleyWorld(SETTLED_TEST_KEY, FastTuning());
     Species::RegionSimulation& region = world->Region(0);
@@ -356,7 +356,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Pil071TheDeputyCommandsOnlyWhileTheStewardIsAway)
   {
-    // ADR-182: the deputy is made at the first absence and kept; it may command its settlement's team and its
+    // ADR-185: the deputy is made at the first absence and kept; it may command its settlement's team and its
     // expedition's only while the steward is away, and no other team; it saves and restores, and a region of version 19
     // reads with none.
     const std::unique_ptr<Species::WorldSimulation> world = ValleyWorld(SETTLED_TEST_KEY, FastTuning());

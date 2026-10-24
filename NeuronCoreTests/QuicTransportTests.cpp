@@ -27,7 +27,7 @@ namespace NeuronCoreTests
 namespace
 {
 
-// The certificate the tests' servers present, kept in the user's store between runs as a server's is (ADR-185).
+// The certificate the tests' servers present, kept in the user's store between runs as a server's is (ADR-188).
 constexpr std::wstring_view TEST_CERTIFICATE = L"Species transport test";
 // How long a test waits for MsQuic's threads before it fails: far above a loopback round trip.
 constexpr std::chrono::milliseconds WAIT{10'000};
@@ -139,7 +139,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp071ALoopbackConnectionCarriesBothChannelsBothWays)
   {
-    // ADR-185: each reliable message arrives once and in order, each datagram at most once, and each datagram's fate is
+    // ADR-188: each reliable message arrives once and in order, each datagram at most once, and each datagram's fate is
     // reported once; the figures count what was sent and received. Across the two channels QUIC keeps no order.
     Loopback loopback = Connected();
     const std::array<std::pair<Neuron::Transport*, Neuron::Transport*>, 2> directions{
@@ -228,7 +228,7 @@ public:
   {
     // The reliable messages sent before a Close still reach the other end, which then sees the connection closed by its
     // peer; the end that closed refuses to send more. The client's first message opens the reliable channel, as its join
-    // does (ADR-186): a server end has none before it.
+    // does (ADR-189): a server end has none before it.
     for (const bool clientCloses : {true, false})
     {
       Loopback loopback = Connected();
@@ -328,7 +328,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp071AReceiverThatTakesNothingStopsTheSender)
   {
-    // ADR-185: an end holds at most QUIC_RELIABLE_BACKLOG_BYTES received and not taken before QUIC's flow control holds
+    // ADR-188: an end holds at most QUIC_RELIABLE_BACKLOG_BYTES received and not taken before QUIC's flow control holds
     // the sender, whose own backlog is bounded the same, so the sender is told to wait; once the receiver takes the
     // messages, every one arrives in order and the sender goes on.
     Loopback loopback = Connected();

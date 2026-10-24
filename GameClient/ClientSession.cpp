@@ -95,7 +95,7 @@ ClientSession::ClientSession(Desc _desc)
       }
       m_reports.push_back(_report);
     });
-  // ADR-186: the join goes first, before every command, and the server does not number it.
+  // ADR-189: the join goes first, before every command, and the server does not number it.
   if (m_transport && _desc.identity)
   {
     const bool sent = m_transport->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(JoinCommand{*_desc.identity})).has_value();

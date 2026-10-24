@@ -54,9 +54,9 @@
 // and, only when named, runs the valley run of the corpus, each settlement driven by a policy for a run, reporting
 // Playtest 1's measurable lines (ADR-164). From M4 task T11, the link scene, only when named, serves a valley over
 // QuicTransport to a client of its own, through the link simulator when --link-port names its port, and compares the
-// client's replica with the server's view after every tick (ADR-189). From M4 task T12, the away run, only when named,
+// client's replica with the server's view after every tick (ADR-192). From M4 task T12, the away run, only when named,
 // plays an always-on valley of the corpus at each of PIL-102's patterns for its run, the steward's settlement under its
-// scripted steward while present and its deputy while away, for Playtest 2's measurable lines (ADR-190).
+// scripted steward while present and its deputy while away, for Playtest 2's measurable lines (ADR-193).
 //
 //   SpeciesPerformance.exe [--quick] [--scenes <name,...>] [--out <file.json>] [--content <folder> | --tuning-source <GameData>]
 //   SpeciesPerformance.exe --saved-world <world folder> [--out <file.json>] [--content <folder> | --tuning-source <GameData>]
@@ -121,13 +121,13 @@ constexpr std::uint64_t VALLEY_SEED_FIRST = 1;
 constexpr std::uint64_t VALLEY_SEED_COUNT = 8;
 constexpr std::uint64_t VALLEY_TICKS_QUICK = 600;
 
-// The away run's corpus (the M4 plan T12, ADR-190): the valleys of these seeds, each always-on world run at both
+// The away run's corpus (the M4 plan T12, ADR-193): the valleys of these seeds, each always-on world run at both
 // patterns for its run (MVP-060, 8 world days); the quick run takes the first seed's first 8,000 ticks.
 constexpr std::uint64_t AWAY_SEED_FIRST = 1;
 constexpr std::uint64_t AWAY_SEED_COUNT = 8;
 constexpr std::uint64_t AWAY_TICKS_QUICK = 8000;
 
-// The link scene (ADR-086, ADR-088, ADR-189): 30 minutes of the server's ticks with a rejoin at minute 20; the quick
+// The link scene (ADR-086, ADR-088, ADR-192): 30 minutes of the server's ticks with a rejoin at minute 20; the quick
 // run takes 30 seconds with a rejoin halfway.
 constexpr double LINK_MINUTES = 30.0;
 constexpr double LINK_REJOIN_MINUTES = 20.0;
@@ -154,8 +154,8 @@ struct Options
   std::filesystem::path content;
   std::filesystem::path tuningSource;
   std::filesystem::path savedWorld; // ADR-156: a saved world's folder to read rather than the scenes
-  std::uint16_t serverPort = 0;     // ADR-189: the link scene's listener; 0: one the system chooses
-  std::uint16_t linkPort = 0;       // ADR-189: the link simulator's port, which the client connects to; 0: none
+  std::uint16_t serverPort = 0;     // ADR-192: the link scene's listener; 0: one the system chooses
+  std::uint16_t linkPort = 0;       // ADR-192: the link simulator's port, which the client connects to; 0: none
 };
 
 bool Wanted(const Options& _options, std::string_view _scene)
@@ -673,7 +673,7 @@ int Run(const Options& _options)
       }
     }
   }
-  // M4 task T12 (ADR-190): the away run of the corpus at both patterns, only when named.
+  // M4 task T12 (ADR-193): the away run of the corpus at both patterns, only when named.
   std::vector<Performance::AwayRun> away;
   if (Named(_options, "away"))
   {
@@ -692,7 +692,7 @@ int Run(const Options& _options)
                                 run.stewardBattles));
     }
   }
-  // M4 task T11 (ADR-189): the session over QuicTransport, only when named.
+  // M4 task T11 (ADR-192): the session over QuicTransport, only when named.
   std::optional<Performance::LinkRun> link;
   if (Named(_options, "link"))
   {

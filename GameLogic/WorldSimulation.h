@@ -33,14 +33,14 @@ public:
     const TuningMvp* tuning = nullptr;            // MVP-099: read when the server started, and outliving the world
     std::uint64_t worldSeed = 0;                  // MVP-005, WLD-161: the public seed the world's terrain is built from
     const StructureRecords* structures = nullptr; // ADR-130: what its regions build structures from, outliving the world
-    WorldPace pace = WorldPace::Session;          // PIL-104 (ADR-180): fixed for the world's life
+    WorldPace pace = WorldPace::Session;          // PIL-104 (ADR-183): fixed for the world's life
   };
 
   // The world owner's state as a snapshot of WORLD_STATE_VERSION 3 and later holds it, with the world seed (ADR-102).
   static constexpr std::uint32_t STATE_VERSION_WITH_SEED = 3;
   // ... and of version 15 and later, with its run (ADR-163).
   static constexpr std::uint32_t STATE_VERSION_WITH_RUN = 15;
-  // A snapshot of version 18 and later names the world's pace beside its region count (ADR-180).
+  // A snapshot of version 18 and later names the world's pace beside its region count (ADR-183).
   static constexpr std::uint32_t STATE_VERSION_WITH_PACE = 18;
 
   /// MVP-060 and MVP-063 (ADR-163): the world's run: the tick it ends at, mvp.run.length_hours after the tick it began,
@@ -77,7 +77,7 @@ public:
   {
     return m_key;
   }
-  // PIL-104 (ADR-180): the world's pace, and the tuning record as the world and its regions read it at that pace: the
+  // PIL-104 (ADR-183): the world's pace, and the tuning record as the world and its regions read it at that pace: the
   // record the server read when it started, its scaled values converted (PIL-101).
   [[nodiscard]] WorldPace Pace() const noexcept
   {
@@ -151,7 +151,7 @@ private:
   Run m_run;
 };
 
-// MVP-060: the ticks of a run, mvp.run.length_hours of _tuning, which a world reads at its pace (ADR-180).
+// MVP-060: the ticks of a run, mvp.run.length_hours of _tuning, which a world reads at its pace (ADR-183).
 [[nodiscard]] std::uint64_t RunTicks(const TuningMvp& _tuning) noexcept;
 
 } // namespace Species

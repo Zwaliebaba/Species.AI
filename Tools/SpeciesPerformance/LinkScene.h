@@ -13,7 +13,7 @@
 namespace Performance
 {
 
-/// What the link scene runs (M4 task T11, ADR-189).
+/// What the link scene runs (M4 task T11, ADR-192).
 struct LinkSceneDesc
 {
   const Species::TuningMvp* tuning = nullptr;
@@ -59,7 +59,7 @@ struct LinkRun
   std::uint64_t unevaluatedTicks = 0; // ticks the client passed without a view of the server's to compare with
   std::uint64_t stateDatagrams = 0;
   std::uint64_t datagramsAcknowledged = 0;
-  std::uint64_t datagramsLost = 0; // reported lost, from MsQuic's first suspicion (ADR-185)
+  std::uint64_t datagramsLost = 0; // reported lost, from MsQuic's first suspicion (ADR-188)
   std::uint64_t datagramsUnresolved = 0;
   Freezes figuresSingleLoss;   // a figure's freezes over which one datagram that carried it was lost
   Freezes figuresMultipleLoss; // ... two or more

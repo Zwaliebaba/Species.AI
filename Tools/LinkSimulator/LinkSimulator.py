@@ -1,4 +1,4 @@
-"""LinkSimulator.py: the link simulator of ADR-088 item 7 (M4 task T11, ADR-189), a development tool that never ships.
+"""LinkSimulator.py: the link simulator of ADR-088 item 7 (M4 task T11, ADR-192), a development tool that never ships.
 
   python Tools/LinkSimulator/LinkSimulator.py --listen <port> --server <port> [--rtt-ms 150] [--loss-percent 10]
                                               [--reorder-percent 5] [--reorder-ms 120] [--rate-kbps 0] [--seed 1]

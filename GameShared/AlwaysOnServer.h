@@ -10,21 +10,21 @@
 namespace Species
 {
 
-// ADR-187: the names that tie an always-on world's headless server to its client on one computer. One server runs at a
-// time (O109), holding ALWAYS_ON_LOCK; ALWAYS_ON_STOP asks it to stop as closing its console does.
+// ADR-190: the names that tie an always-on world's headless server to its client on one computer. One server runs at a
+// time (O110), holding ALWAYS_ON_LOCK; ALWAYS_ON_STOP asks it to stop as closing its console does.
 inline constexpr std::wstring_view ALWAYS_ON_LOCK = L"Species.AlwaysOnWorld";
 inline constexpr std::wstring_view ALWAYS_ON_STOP = L"Species.AlwaysOnWorld.Stop";
 // The option that starts the headless server on an always-on world's folder (StartupOptions::alwaysOnWorld).
 inline constexpr std::wstring_view ALWAYS_ON_WORLD_OPTION = L"--always-on-world";
 // The headless server's program, beside the client's.
 inline constexpr std::wstring_view SERVER_PROGRAM = L"SpeciesServer.exe";
-// The name of the headless server's certificate in the user's store (ADR-185).
+// The name of the headless server's certificate in the user's store (ADR-188).
 inline constexpr std::wstring_view SERVER_CERTIFICATE_NAME = L"Species server";
 // The listing a running server writes into its world's folder, and removes when it stops.
 inline constexpr std::wstring_view SERVER_LISTING_FILE = L"server.txt";
 
-/// ADR-187: how a client reaches the server of a world's folder: its port on the loopback interface, its certificate's
-/// fingerprint, which the client pins (ADR-185), its build's stamp (ADR-186), and its process.
+/// ADR-190: how a client reaches the server of a world's folder: its port on the loopback interface, its certificate's
+/// fingerprint, which the client pins (ADR-188), its build's stamp (ADR-189), and its process.
 struct ServerListing
 {
   std::uint16_t port = 0;

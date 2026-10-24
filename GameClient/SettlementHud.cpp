@@ -34,7 +34,7 @@ constexpr std::string_view STRING_BUILD = "ui.hud.build";
 constexpr std::string_view STRING_COST = "ui.hud.cost";
 constexpr std::string_view STRING_COMPLETED = "ui.hud.completed";
 constexpr std::string_view STRING_SEED = "ui.hud.seed";
-constexpr std::string_view STRING_ALWAYS_ON = "ui.hud.always_on"; // ADR-187
+constexpr std::string_view STRING_ALWAYS_ON = "ui.hud.always_on"; // ADR-190
 constexpr std::string_view STRING_PLACING = "ui.hud.placing";     // ADR-153
 constexpr std::string_view STRING_REFUSED = "ui.hud.refused";
 // M3 task T11 (ADR-166): the relations panel and the notices of M3's kinds.
@@ -105,7 +105,7 @@ constexpr std::array<UiImage, 3> PRIORITY_ICONS{UiImage::IconPriorityGather, UiI
 // priorities, which start at PRIORITY_ROW.
 constexpr std::size_t FIXED_ROWS = 7;
 constexpr std::size_t GROWTH_ROW = 2;
-constexpr std::size_t ALWAYS_ON_ROW = 1; // the world panel's row after the seed's (ADR-187)
+constexpr std::size_t ALWAYS_ON_ROW = 1; // the world panel's row after the seed's (ADR-190)
 constexpr std::size_t PRIORITY_ROW = 4;
 // The share a priority reaches at most (MVP-036).
 constexpr std::uint8_t SHARE_MAX = 100;
@@ -810,14 +810,14 @@ std::vector<HudRow> SettlementHud::WorldRows(const Neuron::StringTable& _strings
     const std::array arguments{Neuron::FormatArgument{"seed", std::string_view(seed)}};
     seedRow.text = _strings.Format(STRING_SEED, arguments, _locale);
   }
-  // MVP-071 and MVP-072 (ADR-187): an always-on world, and when its steward counts as away.
+  // MVP-071 and MVP-072 (ADR-190): an always-on world, and when its steward counts as away.
   if (m_model.pace == WorldPace::AlwaysOn)
   {
     const std::array arguments{Neuron::FormatArgument{"minutes", static_cast<std::int64_t>(std::llround(m_model.idleMinutes))}};
     HudRow& pace = rows.emplace_back();
     pace.text = _strings.Format(STRING_ALWAYS_ON, arguments, _locale);
     pace.color = text;
-    pace.trailing = Units(hud.iconSize) + Units(hud.padding); // O109 (ADR-188): the away report's button
+    pace.trailing = Units(hud.iconSize) + Units(hud.padding); // O110 (ADR-191): the away report's button
   }
   if (!m_model.valley.has_value())
   {
@@ -1260,7 +1260,7 @@ void SettlementHud::Layout(const Neuron::UiMetrics& _metrics)
   m_world = Neuron::UiRect::FromSize(margin, bottomOf(margin, margin + world[0]) - world[1], world[0], world[1]);
   m_worldInner = Inside(m_plates.accent, m_world, false);
   m_zones.push_back({HudZone::World, 0, m_world});
-  // O109 (ADR-188): the always-on row's button at its right end, which opens the latest away report.
+  // O110 (ADR-191): the always-on row's button at its right end, which opens the latest away report.
   if (m_model.pace == WorldPace::AlwaysOn)
   {
     const float top = std::round(m_worldInner.top + padding + row * static_cast<float>(ALWAYS_ON_ROW) + (row - icon) * 0.5f);
@@ -1598,7 +1598,7 @@ void SettlementHud::Draw(Neuron::TextSystem& _text, const Neuron::StringTable& _
     for (const HudRow& worldRow : WorldRows(_strings, _locale))
     {
       drawRow(worldRow, left, right, top);
-      // O109 (ADR-188): the away report's button, on the accent plate once a report has come, and dim before.
+      // O110 (ADR-191): the away report's button, on the accent plate once a report has come, and dim before.
       if (index++ == ALWAYS_ON_ROW && m_model.pace == WorldPace::AlwaysOn)
       {
         plate(m_model.awayReport, m_awayButton, true);
