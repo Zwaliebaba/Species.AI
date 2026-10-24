@@ -197,6 +197,7 @@
     <ClCompile Include="SpscQueueTests.cpp" />
     <ClCompile Include="StartupOptionsTests.cpp" />
     <ClCompile Include="StringTableAssetTests.cpp" />
+    <ClCompile Include="SuspendWatchTests.cpp" />
     <ClCompile Include="TerrainFieldTests.cpp" />
     <ClCompile Include="TerrainSurfaceTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />

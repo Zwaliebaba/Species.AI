@@ -33,7 +33,13 @@ struct WorldRecord
   friend bool operator==(const WorldRecord& _a, const WorldRecord& _b) = default;
 };
 
+// A world record of state version 22 and later holds M4's freeze causes, written in two bits (ADR-184); one before it
+// knew two causes, written in one.
+inline constexpr std::uint32_t STATE_VERSION_WITH_FREEZE_CAUSES = 22;
+inline constexpr std::uint64_t FREEZE_CAUSE_MAX_BEFORE_M4 = 1;
+
 void WriteWorldRecord(Neuron::BitWriter& _writer, const WorldRecord& _record);
-[[nodiscard]] bool ReadWorldRecord(Neuron::BitReader& _reader, WorldRecord& _record);
+// The record as a snapshot of _stateVersion holds it; false when it does not read whole.
+[[nodiscard]] bool ReadWorldRecord(Neuron::BitReader& _reader, WorldRecord& _record, std::uint32_t _stateVersion);
 
 } // namespace Species

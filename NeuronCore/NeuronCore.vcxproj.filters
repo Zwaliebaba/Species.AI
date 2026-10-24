@@ -120,6 +120,9 @@
     <ClInclude Include="SettingsStore.h">
       <Filter>Platform</Filter>
     </ClInclude>
+    <ClInclude Include="SuspendWatch.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
     <ClInclude Include="UserData.h">
       <Filter>Platform</Filter>
     </ClInclude>
@@ -285,6 +288,9 @@
       <Filter>Platform</Filter>
     </ClCompile>
     <ClCompile Include="SettingsStore.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="SuspendWatch.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
     <ClCompile Include="UserData.cpp">

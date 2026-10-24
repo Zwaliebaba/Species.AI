@@ -15,6 +15,7 @@
 #include "Sha256.h"
 #include "StartupOptions.h"
 #include "StructureRecords.h"
+#include "SuspendWatch.h"
 #include "TextEncoding.h"
 #include "Tuning.h"
 #include "WorldServer.h"
@@ -144,6 +145,8 @@ int Run(std::span<const std::wstring> _arguments)
       // steward (ADR-140).
       worldDesc.watched = options.watch;
       worldDesc.calendar = [&clock] { return clock.CalendarUtc(); }; // ADR-137: the world record's wall times
+      const Neuron::SuspendWatch suspends;                           // ADR-184: the computer's sleeps
+      worldDesc.suspensions = [&suspends] { return suspends.Suspensions(); };
       WorldServer world(worldDesc);
       Neuron::ServerHost::Desc hostDesc;
       hostDesc.clock = &clock;

@@ -125,6 +125,9 @@
     <ClCompile Include="StringTableAssetTests.cpp">
       <Filter>Content</Filter>
     </ClCompile>
+    <ClCompile Include="SuspendWatchTests.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
     <ClCompile Include="TerrainFieldTests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>

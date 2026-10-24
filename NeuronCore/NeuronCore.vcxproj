@@ -173,6 +173,7 @@
     <ClInclude Include="NativeWindowHandle.h" />
     <ClInclude Include="SettingsFile.h" />
     <ClInclude Include="SettingsStore.h" />
+    <ClInclude Include="SuspendWatch.h" />
     <ClInclude Include="UserData.h" />
     <ClInclude Include="PlatformClock.h" />
     <ClInclude Include="PlatformError.h" />
@@ -230,6 +231,7 @@
     <ClCompile Include="MessagePattern.cpp" />
     <ClCompile Include="SettingsFile.cpp" />
     <ClCompile Include="SettingsStore.cpp" />
+    <ClCompile Include="SuspendWatch.cpp" />
     <ClCompile Include="UserData.cpp" />
     <ClCompile Include="PlatformClock.cpp" />
     <ClCompile Include="PlatformLogSink.cpp" />

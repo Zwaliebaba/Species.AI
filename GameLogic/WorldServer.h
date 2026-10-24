@@ -59,6 +59,9 @@ public:
                                              // opens new without its folder, so that it saves and removes nothing there
     // The calendar time, for the world record alone (ADR-137, PLT-053); none: the record holds no wall times.
     std::function<std::chrono::system_clock::time_point()> calendar;
+    // MVP-071 (ADR-184): the computer's suspends so far (Neuron::SuspendWatch), for the world record alone; none: a sleep
+    // is recorded as a stall.
+    std::function<std::uint64_t()> suspensions;
   };
 
   // ADR-155: a snapshot that opening the world refused, and why; none: the snapshot decoded, but its seed gives no terrain.
@@ -190,6 +193,8 @@ private:
   // that each steward is told once when either begins; a world continued in either is not told again.
   bool m_runQuiet = false;
   bool m_runEnded = false;
+  // ADR-184: the suspends counted when the world opened or at its last stall, so that a stall across a new one is a sleep.
+  std::uint64_t m_suspensionsSeen = 0;
   // ADR-120: the ticks of the current second, for the development overlay's statistics (Debug builds): when the tick
   // being measured started its step, none outside a tick, and the ticks' summed and longest wall time.
   std::int64_t m_statsTickStart = 0;

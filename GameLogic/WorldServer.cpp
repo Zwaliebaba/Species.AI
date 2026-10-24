@@ -224,6 +224,7 @@ WorldServer::WorldServer(const Desc& _desc)
 
 std::uint64_t WorldServer::Open()
 {
+  m_suspensionsSeen = m_desc.suspensions ? m_desc.suspensions() : 0; // ADR-184
   if (!m_desc.snapshotFolder.empty())
   {
     // PIL-131 (ADR-137): a world that froze cleanly left a marker naming its final snapshot. It goes as the world opens,
@@ -267,16 +268,16 @@ std::uint64_t WorldServer::Open()
       m_runEnded = m_world->RunState().ended;
       m_runQuiet = m_runEnded || m_world->Region(0).InQuietMinutes();
       // MVP-075, PIL-131: a world that did not freeze cleanly at this snapshot lost what it ran after it, a freeze of
-      // cause "unclean stop" from the snapshot's tick.
-      if (cleanTick != m_world->NextTick())
-      {
-        const std::optional<std::int64_t> now = CalendarSeconds();
-        const std::int64_t saved = m_world->Record().savedAtSeconds;
-        const std::uint64_t seconds = now && saved > 0 && *now > saved ? static_cast<std::uint64_t>(*now - saved) : 0;
-        m_world->Record().freezes.push_back({m_world->NextTick(), FreezeCause::UncleanStop, seconds});
-        Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning,
-                    "the world did not stop cleanly: a freeze of {} s from tick {}, cause unclean stop", seconds, m_world->NextTick());
-      }
+      // cause "unclean stop" from the snapshot's tick; MVP-071 (ADR-184): one that did was frozen while its server was not
+      // running, a freeze of cause "server stopped". Either lasted from the snapshot's calendar time to now.
+      const std::optional<std::int64_t> now = CalendarSeconds();
+      const std::int64_t saved = m_world->Record().savedAtSeconds;
+      const std::uint64_t seconds = now && saved > 0 && *now > saved ? static_cast<std::uint64_t>(*now - saved) : 0;
+      const bool clean = cleanTick == m_world->NextTick();
+      m_world->Record().freezes.push_back({m_world->NextTick(), clean ? FreezeCause::ServerStopped : FreezeCause::UncleanStop, seconds});
+      Neuron::Log(Neuron::LogCategory::Simulation, clean ? Neuron::LogLevel::Info : Neuron::LogLevel::Warning,
+                  "the world {}: a freeze of {} s from tick {}, cause {}", clean ? "stopped cleanly" : "did not stop cleanly", seconds,
+                  m_world->NextTick(), clean ? "server stopped" : "unclean stop");
       m_journal = RestoredJournal(); // MVP-076: the journal from the snapshot it opened (ADR-137)
       Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Info, "the world opens from {} at tick {}",
                   snapshot.filename().string(), m_world->NextTick());
@@ -873,16 +874,20 @@ void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender
 
 void WorldServer::Stalled(const Neuron::ScheduleStall& _stall)
 {
+  // MVP-071 (ADR-184): a stall across a suspend of the computer is its sleep.
+  const std::uint64_t suspensions = m_desc.suspensions ? m_desc.suspensions() : 0;
+  const bool slept = suspensions != m_suspensionsSeen;
+  m_suspensionsSeen = suspensions;
   if (_stall.freeze)
   {
     // PIL-131 (ADR-137): the freeze in the world record, with the wall time the loop gave up.
     const auto seconds = static_cast<std::uint64_t>(std::max<std::int64_t>(0, _stall.lost.count() / 1'000'000'000));
     if (m_world != nullptr)
     {
-      m_world->Record().freezes.push_back({_stall.tick, FreezeCause::ServerStall, seconds});
+      m_world->Record().freezes.push_back({_stall.tick, slept ? FreezeCause::Sleep : FreezeCause::ServerStall, seconds});
     }
-    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "freeze of {} s before tick {}, cause server stall", seconds,
-                _stall.tick);
+    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "freeze of {} s before tick {}, cause {}", seconds, _stall.tick,
+                slept ? "sleep" : "server stall");
   }
 }
 

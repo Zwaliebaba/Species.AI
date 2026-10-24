@@ -22,11 +22,13 @@ namespace Species
 // PIL-131: why a world froze.
 enum class FreezeCause : std::uint8_t
 {
-  ServerStall = 0, // the tick loop gave up 10 s or more (ADR-095)
-  UncleanStop = 1  // the server stopped without its final snapshot; the time since the snapshot it opened (MVP-075)
+  ServerStall = 0,   // the tick loop gave up 10 s or more (ADR-095)
+  UncleanStop = 1,   // the server stopped without its final snapshot; the time since the snapshot it opened (MVP-075)
+  ServerStopped = 2, // MVP-071 (ADR-184): the server was not running between its clean stop and its next start
+  Sleep = 3          // MVP-071 (ADR-184): the computer slept; the time the tick loop gave up across it
 };
 
-inline constexpr std::uint64_t FREEZE_CAUSE_MAX = 1;
+inline constexpr std::uint64_t FREEZE_CAUSE_MAX = 3;
 
 /// PIL-079 (MVP-073): the default orders a steward who sets none leaves the deputy, by which each deputy action is
 /// permitted (PIL-026), and the steward's own declared attack, whose battle the deputy fights while the steward is away

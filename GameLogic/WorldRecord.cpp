@@ -25,14 +25,15 @@ void WriteWorldRecord(Neuron::BitWriter& _writer, const WorldRecord& _record)
   }
 }
 
-bool ReadWorldRecord(Neuron::BitReader& _reader, WorldRecord& _record)
+bool ReadWorldRecord(Neuron::BitReader& _reader, WorldRecord& _record, std::uint32_t _stateVersion)
 {
+  const std::uint64_t causes = _stateVersion >= STATE_VERSION_WITH_FREEZE_CAUSES ? FREEZE_CAUSE_MAX : FREEZE_CAUSE_MAX_BEFORE_M4;
   _record.savedAtSeconds = _reader.ReadSigned(64);
   _record.freezes.resize(_reader.ReadBounded(FREEZES_MAX));
   for (FreezeRecord& freeze : _record.freezes)
   {
     freeze.tick = _reader.ReadBits(64);
-    freeze.cause = static_cast<FreezeCause>(_reader.ReadBounded(FREEZE_CAUSE_MAX));
+    freeze.cause = static_cast<FreezeCause>(_reader.ReadBounded(causes));
     freeze.seconds = _reader.ReadBits(64);
   }
   return !_reader.Failed();
