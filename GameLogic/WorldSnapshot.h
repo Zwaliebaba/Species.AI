@@ -13,7 +13,7 @@ namespace Species
 // ADR-099, MVP-095: the version of the world's state as a snapshot holds it. A change to any owner's state layout
 // raises it, and adds the step that migrates the previous version; a version below the oldest that a step reaches is
 // refused.
-inline constexpr std::uint32_t WORLD_STATE_VERSION = 22;
+inline constexpr std::uint32_t WORLD_STATE_VERSION = 23;
 inline constexpr std::uint32_t WORLD_STATE_OLDEST_VERSION = 1;
 // ADR-137: the first version a server saves, which holds the world record after the regions; no world of an earlier
 // version was ever saved, and their steps stay with their tests.
@@ -51,6 +51,7 @@ inline constexpr std::uint32_t WORLD_STATE_FIRST_SAVED_VERSION = 9;
 // Version 20 added each region's deputies (M4 task T4, ADR-186); an older region makes each at its steward's next absence.
 // Version 21 added each absence's grievances (M4 task T5, ADR-187); an older absence has none.
 // Version 22 added the freeze causes of MVP-071 to the world record, a cause in two bits (M4 task T6, ADR-188).
+// Version 23 added each gatherer's home port (O112, ADR-195); an older region has none.
 // _tuning and _structures outlive the world.
 [[nodiscard]] std::expected<std::unique_ptr<WorldSimulation>, Neuron::SnapshotError>
 RestoreWorld(const Neuron::SnapshotContents& _snapshot, const TuningMvp& _tuning, const StructureRecords* _structures = nullptr);

@@ -305,4 +305,30 @@ bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure, std::uint32_t _stat
   return !_reader.Failed() && finite && _figure.id != 0 && _figure.nearestNode >= -1 && _figure.carriedMilliRu >= 0;
 }
 
+void WriteHomePort(Neuron::BitWriter& _writer, const Figure& _figure)
+{
+  _writer.WriteBool(_figure.homeStructureId != 0);
+  if (_figure.homeStructureId != 0)
+  {
+    _writer.WriteBits(_figure.homeStructureId, 64);
+    _writer.WriteBits(_figure.homeStructureSlot, 32);
+    _writer.WriteBits(_figure.homePortIndex, 32);
+  }
+}
+
+bool ReadHomePort(Neuron::BitReader& _reader, Figure& _figure)
+{
+  _figure.homeStructureId = 0;
+  _figure.homeStructureSlot = 0;
+  _figure.homePortIndex = 0;
+  if (_reader.ReadBool())
+  {
+    _figure.homeStructureId = _reader.ReadBits(64);
+    _figure.homeStructureSlot = static_cast<std::uint32_t>(_reader.ReadBits(32));
+    _figure.homePortIndex = static_cast<std::uint32_t>(_reader.ReadBits(32));
+    return !_reader.Failed() && _figure.homeStructureId != 0;
+  }
+  return !_reader.Failed();
+}
+
 } // namespace Species

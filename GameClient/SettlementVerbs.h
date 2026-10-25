@@ -107,8 +107,9 @@ struct SettlementVerbResult
 ///   share by mvp.hud.priority_step and sends the shares, which the HUD shows until a status holds them; on the growth
 ///   row's button it holds the growth or lets it run (O106, ADR-178), shown in the same way.
 /// - **Placing** is a mode that takes the primary and secondary presses before the battle verbs: the primary press on the
-///   region sends the placement at the pointer ground point and stays in the mode; the secondary press leaves it, as it
-///   releases a selection (O82). The mode shows the ghost and the cursor of what the client foresees at the pointer.
+///   region sends the placement at the pointer ground point and leaves the mode, or stays in it when the client foresees
+///   the placement refused (O111); the secondary press leaves it, as it releases a selection (O82). The mode shows the
+///   ghost and the cursor of what the client foresees at the pointer.
 /// - **Refusals.** The server's refusal of a placement is kept mvp.hud.notice_seconds for the HUD with its reason.
 /// - **Conflicts** (M3 task T12, ADR-167). A relations row's button makes a claim, withdraws one, withdraws the
 ///   expedition or sends a grievance's tribute at once. A raid or a claim battle is declared in two presses: the first

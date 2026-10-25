@@ -195,6 +195,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-192](ADR-192-the-away-report-and-the-pace-in-the-client.md) | The away report and the pace in the client | Proposed | 2026-10-24 |
 | [ADR-193](ADR-193-the-link-simulator-and-the-transports-confirmations.md) | The link simulator and the transport's confirmations | Proposed | 2026-10-24 |
 | [ADR-194](ADR-194-the-away-run.md) | The away run | Proposed | 2026-10-24 |
+| [ADR-195](ADR-195-gatherers-home-ports-and-their-turns.md) | Gatherers' home ports and their turns | Proposed | 2026-10-24 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

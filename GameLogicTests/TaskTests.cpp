@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "BitReader.h"
 #include "Construction.h"
 #include "Growth.h"
 #include "SettlementTasks.h"
@@ -7,6 +8,7 @@
 #include "TestSupport.h"
 #include "WorkerPool.h"
 #include "WorldSimulation.h"
+#include "WorldSnapshot.h"
 
 #include <cmath>
 #include <cstdint>
@@ -137,6 +139,114 @@ public:
     Assert::IsTrue(settlement.storesMilliRu > 0, L"loads deposited, beyond the upkeep");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(O112AGathererGoesBackToItsHomePortAndWaitsItsTurn)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-031")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-036")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(O112AGathererGoesBackToItsHomePortAndWaitsItsTurn)
+  {
+    // O112 (ADR-195): with gathering at 100 %, every gatherer walks to its home port and to no other; one that has put
+    // its load down goes back to the port it carried it from; and the gatherers that share a port wait their turn beside
+    // it, so that none is sent away to look for another.
+    Neuron::WorkerPool pool(0);
+    std::uint64_t tick = 0;
+    const std::unique_ptr<Species::WorldSimulation> world = TaskWorld({100, 0, 0}, pool, tick);
+    Species::RegionSimulation& region = world->Region(0);
+    Species::Figure* carrier = nullptr;
+    for (; tick < 1500 && carrier == nullptr; ++tick)
+    {
+      world->Step(tick, pool);
+      for (Species::Figure* worker : WorkersOf(region))
+      {
+        carrier = carrier == nullptr && worker->workerState == Species::WorkerState::Carrying ? worker : carrier;
+      }
+    }
+    Assert::IsNotNull(carrier, L"a gatherer carries a load");
+    const Species::StableId id = carrier->id;
+    const Species::StableId home = carrier->homeStructureId;
+    const std::uint32_t port = carrier->homePortIndex;
+    const Species::Structure* site = region.ResolveStructure(carrier->homeStructureSlot, home);
+    Assert::IsTrue(site != nullptr && site->kind == Species::StructureKind::ResourceSite && port < site->ports.size(),
+                   L"its home port is a resource site's");
+    bool back = false;
+    bool waited = false;
+    for (; tick < 4000; ++tick)
+    {
+      world->Step(tick, pool);
+      for (const Species::Figure* worker : WorkersOf(region))
+      {
+        Assert::IsTrue(worker->idleReason != Species::IdleReason::NoFreePort, L"none is sent away for want of a port");
+        const bool toPort = worker->workerState == Species::WorkerState::ToPort || worker->workerState == Species::WorkerState::Manning;
+        Assert::IsFalse(toPort && (worker->portStructureId != worker->homeStructureId || worker->portIndex != worker->homePortIndex),
+                        L"only to its home port");
+        back = back || (toPort && worker->id == id && worker->portStructureId == home && worker->portIndex == port);
+        const Species::Structure* at = region.ResolveStructure(worker->portStructureSlot, worker->portStructureId);
+        waited = waited || (worker->workerState == Species::WorkerState::ToPort && at != nullptr &&
+                            at->ports[worker->portIndex].occupant.has_value() &&
+                            at->ports[worker->portIndex].occupant.value_or(Species::ActorRef{}).id != worker->id &&
+                            Neuron::HorizontalDistance(worker->position, at->ports[worker->portIndex].position) <=
+                              CommittedTuning().ref.unit.worker.arrivalSlowRadius);
+      }
+    }
+    Assert::IsTrue(back, L"the gatherer goes back to its home port");
+    Assert::IsTrue(waited, L"a gatherer waits its turn beside a manned port");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(O112AWorkerThatStopsGatheringLeavesItsHomePort)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-036")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(O112AWorkerThatStopsGatheringLeavesItsHomePort)
+  {
+    // O112 (ADR-195): the home ports are saved, and a region of version 22 reads with none; once the priorities move
+    // every Worker to guard duty, each gatherer leaves its home port at its next search, and no Worker of another task
+    // has one.
+    Neuron::WorkerPool pool(0);
+    std::uint64_t tick = 0;
+    const std::unique_ptr<Species::WorldSimulation> world = TaskWorld({100, 0, 0}, pool, tick);
+    Species::RegionSimulation& region = world->Region(0);
+    for (; tick < 900; ++tick)
+    {
+      world->Step(tick, pool);
+    }
+    std::size_t homes = 0;
+    for (const Species::Figure* worker : WorkersOf(region))
+    {
+      homes += worker->homeStructureId != 0 ? 1 : 0;
+    }
+    Assert::IsTrue(homes > 0, L"gatherers have home ports");
+
+    auto restored = Species::RestoreWorld(Species::SnapshotOf(*world), CommittedTuning(), &TestRecords());
+    Assert::IsTrue(restored.has_value(), L"the world restores");
+    std::size_t restoredHomes = 0;
+    for (const Species::Figure* worker : WorkersOf(restored.value()->Region(0)))
+    {
+      restoredHomes += worker->homeStructureId != 0 ? 1 : 0;
+    }
+    ExpectEqual(static_cast<std::int64_t>(homes), static_cast<std::int64_t>(restoredHomes), L"the home ports are saved");
+    const std::vector<std::byte> older = RegionStateOf(region, 22);
+    Species::RegionSimulation twentyTwo(0, SETTLED_TEST_KEY, region.NextTick(), CommittedTuning(), ValleyTerrain(), &TestRecords());
+    Neuron::BitReader reader(older);
+    Assert::IsTrue(twentyTwo.ReadState(reader, 22) && reader.Finish(), L"a version-22 region reads whole");
+    for (const Species::Figure* worker : WorkersOf(twentyTwo))
+    {
+      Assert::IsTrue(worker->homeStructureId == 0, L"with no home port");
+    }
+
+    region.Settlements().front().priorities = {0, 0, 100};
+    for (const std::uint64_t end = tick + 600; tick < end; ++tick)
+    {
+      world->Step(tick, pool);
+      for (const Species::Figure* worker : WorkersOf(region))
+      {
+        Assert::IsTrue(worker->task == Species::WorkerTask::Gather || worker->homeStructureId == 0, L"only a gatherer has one");
+      }
+    }
+    for (const Species::Figure* worker : WorkersOf(region))
+    {
+      Assert::IsTrue(worker->task == Species::WorkerTask::Guard && worker->homeStructureId == 0, L"every Worker guards and has none");
+    }
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp031AFullStoreRefusesTheLoadAndTheCarrierWaits)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-031")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-037")
@@ -221,9 +331,9 @@ public:
   TEST_METHOD(Mvp037AnIdleWorkerSaysWhy)
   {
     // Construction alone with an empty queue: every Worker has no task, because the queue is empty, and wanders.
-    // Gathering alone with more Workers than gathering ports: each Worker gathers or has no free port, and some have
-    // none. A reservation turns a second Worker away only within its tick (R-BLDG-025), so a few more than the ports
-    // may walk to them and be turned away there.
+    // Gathering alone with more Workers than the gathering ports take, each as many as fit one gatherer's round (O112,
+    // ADR-195), at most six for a port 500 wu from its drop-off: each Worker gathers or has no free port, and some have
+    // none.
     Neuron::WorkerPool pool(0);
     std::uint64_t tick = 0;
     {
@@ -241,7 +351,10 @@ public:
     tick = 0;
     const std::unique_ptr<Species::WorldSimulation> world = TaskWorld({100, 0, 0}, pool, tick);
     Species::RegionSimulation& region = world->Region(0);
-    Assert::IsTrue(WorkersOf(region).size() > FreeGatheringPorts(region), L"more Workers than ports");
+    while (WorkersOf(region).size() <= 6 * FreeGatheringPorts(region))
+    {
+      static_cast<void>(region.SpawnAtDoor(region.Settlements().front()));
+    }
     for (int step = 0; step < 40; ++step)
     {
       world->Step(tick++, pool);

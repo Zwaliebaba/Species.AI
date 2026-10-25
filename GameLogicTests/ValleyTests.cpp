@@ -315,8 +315,10 @@ public:
   {
     // ADR-158: an AI reads the seen layers its own step made, so that a world restored from its snapshot, which holds no
     // seen layer, decides as the world it was saved from: the same hash on every tick after the restore, with an AI
-    // commanding an AI settlement whose crowd at its Wellspring makes its main cycle promote a formation Leader
-    // (R-BOT-091) at the first step after the restore.
+    // commanding an AI settlement whose crowd makes its main cycle promote a formation Leader (R-BOT-091) at the first
+    // step after the restore. The snapshot is of the tick before the first main cycle that promotes one after the crowd
+    // is spawned and the nodes have counted it, as they do every ref.bot.node.recount_ticks; a later cycle's promotion
+    // would hang on where the crowd's gatherers stand (O112).
     const std::unique_ptr<Species::WorldSimulation> world = ValleyWorld();
     Species::RegionSimulation& region = world->Region(0);
     const Species::Settlement& settlement = region.Settlements().back();
@@ -326,14 +328,6 @@ public:
     static_cast<void>(HashesOver(*world, 0, 150));
     SpawnAt(region, team, settlement.site, 100);
     std::uint64_t tick = 150;
-    static_cast<void>(HashesOver(*world, tick, 30)); // the nodes recount every ref.bot.node.recount_ticks
-    tick += 30;
-    // The snapshot is of the tick before the AI's main cycle, which reads the nodes.
-    while (region.Ais().front().cycleTicks != 1 && tick < 600)
-    {
-      static_cast<void>(HashesOver(*world, tick++, 1));
-    }
-    ExpectEqual(1, std::int64_t{region.Ais().front().cycleTicks}, L"the main cycle is next");
     const auto leaders = [team](const Species::RegionSimulation& _region)
     {
       std::size_t count = 0;
@@ -344,8 +338,36 @@ public:
       }
       return count;
     };
-    const std::size_t leadersBefore = leaders(region);
-    auto restored = Species::RestoreWorld(Species::SnapshotOf(*world), CommittedTuning(), &TestRecords());
+    std::optional<Neuron::SnapshotContents> snapshot;
+    std::uint64_t restoredTick = 0;
+    std::vector<std::uint64_t> continued;
+    while (!snapshot && tick < 3000)
+    {
+      // The tick before the AI's main cycle, which reads the nodes.
+      if (region.Ais().front().cycleTicks != 1)
+      {
+        static_cast<void>(HashesOver(*world, tick++, 1));
+        continue;
+      }
+      // Its commands execute at the next tick (ADR-138).
+      const std::size_t leadersBefore = leaders(region);
+      Neuron::SnapshotContents contents = Species::SnapshotOf(*world);
+      continued = HashesOver(*world, tick, 2);
+      if (leaders(region) > leadersBefore)
+      {
+        snapshot = std::move(contents);
+        restoredTick = tick;
+      }
+      tick += 2;
+    }
+    Assert::IsTrue(snapshot.has_value(), L"a main cycle promoted a formation Leader");
+    if (!snapshot)
+    {
+      return;
+    }
+    const std::vector<std::uint64_t> after = HashesOver(*world, tick, 8);
+    continued.insert(continued.end(), after.begin(), after.end());
+    auto restored = Species::RestoreWorld(*snapshot, CommittedTuning(), &TestRecords());
     Assert::IsTrue(restored.has_value(), L"restores");
     if (!restored)
     {
@@ -353,9 +375,7 @@ public:
     }
     const std::unique_ptr<Species::WorldSimulation> back = std::move(restored.value());
     back->Region(0).AttachTerrain(ValleyTerrain());
-    const std::vector<std::uint64_t> continued = HashesOver(*world, tick, 10);
-    Assert::IsTrue(leaders(region) > leadersBefore, L"its main cycle promoted a formation Leader");
-    Assert::IsTrue(HashesOver(*back, tick, 10) == continued, L"the same hash on every tick after the restore");
+    Assert::IsTrue(HashesOver(*back, restoredTick, 10) == continued, L"the same hash on every tick after the restore");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp095AJournalKeepsItsAiSettlementsAndAnOlderOneHasNone)

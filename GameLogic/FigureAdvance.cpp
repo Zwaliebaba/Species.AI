@@ -190,11 +190,16 @@ void TaskSearch(Figure& _figure, const FigureContext& _context)
 }
 
 // R-UNIT-069: a Worker walking to its port operates it for its team every tick and becomes Manning on arrival, facing
-// the port's front and still; it becomes Idle when its structure is gone or another Worker occupies the port.
+// the port's front and still; it becomes Idle when its structure is gone or another Worker occupies the port, unless it
+// is a gatherer walking to its home port, which waits its turn (O112, ADR-195).
 void ToPortStep(Figure& _worker, const FigureContext& _context)
 {
   StructurePort* port = TargetPort(*_context.region, _worker);
-  if (port == nullptr || (port->occupant.has_value() && port->occupant.value_or(ActorRef{}).id != _worker.id))
+  const bool taken = port != nullptr && port->occupant.has_value() && port->occupant.value_or(ActorRef{}).id != _worker.id;
+  // O112 (ADR-195): a gatherer walking to its home port while another Worker mans it waits its turn there.
+  const bool waits = taken && _worker.task == WorkerTask::Gather && _worker.homeStructureId == _worker.portStructureId &&
+                     _worker.homePortIndex == _worker.portIndex;
+  if (port == nullptr || (taken && !waits))
   {
     _worker.workerState = WorkerState::Idle;
     return;
@@ -209,7 +214,13 @@ void ToPortStep(Figure& _worker, const FigureContext& _context)
   {
     _worker.waypoint = port->position;
   }
-  if (WorkerMoveToWaypoint(_worker, false, *_context.movement))
+  // It waits ref.unit.worker.arrival_slow_radius from the port, where an arriving Worker begins to slow.
+  if (waits && Neuron::HorizontalDistance(_worker.position, port->position) <= _context.movement->tuning->ref.unit.worker.arrivalSlowRadius)
+  {
+    _worker.velocity = {};
+    return;
+  }
+  if (WorkerMoveToWaypoint(_worker, false, *_context.movement) && !waits)
   {
     _worker.front = port->front;
     _worker.velocity = {};

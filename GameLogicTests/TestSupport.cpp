@@ -8,6 +8,7 @@
 #include "Growth.h"
 #include "PlatformThread.h"
 #include "RegionSimulation.h"
+#include "SettlementTasks.h"
 #include "SimulationRecord.h"
 #include "TerrainField.h"
 #include "TestSupport.h"
@@ -281,8 +282,8 @@ std::vector<std::byte> RegionStateOf(const Species::RegionSimulation& _region, s
   {
     bits -= version > _version ? Neuron::BitsFor(bound) : 0;
   }
-  // M4's sections, version 19's absences and version 20's deputies, the last two, are written again below in the
-  // layout of _version: an absence before version 21 has no grievances.
+  // M4's sections, version 19's absences and version 20's deputies, and version 23's home ports after them, the last
+  // three, are written again below in the layout of _version: an absence before version 21 has no grievances.
   Neuron::BitWriter absences;
   absences.WriteBounded(_region.Absences().size(), Species::ABSENCES_MAX);
   Neuron::BitWriter olderAbsences;
@@ -321,7 +322,19 @@ std::vector<std::byte> RegionStateOf(const Species::RegionSimulation& _region, s
   {
     Species::WriteDeputy(deputies, deputy);
   }
-  bits -= absences.BitCount() + deputies.BitCount();
+  Neuron::BitWriter homes;
+  for (std::size_t team = 0; team < _region.TeamCount(); ++team)
+  {
+    const auto& figures = _region.TeamAt(team).figures;
+    for (std::uint32_t slot = 0; slot < figures.Capacity(); ++slot)
+    {
+      if (figures.Used(slot))
+      {
+        Species::WriteHomePort(homes, figures.At(slot));
+      }
+    }
+  }
+  bits -= absences.BitCount() + deputies.BitCount() + homes.BitCount();
   // Version 17's growth holds before them, a bit for each settlement, and version 16's claim ends, version 15's renown
   // and version 14's AI settlements' decisions before those, go whole.
   if (_version < Species::STATE_VERSION_WITH_GROWTH_HOLD)
@@ -383,6 +396,10 @@ std::vector<std::byte> RegionStateOf(const Species::RegionSimulation& _region, s
   if (_version >= Species::STATE_VERSION_WITH_DEPUTIES)
   {
     append(deputies);
+  }
+  if (_version >= Species::STATE_VERSION_WITH_HOME_PORTS)
+  {
+    append(homes);
   }
   return older.Take();
 }

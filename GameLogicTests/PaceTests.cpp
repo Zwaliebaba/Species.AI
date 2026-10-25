@@ -137,18 +137,43 @@ public:
     // pace, so it continues at it, as the world it was (M4 plan §4).
     const std::unique_ptr<Species::WorldSimulation> world = ValleyAt(Species::WorldPace::Session);
     static_cast<void>(HashesOver(*world, 20, 0));
+    // A world saved before version 23 holds no gatherer's home port (ADR-195), so the world it was had none.
+    for (std::size_t team = 0; team < world->Region(0).TeamCount(); ++team)
+    {
+      auto& figures = world->Region(0).TeamAt(team).figures;
+      for (std::uint32_t slot = 0; slot < figures.Capacity(); ++slot)
+      {
+        if (figures.Used(slot))
+        {
+          figures.At(slot).homeStructureId = 0;
+          figures.At(slot).homeStructureSlot = 0;
+          figures.At(slot).homePortIndex = 0;
+        }
+      }
+    }
     Neuron::BitWriter state;
     state.WriteBits(world->SimulationKey().low, 64);
     state.WriteBits(world->SimulationKey().high, 64);
     state.WriteBits(world->RegionCount(), 16);
     world->WriteState(state);
     // The region's state without its last sections, version 19's absences and version 20's deputies, both empty: the
-    // steward was never away.
+    // steward was never away; and version 23's home ports, none.
     Neuron::BitWriter region;
     world->Region(0).WriteState(region);
     Neuron::BitWriter later;
     later.WriteBounded(0, Species::ABSENCES_MAX);
     later.WriteBounded(0, 4);
+    for (std::size_t team = 0; team < world->Region(0).TeamCount(); ++team)
+    {
+      const auto& figures = world->Region(0).TeamAt(team).figures;
+      for (std::uint32_t slot = 0; slot < figures.Capacity(); ++slot)
+      {
+        if (figures.Used(slot))
+        {
+          Species::WriteHomePort(later, figures.At(slot));
+        }
+      }
+    }
     const std::size_t bits = region.BitCount() - later.BitCount();
     Neuron::BitReader regionBits(region.Bytes());
     for (std::size_t done = 0; done < bits;)

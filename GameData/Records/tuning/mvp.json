@@ -36,7 +36,7 @@
       "ports_per_unit": 4
     },
     "gather": {
-      "port_ticks": 100,
+      "port_ticks": 215,
       "load_ru": 1
     },
     "store": {
